@@ -16,12 +16,15 @@ export const section = (markdown: string, heading: string): string[] => {
 };
 
 /** The cells of the given column of every body row of the first table in the lines */
-export const tableColumn = (lines: string[], column = 0): string[] =>
-  lines
-    .filter((line) => line.startsWith("|"))
-    .slice(2)
+export const tableColumn = (lines: string[], column = 0): string[] => {
+  const start = lines.findIndex((line) => line.startsWith("|"));
+  if (start === -1) return [];
+  const end = lines.findIndex((line, index) => index > start && !line.startsWith("|"));
+  return lines
+    .slice(start + 2, end === -1 ? undefined : end)
     .map((line) => line.split("|").map((cell) => cell.trim())[column + 1] ?? "")
     .map((cell) => cell.replace(/\*\*/g, ""));
+};
 
 /** The name of each bullet of the plan's crypto rules: its bold start, or the text up to a comma */
 export const ruleNames = (lines: string[]): string[] =>

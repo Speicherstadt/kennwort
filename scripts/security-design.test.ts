@@ -56,3 +56,15 @@ describe("section", () => {
     expect(section("## A\nx\n### B\ny\n## C\nz", "## A")).toEqual(["x", "### B", "y"]);
   });
 });
+
+describe("tableColumn", () => {
+  it("reads only the first table of the lines", () => {
+    expect(tableColumn(["| A |", "| --- |", "| x |", "", "| B |", "| --- |", "| y |"])).toEqual([
+      "x",
+    ]);
+  });
+
+  it("reads the given column without bold marks", () => {
+    expect(tableColumn(["text", "| A | B |", "| --- | --- |", "| x | **y** |"], 1)).toEqual(["y"]);
+  });
+});

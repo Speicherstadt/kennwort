@@ -126,7 +126,7 @@ Nur standardisierte Verfahren aus `@noble/*`, nichts selbst gebaut:
 | Signaturen | Ed25519 | RFC 8032 | `@noble/curves` |
 | Ableitung | HKDF-SHA-512 | RFC 5869 | `@noble/hashes` |
 | Passphrase | Argon2id | RFC 9106 | `@noble/hashes` |
-| Hash | SHA-512, SHA-512/256 | FIPS 180-4 | `@noble/hashes` |
+| Hash | SHA-512, SHA-512/256; SHA-256 nur für Release-Manifeste (wie Subresource Integrity) | FIPS 180-4 | `@noble/hashes` |
 | Zufall | `crypto.getRandomValues` | Web Crypto | über `@noble/hashes/utils` |
 
 ## Formate
@@ -173,6 +173,18 @@ des Empfängers in Ableitung und AAD bindet das Paket zusätzlich an das ganze S
 ist die Verpackung so sicher wie der stärkere der beiden Teile: X25519 heute, ML-KEM-768 gegen einen
 späteren Quantenrechner. Wer verpackt, nimmt den öffentlichen Schlüssel nur aus einem geprüften
 Zertifikat ([P-07](#p-07-firmen-wurzelschlussel-und-zertifikate)), nie roh vom Server (E-05).
+
+F-02 sagt nichts darüber, **wer** verpackt hat: Mit einem öffentlichen Schlüssel kann jeder, auch der
+Server, ein gültiges Paket bauen. Ein entpackter Schlüssel gilt deshalb erst, wenn er zu einer
+**Bindung** passt, die ein Berechtigter signiert hat:
+
+```text
+bindung(schlüssel, zweck, kontext…) = kdf(schlüssel, leer, "kennwort/key-commit/v1", zweck, kontext…)
+```
+
+Die Bindung verrät den Schlüssel nicht (HKDF ist eine Einwegfunktion) und steht im signierten
+Log-Eintrag, in der signierten Freigabe oder im signierten Notfall-Paket. Ein Paket ohne passende
+signierte Bindung wird verworfen (E-16).
 
 ### F-03 Signatur v1
 
@@ -221,8 +233,8 @@ Eintrags-Schlüssel EK ─► Eintrag (alle Felder in einem Geheimtext, F-01)
 | --- | --- | --- | --- |
 | AK | zufällig beim Konto | unter jedem Entsperr-Weg | Konto-ID, Weg (`passkey`, `passphrase`, `recovery`, `company`), bei Passkeys die Credential-ID |
 | Benutzer-Schlüssel | zufällig beim Konto | unter AK | Konto-ID, Schlüsselart |
-| VKₑ | zufällig beim Anlegen und bei jedem Schlüsselwechsel | an jedes Mitglied verpackt | Tresor-ID, Epoche, Konto-ID des Mitglieds |
-| EK | zufällig je Eintrag | unter VKₑ | Tresor-ID, Eintrags-ID, Epoche |
+| VKₑ | zufällig beim Anlegen und bei jedem Schlüsselwechsel | an jedes Mitglied verpackt; seine Bindung steht im signierten Log | Tresor-ID, Epoche, Konto-ID des Mitglieds |
+| EK | zufällig je Eintrag und neu bei jedem Schlüsselwechsel | unter VKₑ | Tresor-ID, Eintrags-ID, Epoche |
 | Inhalt | – | unter EK | Tresor-ID, Eintrags-ID, Version |
 
 Entsperrte Schlüssel liegen nur im Speicher (in der Extension in `chrome.storage.session`), nie in
@@ -299,12 +311,14 @@ Gerät, abmelden widerruft dessen Sitzung.
    ([P-06](#p-06-mitgliedschafts-log)) nennt den Anlegenden als Verwalter.
 2. Aufnehmen: Ein Verwalter prüft das Zertifikat des neuen Mitglieds
    ([P-07](#p-07-firmen-wurzelschlussel-und-zertifikate)), verpackt VKₑ an dessen X-Wing-Schlüssel
-   (F-02) und signiert einen Log-Eintrag mit Konto, Fingerabdruck und Rolle (lesen, bearbeiten,
-   verwalten), optional mit Ablaufzeit.
-3. Zugriff anfragen und OIDC-Gruppen: Der Server legt nur eine Anfrage ab; erst ein Verwalter
+   (F-02) und signiert einen Log-Eintrag mit Konto, Fingerabdruck, Rolle (lesen, bearbeiten,
+   verwalten), optional Ablaufzeit, und der Bindung von VKₑ.
+3. Das neue Mitglied entpackt VKₑ und prüft die Bindung gegen den signierten Log-Eintrag seiner
+   Epoche; ein Paket, das der Server mit einem eigenen Schlüssel gebaut hat, passt nicht (E-16).
+4. Zugriff anfragen und OIDC-Gruppen: Der Server legt nur eine Anfrage ab; erst ein Verwalter
    führt Schritt 2 aus.
 
-**Wehrt ab:** E-02, E-05, E-06, E-27.
+**Wehrt ab:** E-02, E-05, E-06, E-16, E-27.
 
 ### P-06 Mitgliedschafts-Log
 
@@ -312,10 +326,11 @@ Ein Log je Tresor, eine Hash-Kette signierter Einträge:
 
 ```text
 eintrag = enc("kennwort/log/v1", tresor-ID, seq, vorgänger-hash, epoche, aktion, konto-ID,
-              fingerabdruck, rolle, gültig-bis, zeit, unterzeichner-ID, zuletzt-gesehen)
+              fingerabdruck, rolle, gültig-bis, vk-bindung, zeit, unterzeichner-ID, zuletzt-gesehen)
           ‖ F-03-Signatur(unterzeichner, "log", …)
 hash    = SHA-512/256(eintrag)
 aktion  ∈ { anlegen, aufnehmen, entfernen, rolle, schlüsselwechsel }
+vk-bindung = bindung(VKₑ, "vault-key", tresor-ID, epoche)    (F-02; leer bei entfernen und rolle)
 ```
 
 Der Client prüft bei jedem Abruf die ganze Kette ab seinem letzten Stand:
@@ -324,6 +339,8 @@ Der Client prüft bei jedem Abruf die ganze Kette ab seinem letzten Stand:
   vertauscht, eingeschoben: E-07);
 - jede Signatur gültig, der Unterzeichner zu diesem Zeitpunkt Verwalter, sein Schlüssel und der des
   Mitglieds durch die Firma zertifiziert (unsigniert, fremd: E-06, E-07);
+- jeder VKₑ, den der Client entpackt, passt zur `vk-bindung` des Eintrags `anlegen` bzw.
+  `schlüsselwechsel` seiner Epoche (untergeschobener Tresor-Schlüssel: E-16);
 - der letzte Stand (`seq`, `hash`) wird gespeichert; ein kürzeres Log oder ein anderer Hash an
   bekannter Stelle ist ein Angriff, kein Update (zurückgespielt: E-07).
 
@@ -332,7 +349,7 @@ Eintrags den zuletzt gesehenen Log-Stand; trifft ein Client auf einen Stand, der
 Kette liegt, warnt er. Restrisiko: Eine Gabelung fällt erst auf, wenn die getrennten Mitglieder
 wieder etwas voneinander sehen.
 
-**Wehrt ab:** E-06, E-07, E-08, E-19.
+**Wehrt ab:** E-06, E-07, E-08, E-16, E-19.
 
 ### P-07 Firmen-Wurzelschlüssel und Zertifikate
 
@@ -344,23 +361,29 @@ wieder etwas voneinander sehen.
   ihn zum Vergleich an. Ein anderer Wurzelschlüssel oder ein neues Bündel für ein bekanntes Konto
   löst eine deutliche Warnung aus und wird nicht stillschweigend übernommen.
 
-Restrisiko: der erste Kontakt (TOFU), abgeschwächt durch den Vergleichscode und die Einladung
-([P-08](#p-08-einladung)).
+Restrisiko: der erste Kontakt (TOFU) für den Inhaber selbst und für Konten, die ohne Einladungslink
+entstehen (OIDC), abgeschwächt durch den Vergleichscode. Wer per Link eingeladen wird, bekommt den
+Fingerabdruck des Wurzelschlüssels im Link ([P-08](#p-08-einladung)) und braucht kein TOFU.
 
 **Wehrt ab:** E-02, E-05, E-10.
 
 ### P-08 Einladung
 
-1. Ein Verwalter erzeugt ein Einladungsgeheimnis `s` (256 Bit); der Link trägt es im Fragment
-   (`#…`), das nie zum Server geht.
-2. Der Client des Eingeladenen legt das Konto an ([P-01](#p-01-konto-anlegen)) und schickt sein
+1. Ein Verwalter erzeugt ein Einladungsgeheimnis `s` (256 Bit); der Link trägt `s` und den
+   Fingerabdruck des Firmen-Wurzelschlüssels im Fragment (`#…`), das nie zum Server geht.
+2. Der Client des Eingeladenen nimmt den Wurzelschlüssel nur an, wenn er zum Fingerabdruck im Link
+   passt, und prüft damit die Firmen-Richtlinie, bevor er etwas an den Firmen-Recovery-Schlüssel
+   verpackt ([P-13](#p-13-firmen-recovery)). Ein untergeschobener Wurzelschlüssel samt Richtlinie
+   mit eigenem Recovery-Schlüssel scheitert hier (E-01, E-10).
+3. Der Client des Eingeladenen legt das Konto an ([P-01](#p-01-konto-anlegen)) und schickt sein
    Bündel mit `HMAC-SHA-512(kdf(s, leer, "kennwort/invite/v1", einladungs-ID), bündel)`.
-3. Der Client des Verwalters prüft den MAC und zertifiziert erst dann das Bündel
+4. Der Client des Verwalters prüft den MAC und zertifiziert erst dann das Bündel
    ([P-07](#p-07-firmen-wurzelschlussel-und-zertifikate)).
 
-Ein Bündel, das der Server unterschiebt, hat keinen gültigen MAC.
+Ein Bündel, das der Server unterschiebt, hat keinen gültigen MAC; ein Wurzelschlüssel, den er
+unterschiebt, passt nicht zum Link. Die Einladung ist damit in beide Richtungen geprüft.
 
-**Wehrt ab:** E-02, E-05, E-10.
+**Wehrt ab:** E-01, E-02, E-05, E-10.
 
 ### P-09 Einträge speichern und lesen
 
@@ -379,8 +402,10 @@ signatur  = F-03(autor, "entry", tresor-ID, eintrags-ID, version, epoche, SHA-51
   „bearbeiten“ durfte; so kann auch ein lesendes Mitglied, das VKₑ kennt, nichts unterschieben.
 - **Löschen** ist ein signierter Grabstein mit neuer Version. Verschwindet ein bekannter Eintrag
   ohne Grabstein, warnt der Client (E-15).
-- **Schlüssel**: EK und VKₑ entstehen nur im Client; ein EK lässt sich nur unter einem VKₑ
-  ablegen, den der Server nicht kennt, und ein VKₑ nur in einem signierten Schlüsselwechsel (E-16).
+- **Schlüssel**: EK und VKₑ entstehen nur im Client. Ein EK ist unter VKₑ verschlüsselt, den der
+  Server nicht kennt; ein VKₑ gilt nur, wenn er zur signierten Bindung im Log passt
+  ([P-06](#p-06-mitgliedschafts-log)). Einen eigenen Schlüssel kann der Server so nicht
+  unterschieben (E-16).
 
 Restrisiko: Einen neuen Eintrag, den ein Client nie gesehen hat, kann der Server diesem Client
 vorenthalten.
@@ -391,21 +416,27 @@ vorenthalten.
 
 Der Teilende verpackt EK an das zertifizierte Bündel des Empfängers (F-02, Zweck `share`, Kontext
 Tresor-ID, Eintrags-ID) und signiert die Freigabe mit Rolle und optionalem Ablauf. Der Empfänger
-liest den Eintrag mit dem EK; Widerrufen wechselt EK und verschlüsselt den Eintrag neu.
+liest den Eintrag mit dem EK, nachdem er ihn gegen die Bindung `bindung(EK, "share", tresor-ID,
+eintrags-ID)` in der signierten Freigabe geprüft hat. Widerrufen wechselt EK und verschlüsselt den
+Eintrag neu.
 
-**Wehrt ab:** E-05, E-12.
+**Wehrt ab:** E-05, E-12, E-16.
 
 ### P-11 Austritt und Schlüsselwechsel
 
 1. Ein Verwalter signiert `entfernen` und `schlüsselwechsel` (Epoche e + 1) im Log.
-2. Er erzeugt VKₑ₊₁, verpackt es an die verbleibenden Mitglieder und legt alle EK unter VKₑ₊₁ neu
-   ab; neue Einträge bekommen neue EK.
-3. Passwörter, die das ausgetretene Mitglied lesen konnte, werden „Zum Ändern“ markiert; der
+2. Er erzeugt VKₑ₊₁ und verpackt es an die verbleibenden Mitglieder; die Bindung steht im
+   signierten `schlüsselwechsel`.
+3. Jeder Eintrag bekommt einen **neuen EK** unter VKₑ₊₁ und wird mit neuer Version neu
+   verschlüsselt. Das ausgetretene Mitglied kennt die alten EK; mit ihnen liest es keine spätere
+   Änderung, auch nicht das geänderte Passwort.
+4. Passwörter, die das ausgetretene Mitglied lesen konnte, werden „Zum Ändern“ markiert; der
    Austritts-Bericht listet sie.
 
 Der Server sperrt das Mitglied sofort; den Schlüsselwechsel macht der nächste Verwalter-Client.
-Restrisiko: Bis dahin entscheidet der Server allein, und Passwörter, die das Mitglied kannte, gelten
-erst nach ihrer Änderung als sicher.
+Restrisiko: Bis dahin entscheidet der Server allein; was das Mitglied vor dem Austritt gelesen hat,
+kennt es weiter, deshalb gelten diese Passwörter erst nach ihrer Änderung als sicher. Änderungen
+nach dem Schlüsselwechsel liegen unter neuen EK.
 
 **Wehrt ab:** E-26, E-16.
 
@@ -438,10 +469,11 @@ fehlenden Signatur der Richtlinie.
 
 1. Der Gebende wählt eine Person mit zertifiziertem Bündel, Tresore und eine Wartezeit; sein Client
    verpackt die VKₑ dieser Tresore an sie (F-02, Zweck `emergency`) und signiert die Freigabe mit
-   Wartezeit.
+   Wartezeit und den Bindungen der verpackten Schlüssel.
 2. Fragt die Person an, benachrichtigt der Server den Gebenden; widerspricht er nicht innerhalb der
    Wartezeit, gibt der Server die Pakete heraus.
-3. Die Person prüft Signatur und Zertifikat, bevor sie entpackt.
+3. Die Person prüft Signatur und Zertifikat, entpackt und vergleicht jeden Schlüssel mit seiner
+   Bindung. Nach einem Schlüsselwechsel erneuert der Client des Gebenden die Pakete.
 
 Restrisiko: Die Wartezeit setzt der Server durch; ein bösartiger Server kann sie verkürzen, aber nur
 zugunsten einer Person, die der Gebende selbst gewählt hat (E-04 ist damit auf die Wartezeit
