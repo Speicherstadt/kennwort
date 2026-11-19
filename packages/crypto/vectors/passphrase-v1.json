@@ -1,0 +1,20 @@
+[
+  {
+    "name": "ASCII passphrase",
+    "passphrase": "korrekt Pferd Batterie Heftklammer",
+    "accountSalt": "303132333435363738393a3b3c3d3e3f",
+    "secretKey": "606162636465666768696a6b6c6d6e6f",
+    "accountId": "909192939495969798999a9b9c9d9e9f",
+    "unlock": "543fb762a8cf547a8c53ef814071e0a7e03087327a5a010be534c97f498fb9c1",
+    "login": "528d7df4b2b6a84037f7a24dfc10b4ba003a0ad590e45abafe91848a726a5c1e"
+  },
+  {
+    "name": "passphrase in NFD is read as NFKC",
+    "passphrase": "Bäckerei-Müller ①",
+    "accountSalt": "3132333435363738393a3b3c3d3e3f40",
+    "secretKey": "6162636465666768696a6b6c6d6e6f70",
+    "accountId": "9192939495969798999a9b9c9d9e9fa0",
+    "unlock": "ec6b6af2737121ec5ee6ef8a0bf88426cd07d2e05403811c7e387a2e1b6ac44e",
+    "login": "24089b6b53dee5a4e093ff9b65cc7bbbfd9af03a8dc62c7bdae82859ae5c42f4"
+  }
+]

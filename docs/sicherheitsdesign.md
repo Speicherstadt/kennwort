@@ -215,13 +215,14 @@ umgekehrt. Geprüft wird streng nach RFC 8032 (kanonisches S, kein Punkt kleiner
 
 ```text
 parameter  = Argon2id, m = 64 MiB, t = 3, p = 1, 32 Byte Ausgabe          (fest in v1)
-p₁         = Argon2id(NFKC(passphrase), salt = enc("kennwort/argon2/v1", kontoSalt (16 Byte)))
+p₁         = Argon2id(NFKC(passphrase), salt = kontoSalt (16 Byte, zufällig je Konto))
 entsperren = kdf(p₁, secretKey (16 Byte), "kennwort/unlock-passphrase/v1", konto-ID)
 anmelden   = kdf(p₁, secretKey (16 Byte), "kennwort/login/v1", konto-ID)
 ```
 
 Die Parameter gehören zur Formatversion und stehen nicht in der Datenbank; der Server kann sie
-nicht senken (E-18). Stärkere Parameter heißen v2. Der **Secret Key** sind 128 zufällige Bits, die
+nicht senken (E-18). Stärkere Parameter heißen v2. Das Salt ist genau 16 Byte, wie libsodium
+(`crypto_pwhash`) es verlangt; so lassen sich die Testvektoren unabhängig nachrechnen. Der **Secret Key** sind 128 zufällige Bits, die
 nur auf den Geräten und im Recovery-Kit liegen, angezeigt als `K1-` und 26 Zeichen Crockford-Base32
 mit Prüfziffer. Ohne ihn ist eine gestohlene Datenbank auch mit schwacher Passphrase nicht zu raten.
 
