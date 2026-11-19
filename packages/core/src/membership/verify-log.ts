@@ -29,7 +29,8 @@ export type LogError =
   | "uncertified-member"
   | "bad-action"
   | "bad-epoch"
-  | "rollback";
+  | "rollback"
+  | "fork";
 
 export type Trust = {
   rootPublicKey: Uint8Array;
@@ -114,7 +115,6 @@ const apply = (state: LogState, entry: LogEntry, trust: Trust): Result<LogState,
       return ok({ ...next, epoch: entry.epoch });
     }
   }
-  return err("bad-action");
 };
 
 const step = (
@@ -147,10 +147,14 @@ export const verifyLog = (
 ): Result<LogState, LogError> => {
   if (entries.length === 0) return err("empty");
   let state = genesisState();
+  const seen = new Set<string>();
   for (const entry of entries) {
     const next = step(state, entry, vaultId, trust);
     if (!next.ok) return next;
+    // The signer's newest state must lie in this chain; otherwise it saw another one (E-08)
+    if (entry.lastSeen.length > 0 && !seen.has(idKey(entry.lastSeen))) return err("fork");
     state = next.value;
+    seen.add(idKey(state.hash));
     if (
       remembered &&
       state.seq === remembered.seq &&

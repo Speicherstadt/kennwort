@@ -1,4 +1,4 @@
-import { ed25519KeyPair, keyCommitment, sign, xwingKeyPair } from "@kennwort/crypto";
+import { ed25519KeyPair, encode, keyCommitment, sign, xwingKeyPair } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
 import { type Certificate, certificateFingerprint, certify } from "./certificate.ts";
 import { entryHash, GENESIS_HASH, type LogEntry, type LogFields, signEntry } from "./log-entry.ts";
@@ -146,6 +146,25 @@ describe("verifyLog: attacks of a malicious server (E-06, E-07)", () => {
       ok: false,
       error: "rollback",
     });
+  });
+
+  it("detects an entry whose signer had seen a state outside this chain (fork)", () => {
+    const forked = chain([
+      { action: "create", subject: jonas, signer: jonas, role: "manage" },
+      { action: "add", subject: anna, signer: jonas, role: "manage" },
+      { action: "add", subject: max, signer: anna, lastSeen: new Uint8Array(32).fill(7) },
+    ]);
+    expect(verifyLog(vault, forked, trust())).toEqual({ ok: false, error: "fork" });
+  });
+
+  it("accepts a signer who had seen an older state of this chain", () => {
+    const [genesis] = log as [LogEntry];
+    const older = chain([
+      { action: "create", subject: jonas, signer: jonas, role: "manage" },
+      { action: "add", subject: anna, signer: jonas, role: "manage" },
+      { action: "add", subject: max, signer: anna, lastSeen: entryHash(genesis) },
+    ]);
+    expect(verifyLog(vault, older, trust()).ok).toBe(true);
   });
 
   it("detects an entry replayed twice", () => {
@@ -319,5 +338,105 @@ describe("signatures in the log", () => {
       ok: false,
       error: "bad-signature",
     });
+  });
+});
+
+describe("checks that need their own case", () => {
+  const withSandra = trust(1_800_000_100, [jonas, anna, max, sandra]);
+
+  it("refuses a certified signer who is not a member of the vault", () => {
+    const outsider = chain([
+      { action: "create", subject: jonas, signer: jonas, role: "manage" },
+      { action: "add", subject: max, signer: sandra },
+    ]);
+    expect(verifyLog(vault, outsider, withSandra)).toEqual({ ok: false, error: "not-manager" });
+  });
+
+  it("ends a manager's signing right at the second the access runs out", () => {
+    const expired = chain([
+      { action: "create", subject: jonas, signer: jonas, role: "manage" },
+      { action: "add", subject: anna, signer: jonas, role: "manage", validUntil: 1_800_000_100 },
+      { action: "add", subject: max, signer: anna },
+    ]);
+    expect(verifyLog(vault, expired, trust(1_800_000_100))).toEqual({
+      ok: false,
+      error: "not-manager",
+    });
+  });
+
+  it("refuses adding someone without any certificate", () => {
+    const uncertified = chain([
+      { action: "create", subject: jonas, signer: jonas, role: "manage" },
+      { action: "add", subject: sandra, signer: jonas },
+    ]);
+    expect(verifyLog(vault, uncertified, trust())).toEqual({
+      ok: false,
+      error: "uncertified-member",
+    });
+  });
+
+  it("refuses a genesis whose creator key is not the certified one", () => {
+    const swapped = chain([
+      {
+        action: "create",
+        subject: jonas,
+        signer: jonas,
+        role: "manage",
+        fingerprint: new Uint8Array(32),
+      },
+    ]);
+    expect(verifyLog(vault, swapped, trust())).toEqual({ ok: false, error: "uncertified-member" });
+  });
+
+  it("refuses an add in another epoch even with the current commitment", () => {
+    const wrongEpoch = chain([
+      { action: "create", subject: jonas, signer: jonas, role: "manage" },
+      { action: "add", subject: anna, signer: jonas, epoch: 1, vkCommitment: commitment(0) },
+    ]);
+    expect(verifyLog(vault, wrongEpoch, trust())).toEqual({ ok: false, error: "bad-epoch" });
+  });
+
+  it("refuses a wrong sequence number even when the previous hash is right", () => {
+    const skipped = chain([
+      { action: "create", subject: jonas, signer: jonas, role: "manage" },
+      { action: "add", subject: anna, signer: jonas, seq: 2 },
+    ]);
+    expect(verifyLog(vault, skipped, trust())).toEqual({ ok: false, error: "gap" });
+  });
+
+  it("writes account IDs as lower-case hex with two digits per byte", () => {
+    expect(idKey(Uint8Array.of(1, 0xab, 0))).toBe("01ab00");
+  });
+
+  it("signs the log entry and the bundle with their labels (F-06, P-06)", () => {
+    const [genesis] = log as [LogEntry];
+    const fields = [
+      vault,
+      0,
+      GENESIS_HASH,
+      0,
+      "create",
+      jonas.id,
+      fp(jonas),
+      "manage",
+      0,
+      commitment(0),
+    ];
+    const message = encode("kennwort/log/v1", ...fields, genesis.time, jonas.id, new Uint8Array());
+    const relabelled = { ...genesis, signature: sign(jonas.ed.secretKey, "log", message) };
+    expect(verifyLog(vault, [relabelled], trust()).ok).toBe(true);
+    const bundle = encode(
+      "kennwort/bundle/v1",
+      jonas.id,
+      jonas.xwing.publicKey,
+      jonas.ed.publicKey,
+    );
+    const certificate = certificateFor(jonas);
+    const resigned = {
+      ...certificate,
+      signature: sign(root.secretKey, "certificate", bundle, company, "member", 1_800_000_000),
+    };
+    const people = new Map([[idKey(jonas.id), resigned]]);
+    expect(verifyLog(vault, [relabelled], { ...trust(), certificates: people }).ok).toBe(true);
   });
 });

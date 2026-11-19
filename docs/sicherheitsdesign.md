@@ -393,6 +393,9 @@ Eintrags den zuletzt gesehenen Log-Stand; trifft ein Client auf einen Stand, der
 Kette liegt, warnt er. Restrisiko: Eine Gabelung fällt erst auf, wenn die getrennten Mitglieder
 wieder etwas voneinander sehen.
 
+Umgesetzt in `packages/core/src/membership/` (`verifyLog`, Zertifikate nach F-06); wie
+`packages/crypto` mit Mutation-Tests bei einer Schwelle von 100 %.
+
 **Wehrt ab:** E-06, E-07, E-08, E-16, E-19.
 
 ### P-07 Firmen-Wurzelschlüssel und Zertifikate
