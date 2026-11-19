@@ -110,7 +110,8 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
 
 ## Phase 4 – Extension
 
-- [ ] **K-401 Extension-Gerüst** – Solid, Vite, `@crxjs/vite-plugin`, MV3, `_locales`, Chrome/Edge
+- [ ] **K-401 Extension-Gerüst** – Solid, Vite, `@crxjs/vite-plugin`, MV3, Texte über Paraglide wie in der Web-App, `_locales` nur für
+  Name, Beschreibung und Manifest, Chrome/Edge
   und `build:firefox`; Schlüssel nur in `chrome.storage.session`.
 - [ ] **K-402 Popup** – entsperren, Treffer für die Seite, Suche, Favoriten, Generator.
 - [ ] **K-403 Inline-Menü und Ausfüllen** – Extension-iFrame im geschlossenen Shadow DOM, Ausfüllen

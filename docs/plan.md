@@ -45,7 +45,7 @@ später).
 
 ## Stack
 
-Der Stack folgt `tech-stack.md` aus firsttris/workflows; drei Abweichungen sind begründet und
+Der Stack folgt `tech-stack.md` aus firsttris/workflows; vier Abweichungen sind begründet und
 stehen im CLAUDE.md.
 
 | Teil | Wahl | Begründung |
@@ -53,7 +53,8 @@ stehen im CLAUDE.md.
 | Monorepo | Bun Workspaces, Biome, TypeScript strict, Vitest, Playwright | wie überall |
 | Server | Bun + Hono + Drizzle + SQLite + Zod, `bun build --compile`, Docker-Image amd64/arm64 | eigene API für Extension, Web-App und CLI |
 | Auth | Better Auth: Passkeys und ein allgemeiner OIDC-Client (in der Suite Kontext oder Stalwart) | nur Login und Sync, nie zum Entschlüsseln |
-| Extension | Solid 2 + Vite + `@crxjs/vite-plugin`, Manifest V3, Chrome/Edge/Firefox, `_locales` | Stack-Vorgabe für Extensions |
+| Extension | Solid 2 + Vite + `@crxjs/vite-plugin`, Manifest V3, Chrome/Edge/Firefox | Stack-Vorgabe für Extensions |
+| Texte | Paraglide JS (de/en) für alle Oberflächen, auch Extension und Mobile-App; `_locales` nur für Name, Beschreibung und Manifest der Extension | **Abweichung**: Web-App und Extension teilen `packages/ui`, also auch die Texte |
 | Web-App | Solid 2, statische SPA/PWA | **Abweichung von React**: ein UI-Paket für Web-App und Extension, kleineres Bundle zum Auditieren |
 | Kein TanStack Start / SSR | statischer Build mit Hashes im Dateinamen | **Abweichung**: nur ein statischer Build lässt sich signieren und im Service Worker prüfen |
 | Routing, Server-Daten | `@tanstack/solid-router` und `solid-query`, wenn sie Solid 2 tragen; sonst eigener kleiner Router und Solids Async | lokaler entschlüsselter Zustand ist die Quelle, nicht der Server-Cache |
