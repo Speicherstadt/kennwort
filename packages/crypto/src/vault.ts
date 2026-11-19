@@ -71,7 +71,8 @@ export const pad = (content: Uint8Array): Uint8Array => {
 };
 
 export const unpad = (padded: Uint8Array): Result<Uint8Array, "malformed"> => {
-  if (padded.length === 0 || padded.length % PADDING_BLOCK !== 0) return err("malformed");
+  // An empty block has no 0x80 marker either, so the check below refuses it too
+  if (padded.length % PADDING_BLOCK !== 0) return err("malformed");
   const end = padded.findLastIndex((byte) => byte !== 0);
   if (padded[end] !== 0x80) return err("malformed");
   return { ok: true, value: padded.slice(0, end) };
