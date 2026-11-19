@@ -106,6 +106,20 @@ describe("wrap and unwrap", () => {
   });
 });
 
+describe("fingerprint length", () => {
+  it("refuses a fingerprint that is not 32 bytes on both ends", () => {
+    for (const fp of [new Uint8Array(), new Uint8Array(31), new Uint8Array(33)]) {
+      expect(() => wrap({ publicKey: anna.publicKey, fingerprint: fp }, vaultKey, where)).toThrow(
+        "fingerprint must be 32 bytes",
+      );
+      expect(unwrap(anna.secretKey, fp, wrap(to, vaultKey, where), where)).toEqual({
+        ok: false,
+        error: "wrong-key-length",
+      });
+    }
+  });
+});
+
 describe("fingerprints", () => {
   const ed = new Uint8Array(32).fill(3);
 

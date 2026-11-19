@@ -24,12 +24,21 @@ const SMALLEST_PACKAGE = KEM_END + 1 + 24 + 16;
 
 export type Recipient = { publicKey: Uint8Array; fingerprint: Uint8Array };
 export type UnwrapError = "unknown-version" | "too-short" | "wrong-key-length" | "not-authentic";
+const FINGERPRINT_LENGTH = 32;
+
+// A fingerprint of another length would drop the binding to the whole key bundle
+const assertFingerprint = (fingerprint: Uint8Array) => {
+  if (fingerprint.length !== FINGERPRINT_LENGTH)
+    throw new RangeError("fingerprint must be 32 bytes");
+};
 
 /** An X-Wing key pair; the 32-byte secret key is the seed both halves are derived from */
 export const xwingKeyPair = (seed?: Uint8Array) => xwing.keygen(seed);
 
-const sharedKey = (ss: Uint8Array, fingerprint: Uint8Array, purpose: string, context: Part[]) =>
-  kdf(ss, new Uint8Array(), "kennwort/wrap/v1", fingerprint, purpose, ...context);
+const sharedKey = (ss: Uint8Array, fingerprint: Uint8Array, purpose: string, context: Part[]) => {
+  assertFingerprint(fingerprint);
+  return kdf(ss, new Uint8Array(), "kennwort/wrap/v1", fingerprint, purpose, ...context);
+};
 
 const innerContext = (fingerprint: Uint8Array, purpose: string, context: Part[]): BoxContext => ({
   purpose: "wrap",
@@ -70,7 +79,8 @@ export const unwrap = (
   pkg: Uint8Array,
   { purpose, context }: BoxContext,
 ): Result<Uint8Array, UnwrapError> => {
-  if (secretKey.length !== XWING_SECRET_KEY_LENGTH) return err("wrong-key-length");
+  if (secretKey.length !== XWING_SECRET_KEY_LENGTH || fingerprint.length !== FINGERPRINT_LENGTH)
+    return err("wrong-key-length");
   const version = pkg[0];
   if (version === undefined) return err("too-short");
   if (version !== WRAP_V1) return err("unknown-version");
