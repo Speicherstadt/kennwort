@@ -555,6 +555,12 @@ begrenzt, nie auf eine fremde Person).
 | öffentliche Schlüssel, Zertifikate, Fingerabdrücke | Recovery Key, Einladungsgeheimnis, Schlüssel von Einmal-Links |
 | Audit-Ereignisse (wer, was, wann) | Inhalte der Ereignisse, die Einträge betreffen |
 
+Ein Server kann viele Firmen tragen (Projektplan, Entscheidungen). Sie sind dort strikt getrennt:
+Jede Route unter `/api` liest nur über den Bereich der Firma, zu der die Sitzung gehört
+(`apps/server/src/tenancy/`), und ein Test je Endpunkt prüft, dass keiner Daten einer anderen Firma
+liefert. Die Trennung schützt vor Fehlern und neugierigen Mitarbeitern anderer Firmen; gegen einen
+bösartigen Server schützt, wie überall, erst die Prüfung im Client.
+
 Die Größe der Geheimtexte verrät die ungefähre Länge eines Eintrags; Inhalte werden vor dem
 Verschlüsseln auf ein Vielfaches von 256 Byte aufgefüllt.
 

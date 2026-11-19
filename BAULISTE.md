@@ -72,8 +72,9 @@ und die Schritte für Menschen am Ende erledigt sind.
 - [x] **K-201 Server-Gerüst** – Bun, Hono, Drizzle/SQLite mit Migrationen, Zod an jeder Grenze,
   Health-Endpunkt, Logs ohne Geheimnisse, `bun build --compile`.
   Fertig, wenn: der Server mit leerer Datenbank startet, migriert und `/health` antwortet.
-- [ ] **K-202 Mandanten** – mehrere Firmen auf einem Server, strikt getrennt.
-  Fertig, wenn: kein Endpunkt Daten einer anderen Firma liefert (Test je Endpunkt).
+- [x] **K-202 Mandanten** – mehrere Firmen auf einem Server, strikt getrennt.
+  Fertig, wenn: kein Endpunkt Daten einer anderen Firma liefert (Test je Endpunkt); ein Test
+  scheitert, wenn ein Endpunkt unter `/api` keinen solchen Fall hat.
 - [ ] **K-203 Anmeldung** – Better Auth mit Passkeys, Einladungslinks, Anmelde-Schlüssel aus der
   Passphrase als Notweg, Rate-Limits und Sperre nach Fehlversuchen.
   Fertig, wenn: Login, Einladung und Sperre in Tests laufen und die Passphrase nachweislich nie den
