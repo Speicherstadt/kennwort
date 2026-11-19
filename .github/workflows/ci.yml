@@ -44,6 +44,8 @@ jobs:
         run: bunx checks pr
       - run: bun run test
       - run: bun run build
+      # The compiled server starts with an empty database and answers /health
+      - run: bun run --cwd apps/server smoke
       # The stricter gate of packages/crypto: every mutant of the code must be killed by a test
       - run: bun run mutation
       # What a user does, desktop and @phone, against the built web app

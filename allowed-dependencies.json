@@ -24,6 +24,18 @@
     "@noble/curves": {
       "reason": "Ed25519 signatures (RFC 8032) and X25519 inside X-Wing; audited, pure TypeScript",
       "workspaces": ["packages/crypto"]
+    },
+    "hono": {
+      "reason": "the HTTP API of the server (docs/plan.md, Stack): small, standards-based (fetch Request/Response), no dependencies",
+      "workspaces": ["apps/server"]
+    },
+    "drizzle-orm": {
+      "reason": "typed SQL and migrations on bun:sqlite for the server (docs/plan.md, Stack); no runtime dependencies of its own",
+      "workspaces": ["apps/server"]
+    },
+    "zod": {
+      "reason": "Zod 4: every value that crosses between client and server is parsed against a schema (CLAUDE.md, docs/plan.md Stack); no dependencies of its own",
+      "workspaces": ["apps/server"]
     }
   }
 }

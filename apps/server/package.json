@@ -1,0 +1,21 @@
+{
+  "name": "@kennwort/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/main.ts",
+    "build": "bun build --compile --minify src/main.ts --outfile dist/kennwort-server",
+    "test": "bun test",
+    "smoke": "bun scripts/smoke.ts",
+    "db:generate": "drizzle-kit generate && bun scripts/embed-migrations.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.4",
+    "hono": "4.13.19",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "drizzle-kit": "0.31.11"
+  }
+}

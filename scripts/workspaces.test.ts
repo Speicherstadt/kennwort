@@ -24,9 +24,15 @@ describe("workspaces", () => {
     expect(referencedPaths(solution)).toContain(dir);
   });
 
-  it.each(workspaces)("%s is covered by a Vitest project", (dir) => {
-    expect(projectIncludes.some((glob) => glob.startsWith(`${dir}/`))).toBe(true);
-  });
+  it.each(workspaces)(
+    "%s is covered by a Vitest project or by `bun test` in the root test script",
+    (dir) => {
+      const rootTest: string = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).scripts
+        .test;
+      const byVitest = projectIncludes.some((glob) => glob.startsWith(`${dir}/`));
+      expect(byVitest || rootTest.includes(`--cwd ${dir} test`)).toBe(true);
+    },
+  );
 });
 
 describe("parseJsonc", () => {
