@@ -62,7 +62,8 @@ const chain = (steps: Step[]): LogEntry[] =>
       lastSeen: prev ? entryHash(prev) : new Uint8Array(),
       ...fields,
     });
-    return [...entries, entry];
+    entries.push(entry);
+    return entries;
   }, []);
 
 const log = chain([
