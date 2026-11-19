@@ -183,8 +183,10 @@ bindung(schlüssel, zweck, kontext…) = kdf(schlüssel, leer, "kennwort/key-com
 ```
 
 Die Bindung verrät den Schlüssel nicht (HKDF ist eine Einwegfunktion) und steht im signierten
-Log-Eintrag, in der signierten Freigabe oder im signierten Notfall-Paket. Ein Paket ohne passende
-signierte Bindung wird verworfen (E-16).
+Log-Eintrag, in der signierten Freigabe, im signierten Notfall-Paket oder in der signierten
+Firmen-Recovery-Hinterlegung. Ein Paket ohne passende signierte Bindung wird verworfen (E-16).
+Einzige Ausnahme ist das Paket an ein neues Gerät ([P-04](#p-04-neues-gerat)): Dort prüfen der
+QR-Code und der Vergleichscode auf beiden Geräten, wer verpackt hat.
 
 ### F-03 Signatur v1
 
@@ -483,7 +485,13 @@ legt danach einen neuen Recovery Key an.
   Schlüssel ist ein X-Wing-Schlüsselpaar; der private Teil liegt an die Inhaber verpackt.
 - Der Client verpackt AK an den Firmen-Recovery-Schlüssel (F-02) nur, wenn die Firmen-Richtlinie
   vom Wurzelschlüssel signiert ist, Firmen-Recovery dort an ist und der Schlüssel dem dort genannten
-  Fingerabdruck entspricht.
+  Fingerabdruck entspricht. Er signiert die Hinterlegung mit seinem zertifizierten Ed25519-Schlüssel
+  (F-03, Zweck `company-recovery`, mit `bindung(AK, "company", konto-ID)`).
+- Bevor der Inhaber einen hinterlegten AK verwendet, prüft sein Client: Die Signatur stammt vom
+  zertifizierten Bündel des Mitarbeiters, AK passt zur Bindung, AK entschlüsselt den Schlüsselblock
+  des Mitarbeiters, und dessen Wurzel-Fingerabdruck und öffentliche Schlüssel stimmen mit dem
+  eigenen Wurzelschlüssel und dem zertifizierten Bündel überein. Ein AK, den der Server selbst
+  verpackt hat, besteht keine dieser Prüfungen.
 - Wiederherstellen: Der Inhaber entschlüsselt AK, verpackt ihn an ein neues Gerät des Mitarbeiters
   ([P-04](#p-04-neues-gerat)) und signiert einen Audit-Eintrag; statt des eigenen Kontozustands
   trägt das Paket den Hash des Kontozustands des Mitarbeiters, den der Inhaber mit dessen AK
