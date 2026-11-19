@@ -2,7 +2,7 @@ import { digest, encode, sign } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
 import type { EntryContent } from "./content.ts";
 import { openRecord, sealRecord } from "./record.ts";
-import { anna, bank, contextFor, id, jonas, log, max, trust } from "./sync.test-helpers.ts";
+import { anna, bank, contextFor, id, jonas, log, max, trust } from "./test/fixtures.ts";
 
 const ctx = contextFor(jonas);
 const entryId = id(0xe1);

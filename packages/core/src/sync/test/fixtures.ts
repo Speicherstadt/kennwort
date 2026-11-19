@@ -1,16 +1,16 @@
 // Weber Haustechnik for the sync tests: Jonas manages the vault "Büro", Anna edits, Max only reads
 import { ed25519KeyPair, keyCommitment, xwingKeyPair } from "@kennwort/crypto";
-import { certificateFingerprint, certify } from "../membership/certificate.ts";
+import { certificateFingerprint, certify } from "../../membership/certificate.ts";
 import {
   entryHash,
   GENESIS_HASH,
   type LogEntry,
   type LogFields,
   signEntry,
-} from "../membership/log-entry.ts";
-import { idKey, type Trust, verifyLog } from "../membership/verify-log.ts";
-import type { EntryContent } from "./content.ts";
-import type { SyncContext } from "./device.ts";
+} from "../../membership/log-entry.ts";
+import { idKey, type Trust, verifyLog } from "../../membership/verify-log.ts";
+import type { EntryContent } from "../content.ts";
+import type { SyncContext } from "../device.ts";
 
 export const id = (byte: number) => new Uint8Array(16).fill(byte);
 const root = ed25519KeyPair(new Uint8Array(32).fill(1));

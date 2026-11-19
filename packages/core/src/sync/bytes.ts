@@ -19,12 +19,12 @@ export const bytes = (length?: number) =>
     .regex(/^[A-Za-z0-9_-]*$/)
     .transform((text, ctx) => {
       if (text.length % 4 === 1) {
-        ctx.addIssue({ code: "custom", message: "not base64url" });
+        ctx.addIssue({ code: "custom", message: "not base64url" }); // i18n-ignore: for developers
         return z.NEVER;
       }
       const value = fromBase64Url(text);
       if (length !== undefined && value.length !== length) {
-        ctx.addIssue({ code: "custom", message: `expected ${length} bytes` });
+        ctx.addIssue({ code: "custom", message: `expected ${length} bytes` }); // i18n-ignore: for developers
         return z.NEVER;
       }
       return value as Uint8Array;

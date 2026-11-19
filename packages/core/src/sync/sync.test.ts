@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { edit, emptyDevice, pull, sync } from "./device.ts";
 import { memoryServer } from "./memory-server.ts";
 import { EntryRecord, recordToWire, sealRecord } from "./record.ts";
-import { anna, bank, contextFor, id, jonas, max, withField } from "./sync.test-helpers.ts";
+import { anna, bank, contextFor, id, jonas, max, withField } from "./test/fixtures.ts";
 
 const entryId = id(0xe1);
 const contentOf = (device: ReturnType<typeof emptyDevice>) =>

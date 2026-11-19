@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { edit, emptyDevice, pull, sync } from "./device.ts";
 import { memoryServer, type SyncServer } from "./memory-server.ts";
 import { sealRecord } from "./record.ts";
-import { bank, contextFor, id, jonas, max, withField } from "./sync.test-helpers.ts";
+import { bank, contextFor, id, jonas, max, withField } from "./test/fixtures.ts";
 
 const e1 = id(0xe1);
 const e2 = id(0xe2);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LogEntry } from "../membership/log-entry.ts";
-import { trust } from "./sync.test-helpers.ts";
+import { trust } from "./test/fixtures.ts";
 import { CertificateWire, LogEntryWire, toWire } from "./wire.ts";
 
 const certificate = [...trust.certificates.values()][0];

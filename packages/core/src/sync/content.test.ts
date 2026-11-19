@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EntryContent, mergeContent } from "./content.ts";
-import { bank, withField } from "./sync.test-helpers.ts";
+import { bank, withField } from "./test/fixtures.ts";
 
 const now = 1_800_000_000;
 const merge = (mine: EntryContent, theirs: EntryContent) => mergeContent(bank, mine, theirs, now);
