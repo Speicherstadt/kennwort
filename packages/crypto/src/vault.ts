@@ -52,8 +52,10 @@ const entryKeyPlace = ({ vaultId, entryId, epoch }: EntryPlace) => ({
   context: [vaultId, entryId, epoch],
 });
 
-export const sealEntryKey = (vaultKey: Uint8Array, entryKey: Uint8Array, at: EntryPlace) =>
-  seal(vaultKey, entryKey, entryKeyPlace(at));
+export const sealEntryKey = (vaultKey: Uint8Array, entryKey: Uint8Array, at: EntryPlace) => {
+  if (entryKey.length !== 32) throw new RangeError("entry key must be 32 bytes");
+  return seal(vaultKey, entryKey, entryKeyPlace(at));
+};
 
 export const openEntryKey = (vaultKey: Uint8Array, sealed: Uint8Array, at: EntryPlace) => {
   const opened = open(vaultKey, sealed, entryKeyPlace(at));

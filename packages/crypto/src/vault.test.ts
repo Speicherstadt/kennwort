@@ -151,3 +151,11 @@ describe("pad and unpad", () => {
     }
   });
 });
+
+describe("sealing an entry key", () => {
+  it("refuses a key that is not 32 bytes", () => {
+    expect(() => sealEntryKey(vaultKey, new Uint8Array(16), entry)).toThrow(
+      "entry key must be 32 bytes",
+    );
+  });
+});

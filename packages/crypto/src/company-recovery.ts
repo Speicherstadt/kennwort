@@ -6,7 +6,7 @@
 
 import { type KeyBlock, openKeyBlock } from "./account.ts";
 import { constantTimeEqual, keyCommitment } from "./commitment.ts";
-import { bundleFingerprint } from "./fingerprint.ts";
+import { bundleFingerprint, recoveryFingerprint } from "./fingerprint.ts";
 import { err, ok, type Result } from "./result.ts";
 import { sign, verify } from "./sign.ts";
 import { type Recipient, unwrap, wrap } from "./wrap.ts";
@@ -15,12 +15,21 @@ export type Deposit = { pkg: Uint8Array; commitment: Uint8Array; signature: Uint
 
 const place = (accountId: Uint8Array) => ({ purpose: "company", context: [accountId] });
 
+/**
+ * Deposits AK for company recovery. The public key comes from the server, the fingerprint from the
+ * policy the root signed; the deposit happens only if they match, or the server would read AK.
+ */
 export const depositAccountKey = (
   companyRecovery: Recipient,
   accountKey: Uint8Array,
   accountId: Uint8Array,
   employeeEdSecretKey: Uint8Array,
 ): Deposit => {
+  if (
+    !constantTimeEqual(recoveryFingerprint(companyRecovery.publicKey), companyRecovery.fingerprint)
+  )
+    throw new RangeError("recovery key does not match the policy's fingerprint");
+  if (accountKey.length !== 32) throw new RangeError("account key must be 32 bytes");
   const commitment = keyCommitment(accountKey, "company", accountId);
   return {
     pkg: wrap(companyRecovery, accountKey, place(accountId)),

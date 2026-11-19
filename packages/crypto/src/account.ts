@@ -25,27 +25,33 @@ export type KeyBlock = {
 
 export const ACCOUNT_KEY_LENGTH = 32;
 
+// What seal writes, open must read: a wrong length here would lock the data for good
+const assertLength = (bytes: Uint8Array, length: number, name: string) => {
+  if (bytes.length !== length) throw new RangeError(`${name} must be ${length} bytes`);
+};
+
 export const newAccountKey = () => randomBytes(ACCOUNT_KEY_LENGTH);
 export const newRecoveryKey = () => randomBytes(32);
 
 /** A key block with fresh key pairs; the root fingerprint comes from the invitation or the owner */
-export const newKeyBlock = (rootFingerprint: Uint8Array): KeyBlock => ({
-  xwing: xwingKeyPair(),
-  ed: ed25519KeyPair(),
-  rootFingerprint,
-});
+export const newKeyBlock = (rootFingerprint: Uint8Array): KeyBlock => {
+  assertLength(rootFingerprint, 32, "root fingerprint");
+  return { xwing: xwingKeyPair(), ed: ed25519KeyPair(), rootFingerprint };
+};
 
 export const keyBlockFingerprint = (block: KeyBlock) =>
   bundleFingerprint(block.xwing.publicKey, block.ed.publicKey);
 
 const keyBlockPlace = (accountId: Uint8Array) => ({ purpose: "key-block", context: [accountId] });
 
-export const sealKeyBlock = (accountKey: Uint8Array, accountId: Uint8Array, block: KeyBlock) =>
-  seal(
+export const sealKeyBlock = (accountKey: Uint8Array, accountId: Uint8Array, block: KeyBlock) => {
+  assertLength(block.rootFingerprint, 32, "root fingerprint");
+  return seal(
     accountKey,
     encode(block.xwing.secretKey, block.ed.secretKey, block.rootFingerprint),
     keyBlockPlace(accountId),
   );
+};
 
 export type KeyBlockError = "not-authentic" | "malformed";
 
@@ -83,7 +89,10 @@ export const sealAccountKey = (
   accountKey: Uint8Array,
   accountId: Uint8Array,
   path: UnlockPath,
-) => seal(unlockKey, accountKey, accountKeyPlace(accountId, path));
+) => {
+  assertLength(accountKey, ACCOUNT_KEY_LENGTH, "account key");
+  return seal(unlockKey, accountKey, accountKeyPlace(accountId, path));
+};
 
 export const openAccountKey = (
   unlockKey: Uint8Array,

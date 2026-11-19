@@ -172,3 +172,19 @@ describe("every way to the Account Key (P-03)", () => {
     });
   });
 });
+
+describe("sealing refuses what opening would refuse", () => {
+  it("a root fingerprint that is not 32 bytes", () => {
+    expect(() => newKeyBlock(new Uint8Array(31))).toThrow("root fingerprint must be 32 bytes");
+    const block = { ...newKeyBlock(root), rootFingerprint: new Uint8Array(33) };
+    expect(() => sealKeyBlock(accountKey, account, block)).toThrow(
+      "root fingerprint must be 32 bytes",
+    );
+  });
+
+  it("an Account Key that is not 32 bytes", () => {
+    expect(() =>
+      sealAccountKey(newRecoveryKey(), new Uint8Array(16), account, { kind: "recovery" }),
+    ).toThrow("account key must be 32 bytes");
+  });
+});

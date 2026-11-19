@@ -114,3 +114,28 @@ describe("company recovery (P-13)", () => {
     ).toEqual({ ok: false, error: "wrong-key-block" });
   });
 });
+
+describe("depositing for company recovery", () => {
+  it("refuses a recovery key that does not match the policy's fingerprint (the server's own key)", () => {
+    const server = xwingKeyPair(new Uint8Array(32).fill(0x66));
+    expect(() =>
+      depositAccountKey(
+        { publicKey: server.publicKey, fingerprint: companyFp },
+        accountKey,
+        max,
+        block.ed.secretKey,
+      ),
+    ).toThrow("recovery key does not match the policy's fingerprint");
+  });
+
+  it("refuses an Account Key that is not 32 bytes", () => {
+    expect(() =>
+      depositAccountKey(
+        { publicKey: company.publicKey, fingerprint: companyFp },
+        new Uint8Array(16),
+        max,
+        block.ed.secretKey,
+      ),
+    ).toThrow("account key must be 32 bytes");
+  });
+});
