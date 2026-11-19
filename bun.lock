@@ -46,6 +46,9 @@
     "packages/core": {
       "name": "@kennwort/core",
       "version": "0.0.0",
+      "dependencies": {
+        "@kennwort/crypto": "workspace:*",
+      },
     },
     "packages/crypto": {
       "name": "@kennwort/crypto",

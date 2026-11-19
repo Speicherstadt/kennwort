@@ -5,5 +5,11 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@kennwort/crypto": "workspace:*"
+  },
+  "scripts": {
+    "mutation": "stryker run"
   }
 }
