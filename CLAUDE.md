@@ -22,9 +22,11 @@ docs point to the site, not to `docs/*.md`.
 Work through `BAULISTE.md` as it describes: the first open item whose dependencies are done, one
 item per pull request, tests first, an independent review by a separate subagent (`tdd-review`),
 then **merge it yourself** (squash) once CI is green and the review has no findings left, and tick
-the item in the same pull request. Stop and report instead when an item fails three times, needs a
-step only a person can do, or touches `packages/crypto` (label `krypto`: merged only after a person
-agreed).
+the item in the same pull request. Never wait for a person: `packages/crypto` merges like the rest,
+behind the stricter gate of test vectors, property and mutation tests; an item that fails three
+times goes under "Zurückgestellt" with the reason and the loop goes on with the next independent
+one. Steps only a person can do (signing keys, stores, the iOS app) are not on the loop's path;
+build with test keys.
 
 ## Reference implementations
 
@@ -104,8 +106,9 @@ Technology choices follow `tech-stack.md` in firsttris/workflows, with three dev
   and the extension, and a smaller bundle to audit.
 - **No TanStack Start or SSR**: only a static build with hashed file names can be signed and checked
   by the service worker before an update goes live.
-- **Tauri 3 instead of Tauri 2** for the mobile app; prototype on the alpha, release on the first
-  stable version, fall back to 2.x if it is not stable in time.
+- **Tauri 3 instead of Tauri 2** for the mobile app, built as the very last phase so Tauri 3 is as
+  stable as possible by then; fall back to the newest alpha or 2.x. The loop builds Android only;
+  the iOS app is built by a person on a Mac.
 
 UI in the shadcn style without a component library: native `<dialog>`, the Popover API, CSS anchor
 positioning, own `cn()` and `variants()`, Tailwind 4, `lucide-solid`, Geist, zinc tokens.
