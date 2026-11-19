@@ -237,6 +237,16 @@ Eintrags-Schlüssel EK ─► Eintrag (alle Felder in einem Geheimtext, F-01)
 | EK | zufällig je Eintrag und neu bei jedem Schlüsselwechsel | unter VKₑ | Tresor-ID, Eintrags-ID, Epoche |
 | Inhalt | – | unter EK | Tresor-ID, Eintrags-ID, Version |
 
+Was ein Client sich merkt, um den Server zu prüfen, liegt im **Kontozustand**: Fingerabdruck des
+Firmen-Wurzelschlüssels, bekannte Schlüsselbündel, der letzte Stand jedes Mitgliedschafts-Logs und
+die höchste Version jedes Eintrags. Er ist ein F-01-Geheimtext unter AK (Zweck `account-state`,
+Kontext Konto-ID und ein Zähler) auf dem Server; jedes Gerät lädt ihn beim Entsperren, führt ihn
+mit seinem eigenen Stand zusammen (der höhere Stand gewinnt, ein anderer Wurzelschlüssel ist ein
+Angriff) und schreibt ihn mit höherem Zähler zurück. So kennt jedes Gerät eines Kontos, auch eines,
+das mit Passphrase oder Recovery-Kit entsperrt, was das erste Gerät geprüft hat. Spielt der Server
+einen älteren Kontozustand zurück, verliert ein neues Gerät höchstens Stände, die jünger sind als
+dieser; den Wurzelschlüssel aus der Einladung verliert es nie, weil er im ersten Kontozustand steht.
+
 Entsperrte Schlüssel liegen nur im Speicher (in der Extension in `chrome.storage.session`), nie in
 `localStorage`, IndexedDB oder auf dem Server.
 
@@ -295,15 +305,18 @@ und löscht alle Schlüssel aus dem Speicher.
 1. Das neue Gerät erzeugt ein Einmal-Schlüsselpaar (X-Wing) und zeigt einen QR-Code mit
    Sitzungs-ID und öffentlichem Schlüssel.
 2. Ein entsperrtes Gerät scannt ihn; der Schlüssel kommt so am Server vorbei.
-3. Es verpackt AK und Konto-ID an den Einmal-Schlüssel (F-02, Zweck `device`) und schickt das
-   Paket über den Server.
+3. Es verpackt AK, Konto-ID und den Hash seines aktuellen Kontozustands an den Einmal-Schlüssel
+   (F-02, Zweck `device`) und schickt das Paket über den Server. Das neue Gerät lädt den
+   Kontozustand und nimmt ihn nur an, wenn sein Hash passt.
 4. Beide zeigen einen Vergleichscode aus `SHA-512/256(enc("kennwort/device/v1", pk, paket))`;
    erst nach Bestätigung auf beiden Geräten wird das Gerät eingetragen.
 
-Ein Gerät, das der Server ohne diesen Ablauf einträgt, hat keinen AK. Die Geräteliste zeigt jedes
+Ein Gerät, das der Server ohne diesen Ablauf einträgt, hat keinen AK; ein neues Gerät übernimmt
+mit dem Kontozustand auch den geprüften Wurzelschlüssel und muss niemandem beim ersten Kontakt
+trauen. Die Geräteliste zeigt jedes
 Gerät, abmelden widerruft dessen Sitzung.
 
-**Wehrt ab:** E-09, E-25.
+**Wehrt ab:** E-09, E-10, E-25.
 
 ### P-05 Tresor anlegen und Mitglieder aufnehmen
 
@@ -361,9 +374,13 @@ wieder etwas voneinander sehen.
   ihn zum Vergleich an. Ein anderer Wurzelschlüssel oder ein neues Bündel für ein bekanntes Konto
   löst eine deutliche Warnung aus und wird nicht stillschweigend übernommen.
 
-Restrisiko: der erste Kontakt (TOFU) für den Inhaber selbst und für Konten, die ohne Einladungslink
-entstehen (OIDC), abgeschwächt durch den Vergleichscode. Wer per Link eingeladen wird, bekommt den
-Fingerabdruck des Wurzelschlüssels im Link ([P-08](#p-08-einladung)) und braucht kein TOFU.
+- Der gemerkte Fingerabdruck steht im Kontozustand ([Schlüsselhierarchie](#schlusselhierarchie)),
+  nicht nur auf einem Gerät: Jedes weitere Gerät des Kontos prüft gegen ihn.
+
+Restrisiko: der erste Kontakt (TOFU) für Konten, die ohne Einladungslink entstehen (OIDC),
+abgeschwächt durch den Vergleichscode. Wer per Link eingeladen wird, bekommt den Fingerabdruck im
+Link ([P-08](#p-08-einladung)) und braucht auf keinem seiner Geräte TOFU; der Inhaber erzeugt den
+Wurzelschlüssel selbst.
 
 **Wehrt ab:** E-02, E-05, E-10.
 
