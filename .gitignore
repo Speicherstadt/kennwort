@@ -22,3 +22,8 @@ apps/mobile/gen/
 
 # macOS
 .DS_Store
+
+# Paraglide output, compiled from messages/ by `bun run i18n`
+packages/ui/src/paraglide/
+project.inlang/cache/
+project.inlang/.gitignore
