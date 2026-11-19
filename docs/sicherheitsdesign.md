@@ -83,7 +83,7 @@ Zusammenfassungen.
 ### Abdeckung des Projektplans
 
 Jede Zeile des Bedrohungsmodells und jede Regel der Kryptografie aus dem Projektplan hat hier ein
-Protokoll. Ein Test (`scripts/sicherheitsdesign.test.ts`) hält diese Tabelle mit dem Projektplan
+Protokoll. Ein Test (`scripts/security-design.test.ts`) hält diese Tabelle mit dem Projektplan
 gleich.
 
 | Aus dem Projektplan | Protokolle | Angriffe |
