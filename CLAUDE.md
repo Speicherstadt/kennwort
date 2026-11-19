@@ -5,11 +5,26 @@ app and PWA, a browser extension, a Tauri app for Android and iOS and a CLI, all
 server that only ever stores ciphertext. Part of the Speicherstadt suite, but it knows no other app:
 every connection goes through an open standard (OpenID Connect, SCIM, deep links).
 
-## Documentation
+## Where to look
 
-The documentation is in `docs/` (<https://kennwort.app/>), German only. Read the pages that touch the
-change before starting; `sicherheitsdesign.md` before anything in `packages/crypto`, `packages/core`
-or the sync. Links in the README and the docs point to the site, not to `docs/*.md`.
+| What | Where |
+| --- | --- |
+| What to build next, acceptance criteria, how the loop works | `BAULISTE.md` |
+| Why: goals, decisions, stack, cryptography, threat model, tests | `docs/plan.md` |
+| Look and behaviour of the UI | `DESIGN.md` |
+| Protocols and formats (before anything in `packages/crypto`, `packages/core` or the sync) | `docs/sicherheitsdesign.md` (written in K-103) |
+
+The documentation is in `docs/` (<https://kennwort.app/>), German only. Links in the README and the
+docs point to the site, not to `docs/*.md`.
+
+## The agent loop
+
+Work through `BAULISTE.md` as it describes: the first open item whose dependencies are done, one
+item per pull request, tests first, an independent review by a separate subagent (`tdd-review`),
+then **merge it yourself** (squash) once CI is green and the review has no findings left, and tick
+the item in the same pull request. Stop and report instead when an item fails three times, needs a
+step only a person can do, or touches `packages/crypto` (label `krypto`: merged only after a person
+agreed).
 
 ## Reference implementations
 

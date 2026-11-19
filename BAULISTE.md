@@ -1,0 +1,170 @@
+# Bauliste
+
+Die Liste, die der Agenten-Loop abarbeitet, in der Reihenfolge der Bauphasen aus dem
+[Projektplan](https://kennwort.app/plan.html). Kennwort 1.0 ist fertig, wenn jeder Punkt abgehakt ist
+und die Schritte für Menschen am Ende erledigt sind.
+
+## So arbeitet der Loop
+
+1. Den **ersten offenen Punkt** nehmen, dessen Abhängigkeiten (`nach:`) abgehakt sind. Phasen
+   laufen nacheinander; innerhalb einer Phase von oben nach unten.
+2. **Kriterien zuerst**: Die Zeile „Fertig, wenn“ ist das Minimum. Reicht sie nicht, schärft der
+   Loop sie im selben Pull Request nach, bevor er Code schreibt; streichen darf er keins.
+3. Ein Punkt, ein Branch, ein Pull Request (Titel mit der Nummer, z. B. `K-104: Hybrid-KEM`). Tests
+   zuerst, dann Code, Docs und Texte de/en, `bun run check` grün.
+4. **Unabhängiges Review** durch einen eigenen Sub-Agenten (`tdd-review`): ein Befund braucht einen
+   fehlschlagenden Test. Befunde fixen, bis keine mehr kommen.
+5. **CI grün → selbst mergen** (Squash), den Punkt hier im selben Pull Request abhaken.
+6. **Anhalten und melden**, wenn ein Punkt dreimal scheitert, wenn er einen Schritt für Menschen
+   braucht oder wenn er `packages/crypto` ändert: Solche Pull Requests bekommen das Label
+   `krypto` und werden erst gemergt, wenn ein Mensch zugestimmt hat.
+
+## Phase 1 – Fundament
+
+- [ ] **K-101 Repo-Gerüst** – Workspaces `packages/crypto`, `packages/core`, `packages/ui`, Paraglide
+  (de/en), Playwright mit Projekten `desktop` und `phone`, `@firsttris/checks` (file-size, cycles,
+  i18n).
+  Fertig, wenn: `bun run check` auf einem frischen Klon grün ist und CI alle Workspaces prüft.
+- [ ] **K-102 Liste erlaubter Laufzeit-Pakete** – `allowed-dependencies.json` mit Begründung je
+  Paket und ein Check in `bun run lint`.
+  Fertig, wenn: ein Paket außerhalb der Liste in einem Client-Workspace den Lint scheitern lässt
+  (Test dafür vorhanden).
+- [ ] **K-103 Sicherheitsdesign** – `docs/sicherheitsdesign.md`: Bedrohungsmodell, Schlüsselhierarchie,
+  jedes Format mit Version, alle Protokolle (Konto, Gerät, Tresor, Mitgliedschaft, Teilen, Recovery,
+  Notfall), was der Server sieht.
+  Fertig, wenn: jeder Abschnitt des Projektplans zu Kryptografie und Bedrohungsmodell dort ein
+  Protokoll hat und jedes Protokoll die Angriffe der ETH-Studie nennt, die es abwehrt. Label
+  `krypto`.
+- [ ] **K-104 Symmetrische Verschlüsselung** – XChaCha20-Poly1305 mit AAD, Formatversion im Präfix.
+  nach: K-103. Fertig, wenn: Testvektoren (auch gegen libsodium, nur dev), Property-Tests
+  (Rundlauf, falsche AAD/Schlüssel/Nonce scheitern) und Mutation-Tests grün sind.
+- [ ] **K-105 Hybrid-KEM** – X25519 + ML-KEM-768 nach draft-connolly-cfrg-xwing-kem, Schlüssel
+  verpacken und entpacken.
+  nach: K-104. Fertig, wenn: Testvektoren des Entwurfs bestehen und Property-Tests grün sind.
+- [ ] **K-106 Signaturen und Ableitung** – Ed25519, HKDF-SHA-512, Argon2id mit Secret Key.
+  nach: K-104. Fertig, wenn: Testvektoren aus RFC 8032, RFC 5869 und RFC 9106 bestehen.
+- [ ] **K-107 Schlüsselhierarchie** – Account Key, Benutzer-, Tresor- und Eintrags-Schlüssel,
+  Entsperren per Passkey-PRF und Passphrase, Recovery-Kit, Firmen-Recovery.
+  nach: K-105, K-106. Fertig, wenn: jeder Weg zum Account Key und jede Ebene getestet ist,
+  einschließlich falscher Eingaben.
+- [ ] **K-108 Mitgliedschafts-Log** – signierte Hash-Kette pro Tresor, Prüfung im Client, Merken des
+  letzten Stands, Firmen-Wurzelschlüssel signiert Mitarbeiterschlüssel.
+  nach: K-107. Fertig, wenn: ausgelassene, vertauschte, unsignierte und zurückgespielte Einträge
+  erkannt werden (je ein Test).
+- [ ] **K-109 Datenmodell und Sync-Protokoll** – Zod-Schemas in `packages/core` für alles, was
+  zwischen Client und Server geht; Versionen, Konflikte, Offline-Warteschlange.
+  nach: K-108. Fertig, wenn: zwei simulierte Geräte offline denselben Eintrag ändern und nach dem
+  Abgleich nichts verloren ist.
+
+## Phase 2 – Server
+
+- [ ] **K-201 Server-Gerüst** – Bun, Hono, Drizzle/SQLite mit Migrationen, Zod an jeder Grenze,
+  Health-Endpunkt, Logs ohne Geheimnisse, `bun build --compile`.
+  Fertig, wenn: der Server mit leerer Datenbank startet, migriert und `/health` antwortet.
+- [ ] **K-202 Mandanten** – mehrere Firmen auf einem Server, strikt getrennt.
+  Fertig, wenn: kein Endpunkt Daten einer anderen Firma liefert (Test je Endpunkt).
+- [ ] **K-203 Anmeldung** – Better Auth mit Passkeys, Einladungslinks, Anmelde-Schlüssel aus der
+  Passphrase als Notweg, Rate-Limits und Sperre nach Fehlversuchen.
+  Fertig, wenn: Login, Einladung und Sperre in Tests laufen und die Passphrase nachweislich nie den
+  Client verlässt.
+- [ ] **K-204 Sync-API und Live-Sync** – Speichern und Abrufen von Geheimtexten, Versionen, SSE.
+  nach: K-109. Fertig, wenn: zwei Clients Änderungen live sehen und der Server nur Geheimtexte
+  speichert (Test liest die Datenbank).
+- [ ] **K-205 Audit-Log** – Hash-Kette, Export für Prüfer.
+  Fertig, wenn: eine manipulierte Zeile beim Prüfen auffällt.
+- [ ] **K-206 Bösartiger Testserver** – Testserver, der gezielt lügt (Schlüssel austauschen,
+  Mitglieder einschmuggeln, alte Stände, vertauschte Geheimtexte).
+  Fertig, wenn: die ersten Angriffe der ETH-Studie als Tests laufen und der Client jeden erkennt;
+  die übrigen folgen mit den Funktionen, die sie betreffen.
+- [ ] **K-207 Server-Ersatz im Browser** – derselbe Ersatz für Tests und spätere Demo.
+  Fertig, wenn: die Client-Tests ohne echten Server gegen ihn laufen.
+
+## Phase 3 – Web-App und PWA
+
+- [ ] **K-301 UI-Paket** – `packages/ui` nach DESIGN.md: Button, Input, Dialog, Menü, Popover,
+  Tooltip, Toast, Combobox, Tabs, Badge, Liste; native Elemente, eigene `cn()` und `variants()`.
+  Fertig, wenn: jede Komponente mit Tastatur bedienbar ist und axe keine Fehler findet.
+- [ ] **K-302 App-Rahmen** – Rail, Seitenleiste, Liste und Detail wie im Mockup; Handy mit einem
+  Screen und Tab-Leiste; hell und dunkel; de/en.
+  Fertig, wenn: Playwright desktop und `@phone` alle Seiten öffnet und axe grün ist.
+- [ ] **K-303 Konto und Geräte** – Konto anlegen, Entsperren, Recovery-Kit als PDF, neues Gerät per
+  QR-Code, Geräteliste, Gerät abmelden, automatisches Sperren.
+- [ ] **K-304 Firma, Rollen, Einladungen** – Inhaber, Admin, Mitarbeiter; Wurzelschlüssel;
+  Richtlinien.
+- [ ] **K-305 Tresore, Gruppen, Rechte** – persönlich und geteilt, lesen/bearbeiten/verwalten,
+  Gruppen, Zugriff auf Zeit, Zugriff anfragen, einzelnen Eintrag teilen.
+- [ ] **K-306 Einträge** – alle Typen, Generator, TOTP mit QR-Scan, eigene Felder, frühere
+  Passwörter, Suche, Favoriten, Tags.
+- [ ] **K-307 Austritt und Recovery** – Schlüsselwechsel, Änderungs-Markierung, Austritts-Bericht,
+  Firmen-Recovery, Notfallzugriff mit Wartezeit.
+- [ ] **K-308 PWA** – installierbar, offline lesbar, signiertes Release-Manifest, Service Worker
+  prüft Hashes vor jedem Update.
+  Fertig, wenn: ein Update mit falschem Hash nicht aktiv wird (Test).
+
+Für K-303 bis K-307 gilt: Fertig, wenn jeder Ablauf als Playwright-Test (desktop und `@phone`) läuft,
+die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
+
+## Phase 4 – Extension
+
+- [ ] **K-401 Extension-Gerüst** – Solid, Vite, `@crxjs/vite-plugin`, MV3, `_locales`, Chrome/Edge
+  und `build:firefox`; Schlüssel nur in `chrome.storage.session`.
+- [ ] **K-402 Popup** – entsperren, Treffer für die Seite, Suche, Favoriten, Generator.
+- [ ] **K-403 Inline-Menü und Ausfüllen** – Extension-iFrame im geschlossenen Shadow DOM, Ausfüllen
+  nur nach Klick oder Enter, exakter Host per `tldts`, nie in fremden Frames.
+  Fertig, wenn: Playwright mit geladener Extension Phishing-Domain, fremdes iFrame und überdecktes
+  Menü abwehrt.
+- [ ] **K-404 Speichern und Aktualisieren** – neues Login und geändertes Passwort erkennen.
+- [ ] **K-405 Phishing-Warnung** – Warnung beim Eintippen eines gespeicherten Passworts auf fremder
+  Domain.
+- [ ] **K-406 Passkey-Anbieter** – Passkeys in Kennwort speichern und damit anmelden.
+- [ ] **K-407 Firefox für Android und Safari** – Build und Tests je Browser.
+- [ ] **K-408 Reproduzierbarer Build** – zweimal bauen, Hashes vergleichen, in CI.
+
+## Phase 5 – Import und Export
+
+- [ ] **K-501 Import-Ablauf** – Anbieter wählen, Anleitung, Vorschau mit Zuordnung, Duplikate,
+  Markierung schwacher Passwörter, Hinweis zum Löschen der Datei.
+- [ ] **K-502 Parser** – je Format aus dem Projektplan eine reine Funktion in `packages/core`.
+  Fertig, wenn: je Anbieter echte, anonymisierte Fixtures bestehen und Fuzzing ohne Absturz läuft.
+- [ ] **K-503 Authenticator-Import** – otpauth-migration-QR, Aegis, 2FAS, Microsoft.
+- [ ] **K-504 Export** – verschlüsseltes JSON, CSV, KDBX; nur Verwalter, im Audit-Log.
+
+## Phase 6 – Team-Funktionen
+
+- [ ] **K-601 Einmal-Links** – mit Ablauf und begrenzten Abrufen.
+- [ ] **K-602 Benachrichtigungen** – in der App, Web-Push, optional Mail.
+- [ ] **K-603 Sicherheits-Übersicht** – schwache, mehrfache, geleakte Passwörter (k-Anonymität),
+  monatlicher Bericht; „Zum Ändern“ mit `/.well-known/change-password`.
+- [ ] **K-604 OpenID Connect und SCIM** – allgemeiner OIDC-Client mit groups-Claim, Gruppenwechsel
+  als Anfrage, optional SCIM, Deep Links.
+- [ ] **K-605 Handwerk und IT-Dienstleister** – QR-Etiketten, Übergabe an den Kunden, mehrere Firmen
+  in einem Konto.
+- [ ] **K-606 CLI** – Anmelden, Suchen, Lesen per Bestätigung, `bun build --compile`.
+- [ ] **K-607 DSGVO** – Konto löschen, Daten exportieren, Datenschutz-Seite.
+
+## Phase 7 – Mobile-App
+
+- [ ] **K-701 Tauri-Gerüst** – Tauri 3 (Alpha im Prototyp, sonst 2.x) mit `packages/ui`.
+- [ ] **K-702 Android-Autofill** – `AutofillService`, Biometrie, Keystore.
+- [ ] **K-703 iOS-Autofill** – Credential Provider mit Passkeys, Schlüsselbund; braucht macOS-Runner.
+- [ ] **K-704 Zwischenablage und Bildschirmschutz** – Leeren nach 30 s, sensibel markiert.
+
+## Phase 8 – Härtung
+
+- [ ] **K-801 Alle ETH-Angriffe** – jeder der 27 Angriffe als Test gegen den bösartigen Testserver.
+- [ ] **K-802 Lasttest** – viele Geräte mit Live-Sync.
+- [ ] **K-803 Installation und Betrieb** – Docker-Image, Compose, Quadlet, Caddy, Backups mit
+  Wiederherstellung, Update-Hinweis; Release-Workflow aus firsttris/workflows.
+- [ ] **K-804 Doku und Website** – alle Seiten aus dem Projektplan, Startseite als Produkt-Website,
+  README aktuell.
+- [ ] **K-805 Screenshots** – Workflow „Update screenshots“, hell und dunkel.
+- [ ] **K-806 Demo ohne Server** – unter `/demo/` mit Testdaten „Weber Haustechnik“.
+
+## Schritte für Menschen
+
+- [ ] Default-Branch auf `main`, GitHub Pages mit Domain kennwort.app
+- [ ] Signatur-Schlüssel für Release-Manifest, Extension und Apps (vor Phase 4)
+- [ ] Apple- und Google-Entwicklerkonto, macOS-Runner (vor Phase 7)
+- [ ] Store-Einreichungen und Antworten auf Reviews
+- [ ] Pilotbetrieb bei einem echten Betrieb
+- [ ] Externes Audit vor der Veröffentlichung
