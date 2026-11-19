@@ -8,9 +8,9 @@ import { createLog } from "./log.ts";
 
 const config = readConfig(process.env);
 if (!config.ok) {
-  console.error(
-    JSON.stringify({ level: "error", message: "invalid settings", fields: config.error }),
-  );
+  // A log line for operators, not a text of the interface
+  const failure = { level: "error", message: "invalid settings", fields: config.error }; // i18n-ignore
+  console.error(JSON.stringify(failure));
   process.exit(1);
 }
 const { port, database, logLevel } = config.value;
