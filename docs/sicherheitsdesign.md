@@ -222,8 +222,8 @@ anmelden   = kdf(p₁, secretKey (16 Byte), "kennwort/login/v1", konto-ID)
 
 Die Parameter gehören zur Formatversion und stehen nicht in der Datenbank; der Server kann sie
 nicht senken (E-18). Stärkere Parameter heißen v2. Das Salt ist genau 16 Byte, wie libsodium
-(`crypto_pwhash`) es verlangt; so lassen sich die Testvektoren unabhängig nachrechnen. Der **Secret Key** sind 128 zufällige Bits, die
-nur auf den Geräten und im Recovery-Kit liegen, angezeigt als `K1-` und 26 Zeichen Crockford-Base32
+(`crypto_pwhash`) es verlangt; so lassen sich die Testvektoren unabhängig nachrechnen. Der
+**Secret Key** sind 128 zufällige Bits, die nur auf den Geräten und im Recovery-Kit liegen, angezeigt als `K1-` und 26 Zeichen Crockford-Base32
 mit Prüfziffer. Ohne ihn ist eine gestohlene Datenbank auch mit schwacher Passphrase nicht zu raten.
 
 ### F-06 Schlüsselbündel und Zertifikat v1

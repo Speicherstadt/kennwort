@@ -36,6 +36,14 @@ describe("parseSecretKey", () => {
     expect(parseSecretKey(text.replace(/1/g, "I"))).toEqual({ ok: true, value: key });
   });
 
+  it.each(["ı", "ſ", "ß", "１"])("refuses the non-ASCII look-alike %s", (char) => {
+    const text = formatSecretKey(Uint8Array.from({ length: 16 }, (_, i) => i * 17));
+    expect(parseSecretKey(text.replace(/1|S/, char))).toEqual({
+      ok: false,
+      error: "invalid-character",
+    });
+  });
+
   it("names what is wrong", () => {
     const text = formatSecretKey(zero);
     expect(parseSecretKey(text.replace("K1", "K2"))).toEqual({ ok: false, error: "wrong-prefix" });

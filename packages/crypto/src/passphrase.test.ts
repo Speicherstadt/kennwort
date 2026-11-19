@@ -67,6 +67,10 @@ describe("passphraseKeys", () => {
     expect(hex(keys("Bäckerei").unlock)).toBe(hex(keys("Bäckerei").unlock));
   });
 
+  it("refuses a passphrase with a lone surrogate instead of reading it as U+FFFD", () => {
+    expect(() => keys("x\uD800")).toThrow("not well-formed text");
+  });
+
   it("refuses a salt or Secret Key that is not 16 bytes", () => {
     expect(() => keys("x", new Uint8Array(15))).toThrow("account salt must be 16 bytes");
     expect(() => keys("x", salt, new Uint8Array(17))).toThrow("secret key must be 16 bytes");

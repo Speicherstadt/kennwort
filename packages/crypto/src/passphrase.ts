@@ -28,6 +28,8 @@ export const passphraseKeysWith = (
   if (accountSalt.length !== ACCOUNT_SALT_LENGTH)
     throw new RangeError("account salt must be 16 bytes");
   if (secretKey.length !== SECRET_KEY_LENGTH) throw new RangeError("secret key must be 16 bytes");
+  // A lone surrogate would become U+FFFD and two passphrases one (as in encode, F-04)
+  if (!passphrase.isWellFormed()) throw new RangeError("not well-formed text");
   const p1 = argon2id(passphrase.normalize("NFKC"), accountSalt, { ...params, dkLen: 32 });
   return {
     unlock: kdf(p1, secretKey, "kennwort/unlock-passphrase/v1", accountId),

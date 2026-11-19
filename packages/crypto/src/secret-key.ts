@@ -37,7 +37,11 @@ export const formatSecretKey = (secretKey: Uint8Array): string => {
 const normalize = (text: string) =>
   text.toUpperCase().replace(/[\s-]/g, "").replace(/O/g, "0").replace(/[IL]/g, "1");
 
+// Crockford Base32 is ASCII; toUpperCase would turn ı into I and ß into SS
+const ASCII_ONLY = /^[0-9A-Za-z*~$=\s-]*$/;
+
 export const parseSecretKey = (text: string): Result<Uint8Array, SecretKeyError> => {
+  if (!ASCII_ONLY.test(text)) return err("invalid-character");
   const compact = normalize(text);
   if (!compact.startsWith(PREFIX)) return err("wrong-prefix");
   const body = compact.slice(PREFIX.length);
