@@ -382,7 +382,10 @@ Der Client prüft bei jedem Abruf die ganze Kette ab seinem letzten Stand:
 - `seq` lückenlos, `vorgänger-hash` passend, Genesis mit `seq = 0` und Null-Hash (ausgelassen,
   vertauscht, eingeschoben: E-07);
 - jede Signatur gültig, der Unterzeichner zu diesem Zeitpunkt Verwalter, sein Schlüssel und der des
-  Mitglieds durch die Firma zertifiziert (unsigniert, fremd: E-06, E-07);
+  Mitglieds durch die Firma zertifiziert (unsigniert, fremd: E-06, E-07). „Zu diesem Zeitpunkt“
+  heißt zur signierten Zeit des Eintrags; diese Zeiten steigen nie und liegen nie in der Zukunft.
+  Restrisiko: Ein Verwalter, dessen Zugriff abgelaufen ist, kann noch Einträge mit einer Zeit vor
+  dem Ablauf anhängen, solange niemand danach geschrieben hat;
 - jeder VKₑ, den der Client entpackt, passt zur `vk-bindung` des Eintrags `anlegen` bzw.
   `schlüsselwechsel` seiner Epoche (untergeschobener Tresor-Schlüssel: E-16);
 - der letzte Stand (`seq`, `hash`) wird gespeichert; ein kürzeres Log oder ein anderer Hash an
@@ -392,6 +395,9 @@ Gegen eine Gabelung (E-08) trägt jeder signierte Eintrag und jedes signierte Sc
 Eintrags den zuletzt gesehenen Log-Stand; trifft ein Client auf einen Stand, der nicht in seiner
 Kette liegt, warnt er. Restrisiko: Eine Gabelung fällt erst auf, wenn die getrennten Mitglieder
 wieder etwas voneinander sehen.
+
+Umgesetzt in `packages/core/src/membership/` (`verifyLog`, Zertifikate nach F-06); wie
+`packages/crypto` mit Mutation-Tests bei einer Schwelle von 100 %.
 
 **Wehrt ab:** E-06, E-07, E-08, E-16, E-19.
 

@@ -19,7 +19,7 @@
     "build": "bun scripts/build-all.ts",
     "e2e": "playwright test",
     "check": "bun run typecheck && bun run lint && bun run test && bun run build",
-    "mutation": "bun run --cwd packages/crypto mutation"
+    "mutation": "bun run --cwd packages/crypto mutation && bun run --cwd packages/core mutation"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.8",
