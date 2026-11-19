@@ -2,15 +2,9 @@
  * Builds every workspace that has a "build" script, in workspace order.
  * `bun run --filter` fails when no workspace exists yet; this runs green on an empty repository too.
  */
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
-
-const workspaceDirs = (root: string): string[] =>
-  ["packages", "apps"]
-    .map((group) => join(root, group))
-    .filter((dir) => existsSync(dir))
-    .flatMap((dir) => readdirSync(dir).map((name) => join(dir, name)))
-    .filter((dir) => existsSync(join(dir, "package.json")));
+import { workspaceDirs } from "./workspaces.ts";
 
 const hasBuild = (dir: string): boolean =>
   Boolean(JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).scripts?.build);

@@ -10,17 +10,26 @@
     "packages/*"
   ],
   "scripts": {
+    "postinstall": "bun run i18n",
+    "i18n": "paraglide-js compile --project ./project.inlang --outdir ./packages/ui/src/paraglide --strategy localStorage preferredLanguage baseLocale --silent",
     "typecheck": "tsc -b",
     "lint": "biome check --error-on-warnings .",
     "format": "biome check --write .",
     "test": "vitest run",
     "build": "bun scripts/build-all.ts",
+    "e2e": "playwright test",
     "check": "bun run typecheck && bun run lint && bun run test && bun run build"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.8",
+    "@inlang/paraglide-js": "3.2.2",
+    "@inlang/plugin-message-format": "4.6.0",
+    "@playwright/test": "1.65.1",
+    "@solidjs/vite-plugin": "3.0.1",
     "@types/bun": "1.4.4",
+    "happy-dom": "21.0.4",
     "typescript": "7.0.2",
+    "vite": "8.3.8",
     "vitest": "5.1.1"
   }
 }

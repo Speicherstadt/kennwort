@@ -78,6 +78,7 @@ Green before every push, then check CI:
 
 ```sh
 bun run typecheck && bun run lint && bun run test && bun run build
+bun run e2e                # Playwright desktop and @phone; CHROMIUM_PATH=/opt/pw-browsers/chromium in the sandbox
 zensical build --strict    # when docs/ or mkdocs.yml changed
 ```
 

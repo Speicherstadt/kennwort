@@ -35,13 +35,17 @@ jobs:
       - run: bun run typecheck
       - run: bun run lint
       # The shared rule checks of firsttris/workflows (checks.json: files past 400 lines, functions past 80,
-      # rings of imports between packages; i18n once Paraglide is in). Installed without saving, as some environments
-      # cannot fetch GitHub tarballs; K-101 moves it into package.json where it can.
+      # rings of imports between packages, Paraglide texts). Installed without saving: Bun fetches a GitHub
+      # dependency as a tarball from api.github.com, which the agents' sandbox cannot reach, so it stays out of
+      # package.json and bun.lock (a frozen install there would fail).
       - run: bun add --dev --no-save "github:firsttris/workflows#v1"
       - run: bunx checks
       - if: github.event_name == 'pull_request'
         run: bunx checks pr
       - run: bun run test
       - run: bun run build
+      # What a user does, desktop and @phone, against the built web app
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run e2e
       # Known vulnerabilities in the dependencies fail the run
       - run: bun audit

@@ -1,0 +1,16 @@
+{
+  "name": "@kennwort/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5175 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --port 5176 --strictPort"
+  },
+  "dependencies": {
+    "@kennwort/ui": "workspace:*",
+    "@solidjs/web": "2.0.3",
+    "solid-js": "2.0.3"
+  }
+}
