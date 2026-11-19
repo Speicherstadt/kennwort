@@ -24,6 +24,10 @@
     "@noble/curves": {
       "reason": "Ed25519 signatures (RFC 8032) and X25519 inside X-Wing; audited, pure TypeScript",
       "workspaces": ["packages/crypto"]
+    },
+    "zod": {
+      "reason": "Zod 4: every value that crosses between client and server is parsed against a schema (CLAUDE.md, docs/plan.md Stack); no dependencies of its own",
+      "workspaces": ["packages/core"]
     }
   }
 }

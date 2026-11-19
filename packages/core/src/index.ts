@@ -26,3 +26,35 @@ export {
   type Trust,
   verifyLog,
 } from "./membership/verify-log.ts";
+export { bytes, encodeBytes } from "./sync/bytes.ts";
+export {
+  EntryContent,
+  EntryType,
+  Field,
+  FieldKind,
+  HistoryItem,
+  mergeContent,
+} from "./sync/content.ts";
+export {
+  type Device,
+  edit,
+  emptyDevice,
+  type Known,
+  type Pending,
+  type Pulled,
+  pull,
+  type Refused,
+  type SyncContext,
+  sync,
+} from "./sync/device.ts";
+export { memoryServer, type PushResult, type SyncServer } from "./sync/memory-server.ts";
+export {
+  type AcceptError,
+  type Author,
+  EntryRecord,
+  openRecord,
+  recordToWire,
+  sealRecord,
+  type VaultKeyring,
+} from "./sync/record.ts";
+export { CertificateWire, LogEntryWire, toWire } from "./sync/wire.ts";
