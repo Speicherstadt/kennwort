@@ -55,6 +55,26 @@ describe("violations", () => {
     ).toEqual([]);
   });
 
+  it.each([
+    "npm:left-pad@1.3.0",
+    "^2.0.3",
+    "github:solidjs/solid",
+    "file:../solid",
+    "https://x.test/a.tgz",
+  ])("fails a listed name whose version %s is not an exact registry version", (version) => {
+    expect(
+      violations(allowlist, [{ dir: "packages/ui", dependencies: { "solid-js": version } }]),
+    ).toEqual([`packages/ui: solid-js@${version} is not an exact registry version`]);
+  });
+
+  it("fails a non-noble package aliased as @noble/* in packages/crypto", () => {
+    expect(
+      violations(allowlist, [
+        { dir: "packages/crypto", dependencies: { "@noble/ciphers": "npm:evil@1.0.0" } },
+      ]),
+    ).not.toEqual([]);
+  });
+
   it("needs no entry for a workspace package", () => {
     expect(
       violations(allowlist, [{ dir: "apps/web", dependencies: { "@kennwort/ui": "workspace:*" } }]),
@@ -71,18 +91,25 @@ describe("bun run lint", () => {
     expect(run(root).status).toBe(0);
   });
 
-  it("fails when a client workspace takes a package that is not on the list", () => {
+  const lintIn = (manifest: object) => {
     const repo = mkdtempSync(join(tmpdir(), "kennwort-deps-"));
     cpSync(join(root, "allowed-dependencies.json"), join(repo, "allowed-dependencies.json"));
     mkdirSync(join(repo, "apps/web"), { recursive: true });
     writeFileSync(
       join(repo, "apps/web/package.json"),
-      JSON.stringify({ name: "@kennwort/web", dependencies: { "left-pad": "1.3.0" } }),
+      JSON.stringify({ name: "@kennwort/web", ...manifest }),
     );
-    const result = run(repo);
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain("apps/web: left-pad is not in allowed-dependencies.json");
-  });
+    return run(repo);
+  };
+
+  it.each(["dependencies", "optionalDependencies", "peerDependencies"])(
+    "fails when a client workspace takes a package that is not on the list in %s",
+    (field) => {
+      const result = lintIn({ [field]: { "left-pad": "1.3.0" } });
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain("apps/web: left-pad is not in allowed-dependencies.json");
+    },
+  );
 
   it("is part of the lint script", () => {
     const scripts = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).scripts;
