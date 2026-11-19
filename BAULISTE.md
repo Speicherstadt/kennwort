@@ -26,8 +26,9 @@ und die Schritte für Menschen am Ende erledigt sind.
 ## Phase 1 – Fundament
 
 - [ ] **K-101 Repo-Gerüst** – Workspaces `packages/crypto`, `packages/core`, `packages/ui`, Paraglide
-  (de/en), Playwright mit Projekten `desktop` und `phone`, `@firsttris/checks` (file-size, cycles,
-  i18n).
+  (de/en), Playwright mit Projekten `desktop` und `phone`; `checks.json` um i18n
+  erweitern, sobald die Pakete da sind, und `@firsttris/checks` in `package.json` aufnehmen, wo es
+  sich installieren lässt (bis dahin installiert die CI es selbst).
   Fertig, wenn: `bun run check` auf einem frischen Klon grün ist und CI alle Workspaces prüft.
 - [ ] **K-102 Liste erlaubter Laufzeit-Pakete** – `allowed-dependencies.json` mit Begründung je
   Paket und ein Check in `bun run lint`.
