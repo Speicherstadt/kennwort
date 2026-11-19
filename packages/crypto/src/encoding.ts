@@ -4,6 +4,8 @@
  * in NFC, numbers 8 bytes big-endian, IDs their raw bytes.
  */
 
+import { err, ok, type Result } from "./result.ts";
+
 export type Part = Uint8Array | string | number;
 
 const utf8 = new TextEncoder();
@@ -33,4 +35,19 @@ export const encode = (...parts: Part[]): Uint8Array => {
     offset += 4 + part.length;
   }
   return out;
+};
+
+/** The parts of enc(t₁, …, tₙ) as bytes, or "malformed" when the lengths do not add up */
+export const decode = (bytes: Uint8Array): Result<Uint8Array[], "malformed"> => {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const parts: Uint8Array[] = [];
+  let offset = 0;
+  while (offset < bytes.length) {
+    if (offset + 4 > bytes.length) return err("malformed");
+    const end = offset + 4 + view.getUint32(offset);
+    if (end > bytes.length) return err("malformed");
+    parts.push(bytes.slice(offset + 4, end));
+    offset = end;
+  }
+  return ok(parts);
 };
