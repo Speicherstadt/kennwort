@@ -2,7 +2,12 @@
 import { z } from "zod";
 
 const Config = z.object({
-  KENNWORT_PORT: z.coerce.number().int().min(1).max(65535).default(8100),
+  KENNWORT_PORT: z
+    .string()
+    .regex(/^\d{1,5}$/)
+    .transform(Number)
+    .pipe(z.number().min(1).max(65535))
+    .default(8100),
   KENNWORT_DATABASE: z.string().min(1).default("data/kennwort.db"),
   KENNWORT_LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 });

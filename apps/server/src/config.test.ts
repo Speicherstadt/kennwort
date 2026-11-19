@@ -21,6 +21,10 @@ describe("readConfig", () => {
     });
   });
 
+  it.each(["0x1F90", "1e3", " 8100 ", "0", "-1", ""])("refuses the port %j", (port) => {
+    expect(readConfig({ KENNWORT_PORT: port })).toEqual({ ok: false, error: ["KENNWORT_PORT"] });
+  });
+
   it("names the settings it cannot read", () => {
     expect(readConfig({ KENNWORT_PORT: "70000", KENNWORT_LOG_LEVEL: "loud" })).toEqual({
       ok: false,

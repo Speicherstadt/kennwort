@@ -8,7 +8,8 @@ export type Fields = Record<string, string | number | boolean | undefined>;
 export type Log = (level: Level, message: string, fields?: Fields) => void;
 
 const ORDER: Record<Level, number> = { debug: 0, info: 1, warn: 2, error: 3 };
-const SECRET_NAME = /pass|secret|token|key|auth|cookie|session|signature|ciphertext|body/i;
+const SECRET_NAME =
+  /pass|secret|token|key|auth|cookie|session|signature|ciphertext|body|credential|otp|totp|recovery|mnemonic|seed|jwt|pin|prf/i;
 
 export const redact = (fields: Fields): Fields =>
   Object.fromEntries(

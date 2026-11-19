@@ -13,14 +13,20 @@ export const startServer = async (command: string[], port: number) => {
     env: { ...process.env, KENNWORT_PORT: String(port), KENNWORT_DATABASE: database },
     stdio: ["ignore", "pipe", "pipe"],
   });
-  for (let attempt = 0; attempt < 100; attempt++) {
-    try {
-      const response = await fetch(`http://127.0.0.1:${port}/health`);
-      return { child, database, response };
-    } catch {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-  }
-  child.kill();
-  throw new Error("server did not start");
+  // Its own "listening" line proves this child serves the port, not some other process
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("server did not start")), 10_000);
+    child.stdout?.on("data", (chunk: Buffer) => {
+      if (chunk.toString().includes('"message":"listening"')) {
+        clearTimeout(timer);
+        resolve();
+      }
+    });
+    child.on("exit", (code) => {
+      clearTimeout(timer);
+      reject(new Error(`server exited with ${code}`));
+    });
+  });
+  const response = await fetch(`http://127.0.0.1:${port}/health`);
+  return { child, database, response };
 };
