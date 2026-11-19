@@ -38,7 +38,10 @@ und die Schritte für Menschen am Ende erledigt sind.
   jedes Format mit Version, alle Protokolle (Konto, Gerät, Tresor, Mitgliedschaft, Teilen, Recovery,
   Notfall), was der Server sieht.
   Fertig, wenn: jeder Abschnitt des Projektplans zu Kryptografie und Bedrohungsmodell dort ein
-  Protokoll hat und jedes Protokoll die Angriffe der ETH-Studie nennt, die es abwehrt.
+  Protokoll hat und jedes Protokoll die Angriffe der ETH-Studie nennt, die es abwehrt; ein Test
+  prüft, dass jede Zeile des Bedrohungsmodells und jede Regel der Kryptografie aus dem Projektplan
+  in der Abdeckungstabelle steht und jedes Protokoll eine Zeile „Wehrt ab“ mit Angriffen aus dem
+  Katalog hat.
 - [ ] **K-104 Symmetrische Verschlüsselung** – XChaCha20-Poly1305 mit AAD, Formatversion im Präfix.
   nach: K-103. Fertig, wenn: Testvektoren (auch gegen libsodium, nur dev), Property-Tests
   (Rundlauf, falsche AAD/Schlüssel/Nonce scheitern) und Mutation-Tests grün sind.
