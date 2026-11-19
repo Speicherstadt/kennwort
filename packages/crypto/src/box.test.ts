@@ -33,6 +33,14 @@ describe("seal", () => {
 });
 
 describe("open", () => {
+  it("refuses a purpose with a lone surrogate instead of reading it as U+FFFD", () => {
+    const box = seal(key, message, { purpose: "a\uFFFD", context: [] });
+    expect(open(key, box, { purpose: "a\uD800", context: [] }).ok).toBe(false);
+    expect(() => seal(key, message, { purpose: "a\uD800", context: [] })).toThrow(
+      "not well-formed text",
+    );
+  });
+
   const box = seal(key, message, where);
 
   it("returns the plaintext of a box sealed with the same key and place", () => {

@@ -24,6 +24,13 @@ describe("encode (F-04)", () => {
     expect(hex(encode("ä"))).toBe("00000002c3a4");
   });
 
+  it.each(["\uD800", "a\uDC00", "\uDC00\uD800"])(
+    "refuses text with a lone surrogate (%#)",
+    (text) => {
+      expect(() => encode(text)).toThrow("not well-formed text");
+    },
+  );
+
   it("writes the largest safe integer and zero", () => {
     expect(hex(encode(Number.MAX_SAFE_INTEGER))).toBe("00000008001fffffffffffff");
     expect(hex(encode(0))).toBe("000000080000000000000000");

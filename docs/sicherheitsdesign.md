@@ -140,7 +140,7 @@ die neue überführt.
 ### F-04 Kodierung und Ableitung
 
 - **Kodierung** `enc(t₁, …, tₙ)`: jedes Teil als 4-Byte-Länge (Big Endian) und seine Bytes.
-  Zeichenketten als UTF-8 in NFC, Zahlen als 8 Byte Big Endian, IDs als ihre 16 Bytes (UUIDv7).
+  Zeichenketten als UTF-8 in NFC (nur wohlgeformte; ein einzelnes Surrogat ist ein Fehler), Zahlen als 8 Byte Big Endian, IDs als ihre 16 Bytes (UUIDv7).
   So ist jede Folge von Teilen eindeutig und kein Teil kann in ein anderes überlaufen.
 - **Kontext**: Jede Verwendung trägt eine Bezeichnung `kennwort/<zweck>/v<n>` als erstes Teil;
   derselbe Schlüssel in zwei Zwecken ergibt nie dieselbe Eingabe.

@@ -10,7 +10,11 @@ const utf8 = new TextEncoder();
 
 const partBytes = (part: Part): Uint8Array => {
   if (part instanceof Uint8Array) return part;
-  if (typeof part === "string") return utf8.encode(part.normalize("NFC"));
+  if (typeof part === "string") {
+    // A lone surrogate is not text; TextEncoder would turn it into U+FFFD and two parts alike
+    if (!part.isWellFormed()) throw new RangeError("not well-formed text");
+    return utf8.encode(part.normalize("NFC"));
+  }
   if (!Number.isSafeInteger(part) || part < 0) throw new RangeError(`not a counter: ${part}`);
   const bytes = new Uint8Array(8);
   new DataView(bytes.buffer).setBigUint64(0, BigInt(part));
