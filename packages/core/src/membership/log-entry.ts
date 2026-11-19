@@ -58,4 +58,11 @@ export const signEntry = (signerSecretKey: Uint8Array, fields: LogFields): LogEn
   signature: sign(signerSecretKey, "log", entryBytes(fields)),
 });
 
-export const entryHash = (entry: LogEntry) => digest(encode(entryBytes(entry), entry.signature));
+/** SHA-512/256 over the encoded entry followed by its signature, as P-06 defines it */
+export const entryHash = (entry: LogEntry) => {
+  const bytes = entryBytes(entry);
+  const whole = new Uint8Array(bytes.length + entry.signature.length);
+  whole.set(bytes);
+  whole.set(entry.signature, bytes.length);
+  return digest(whole);
+};

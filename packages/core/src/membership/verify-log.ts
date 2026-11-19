@@ -11,6 +11,8 @@ import { entryBytes, entryHash, GENESIS_HASH, type LogEntry, type VaultRole } fr
 export type Member = { role: VaultRole; fingerprint: Uint8Array; validUntil: number };
 export type LogState = {
   seq: number;
+  /** Signed time of the newest entry */
+  time: number;
   hash: Uint8Array;
   epoch: number;
   members: Map<string, Member>;
@@ -30,7 +32,8 @@ export type LogError =
   | "bad-action"
   | "bad-epoch"
   | "rollback"
-  | "fork";
+  | "fork"
+  | "bad-time";
 
 export type Trust = {
   rootPublicKey: Uint8Array;
@@ -44,7 +47,11 @@ export const idKey = (bytes: Uint8Array) =>
 
 const certificateOf = (trust: Trust, accountId: Uint8Array) => {
   const certificate = trust.certificates.get(idKey(accountId));
-  return certificate && isCertified(trust.rootPublicKey, certificate) ? certificate : undefined;
+  return certificate &&
+    constantTimeEqual(certificate.accountId, accountId) &&
+    isCertified(trust.rootPublicKey, certificate)
+    ? certificate
+    : undefined;
 };
 
 const isManager = (state: LogState, accountId: Uint8Array, now: number) => {
@@ -54,6 +61,7 @@ const isManager = (state: LogState, accountId: Uint8Array, now: number) => {
 
 const genesisState = (): LogState => ({
   seq: -1,
+  time: 0,
   hash: GENESIS_HASH,
   epoch: 0,
   members: new Map(),
@@ -64,7 +72,14 @@ const genesisState = (): LogState => ({
 const apply = (state: LogState, entry: LogEntry, trust: Trust): Result<LogState, LogError> => {
   const members = new Map(state.members);
   const commitments = new Map(state.commitments);
-  const next = { ...state, seq: entry.seq, hash: entryHash(entry), members, commitments };
+  const next = {
+    ...state,
+    seq: entry.seq,
+    time: entry.time,
+    hash: entryHash(entry),
+    members,
+    commitments,
+  };
   const subject = idKey(entry.accountId);
   const certifiedSubject = () => {
     const certificate = certificateOf(trust, entry.accountId);
@@ -130,7 +145,9 @@ const step = (
   if (!signer) return err("uncertified-signer");
   if (!verify(signer.edPublicKey, entry.signature, "log", entryBytes(entry)))
     return err("bad-signature");
-  if (entry.action !== "create" && !isManager(state, entry.signerId, trust.now))
+  // Signed times only move forward and never into the future; rights count at the entry's time
+  if (entry.time < state.time || entry.time > trust.now) return err("bad-time");
+  if (entry.action !== "create" && !isManager(state, entry.signerId, entry.time))
     return err("not-manager");
   return apply(state, entry, trust);
 };

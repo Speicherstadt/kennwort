@@ -1,7 +1,21 @@
-import { ed25519KeyPair, encode, keyCommitment, sign, xwingKeyPair } from "@kennwort/crypto";
+import {
+  digest,
+  ed25519KeyPair,
+  encode,
+  keyCommitment,
+  sign,
+  xwingKeyPair,
+} from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
 import { type Certificate, certificateFingerprint, certify } from "./certificate.ts";
-import { entryHash, GENESIS_HASH, type LogEntry, type LogFields, signEntry } from "./log-entry.ts";
+import {
+  entryBytes,
+  entryHash,
+  GENESIS_HASH,
+  type LogEntry,
+  type LogFields,
+  signEntry,
+} from "./log-entry.ts";
 import { idKey, isMember, remember, type Trust, verifyLog } from "./verify-log.ts";
 
 // Weber Haustechnik: Jonas owns the company and its root key; Anna, Max and Sandra work there
@@ -313,17 +327,18 @@ describe("verifyLog: vault keys and epochs (E-16, E-26)", () => {
     expect(after.ok && after.value.members.get(idKey(anna.id))?.role).toBe("read");
   });
 
-  it("stops a manager whose access ran out from signing", () => {
-    const expired = chain([
-      { action: "create", subject: jonas, signer: jonas, role: "manage" },
-      { action: "add", subject: anna, signer: jonas, role: "manage", validUntil: 1_800_000_050 },
-      { action: "add", subject: max, signer: anna },
-    ]);
-    expect(verifyLog(vault, expired, trust(1_800_000_100))).toEqual({
+  it("stops a manager from signing after the access ran out, and keeps what was signed before", () => {
+    const steps = (time: number) =>
+      chain([
+        { action: "create", subject: jonas, signer: jonas, role: "manage" },
+        { action: "add", subject: anna, signer: jonas, role: "manage", validUntil: 1_800_000_050 },
+        { action: "add", subject: max, signer: anna, time },
+      ]);
+    expect(verifyLog(vault, steps(1_800_000_060), trust(1_800_000_100))).toEqual({
       ok: false,
       error: "not-manager",
     });
-    expect(verifyLog(vault, expired, trust(1_800_000_049)).ok).toBe(true);
+    expect(verifyLog(vault, steps(1_800_000_002), trust(1_800_000_100)).ok).toBe(true);
   });
 });
 
@@ -355,13 +370,42 @@ describe("checks that need their own case", () => {
   it("ends a manager's signing right at the second the access runs out", () => {
     const expired = chain([
       { action: "create", subject: jonas, signer: jonas, role: "manage" },
-      { action: "add", subject: anna, signer: jonas, role: "manage", validUntil: 1_800_000_100 },
+      { action: "add", subject: anna, signer: jonas, role: "manage", validUntil: 1_800_000_002 },
       { action: "add", subject: max, signer: anna },
     ]);
     expect(verifyLog(vault, expired, trust(1_800_000_100))).toEqual({
       ok: false,
       error: "not-manager",
     });
+  });
+
+  it("refuses signed times that go back or lie in the future", () => {
+    const back = chain([
+      { action: "create", subject: jonas, signer: jonas, role: "manage" },
+      { action: "add", subject: anna, signer: jonas, time: 1_799_999_999 },
+    ]);
+    expect(verifyLog(vault, back, trust())).toEqual({ ok: false, error: "bad-time" });
+    const same = chain([
+      { action: "create", subject: jonas, signer: jonas, role: "manage" },
+      { action: "add", subject: anna, signer: jonas, time: 1_800_000_000 },
+    ]);
+    expect(verifyLog(vault, same, trust()).ok).toBe(true);
+    expect(verifyLog(vault, log, trust(1_800_000_003))).toEqual({ ok: false, error: "bad-time" });
+    expect(verifyLog(vault, log, trust(1_800_000_004)).ok).toBe(true);
+  });
+
+  it("refuses a certificate filed under another account", () => {
+    const misfiled = { ...trust(), certificates: new Map(trust().certificates) };
+    misfiled.certificates.set(idKey(anna.id), certificateFor(max));
+    expect(verifyLog(vault, log, misfiled)).toEqual({ ok: false, error: "uncertified-member" });
+    misfiled.certificates.set(idKey(jonas.id), certificateFor(max));
+    expect(verifyLog(vault, log, misfiled)).toEqual({ ok: false, error: "uncertified-signer" });
+  });
+
+  it("hashes an entry as P-06 defines it: SHA-512/256(enc(…) ‖ signature)", () => {
+    const [genesis] = log as [LogEntry];
+    const bytes = entryBytes(genesis);
+    expect(entryHash(genesis)).toEqual(digest(Uint8Array.of(...bytes, ...genesis.signature)));
   });
 
   it("refuses adding someone without any certificate", () => {
