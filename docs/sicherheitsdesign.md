@@ -178,6 +178,9 @@ des Empfängers in Ableitung und AAD bindet das Paket zusätzlich an das ganze S
 ist die Verpackung so sicher wie der stärkere der beiden Teile: X25519 heute, ML-KEM-768 gegen einen
 späteren Quantenrechner. Wer verpackt, nimmt den öffentlichen Schlüssel nur aus einem geprüften
 Zertifikat ([P-07](#p-07-firmen-wurzelschlussel-und-zertifikate)), nie roh vom Server (E-05).
+Umgesetzt in `packages/crypto/src/wrap.ts`; die Testvektoren in `packages/crypto/vectors/wrap-v1.json`
+entstehen ohne den Code, den sie prüfen (HKDF aus `node:crypto`, AEAD aus libsodium, X-Wing gegen die
+Vektoren des Entwurfs geprüft).
 
 F-02 sagt nichts darüber, **wer** verpackt hat: Mit einem öffentlichen Schlüssel kann jeder, auch der
 Server, ein gültiges Paket bauen. Ein entpackter Schlüssel gilt deshalb erst, wenn er zu einer
