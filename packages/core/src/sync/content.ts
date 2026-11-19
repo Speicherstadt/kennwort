@@ -44,7 +44,7 @@ export type EntryContent = z.infer<typeof EntryContent>;
 
 // Two fields are the same when name, value and kind are; an absent field is only like another absent one
 const fieldKey = (field: Field | undefined) =>
-  field === undefined ? "absent" : JSON.stringify([field.name, field.value, field.kind]);
+  field && JSON.stringify([field.name, field.value, field.kind]);
 const sameField = (a: Field | undefined, b: Field | undefined) => fieldKey(a) === fieldKey(b);
 
 /** One field: taken from the side that changed it; if both did, theirs stays and mine is lost to history */
@@ -62,8 +62,8 @@ const mergeField = (
 
 const byId = (fields: Field[]) => new Map(fields.map((field) => [field.id, field]));
 
-const mergeScalar = <T>(base: T, mine: T, theirs: T): T =>
-  mine === base ? theirs : mine === theirs ? theirs : base === theirs ? mine : theirs;
+// The side that changed wins; if both did, theirs (already on the server) stays
+const mergeScalar = <T>(base: T, mine: T, theirs: T): T => (base === theirs ? mine : theirs);
 
 const mergeTags = (base: string[], mine: string[], theirs: string[]) => {
   const removed = new Set([...base].filter((tag) => !mine.includes(tag) || !theirs.includes(tag)));

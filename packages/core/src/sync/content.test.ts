@@ -25,7 +25,7 @@ describe("mergeContent", () => {
 
   it("does not record anything when both made the same change", () => {
     const same = withField(bank, "password", "same");
-    expect(merge(same, same)).toEqual({ ...same, history: [] });
+    expect(merge(same, structuredClone(same))).toEqual({ ...same, history: [] });
   });
 
   it("keeps an edit over a deletion on the other side", () => {
@@ -56,7 +56,15 @@ describe("mergeContent", () => {
   });
 
   it("merges title, type and favorite like fields; a lost title goes into the history", () => {
-    expect(merge({ ...bank, title: "Mine" }, bank).title).toBe("Mine");
+    expect(merge({ ...bank, title: "Mine" }, bank)).toMatchObject({ title: "Mine", history: [] });
+    expect(merge(bank, { ...bank, title: "Theirs" })).toMatchObject({
+      title: "Theirs",
+      history: [],
+    });
+    expect(merge({ ...bank, title: "Same" }, { ...bank, title: "Same" })).toMatchObject({
+      title: "Same",
+      history: [],
+    });
     expect(merge(bank, { ...bank, favorite: true }).favorite).toBe(true);
     expect(merge({ ...bank, type: "note" }, bank).type).toBe("note");
     const both = merge({ ...bank, title: "Mine" }, { ...bank, title: "Theirs" });

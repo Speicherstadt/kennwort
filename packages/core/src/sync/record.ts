@@ -18,8 +18,9 @@ import {
 import { z } from "zod";
 import { idKey, type LogState, type Trust } from "../membership/verify-log.ts";
 import { err, ok, type Result } from "../result.ts";
-import { bytes, encodeBytes } from "./bytes.ts";
+import { bytes } from "./bytes.ts";
 import { EntryContent } from "./content.ts";
+import { toWire } from "./wire.ts";
 
 export const EntryRecord = z.object({
   vaultId: bytes(16),
@@ -35,13 +36,7 @@ export const EntryRecord = z.object({
 export type EntryRecord = z.infer<typeof EntryRecord>;
 
 /** A record as JSON for the wire; EntryRecord.parse reads it back */
-export const recordToWire = (record: EntryRecord) =>
-  Object.fromEntries(
-    Object.entries(record).map(([name, value]) => [
-      name,
-      value instanceof Uint8Array ? encodeBytes(value) : value,
-    ]),
-  );
+export const recordToWire = (record: EntryRecord) => toWire(record);
 
 const signedFields = (r: Omit<EntryRecord, "signature">) =>
   [

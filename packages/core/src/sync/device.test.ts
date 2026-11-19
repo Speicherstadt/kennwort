@@ -77,6 +77,17 @@ describe("sync", () => {
   });
 });
 
+describe("a change without conflict", () => {
+  it("is pushed as written, not merged (tags keep their order)", () => {
+    const server = memoryServer();
+    const ctx = contextFor(jonas);
+    let device = sync(edit(emptyDevice(), e1, bank), server, ctx).device;
+    const unsorted = { ...bank, tags: ["Zahlung", "Bank"] };
+    device = sync(edit(device, e1, unsorted), server, ctx).device;
+    expect(device.known.get("e1".repeat(16))?.content.tags).toEqual(["Zahlung", "Bank"]);
+  });
+});
+
 describe("memoryServer", () => {
   it("takes only the next version and answers a conflict with the current record", () => {
     const server = memoryServer();
