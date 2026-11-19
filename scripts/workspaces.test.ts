@@ -42,6 +42,11 @@ describe("parseJsonc", () => {
     expect(parseJsonc('{\n  /* note */\n  "a": 1\n}')).toEqual({ a: 1 });
   });
 
+  it("reads a trailing comma followed by a comment", () => {
+    expect(parseJsonc('{\n  "a": 1, // note\n}')).toEqual({ a: 1 });
+    expect(parseJsonc('{"a": [1, /* note */]}')).toEqual({ a: [1] });
+  });
+
   it("keeps strings that look like comments or trailing commas", () => {
     expect(parseJsonc('{"a": "x,]", "b": "http://x", "c": "/* y */", "d": "q\\"//"}')).toEqual({
       a: "x,]",
