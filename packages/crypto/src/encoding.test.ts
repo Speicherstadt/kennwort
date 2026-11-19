@@ -48,11 +48,9 @@ describe("encode (F-04)", () => {
     );
     fc.assert(
       fc.property(fc.array(part, { maxLength: 4 }), fc.array(part, { maxLength: 4 }), (a, b) => {
+        // Parts are untyped bytes (F-04): "" and an empty Uint8Array are the same part
         const same = (x: Part[], y: Part[]) =>
-          x.length === y.length &&
-          x.every(
-            (p, i) => typeof p === typeof y[i] && hex(encode(p)) === hex(encode(y[i] as Part)),
-          );
+          x.length === y.length && x.every((p, i) => hex(encode(p)) === hex(encode(y[i] as Part)));
         fc.pre(!same(a, b));
         expect(hex(encode(...a))).not.toBe(hex(encode(...b)));
       }),

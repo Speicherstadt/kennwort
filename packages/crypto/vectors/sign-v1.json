@@ -1,0 +1,24 @@
+[
+  {
+    "name": "log entry",
+    "seed": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+    "publicKey": "29acbae141bccaf0b22e1a94d34d0bc7361e526d0bfe12c89794bc9322966dd7",
+    "purpose": "log",
+    "fields": [
+      "vault-1",
+      4,
+      {
+        "hex": "0708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20212223242526"
+      }
+    ],
+    "signature": "011670aebacc35a8f3b551be704a3310f8ba944b095e12271b109002584b45f3c6be37bfb5b9109829fd7f0c9fd7ce0a4a9e7b4da74fbb66bc823fdbe8707db40a"
+  },
+  {
+    "name": "no fields",
+    "seed": "2122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f40",
+    "publicKey": "e7f162a10bec559afea195e4dce84b69568d5d2cb0963eb446c0685e2b17f2f0",
+    "purpose": "release",
+    "fields": [],
+    "signature": "01f3233898fee7df7041586e0357bcd18d4ff3cc6c40a99fb9e8efb7230226ba9b5074084f22e545596fa1da5f81601d03659864b6994f66f7175b3550b2027103"
+  }
+]
