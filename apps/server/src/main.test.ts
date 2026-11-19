@@ -19,6 +19,13 @@ describe("the server process", () => {
 });
 
 describe("startServer", () => {
+  it("kills a child that never starts listening", async () => {
+    const started = startServer(["sleep", "30"], 28798, 300);
+    await expect(started).rejects.toThrow("server did not start");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(Bun.spawnSync(["pgrep", "-fx", "sleep 30"]).stdout.toString().trim()).toBe("");
+  });
+
   it("fails when its own server cannot start because the port is taken", async () => {
     const port = 28601 + Math.floor(Math.random() * 90);
     const other = Bun.serve({ port, fetch: () => Response.json({ status: "ok", database: "ok" }) });
