@@ -162,6 +162,9 @@ Version, bei einem verpackten Schlüssel die IDs von Besitzer und Ziel. Ein Gehe
 anderen Ort geschoben wird, lässt sich dort nicht entschlüsseln (E-11, E-12, E-13). Das Versions-Byte
 steht in der Bezeichnung der AAD; ein umgeschriebenes Byte scheitert an der Prüfung.
 
+Umgesetzt in `packages/crypto/src/box.ts`; die Testvektoren in `packages/crypto/vectors/box-v1.json`
+rechnet libsodium aus, nicht der Code, den sie prüfen.
+
 ### F-02 An einen öffentlichen Schlüssel verpackt v1
 
 ```text

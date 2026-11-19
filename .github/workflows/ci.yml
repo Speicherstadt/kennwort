@@ -44,6 +44,8 @@ jobs:
         run: bunx checks pr
       - run: bun run test
       - run: bun run build
+      # The stricter gate of packages/crypto: every mutant of the code must be killed by a test
+      - run: bun run mutation
       # What a user does, desktop and @phone, against the built web app
       - run: bunx playwright install --with-deps chromium
       - run: bun run e2e

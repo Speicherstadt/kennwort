@@ -5,5 +5,11 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@noble/ciphers": "2.4.0"
+  },
+  "scripts": {
+    "mutation": "stryker run"
   }
 }
