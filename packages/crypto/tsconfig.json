@@ -1,5 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "outDir": "../../node_modules/.tsbuild/crypto" },
-  "include": ["src"]
+  "compilerOptions": {
+    "outDir": "../../node_modules/.tsbuild/crypto",
+    "types": ["bun"],
+    "resolveJsonModule": true
+  },
+  "include": ["src", "vectors", "vectors/*.json", "vitest.stryker.config.ts"]
 }

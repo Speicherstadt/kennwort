@@ -8,6 +8,10 @@
     "@solidjs/web": {
       "reason": "Solid 2's DOM renderer, split out of solid-js in 2.0; the same project and release as solid-js",
       "workspaces": ["packages/ui", "apps/web"]
+    },
+    "@noble/ciphers": {
+      "reason": "XChaCha20-Poly1305 (and later ChaCha20/AES for KDBX): audited, pure TypeScript, no dependencies of its own; the only cipher library packages/crypto may use (docs/plan.md, Kryptografie)",
+      "workspaces": ["packages/crypto"]
     }
   }
 }

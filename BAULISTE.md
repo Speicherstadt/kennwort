@@ -46,7 +46,7 @@ und die Schritte für Menschen am Ende erledigt sind.
   prüft, dass jede Zeile des Bedrohungsmodells und jede Regel der Kryptografie aus dem Projektplan
   in der Abdeckungstabelle steht und jedes Protokoll eine Zeile „Wehrt ab“ mit Angriffen aus dem
   Katalog hat.
-- [ ] **K-104 Symmetrische Verschlüsselung** – XChaCha20-Poly1305 mit AAD, Formatversion im Präfix.
+- [x] **K-104 Symmetrische Verschlüsselung** – XChaCha20-Poly1305 mit AAD, Formatversion im Präfix.
   nach: K-103. Fertig, wenn: Testvektoren (auch gegen libsodium, nur dev), Property-Tests
   (Rundlauf, falsche AAD/Schlüssel/Nonce scheitern) und Mutation-Tests grün sind.
 - [ ] **K-105 Hybrid-KEM** – X25519 + ML-KEM-768 nach draft-connolly-cfrg-xwing-kem, Schlüssel
