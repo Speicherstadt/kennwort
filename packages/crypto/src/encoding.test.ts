@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { encode, type Part } from "./encoding.ts";
+import { decode, encode, type Part } from "./encoding.ts";
 import { hex } from "./test-helpers.ts";
 
 describe("encode (F-04)", () => {
@@ -53,6 +53,34 @@ describe("encode (F-04)", () => {
           x.length === y.length && x.every((p, i) => hex(encode(p)) === hex(encode(y[i] as Part)));
         fc.pre(!same(a, b));
         expect(hex(encode(...a))).not.toBe(hex(encode(...b)));
+      }),
+    );
+  });
+});
+
+describe("decode", () => {
+  it("gives back the parts of encode as bytes", () => {
+    const parts = decode(encode("ab", Uint8Array.of(1, 2, 3), new Uint8Array()));
+    expect(parts.ok && parts.value.map(hex)).toEqual(["6162", "010203", ""]);
+    expect(decode(new Uint8Array())).toEqual({ ok: true, value: [] });
+  });
+
+  it("refuses a length past the end and a cut length field", () => {
+    expect(decode(Uint8Array.of(0, 0, 0, 2, 1))).toEqual({ ok: false, error: "malformed" });
+    expect(decode(Uint8Array.of(0, 0, 0, 1, 1, 0, 0))).toEqual({ ok: false, error: "malformed" });
+  });
+
+  it("reads parts of a view into a larger buffer", () => {
+    const whole = Uint8Array.of(9, 9, ...encode("x"));
+    const parts = decode(whole.subarray(2));
+    expect(parts.ok && parts.value.map(hex)).toEqual(["78"]);
+  });
+
+  it("reads back every encoding (property)", () => {
+    fc.assert(
+      fc.property(fc.array(fc.uint8Array({ maxLength: 20 }), { maxLength: 5 }), (parts) => {
+        const decoded = decode(encode(...parts));
+        expect(decoded.ok && decoded.value.map(hex)).toEqual(parts.map(hex));
       }),
     );
   });

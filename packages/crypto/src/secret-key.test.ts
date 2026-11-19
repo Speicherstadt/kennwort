@@ -15,7 +15,7 @@ describe("formatSecretKey", () => {
   });
 
   it("refuses a key that is not 16 bytes", () => {
-    expect(() => formatSecretKey(new Uint8Array(15))).toThrow("secret key must be 16 bytes");
+    expect(() => formatSecretKey(new Uint8Array(15))).toThrow("key must be 16 bytes");
   });
 });
 

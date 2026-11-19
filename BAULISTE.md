@@ -54,7 +54,7 @@ und die Schritte für Menschen am Ende erledigt sind.
   nach: K-104. Fertig, wenn: Testvektoren des Entwurfs bestehen und Property-Tests grün sind.
 - [x] **K-106 Signaturen und Ableitung** – Ed25519, HKDF-SHA-512, Argon2id mit Secret Key.
   nach: K-104. Fertig, wenn: Testvektoren aus RFC 8032, RFC 5869 und RFC 9106 bestehen.
-- [ ] **K-107 Schlüsselhierarchie** – Account Key, Benutzer-, Tresor- und Eintrags-Schlüssel,
+- [x] **K-107 Schlüsselhierarchie** – Account Key, Benutzer-, Tresor- und Eintrags-Schlüssel,
   Entsperren per Passkey-PRF und Passphrase, Recovery-Kit, Firmen-Recovery.
   nach: K-105, K-106. Fertig, wenn: jeder Weg zum Account Key und jede Ebene getestet ist,
   einschließlich falscher Eingaben.
