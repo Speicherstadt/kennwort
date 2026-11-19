@@ -14,16 +14,21 @@ und die Schritte für Menschen am Ende erledigt sind.
    zuerst, dann Code, Docs und Texte de/en, `bun run check` grün.
 4. **Unabhängiges Review** durch einen eigenen Sub-Agenten (`tdd-review`): ein Befund braucht einen
    fehlschlagenden Test. Befunde fixen, bis keine mehr kommen.
-5. **CI grün → selbst mergen** (Squash), den Punkt hier im selben Pull Request abhaken.
-6. **Anhalten und melden**, wenn ein Punkt dreimal scheitert, wenn er einen Schritt für Menschen
-   braucht oder wenn er `packages/crypto` ändert: Solche Pull Requests bekommen das Label
-   `krypto` und werden erst gemergt, wenn ein Mensch zugestimmt hat.
+5. **CI grün → selbst mergen** (Squash), den Punkt hier im selben Pull Request abhaken. Der Loop
+   wartet nie auf einen Menschen, auch nicht bei `packages/crypto`: Dort gilt statt einer Freigabe
+   ein strengeres Gate – Testvektoren, Property-Tests und Mutation-Tests müssen grün sein.
+6. **Nicht hängen bleiben**: Scheitert ein Punkt dreimal, trägt der Loop ihn mit Grund unter
+   „Zurückgestellt“ ein und macht mit dem nächsten Punkt weiter, der nicht davon abhängt. Am Ende
+   kommt er auf die zurückgestellten Punkte zurück. Was nur ein Mensch erledigen kann, steht unten
+   unter „Schritte für Menschen“ und liegt nicht auf dem Weg des Loops; Signaturen baut der Loop mit
+   Test-Schlüsseln, die echten kommen erst zur Veröffentlichung.
 
 ## Phase 1 – Fundament
 
 - [ ] **K-101 Repo-Gerüst** – Workspaces `packages/crypto`, `packages/core`, `packages/ui`, Paraglide
-  (de/en), Playwright mit Projekten `desktop` und `phone`, `@firsttris/checks` (file-size, cycles,
-  i18n).
+  (de/en), Playwright mit Projekten `desktop` und `phone`; `checks.json` um i18n
+  erweitern, sobald die Pakete da sind, und `@firsttris/checks` in `package.json` aufnehmen, wo es
+  sich installieren lässt (bis dahin installiert die CI es selbst).
   Fertig, wenn: `bun run check` auf einem frischen Klon grün ist und CI alle Workspaces prüft.
 - [ ] **K-102 Liste erlaubter Laufzeit-Pakete** – `allowed-dependencies.json` mit Begründung je
   Paket und ein Check in `bun run lint`.
@@ -33,8 +38,7 @@ und die Schritte für Menschen am Ende erledigt sind.
   jedes Format mit Version, alle Protokolle (Konto, Gerät, Tresor, Mitgliedschaft, Teilen, Recovery,
   Notfall), was der Server sieht.
   Fertig, wenn: jeder Abschnitt des Projektplans zu Kryptografie und Bedrohungsmodell dort ein
-  Protokoll hat und jedes Protokoll die Angriffe der ETH-Studie nennt, die es abwehrt. Label
-  `krypto`.
+  Protokoll hat und jedes Protokoll die Angriffe der ETH-Studie nennt, die es abwehrt.
 - [ ] **K-104 Symmetrische Verschlüsselung** – XChaCha20-Poly1305 mit AAD, Formatversion im Präfix.
   nach: K-103. Fertig, wenn: Testvektoren (auch gegen libsodium, nur dev), Property-Tests
   (Rundlauf, falsche AAD/Schlüssel/Nonce scheitern) und Mutation-Tests grün sind.
@@ -106,7 +110,8 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
 
 ## Phase 4 – Extension
 
-- [ ] **K-401 Extension-Gerüst** – Solid, Vite, `@crxjs/vite-plugin`, MV3, `_locales`, Chrome/Edge
+- [ ] **K-401 Extension-Gerüst** – Solid, Vite, `@crxjs/vite-plugin`, MV3, Texte über Paraglide wie in der Web-App, `_locales` nur für
+  Name, Beschreibung und Manifest, Chrome/Edge
   und `build:firefox`; Schlüssel nur in `chrome.storage.session`.
 - [ ] **K-402 Popup** – entsperren, Treffer für die Seite, Suche, Favoriten, Generator.
 - [ ] **K-403 Inline-Menü und Ausfüllen** – Extension-iFrame im geschlossenen Shadow DOM, Ausfüllen
@@ -142,29 +147,40 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
 - [ ] **K-606 CLI** – Anmelden, Suchen, Lesen per Bestätigung, `bun build --compile`.
 - [ ] **K-607 DSGVO** – Konto löschen, Daten exportieren, Datenschutz-Seite.
 
-## Phase 7 – Mobile-App
+## Phase 7 – Härtung
 
-- [ ] **K-701 Tauri-Gerüst** – Tauri 3 (Alpha im Prototyp, sonst 2.x) mit `packages/ui`.
-- [ ] **K-702 Android-Autofill** – `AutofillService`, Biometrie, Keystore.
-- [ ] **K-703 iOS-Autofill** – Credential Provider mit Passkeys, Schlüsselbund; braucht macOS-Runner.
-- [ ] **K-704 Zwischenablage und Bildschirmschutz** – Leeren nach 30 s, sensibel markiert.
-
-## Phase 8 – Härtung
-
-- [ ] **K-801 Alle ETH-Angriffe** – jeder der 27 Angriffe als Test gegen den bösartigen Testserver.
-- [ ] **K-802 Lasttest** – viele Geräte mit Live-Sync.
-- [ ] **K-803 Installation und Betrieb** – Docker-Image, Compose, Quadlet, Caddy, Backups mit
+- [ ] **K-701 Alle ETH-Angriffe** – jeder der 27 Angriffe als Test gegen den bösartigen Testserver.
+- [ ] **K-702 Lasttest** – viele Geräte mit Live-Sync.
+- [ ] **K-703 Installation und Betrieb** – Docker-Image, Compose, Quadlet, Caddy, Backups mit
   Wiederherstellung, Update-Hinweis; Release-Workflow aus firsttris/workflows.
-- [ ] **K-804 Doku und Website** – alle Seiten aus dem Projektplan, Startseite als Produkt-Website,
+- [ ] **K-704 Doku und Website** – alle Seiten aus dem Projektplan, Startseite als Produkt-Website,
   README aktuell.
-- [ ] **K-805 Screenshots** – Workflow „Update screenshots“, hell und dunkel.
-- [ ] **K-806 Demo ohne Server** – unter `/demo/` mit Testdaten „Weber Haustechnik“.
+- [ ] **K-705 Screenshots** – Workflow „Update screenshots“, hell und dunkel.
+- [ ] **K-706 Demo ohne Server** – unter `/demo/` mit Testdaten „Weber Haustechnik“.
+
+## Phase 8 – Mobile-App (Android)
+
+Ganz am Schluss, damit Tauri 3 bis dahin möglichst stabil ist. iOS baut der Loop nicht (siehe
+„Schritte für Menschen“); die gemeinsamen Teile legt er so an, dass die iOS-App sie nur einbindet.
+
+- [ ] **K-801 Tauri-Gerüst** – Tauri 3 (stabil, sonst die neueste Alpha; Rückfall auf 2.x) mit
+  `packages/ui`, Projekt für Android und iOS angelegt.
+- [ ] **K-802 Android-Autofill** – `AutofillService`, Biometrie, Keystore.
+  Fertig, wenn: der Autofill-Dienst im Android-Emulator in CI ausfüllt.
+- [ ] **K-803 Zwischenablage und Bildschirmschutz** – Leeren nach 30 s, sensibel markiert.
+
+## Zurückgestellt
+
+Punkte, die dreimal gescheitert sind, mit Grund; der Loop kommt am Ende auf sie zurück.
 
 ## Schritte für Menschen
 
+Nicht auf dem Weg des Loops; alles erst nach der letzten Phase.
+
 - [ ] Default-Branch auf `main`, GitHub Pages mit Domain kennwort.app
-- [ ] Signatur-Schlüssel für Release-Manifest, Extension und Apps (vor Phase 4)
-- [ ] Apple- und Google-Entwicklerkonto, macOS-Runner (vor Phase 7)
+- [ ] **iOS-App** (nicht im Loop, auf einem Mac): AutoFill-Credential-Provider-Extension mit
+  Passkeys und Schlüsselbund in Xcode, Signatur, App Store
+- [ ] Signatur-Schlüssel für Release-Manifest, Extension und Apps
 - [ ] Store-Einreichungen und Antworten auf Reviews
 - [ ] Pilotbetrieb bei einem echten Betrieb
 - [ ] Externes Audit vor der Veröffentlichung

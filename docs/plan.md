@@ -41,11 +41,11 @@ später).
 | Firmen-Recovery | Standard für Firmen, pro Firma abschaltbar: Der Inhaber hält einen Notfallschlüssel und kann den Zugang eines Mitarbeiters wiederherstellen | Für einen kleinen Betrieb ist „alles weg“ schlimmer als „der Chef kommt im Notfall ran“; geteilte Tresore haben ohnehin mehrere Mitglieder |
 | Betrieb | Selbst gehostet, aber von Anfang an mandantenfähig, sodass ein IT-Dienstleister viele Firmen auf einem Server betreiben kann | passt zu „mehrere Firmen“; da der Server nichts lesen kann, ist auch gehosteter Betrieb unbedenklich |
 | Lizenz | AGPL-3.0 mit Namensnennung nach § 7(b) und kommerzieller Lizenz wie bei haben, dazu ein kurzes CLA für Beitragende | erlaubt die iPhone-App im App Store und die kommerzielle Lizenz trotz Beiträgen von außen |
-| Merge | Der Agenten-Loop merged selbst, wenn CI grün ist und das unabhängige Review keine Befunde mehr hat | der Loop soll ohne Warten durchlaufen |
+| Merge | Der Agenten-Loop merged alles selbst, wenn CI grün ist und das unabhängige Review keine Befunde mehr hat; er wartet nie auf einen Menschen | der Loop soll ohne Warten durchlaufen |
 
 ## Stack
 
-Der Stack folgt `tech-stack.md` aus firsttris/workflows; drei Abweichungen sind begründet und
+Der Stack folgt `tech-stack.md` aus firsttris/workflows; vier Abweichungen sind begründet und
 stehen im CLAUDE.md.
 
 | Teil | Wahl | Begründung |
@@ -53,14 +53,15 @@ stehen im CLAUDE.md.
 | Monorepo | Bun Workspaces, Biome, TypeScript strict, Vitest, Playwright | wie überall |
 | Server | Bun + Hono + Drizzle + SQLite + Zod, `bun build --compile`, Docker-Image amd64/arm64 | eigene API für Extension, Web-App und CLI |
 | Auth | Better Auth: Passkeys und ein allgemeiner OIDC-Client (in der Suite Kontext oder Stalwart) | nur Login und Sync, nie zum Entschlüsseln |
-| Extension | Solid 2 + Vite + `@crxjs/vite-plugin`, Manifest V3, Chrome/Edge/Firefox, `_locales` | Stack-Vorgabe für Extensions |
+| Extension | Solid 2 + Vite + `@crxjs/vite-plugin`, Manifest V3, Chrome/Edge/Firefox | Stack-Vorgabe für Extensions |
+| Texte | Paraglide JS (de/en) für alle Oberflächen, auch Extension und Mobile-App; `_locales` nur für Name, Beschreibung und Manifest der Extension | **Abweichung**: Web-App und Extension teilen `packages/ui`, also auch die Texte |
 | Web-App | Solid 2, statische SPA/PWA | **Abweichung von React**: ein UI-Paket für Web-App und Extension, kleineres Bundle zum Auditieren |
 | Kein TanStack Start / SSR | statischer Build mit Hashes im Dateinamen | **Abweichung**: nur ein statischer Build lässt sich signieren und im Service Worker prüfen |
 | Routing, Server-Daten | `@tanstack/solid-router` und `solid-query`, wenn sie Solid 2 tragen; sonst eigener kleiner Router und Solids Async | lokaler entschlüsselter Zustand ist die Quelle, nicht der Server-Cache |
 | UI | shadcn-Stil **ohne Abhängigkeiten**: `<dialog>`, Popover-API, CSS Anchor Positioning, eigene `cn()` und `variants()`, Tailwind 4, `lucide-solid`, Geist, Zinc-Tokens (siehe DESIGN.md) | jedes Laufzeitpaket läuft dort, wo Klartext liegt |
 | Krypto | `@noble/ciphers`, `@noble/curves`, `@noble/hashes`, `@noble/post-quantum` | auditiert, reines TS, ohne eigene Abhängigkeiten |
 | Sonstiges | `tldts` (Public Suffix List), `zod` | |
-| Mobile-App | Tauri 3 mit der Solid-UI aus `packages/ui`; native Autofill-Plugins: Android `AutofillService` (Kotlin), iOS AutoFill Credential Provider (Swift) | **Abweichung von Tauri 2**: Tauri 3 ist zur Zeit der Mobile-Phase voraussichtlich stabil; Prototyp auf der Alpha, Rückfall auf 2.x |
+| Mobile-App | Tauri 3 mit der Solid-UI aus `packages/ui`; native Autofill-Plugins: Android `AutofillService` (Kotlin), iOS AutoFill Credential Provider (Swift) | **Abweichung von Tauri 2**: Tauri 3 ist zur Zeit der Mobile-Phase voraussichtlich stabil; als letzte Phase gebaut, Rückfall auf 2.x |
 
 Abhängigkeiten exakt gepinnt, Renovate mit Wartezeit, `bun install --frozen-lockfile`, keine
 Install-Skripte außer `trustedDependencies`.
@@ -166,7 +167,8 @@ verschaffen.
 
 Kennwort wird als fertiges Produkt gebaut, ohne MVP: Ein Agent arbeitet die
 [Bauliste](https://github.com/Speicherstadt/kennwort/blob/main/BAULISTE.md) Punkt für Punkt ab, bis
-jedes Häkchen gesetzt und jede Prüfung grün ist. Nur vier Schritte braucht er von Menschen (unten).
+jedes Häkchen gesetzt und jede Prüfung grün ist. Er wartet nie auf einen Menschen; was nur Menschen
+erledigen können, kommt nach dem Loop (unten).
 
 Regeln für den Loop:
 
@@ -178,8 +180,9 @@ Regeln für den Loop:
 3. **Automatische Sicherheits-Gates in CI**: Testvektoren und Property-Tests für die Kryptografie,
    manipulierter Testserver mit den Angriffen der ETH-Studie, Liste erlaubter Laufzeit-Pakete,
    Bundle-Größe, CSP, Barrierefreiheit mit axe.
-4. **Stopp-Regeln**: Änderungen an `packages/crypto` nur mit Testvektor und markiert für menschliche
-   Prüfung; nie einen Test abschalten; nach drei Fehlversuchen am selben Punkt anhalten und melden.
+4. **Nicht hängen bleiben**: Änderungen an `packages/crypto` nur mit Testvektoren, Property- und
+   Mutation-Tests; nie einen Test abschalten; ein Punkt, der dreimal scheitert, wird zurückgestellt
+   und am Ende wieder aufgenommen. Signaturen baut der Loop mit Test-Schlüsseln.
 
 Reihenfolge nach Abhängigkeiten:
 
@@ -191,12 +194,14 @@ Reihenfolge nach Abhängigkeiten:
 5. **Import und Export** – alle Formate aus dem Abschnitt unten.
 6. **Team-Funktionen** – Einmal-Links, Erinnerungen, Richtlinien, Notfallzugriff, Anmeldung per
    OpenID Connect mit Gruppen, CLI.
-7. **Mobile-App** – Tauri 3 mit Autofill-Plugins für Android und iOS.
-8. **Härtung** – alle ETH-Angriffe abgewehrt, reproduzierbare Builds, Demo ohne Server, Doku,
+7. **Härtung** – alle ETH-Angriffe abgewehrt, reproduzierbare Builds, Demo ohne Server, Doku,
    Screenshots.
+8. **Mobile-App** – ganz am Schluss: Tauri 3 mit Autofill für Android; das iOS-Projekt wird angelegt,
+   die iOS-App selbst baut ein Mensch auf einem Mac.
 
-Was nur Menschen erledigen können:
+Was nur Menschen erledigen können, alles nach dem Loop:
 
+- iOS-App: AutoFill-Extension in Xcode, Signatur, App Store.
 - Signatur-Schlüssel für Release-Manifest, Extension und Apps erzeugen und verwahren.
 - Store-Einreichungen (Chrome, Firefox, Edge, App Store, Play) und Antworten auf Reviews.
 - Pilotbetrieb bei einem echten Betrieb.
@@ -221,7 +226,7 @@ Prüfungen läuft in CI.
 | Import-Parser | echte, anonymisierte Exportdateien je Anbieter; kaputte oder böswillige Dateien stürzen nie ab und hängen nie | Fixtures, Fuzzing mit fast-check |
 | Updates | Datenbank-Migrationen und ältere Formatversionen bleiben lesbar | Vitest |
 | Ernstfälle | Austritt mit Schlüsselwechsel, Recovery-Kit, Notfallzugriff, Gerät verloren, Backup zurückspielen | Playwright |
-| Mobile-App | Rust-Tests, Oberfläche mit `mockIPC`, Autofill-Plugins auf Emulatoren (iOS auf macOS-Runner) | cargo test, Playwright, Emulatoren |
+| Mobile-App | Rust-Tests, Oberfläche mit `mockIPC`, Android-Autofill im Emulator | cargo test, Playwright, Emulator |
 | Server unter Last | viele Geräte gleichzeitig mit Live-Sync | Lasttest-Skript mit Bun |
 | CI-Gates | erlaubte Laufzeit-Pakete, Bundle-Größe, CSP, Barrierefreiheit, reproduzierbarer Extension-Build (zweimal bauen, Hashes vergleichen) | eigene Checks, axe |
 | Menschen | Pilotbetrieb, externes Audit | – |
@@ -253,7 +258,7 @@ systemweit ausfüllt. In Firefox für Android läuft zusätzlich die Extension.
 | --- | --- | --- |
 | PWA | Bauphase 3 | Kopieren mit einem Tipp; Zwischenablage wird nicht automatisch geleert |
 | Extension in Firefox für Android | Bauphase 4 | Inline-Menü wie am Desktop |
-| Tauri-3-Mobile-App | Bauphase 7 | systemweit in allen Apps und Browsern, dazu Passkeys |
+| Tauri-3-Mobile-App | Bauphase 8 (iOS von Hand) | systemweit in allen Apps und Browsern, dazu Passkeys |
 
 Wer was nutzt: Die **App** ist für alle, die täglich am Handy ausfüllen. Die **PWA** bleibt für
 Aushilfen, fremde oder geteilte Geräte, Baustellen-Tablets und alle, die nichts installieren wollen
@@ -261,9 +266,8 @@ oder dürfen, auch auf dem iPhone ohne App Store. Beide nutzen dieselben Pakete 
 `packages/core`, `packages/crypto`).
 
 **Tauri 3**: Stand 19.11.2026 ist 3.0.0-alpha.6 (6.11.2026) aktuell, der 3.0-Meilenstein zu 31 %
-erledigt; stabil ist Tauri 2.12. Prototyp auf der Alpha in einem eigenen Branch, Veröffentlichung
-erst auf Tauri 3 stabil; ist es zum Start der Phase nicht stabil, beginnt die App auf 2.x und zieht
-um.
+erledigt; stabil ist Tauri 2.12. Die App kommt als letzte Bauphase, damit Tauri 3 bis dahin
+möglichst stabil ist; ist es dann nicht stabil, nimmt der Loop die neueste Alpha oder 2.x.
 
 Aufbau:
 
@@ -271,7 +275,8 @@ Aufbau:
   dünn.
 - Account Key mit Biometrie im iOS-Schlüsselbund bzw. Android Keystore verpackt.
 - Natives Plugin je Plattform: Android `AutofillService` (Kotlin, seit Chrome 135 auch in Chrome
-  nutzbar), iOS AutoFill-Credential-Provider-Extension (Swift, eigenes Xcode-Target) mit Passkeys.
+  nutzbar) baut der Loop; die iOS AutoFill-Credential-Provider-Extension (Swift, eigenes
+  Xcode-Target) mit Passkeys baut ein Mensch auf einem Mac.
 - Zwischenablage nach 30 s leeren, Bildschirmschutz gegen Screenshots in der Eintragsansicht.
 
 Verteilung:

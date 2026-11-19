@@ -22,9 +22,11 @@ docs point to the site, not to `docs/*.md`.
 Work through `BAULISTE.md` as it describes: the first open item whose dependencies are done, one
 item per pull request, tests first, an independent review by a separate subagent (`tdd-review`),
 then **merge it yourself** (squash) once CI is green and the review has no findings left, and tick
-the item in the same pull request. Stop and report instead when an item fails three times, needs a
-step only a person can do, or touches `packages/crypto` (label `krypto`: merged only after a person
-agreed).
+the item in the same pull request. Never wait for a person: `packages/crypto` merges like the rest,
+behind the stricter gate of test vectors, property and mutation tests; an item that fails three
+times goes under "Zurückgestellt" with the reason and the loop goes on with the next independent
+one. Steps only a person can do (signing keys, stores, the iOS app) are not on the loop's path;
+build with test keys.
 
 ## Reference implementations
 
@@ -93,19 +95,24 @@ zensical build --strict    # when docs/ or mkdocs.yml changed
 - The user's running processes are not stopped; use other ports for tests (dev: server 18100,
   Vite 5175; e2e: server 28100, Vite 5176).
 - Language: code, comments and commits in English; `README.md` and the docs in German only; the app
-  in German and English through Paraglide (`messages/de.json`, `messages/en.json`), the extension
-  through `_locales/`.
+  in German and English through Paraglide (`messages/de.json`, `messages/en.json`) for every text
+  of every interface, the extension and the mobile app included, as they share `packages/ui`;
+  `_locales/` only for what browsers and stores read (the extension's name, description and
+  manifest texts).
 
 ## Code style
 
-Technology choices follow `tech-stack.md` in firsttris/workflows, with three deviations:
+Technology choices follow `tech-stack.md` in firsttris/workflows, with four deviations:
 
 - **Solid 2 instead of React** for the web app too: one UI package (`packages/ui`) for the web app
   and the extension, and a smaller bundle to audit.
 - **No TanStack Start or SSR**: only a static build with hashed file names can be signed and checked
   by the service worker before an update goes live.
-- **Tauri 3 instead of Tauri 2** for the mobile app; prototype on the alpha, release on the first
-  stable version, fall back to 2.x if it is not stable in time.
+- **Tauri 3 instead of Tauri 2** for the mobile app, built as the very last phase so Tauri 3 is as
+  stable as possible by then; fall back to the newest alpha or 2.x. The loop builds Android only;
+  the iOS app is built by a person on a Mac.
+- **Paraglide in the extension too** instead of `_locales/` with `chrome.i18n`: the extension shares
+  `packages/ui` with the web app, so it shares the texts; `_locales/` keeps only the store texts.
 
 UI in the shadcn style without a component library: native `<dialog>`, the Popover API, CSS anchor
 positioning, own `cn()` and `variants()`, Tailwind 4, `lucide-solid`, Geist, zinc tokens.

@@ -25,12 +25,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The whole history: `checks pr` compares the branch with its base
+          fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun run lint
+      # The shared rule checks of firsttris/workflows (checks.json: files past 400 lines, functions past 80,
+      # rings of imports between packages; i18n once Paraglide is in). Installed without saving, as some environments
+      # cannot fetch GitHub tarballs; K-101 moves it into package.json where it can.
+      - run: bun add --dev --no-save "github:firsttris/workflows#v1"
+      - run: bunx checks
+      - if: github.event_name == 'pull_request'
+        run: bunx checks pr
       - run: bun run test
       - run: bun run build
       # Known vulnerabilities in the dependencies fail the run
