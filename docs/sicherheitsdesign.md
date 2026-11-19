@@ -146,7 +146,9 @@ die neue überführt.
   derselbe Schlüssel in zwei Zwecken ergibt nie dieselbe Eingabe.
 - **Ableitung**: `kdf(ikm, salt, zweck, …) = HKDF-SHA-512(ikm, salt, info = enc(zweck, …), L = 32)`.
 - **Fingerabdruck** eines öffentlichen Schlüsselbündels: `SHA-512/256(enc("kennwort/fp/v1", xwingPk, edPk))`;
-  angezeigt als Vergleichscode aus 12 Gruppen zu 5 Ziffern.
+  angezeigt als Vergleichscode aus 12 Gruppen zu 5 Ziffern. Für Schlüssel, die allein stehen:
+  Wurzelschlüssel `SHA-512/256(enc("kennwort/fp-root/v1", edPk))`, Firmen-Recovery-Schlüssel
+  `SHA-512/256(enc("kennwort/fp-recovery/v1", xwingPk))`.
 
 ### F-01 Geheimtext v1
 
@@ -165,7 +167,7 @@ steht in der Bezeichnung der AAD; ein umgeschriebenes Byte scheitert an der Prü
 ```text
 (ss, ct) = X-Wing.Encaps(pkₓ)                       ct: 1120 Byte, ss: 32 Byte
 k        = kdf(ss, leer, "kennwort/wrap/v1", fp(empfänger), zweck, kontext…)
-paket    = 0x01 ‖ ct ‖ F-01-Geheimtext(k, nutzlast, aad = enc("kennwort/wrap/v1", fp(empfänger), zweck, kontext…))
+paket    = 0x01 ‖ ct ‖ F-01-Geheimtext(k, nutzlast, zweck = "wrap", kontext = fp(empfänger), zweck, kontext…)
 ```
 
 X-Wing bindet das gemeinsame Geheimnis an Geheimtext und öffentlichen Schlüssel; der Fingerabdruck

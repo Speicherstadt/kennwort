@@ -38,7 +38,7 @@ und die Schritte für Menschen am Ende erledigt sind.
   Paket und ein Check in `bun run lint`.
   Fertig, wenn: ein Paket außerhalb der Liste in einem Client-Workspace den Lint scheitern lässt
   (Test dafür vorhanden).
-- [ ] **K-103 Sicherheitsdesign** – `docs/sicherheitsdesign.md`: Bedrohungsmodell, Schlüsselhierarchie,
+- [x] **K-103 Sicherheitsdesign** – `docs/sicherheitsdesign.md`: Bedrohungsmodell, Schlüsselhierarchie,
   jedes Format mit Version, alle Protokolle (Konto, Gerät, Tresor, Mitgliedschaft, Teilen, Recovery,
   Notfall), was der Server sieht.
   Fertig, wenn: jeder Abschnitt des Projektplans zu Kryptografie und Bedrohungsmodell dort ein
