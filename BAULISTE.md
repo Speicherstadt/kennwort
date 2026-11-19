@@ -25,11 +25,13 @@ und die Schritte für Menschen am Ende erledigt sind.
 
 ## Phase 1 – Fundament
 
-- [ ] **K-101 Repo-Gerüst** – Workspaces `packages/crypto`, `packages/core`, `packages/ui`, Paraglide
+- [x] **K-101 Repo-Gerüst** – Workspaces `packages/crypto`, `packages/core`, `packages/ui`, Paraglide
   (de/en), Playwright mit Projekten `desktop` und `phone`; `checks.json` um i18n
   erweitern, sobald die Pakete da sind, und `@firsttris/checks` in `package.json` aufnehmen, wo es
   sich installieren lässt (bis dahin installiert die CI es selbst).
-  Fertig, wenn: `bun run check` auf einem frischen Klon grün ist und CI alle Workspaces prüft.
+  Fertig, wenn: `bun run check` auf einem frischen Klon grün ist und CI alle Workspaces prüft
+  (ein Test scheitert, wenn ein Workspace in `tsc -b` oder Vitest fehlt) und Playwright `desktop`
+  und `phone` in CI gegen den Build der Web-App laufen.
 - [ ] **K-102 Liste erlaubter Laufzeit-Pakete** – `allowed-dependencies.json` mit Begründung je
   Paket und ein Check in `bun run lint`.
   Fertig, wenn: ein Paket außerhalb der Liste in einem Client-Workspace den Lint scheitern lässt
