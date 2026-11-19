@@ -17,10 +17,10 @@ import {
 } from "./record.ts";
 
 export type Known = { entryId: Uint8Array; version: number; content: EntryContent };
+/** A change; base is the version it started from, absent for a new entry */
 export type Pending = {
   entryId: Uint8Array;
-  baseVersion: number;
-  base: EntryContent | undefined;
+  base: { version: number; content: EntryContent } | undefined;
   content: EntryContent;
 };
 export type Device = { known: ReadonlyMap<string, Known>; queue: readonly Pending[] };
@@ -46,17 +46,19 @@ export const edit = (device: Device, entryId: Uint8Array, content: EntryContent)
     };
   }
   const known = device.known.get(idKey(entryId));
-  const op = { entryId, baseVersion: known?.version ?? 0, base: known?.content, content };
+  const base = known && { version: known.version, content: known.content };
+  const op = { entryId, base, content };
   return { ...device, queue: [...device.queue, op] };
 };
 
 /** Takes every record newer than what the device knows, if it passes the checks of P-09 */
-export const pull = (device: Device, server: SyncServer, ctx: SyncContext) => {
+export type Pulled = { device: Device; refused: Refused[] };
+
+export const pull = (device: Device, server: SyncServer, ctx: SyncContext): Pulled => {
   const known = new Map(device.known);
   const refused: Refused[] = [];
   for (const record of server.pull()) {
     const mine = known.get(idKey(record.entryId));
-    if (mine && record.version <= mine.version) continue;
     const opened = openRecord(record, ctx.ring, ctx.log, ctx.trust, mine?.version ?? 0);
     if (opened.ok)
       known.set(idKey(record.entryId), {
@@ -64,7 +66,9 @@ export const pull = (device: Device, server: SyncServer, ctx: SyncContext) => {
         version: record.version,
         content: opened.value,
       });
-    else refused.push({ entryId: record.entryId, version: record.version, error: opened.error });
+    // A version the device already has is no news, not an attack
+    else if (opened.error !== "stale")
+      refused.push({ entryId: record.entryId, version: record.version, error: opened.error });
   }
   return { device: { ...device, known }, refused };
 };
@@ -73,35 +77,45 @@ const MAX_ATTEMPTS = 5;
 
 /** The content to push for a change, merged if the entry moved on since the change began */
 const contentFor = (op: Pending, current: Known | undefined, now: number) =>
-  !current || current.version === op.baseVersion || !op.base
-    ? op.content
-    : mergeContent(op.base, op.content, current.content, now);
+  op.base && current && current.version !== op.base.version
+    ? mergeContent(op.base.content, op.content, current.content, now)
+    : op.content;
 
-export const sync = (device: Device, server: SyncServer, ctx: SyncContext) => {
-  let state = pull(device, server, ctx);
-  const refused = [...state.refused];
+/** Pushes one change as the next version, pulling and merging again when someone was faster */
+const pushChange = (
+  start: ReturnType<typeof pull>,
+  op: Pending,
+  server: SyncServer,
+  ctx: SyncContext,
+) => {
+  let state = start;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const current = state.device.known.get(idKey(op.entryId));
+    const content = contentFor(op, current, ctx.now);
+    const version = (current?.version ?? 0) + 1;
+    if (
+      server.push(sealRecord(ctx.author, ctx.ring, op.entryId, version, content, ctx.lastSeen)).ok
+    ) {
+      const known = new Map(state.device.known).set(idKey(op.entryId), {
+        entryId: op.entryId,
+        version,
+        content,
+      });
+      return { state: { ...state, device: { ...state.device, known } }, done: true };
+    }
+    state = pull(state.device, server, ctx);
+  }
+  return { state, done: false };
+};
+
+/** Pulls, then pushes every queued change; what the server keeps refusing stays queued */
+export const sync = (device: Device, server: SyncServer, ctx: SyncContext): Pulled => {
+  let state: Pulled = pull(device, server, ctx);
   const left: Pending[] = [];
   for (const op of state.device.queue) {
-    let done = false;
-    for (let attempt = 0; attempt < MAX_ATTEMPTS && !done; attempt++) {
-      const current = state.device.known.get(idKey(op.entryId));
-      const content = contentFor(op, current, ctx.now);
-      const version = (current?.version ?? 0) + 1;
-      const record = sealRecord(ctx.author, ctx.ring, op.entryId, version, content, ctx.lastSeen);
-      if (server.push(record).ok) {
-        const known = new Map(state.device.known).set(idKey(op.entryId), {
-          entryId: op.entryId,
-          version,
-          content,
-        });
-        state = { ...state, device: { ...state.device, known } };
-        done = true;
-      } else {
-        state = pull(state.device, server, ctx);
-        refused.push(...state.refused);
-      }
-    }
-    if (!done) left.push(op);
+    const result = pushChange(state, op, server, ctx);
+    state = result.state;
+    if (!result.done) left.push(op);
   }
-  return { device: { ...state.device, queue: left }, refused };
+  return { device: { ...state.device, queue: left }, refused: state.refused };
 };

@@ -42,13 +42,10 @@ export const EntryContent = z.object({
 export type Field = z.infer<typeof Field>;
 export type EntryContent = z.infer<typeof EntryContent>;
 
-const sameField = (a: Field | undefined, b: Field | undefined) =>
-  a === b ||
-  (a !== undefined &&
-    b !== undefined &&
-    a.name === b.name &&
-    a.value === b.value &&
-    a.kind === b.kind);
+// Two fields are the same when name, value and kind are; an absent field is only like another absent one
+const fieldKey = (field: Field | undefined) =>
+  field === undefined ? "absent" : JSON.stringify([field.name, field.value, field.kind]);
+const sameField = (a: Field | undefined, b: Field | undefined) => fieldKey(a) === fieldKey(b);
 
 /** One field: taken from the side that changed it; if both did, theirs stays and mine is lost to history */
 const mergeField = (

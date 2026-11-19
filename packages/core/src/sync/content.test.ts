@@ -95,3 +95,40 @@ describe("EntryContent", () => {
     ).toBe(false);
   });
 });
+
+describe("merging fields that differ in one property", () => {
+  it("sees a change of name or kind alone", () => {
+    const renamed = {
+      ...bank,
+      fields: bank.fields.map((f) => (f.id === "user" ? { ...f, name: "Login" } : f)),
+    };
+    const rekinded = {
+      ...bank,
+      fields: bank.fields.map((f) => (f.id === "user" ? { ...f, kind: "email" as const } : f)),
+    };
+    expect(mergeContent(bank, renamed, bank, now).fields[0]?.name).toBe("Login");
+    expect(mergeContent(bank, rekinded, bank, now).fields[0]?.kind).toBe("email");
+    expect(mergeContent(bank, bank, renamed, now).fields[0]?.name).toBe("Login");
+  });
+
+  it("does not mix up name and value split differently", () => {
+    const a = { ...bank, fields: [{ id: "x", name: "ab", value: "", kind: "text" as const }] };
+    const b = { ...bank, fields: [{ id: "x", name: "a", value: "b", kind: "text" as const }] };
+    expect(mergeContent(a, b, a, now).fields[0]).toEqual(b.fields[0]);
+  });
+});
+
+describe("EntryContent accepts every type and kind", () => {
+  it.each(["login", "note", "wifi", "card", "ssh-key", "api-key", "identity"])(
+    "type %s",
+    (type) => {
+      expect(EntryContent.safeParse({ ...bank, type }).success).toBe(true);
+    },
+  );
+
+  it.each(["text", "secret", "url", "email", "totp", "note"])("kind %s", (kind) => {
+    expect(EntryContent.safeParse({ ...bank, fields: [{ ...bank.fields[0], kind }] }).success).toBe(
+      true,
+    );
+  });
+});
