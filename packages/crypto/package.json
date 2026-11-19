@@ -7,7 +7,10 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@noble/ciphers": "2.4.0"
+    "@noble/ciphers": "2.4.0",
+    "@noble/curves": "2.4.0",
+    "@noble/hashes": "2.4.0",
+    "@noble/post-quantum": "0.7.1"
   },
   "scripts": {
     "mutation": "stryker run"
