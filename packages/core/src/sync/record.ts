@@ -37,11 +37,21 @@ export type EntryRecord = z.infer<typeof EntryRecord>;
 /** A record as JSON for the wire; EntryRecord.parse reads it back */
 export const recordToWire = (record: EntryRecord) =>
   Object.fromEntries(
-    Object.entries(record).map(([name, value]) => [name, value instanceof Uint8Array ? encodeBytes(value) : value]),
+    Object.entries(record).map(([name, value]) => [
+      name,
+      value instanceof Uint8Array ? encodeBytes(value) : value,
+    ]),
   );
 
 const signedFields = (r: Omit<EntryRecord, "signature">) =>
-  [r.vaultId, r.entryId, r.version, r.epoch, digest(encode(r.entryKey, r.content)), r.lastSeen] as const;
+  [
+    r.vaultId,
+    r.entryId,
+    r.version,
+    r.epoch,
+    digest(encode(r.entryKey, r.content)),
+    r.lastSeen,
+  ] as const;
 
 export type Author = { id: Uint8Array; edSecretKey: Uint8Array };
 export type VaultKeyring = { vaultId: Uint8Array; epoch: number; vaultKey: Uint8Array };
@@ -69,7 +79,13 @@ export const sealRecord = (
   return { ...unsigned, signature: sign(author.edSecretKey, "entry", ...signedFields(unsigned)) };
 };
 
-export type AcceptError = "wrong-vault" | "stale" | "uncertified-author" | "bad-signature" | "not-editor" | "unreadable";
+export type AcceptError =
+  | "wrong-vault"
+  | "stale"
+  | "uncertified-author"
+  | "bad-signature"
+  | "not-editor"
+  | "unreadable";
 
 export const openRecord = (
   record: EntryRecord,
@@ -78,11 +94,13 @@ export const openRecord = (
   trust: Trust,
   knownVersion: number,
 ): Result<EntryContent, AcceptError> => {
-  if (idKey(record.vaultId) !== idKey(ring.vaultId) || record.epoch !== ring.epoch) return err("wrong-vault");
+  if (idKey(record.vaultId) !== idKey(ring.vaultId) || record.epoch !== ring.epoch)
+    return err("wrong-vault");
   if (record.version <= knownVersion) return err("stale");
   const certificate = trust.certificates.get(idKey(record.author));
   if (!certificate) return err("uncertified-author");
-  if (!verify(certificate.edPublicKey, record.signature, "entry", ...signedFields(record))) return err("bad-signature");
+  if (!verify(certificate.edPublicKey, record.signature, "entry", ...signedFields(record)))
+    return err("bad-signature");
   const role = log.members.get(idKey(record.author))?.role;
   if (role !== "edit" && role !== "manage") return err("not-editor");
   const at = { vaultId: record.vaultId, entryId: record.entryId, epoch: record.epoch };

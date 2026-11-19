@@ -7,7 +7,15 @@
 import { z } from "zod";
 
 export const FieldKind = z.enum(["text", "secret", "url", "email", "totp", "note"]);
-export const EntryType = z.enum(["login", "note", "wifi", "card", "ssh-key", "api-key", "identity"]);
+export const EntryType = z.enum([
+  "login",
+  "note",
+  "wifi",
+  "card",
+  "ssh-key",
+  "api-key",
+  "identity",
+]);
 
 export const Field = z.object({
   id: z.string().min(1),
@@ -35,10 +43,19 @@ export type Field = z.infer<typeof Field>;
 export type EntryContent = z.infer<typeof EntryContent>;
 
 const sameField = (a: Field | undefined, b: Field | undefined) =>
-  a === b || (a !== undefined && b !== undefined && a.name === b.name && a.value === b.value && a.kind === b.kind);
+  a === b ||
+  (a !== undefined &&
+    b !== undefined &&
+    a.name === b.name &&
+    a.value === b.value &&
+    a.kind === b.kind);
 
 /** One field: taken from the side that changed it; if both did, theirs stays and mine is lost to history */
-const mergeField = (base: Field | undefined, mine: Field | undefined, theirs: Field | undefined) => {
+const mergeField = (
+  base: Field | undefined,
+  mine: Field | undefined,
+  theirs: Field | undefined,
+) => {
   if (sameField(mine, theirs)) return { field: theirs, lost: undefined };
   if (sameField(base, mine)) return { field: theirs, lost: undefined };
   if (sameField(base, theirs)) return { field: mine, lost: undefined };
@@ -48,7 +65,8 @@ const mergeField = (base: Field | undefined, mine: Field | undefined, theirs: Fi
 
 const byId = (fields: Field[]) => new Map(fields.map((field) => [field.id, field]));
 
-const mergeScalar = <T>(base: T, mine: T, theirs: T): T => (mine === base ? theirs : mine === theirs ? theirs : base === theirs ? mine : theirs);
+const mergeScalar = <T>(base: T, mine: T, theirs: T): T =>
+  mine === base ? theirs : mine === theirs ? theirs : base === theirs ? mine : theirs;
 
 const mergeTags = (base: string[], mine: string[], theirs: string[]) => {
   const removed = new Set([...base].filter((tag) => !mine.includes(tag) || !theirs.includes(tag)));
@@ -65,7 +83,12 @@ const mergeHistory = (lists: EntryContent["history"][]) => {
   });
 };
 
-export const mergeContent = (base: EntryContent, mine: EntryContent, theirs: EntryContent, now: number): EntryContent => {
+export const mergeContent = (
+  base: EntryContent,
+  mine: EntryContent,
+  theirs: EntryContent,
+  now: number,
+): EntryContent => {
   const [b, m, t] = [byId(base.fields), byId(mine.fields), byId(theirs.fields)];
   const ids = [...new Set([...theirs.fields, ...mine.fields].map((field) => field.id))];
   const lost: EntryContent["history"] = [];
@@ -75,7 +98,8 @@ export const mergeContent = (base: EntryContent, mine: EntryContent, theirs: Ent
     return field ? [field] : [];
   });
   const title = mergeScalar(base.title, mine.title, theirs.title);
-  if (title !== mine.title && mine.title !== base.title) lost.push({ fieldId: "title", value: mine.title, replacedAt: now });
+  if (title !== mine.title && mine.title !== base.title)
+    lost.push({ fieldId: "title", value: mine.title, replacedAt: now });
   return {
     type: mergeScalar(base.type, mine.type, theirs.type),
     title,

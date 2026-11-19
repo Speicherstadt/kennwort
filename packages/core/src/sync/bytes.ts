@@ -27,5 +27,5 @@ export const bytes = (length?: number) =>
         ctx.addIssue({ code: "custom", message: `expected ${length} bytes` });
         return z.NEVER;
       }
-      return value;
+      return value as Uint8Array;
     });
