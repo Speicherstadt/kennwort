@@ -1,0 +1,13 @@
+{
+  "$comment": "Runtime packages a workspace may depend on, each with the reason (CLAUDE.md, Never: a runtime dependency only with an entry here). Every runtime package runs where plain text lives; the client stays at a handful. `bun run lint` fails on a dependency missing here or used by a workspace not listed for it. Workspace packages (@kennwort/*) need no entry.",
+  "packages": {
+    "solid-js": {
+      "reason": "Solid 2, the reactive UI of the web app, the extension and the mobile app (docs/plan.md, Stack); small and auditable instead of React",
+      "workspaces": ["packages/ui", "apps/web"]
+    },
+    "@solidjs/web": {
+      "reason": "Solid 2's DOM renderer, split out of solid-js in 2.0; the same project and release as solid-js",
+      "workspaces": ["packages/ui", "apps/web"]
+    }
+  }
+}
