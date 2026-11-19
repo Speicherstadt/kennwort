@@ -185,8 +185,14 @@ bindung(schlüssel, zweck, kontext…) = kdf(schlüssel, leer, "kennwort/key-com
 Die Bindung verrät den Schlüssel nicht (HKDF ist eine Einwegfunktion) und steht im signierten
 Log-Eintrag, in der signierten Freigabe, im signierten Notfall-Paket oder in der signierten
 Firmen-Recovery-Hinterlegung. Ein Paket ohne passende signierte Bindung wird verworfen (E-16).
-Einzige Ausnahme ist das Paket an ein neues Gerät ([P-04](#p-04-neues-gerat)): Dort prüfen der
-QR-Code und der Vergleichscode auf beiden Geräten, wer verpackt hat.
+Zwei Fälle prüfen anders:
+
+- **Private Schlüssel** (Firmen-Wurzelschlüssel, Firmen-Recovery-Schlüssel): Der öffentliche
+  Schlüssel ist die Bindung seines privaten. Der Client leitet ihn aus dem entpackten privaten
+  Schlüssel ab und vergleicht ihn mit dem gemerkten Wurzel-Fingerabdruck aus dem Schlüsselblock bzw.
+  mit dem Fingerabdruck des Recovery-Schlüssels in der vom Wurzelschlüssel signierten Richtlinie.
+- **Das Paket an ein neues Gerät** ([P-04](#p-04-neues-gerat)): Dort prüfen der QR-Code und der
+  Vergleichscode auf beiden Geräten, wer verpackt hat.
 
 ### F-03 Signatur v1
 
