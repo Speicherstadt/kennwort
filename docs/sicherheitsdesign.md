@@ -232,7 +232,7 @@ Eintrags-Schlüssel EK ─► Eintrag (alle Felder in einem Geheimtext, F-01)
 | Schlüssel | Entsteht | Liegt verschlüsselt | Kontext (AAD) |
 | --- | --- | --- | --- |
 | AK | zufällig beim Konto | unter jedem Entsperr-Weg | Konto-ID, Weg (`passkey`, `passphrase`, `recovery`, `company`), bei Passkeys die Credential-ID |
-| Benutzer-Schlüssel | zufällig beim Konto | unter AK | Konto-ID, Schlüsselart |
+| Schlüsselblock: Benutzer-Schlüssel und Fingerabdruck des Firmen-Wurzelschlüssels | beim Konto | unter AK | Konto-ID |
 | VKₑ | zufällig beim Anlegen und bei jedem Schlüsselwechsel | an jedes Mitglied verpackt; seine Bindung steht im signierten Log | Tresor-ID, Epoche, Konto-ID des Mitglieds |
 | EK | zufällig je Eintrag und neu bei jedem Schlüsselwechsel | unter VKₑ | Tresor-ID, Eintrags-ID, Epoche |
 | Inhalt | – | unter EK | Tresor-ID, Eintrags-ID, Version |
@@ -243,9 +243,16 @@ die höchste Version jedes Eintrags. Er ist ein F-01-Geheimtext unter AK (Zweck 
 Kontext Konto-ID und ein Zähler) auf dem Server; jedes Gerät lädt ihn beim Entsperren, führt ihn
 mit seinem eigenen Stand zusammen (der höhere Stand gewinnt, ein anderer Wurzelschlüssel ist ein
 Angriff) und schreibt ihn mit höherem Zähler zurück. So kennt jedes Gerät eines Kontos, auch eines,
-das mit Passphrase oder Recovery-Kit entsperrt, was das erste Gerät geprüft hat. Spielt der Server
-einen älteren Kontozustand zurück, verliert ein neues Gerät höchstens Stände, die jünger sind als
-dieser; den Wurzelschlüssel aus der Einladung verliert es nie, weil er im ersten Kontozustand steht.
+das mit Passphrase oder Recovery-Kit entsperrt, was das erste Gerät geprüft hat. P-01 legt den
+ersten Kontozustand (Zähler 0) an, bevor das Konto benutzbar ist; fehlt er später, warnt der Client
+und behandelt das als Angriff, nicht als neues Konto. Spielt der Server einen älteren Kontozustand
+zurück, verliert ein neues Gerät höchstens Stände, die jünger sind als dieser.
+
+Der **Fingerabdruck des Firmen-Wurzelschlüssels** steht zusätzlich im **Schlüsselblock**, dem
+Geheimtext unter AK mit den privaten Schlüsseln des Benutzers. Ohne Schlüsselblock kann kein Gerät
+etwas entschlüsseln; der Server kann ihn also nicht weglassen, und jedes Gerät, das AK hat – über
+Passkey, Passphrase, Recovery-Kit, neues Gerät oder Firmen-Recovery –, hat damit auch den geprüften
+Wurzelschlüssel.
 
 Entsperrte Schlüssel liegen nur im Speicher (in der Extension in `chrome.storage.session`), nie in
 `localStorage`, IndexedDB oder auf dem Server.
@@ -258,14 +265,17 @@ bleibt.
 ### P-01 Konto anlegen
 
 1. Der Client erzeugt AK, Secret Key, Konto-Salt, X-Wing- und Ed25519-Schlüssel.
-2. Er verschlüsselt die privaten Schlüssel unter AK (F-01) und AK unter jedem Entsperr-Weg
+2. Er verschlüsselt den Schlüsselblock (private Schlüssel und den Fingerabdruck des
+   Wurzelschlüssels aus der Einladung, [P-08](#p-08-einladung); beim Inhaber den eigenen) und den
+   ersten Kontozustand unter AK (F-01) und AK unter jedem Entsperr-Weg
    ([P-03](#p-03-entsperren)).
 3. Er erzeugt das Recovery-Kit ([P-12](#p-12-recovery-kit)) und lässt es sichern, bevor das Konto
    benutzbar ist.
-4. Zum Server gehen nur: Konto-ID, Konto-Salt, die Geheimtexte, das Schlüsselbündel (F-06) und der
-   öffentliche Anmelde-Schlüssel ([P-02](#p-02-anmelden)).
+4. Zum Server gehen nur: Konto-ID, Konto-Salt, die Geheimtexte (Schlüsselblock, Kontozustand,
+   verpackter AK), das Schlüsselbündel (F-06) und der öffentliche Anmelde-Schlüssel
+   ([P-02](#p-02-anmelden)).
 
-**Wehrt ab:** E-18, E-24.
+**Wehrt ab:** E-10, E-18, E-24.
 
 ### P-02 Anmelden
 
@@ -374,8 +384,9 @@ wieder etwas voneinander sehen.
   ihn zum Vergleich an. Ein anderer Wurzelschlüssel oder ein neues Bündel für ein bekanntes Konto
   löst eine deutliche Warnung aus und wird nicht stillschweigend übernommen.
 
-- Der gemerkte Fingerabdruck steht im Kontozustand ([Schlüsselhierarchie](#schlusselhierarchie)),
-  nicht nur auf einem Gerät: Jedes weitere Gerät des Kontos prüft gegen ihn.
+- Der gemerkte Fingerabdruck steht im Schlüsselblock unter AK
+  ([Schlüsselhierarchie](#schlusselhierarchie)), nicht nur auf einem Gerät: Jedes Gerät des Kontos
+  prüft gegen ihn, auch eines, das mit Passphrase, Recovery-Kit oder Firmen-Recovery entsperrt.
 
 Restrisiko: der erste Kontakt (TOFU) für Konten, die ohne Einladungslink entstehen (OIDC),
 abgeschwächt durch den Vergleichscode. Wer per Link eingeladen wird, bekommt den Fingerabdruck im
@@ -474,8 +485,10 @@ legt danach einen neuen Recovery Key an.
   vom Wurzelschlüssel signiert ist, Firmen-Recovery dort an ist und der Schlüssel dem dort genannten
   Fingerabdruck entspricht.
 - Wiederherstellen: Der Inhaber entschlüsselt AK, verpackt ihn an ein neues Gerät des Mitarbeiters
-  ([P-04](#p-04-neues-gerat)) und signiert einen Audit-Eintrag; der Mitarbeiter legt danach neue
-  Entsperr-Wege an.
+  ([P-04](#p-04-neues-gerat)) und signiert einen Audit-Eintrag; statt des eigenen Kontozustands
+  trägt das Paket den Hash des Kontozustands des Mitarbeiters, den der Inhaber mit dessen AK
+  entschlüsselt hat. Den Wurzelschlüssel liest das neue Gerät aus dem Schlüsselblock des
+  Mitarbeiters. Der Mitarbeiter legt danach neue Entsperr-Wege an.
 
 Ein Server, der eine Wiederherstellung mit eigenem Schlüssel unterschiebt, scheitert an der
 fehlenden Signatur der Richtlinie.
