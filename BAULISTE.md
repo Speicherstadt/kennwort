@@ -58,7 +58,7 @@ und die Schritte für Menschen am Ende erledigt sind.
   Entsperren per Passkey-PRF und Passphrase, Recovery-Kit, Firmen-Recovery.
   nach: K-105, K-106. Fertig, wenn: jeder Weg zum Account Key und jede Ebene getestet ist,
   einschließlich falscher Eingaben.
-- [ ] **K-108 Mitgliedschafts-Log** – signierte Hash-Kette pro Tresor, Prüfung im Client, Merken des
+- [x] **K-108 Mitgliedschafts-Log** – signierte Hash-Kette pro Tresor, Prüfung im Client, Merken des
   letzten Stands, Firmen-Wurzelschlüssel signiert Mitarbeiterschlüssel.
   nach: K-107. Fertig, wenn: ausgelassene, vertauschte, unsignierte und zurückgespielte Einträge
   erkannt werden (je ein Test).
