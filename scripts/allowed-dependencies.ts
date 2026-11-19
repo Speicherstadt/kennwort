@@ -7,7 +7,8 @@
  */
 
 export type Allowlist = { packages: Record<string, { reason: string; workspaces: string[] }> };
-export type Workspace = { dir: string; dependencies: Record<string, string> };
+/** A workspace's runtime dependencies, as a map or as entries when several fields name one package */
+export type Workspace = { dir: string; dependencies: Record<string, string> | [string, string][] };
 
 const ONLY_NOBLE = "packages/crypto";
 const isWorkspacePackage = (version: string) => version.startsWith("workspace:");
@@ -35,8 +36,22 @@ const problemOf = (
 /** Every runtime dependency that the allowlist does not cover */
 export const violations = (allowlist: Allowlist, workspaces: Workspace[]): string[] =>
   workspaces.flatMap(({ dir, dependencies }) =>
-    Object.entries(dependencies)
+    (Array.isArray(dependencies) ? dependencies : Object.entries(dependencies))
       .filter(([, version]) => !isWorkspacePackage(version))
       .map((dependency) => problemOf(allowlist, dir, dependency))
       .filter((problem) => problem !== undefined),
+  );
+
+/**
+ * `overrides` and `resolutions` of the root package.json swap the package behind a name for every
+ * workspace, so each one must be an exact registry version too
+ */
+export const overrideViolations = (root: Record<string, unknown>): string[] =>
+  (["overrides", "resolutions"] as const).flatMap((field) =>
+    Object.entries((root[field] ?? {}) as Record<string, unknown>)
+      .filter(([, version]) => typeof version !== "string" || !EXACT_VERSION.test(version))
+      .map(
+        ([name, version]) =>
+          `package.json: ${field} ${name}@${JSON.stringify(version)} is not an exact registry version`,
+      ),
   );

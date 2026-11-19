@@ -3,7 +3,7 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { type Allowlist, violations } from "./allowed-dependencies.ts";
+import { type Allowlist, overrideViolations, violations } from "./allowed-dependencies.ts";
 
 const allowlist: Allowlist = {
   packages: {
@@ -82,6 +82,24 @@ describe("violations", () => {
   });
 });
 
+describe("overrideViolations", () => {
+  it("passes exact versions and fails aliases, ranges and nested overrides", () => {
+    expect(overrideViolations({ overrides: { a: "1.2.3" }, resolutions: { b: "4.5.6" } })).toEqual(
+      [],
+    );
+    expect(
+      overrideViolations({
+        overrides: { a: "npm:x@1.0.0", c: { d: "1.0.0" } },
+        resolutions: { b: "^1.0.0" },
+      }),
+    ).toEqual([
+      'package.json: overrides a@"npm:x@1.0.0" is not an exact registry version',
+      'package.json: overrides c@{"d":"1.0.0"} is not an exact registry version',
+      'package.json: resolutions b@"^1.0.0" is not an exact registry version',
+    ]);
+  });
+});
+
 describe("bun run lint", () => {
   const root = join(import.meta.dirname, "..");
   const check = join(root, "scripts/check-dependencies.ts");
@@ -91,9 +109,10 @@ describe("bun run lint", () => {
     expect(run(root).status).toBe(0);
   });
 
-  const lintIn = (manifest: object) => {
+  const lintIn = (manifest: object, rootManifest: object = { name: "kennwort" }) => {
     const repo = mkdtempSync(join(tmpdir(), "kennwort-deps-"));
     cpSync(join(root, "allowed-dependencies.json"), join(repo, "allowed-dependencies.json"));
+    writeFileSync(join(repo, "package.json"), JSON.stringify(rootManifest));
     mkdirSync(join(repo, "apps/web"), { recursive: true });
     writeFileSync(
       join(repo, "apps/web/package.json"),
@@ -110,6 +129,23 @@ describe("bun run lint", () => {
       expect(result.stderr).toContain("apps/web: left-pad is not in allowed-dependencies.json");
     },
   );
+
+  it("fails an alias in dependencies even when peerDependencies names the same package exactly", () => {
+    const result = lintIn({
+      dependencies: { "solid-js": "npm:left-pad@1.3.0" },
+      peerDependencies: { "solid-js": "2.0.3" },
+    });
+    expect(result.status).toBe(1);
+  });
+
+  it("fails a root override that swaps an allowed name for another package", () => {
+    const result = lintIn(
+      { dependencies: { "solid-js": "2.0.3" } },
+      { name: "kennwort", overrides: { "solid-js": "npm:left-pad@1.3.0" } },
+    );
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("overrides solid-js");
+  });
 
   it("is part of the lint script", () => {
     const scripts = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).scripts;
