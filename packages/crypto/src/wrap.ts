@@ -12,6 +12,7 @@ import { ml_kem768_x25519 as xwing } from "@noble/post-quantum/hybrid.js";
 import { type BoxContext, open, seal, sealWithNonce } from "./box.ts";
 import { kdf } from "./derive.ts";
 import type { Part } from "./encoding.ts";
+import { FINGERPRINT_LENGTH } from "./fingerprint.ts";
 import { err, type Result } from "./result.ts";
 
 export const WRAP_V1 = 0x01;
@@ -24,7 +25,6 @@ const SMALLEST_PACKAGE = KEM_END + 1 + 24 + 16;
 
 export type Recipient = { publicKey: Uint8Array; fingerprint: Uint8Array };
 export type UnwrapError = "unknown-version" | "too-short" | "wrong-key-length" | "not-authentic";
-const FINGERPRINT_LENGTH = 32;
 
 // A fingerprint of another length would drop the binding to the whole key bundle
 const assertFingerprint = (fingerprint: Uint8Array) => {

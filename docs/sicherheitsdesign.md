@@ -254,6 +254,10 @@ Eintrags-Schlüssel EK ─► Eintrag (alle Felder in einem Geheimtext, F-01)
 | EK | zufällig je Eintrag und neu bei jedem Schlüsselwechsel | unter VKₑ | Tresor-ID, Eintrags-ID, Epoche |
 | Inhalt | – | unter EK | Tresor-ID, Eintrags-ID, Version |
 
+Umgesetzt in `packages/crypto/src/account.ts` (AK, Schlüsselblock, Entsperr-Wege),
+`vault.ts` (Tresor- und Eintrags-Schlüssel, Inhalt mit Auffüllen auf 256 Byte),
+`commitment.ts` (Bindungen) und `company-recovery.ts` (P-13).
+
 Was ein Client sich merkt, um den Server zu prüfen, liegt im **Kontozustand**: Fingerabdruck des
 Firmen-Wurzelschlüssels, bekannte Schlüsselbündel, der letzte Stand jedes Mitgliedschafts-Logs und
 die höchste Version jedes Eintrags. Er ist ein F-01-Geheimtext unter AK (Zweck `account-state`,
@@ -488,8 +492,9 @@ nach dem Schlüsselwechsel liegen unter neuen EK.
 ### P-12 Recovery-Kit
 
 Ein Recovery Key (256 Bit) verschlüsselt AK (F-01, Weg `recovery`). Das Kit ist ein PDF zum
-Ausdrucken mit Server-Adresse, Konto, Secret Key und Recovery Key (Crockford-Base32 mit
-Prüfziffern) und QR-Code. Es wird auf dem Gerät erzeugt und nie hochgeladen. Wer das Kit nutzt,
+Ausdrucken mit Server-Adresse, Konto, Secret Key und Recovery Key und QR-Code. Der Recovery Key
+steht als `R1-` und 52 Zeichen Crockford-Base32 in Fünfergruppen mit einem Prüfzeichen (mod 37) da,
+das jeden einzelnen Tippfehler erkennt. Es wird auf dem Gerät erzeugt und nie hochgeladen. Wer das Kit nutzt,
 legt danach einen neuen Recovery Key an.
 
 **Wehrt ab:** E-01.
