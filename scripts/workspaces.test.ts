@@ -1,0 +1,36 @@
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import vitestConfig from "../vitest.config.ts";
+import { parseJsonc, referencedPaths, workspaceDirs } from "./workspaces.ts";
+
+// CI checks every workspace only if each one takes part in the type check and the test run
+const root = join(import.meta.dirname, "..");
+const workspaces = workspaceDirs(root);
+const projectIncludes = (vitestConfig.test?.projects ?? []).flatMap(
+  (project) => (project as { test?: { include?: string[] } }).test?.include ?? [],
+);
+
+describe("workspaces", () => {
+  it("finds the packages of the monorepo", () => {
+    expect(workspaces).toEqual(
+      expect.arrayContaining(["packages/crypto", "packages/core", "packages/ui", "apps/web"]),
+    );
+  });
+
+  it.each(workspaces)("%s is type-checked by tsc -b", (dir) => {
+    expect(existsSync(join(root, dir, "tsconfig.json"))).toBe(true);
+    const solution = parseJsonc(readFileSync(join(root, "tsconfig.json"), "utf8"));
+    expect(referencedPaths(solution)).toContain(dir);
+  });
+
+  it.each(workspaces)("%s is covered by a Vitest project", (dir) => {
+    expect(projectIncludes.some((glob) => glob.startsWith(`${dir}/`))).toBe(true);
+  });
+});
+
+describe("parseJsonc", () => {
+  it("reads line comments and trailing commas", () => {
+    expect(parseJsonc('{\n  // note\n  "a": [1, 2,],\n}')).toEqual({ a: [1, 2] });
+  });
+});
