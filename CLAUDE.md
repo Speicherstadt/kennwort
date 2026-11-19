@@ -12,7 +12,7 @@ every connection goes through an open standard (OpenID Connect, SCIM, deep links
 | What to build next, acceptance criteria, how the loop works | `BAULISTE.md` |
 | Why: goals, decisions, stack, cryptography, threat model, tests | `docs/plan.md` |
 | Look and behaviour of the UI | `DESIGN.md` |
-| Protocols and formats (before anything in `packages/crypto`, `packages/core` or the sync) | `docs/sicherheitsdesign.md` (written in K-103) |
+| Protocols and formats (before anything in `packages/crypto`, `packages/core` or the sync) | `docs/sicherheitsdesign.md` |
 
 The documentation is in `docs/` (<https://kennwort.app/>), German only. Links in the README and the
 docs point to the site, not to `docs/*.md`.
