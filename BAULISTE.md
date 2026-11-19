@@ -31,7 +31,9 @@ und die Schritte für Menschen am Ende erledigt sind.
   sich installieren lässt (bis dahin installiert die CI es selbst).
   Fertig, wenn: `bun run check` auf einem frischen Klon grün ist und CI alle Workspaces prüft
   (ein Test scheitert, wenn ein Workspace in `tsc -b` oder Vitest fehlt) und Playwright `desktop`
-  und `phone` in CI gegen den Build der Web-App laufen.
+  und `phone` in CI gegen den Build der Web-App laufen. `@firsttris/checks` lässt sich bislang nirgends
+  aus dem Lockfile installieren (Bun lädt GitHub-Pakete als Tarball über api.github.com, in der
+  Agenten-Umgebung gesperrt); die CI installiert es weiter selbst.
 - [ ] **K-102 Liste erlaubter Laufzeit-Pakete** – `allowed-dependencies.json` mit Begründung je
   Paket und ein Check in `bun run lint`.
   Fertig, wenn: ein Paket außerhalb der Liste in einem Client-Workspace den Lint scheitern lässt

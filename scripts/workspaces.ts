@@ -9,9 +9,13 @@ export const workspaceDirs = (root: string): string[] =>
     .filter((dir) => existsSync(join(root, dir, "package.json")))
     .sort();
 
-/** Reads a tsconfig file, which may carry line comments */
+// A string, a line comment, a block comment, or a comma before a closing bracket: matched in one
+// pass from the left, so a "//" or ",]" inside a string stays part of the string
+const JSONC_TOKENS = /("(?:[^"\\]|\\.)*")|\/\/[^\n]*|\/\*[\s\S]*?\*\/|,(?=\s*[}\]])/g;
+
+/** Reads a tsconfig file, which may carry comments and trailing commas (JSONC) */
 export const parseJsonc = (text: string): unknown =>
-  JSON.parse(text.replace(/^\s*\/\/.*$/gm, "").replace(/,(\s*[}\]])/g, "$1"));
+  JSON.parse(text.replace(JSONC_TOKENS, (_match, string?: string) => string ?? ""));
 
 /** The paths a solution tsconfig references */
 export const referencedPaths = (tsconfig: unknown): string[] =>
