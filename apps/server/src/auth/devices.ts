@@ -64,10 +64,20 @@ export const startSession = async (db: Db, auth: Auth, accountId: string, reques
         deviceId: device.id,
         name: device.name,
         createdAt: Date.now(),
+        lastSeenAt: Date.now(),
       })
       .run();
   });
   return session;
+};
+
+/** The session was used: its device's last activity moves (review of K-303) */
+export const touchDevice = (db: Db, sessionId: string | undefined, now: number) => {
+  if (!sessionId) return;
+  db.update(deviceSessions)
+    .set({ lastSeenAt: now })
+    .where(eq(deviceSessions.sessionId, sessionId))
+    .run();
 };
 
 /** GET /api/devices and DELETE /api/devices/:id: only the session's own account's devices */
@@ -80,7 +90,8 @@ export const deviceRoutes = ({ db, now }: { db: Db; now: () => number }) =>
           id: authSession.id,
           name: deviceSessions.name,
           signedInAt: authSession.createdAt,
-          lastSeenAt: authSession.updatedAt,
+          lastSeenAt: deviceSessions.lastSeenAt,
+          updatedAt: authSession.updatedAt,
         })
         .from(authSession)
         .leftJoin(deviceSessions, eq(deviceSessions.sessionId, authSession.id))
@@ -91,7 +102,8 @@ export const deviceRoutes = ({ db, now }: { db: Db; now: () => number }) =>
           id: row.id,
           name: row.name,
           signedInAt: row.signedInAt.getTime(),
-          lastSeenAt: row.lastSeenAt.getTime(),
+          // A session without a device (no header sent) has only Better Auth's daily update
+          lastSeenAt: row.lastSeenAt ?? row.updatedAt.getTime(),
           current: row.id === sessionId,
         })),
       });

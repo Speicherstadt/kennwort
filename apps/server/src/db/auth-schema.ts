@@ -157,6 +157,8 @@ export const deviceSessions = sqliteTable(
     deviceId: text("device_id").notNull(),
     name: text("name").notNull(),
     createdAt: integer("created_at").notNull(),
+    /** Every request with the session moves it; Better Auth's updatedAt moves once a day only */
+    lastSeenAt: integer("last_seen_at").notNull(),
   },
   (table) => [index("device_sessions_device").on(table.accountId, table.deviceId)],
 );

@@ -4,6 +4,7 @@ CREATE TABLE `device_sessions` (
 	`device_id` text NOT NULL,
 	`name` text NOT NULL,
 	`created_at` integer NOT NULL,
+	`last_seen_at` integer NOT NULL,
 	FOREIGN KEY (`session_id`) REFERENCES `auth_session`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint

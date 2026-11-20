@@ -27,11 +27,15 @@ export const deviceId = (
   }
 };
 
-// In this order: Edge and Opera also say Chrome, Chrome also says Safari, Android also says Linux
+// In this order: Edge and Opera also say Chrome, Chrome also says Safari, Android also says Linux;
+// on iOS every browser says Safari and names itself with its own mark (review of K-303)
 const BROWSERS = [
   ["Edg/", "Edge"],
+  ["EdgiOS/", "Edge"],
   ["OPR/", "Opera"],
   ["Firefox/", "Firefox"],
+  ["FxiOS/", "Firefox"],
+  ["CriOS/", "Chrome"],
   ["Chrome/", "Chrome"],
   ["Safari/", "Safari"],
 ] as const;

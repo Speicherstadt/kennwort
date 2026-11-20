@@ -430,7 +430,8 @@ Jedes Gerät schickt bei jeder Anfrage eine zufällige Geräte-ID (16 Byte, base
 und im `localStorage` gehalten) in `x-kennwort-device` und einen Namen aus dem Browser in
 `x-kennwort-device-name`. Beides ist nicht geheim. Der Server hält pro Gerät und Konto genau eine
 Sitzung: Eine neue Anmeldung löscht die frühere desselben Geräts. `GET /api/devices` listet die
-gültigen Sitzungen des Kontos mit Name, Anmeldezeit, letzter Aktivität und der eigenen markiert;
+gültigen Sitzungen des Kontos mit Name, Anmeldezeit, letzter Aktivität (jede Anfrage mit der
+Sitzung schiebt sie weiter) und der eigenen markiert;
 `DELETE /api/devices/:id` löscht eine Sitzung des eigenen Kontos, für fremde antwortet er 404.
 Abmelden widerruft nur die Sitzung: Das Gerät kennt Konto-ID und Secret Key weiter und kann sich mit
 der Passphrase neu anmelden. Den Zugang ganz entziehen erst Austritt und Schlüsselwechsel (K-307).
