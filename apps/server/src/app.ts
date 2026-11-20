@@ -1,6 +1,7 @@
 /** The HTTP API (Hono): one place where every route is mounted and every request logged */
 import { sql } from "drizzle-orm";
 import { Hono, type MiddlewareHandler } from "hono";
+import { auditRoutes } from "./audit/routes.ts";
 import { type Auth, CLIENT_HEADER } from "./auth/better-auth.ts";
 import type { ClientAddress, ClientEnv } from "./auth/client-address.ts";
 import { acceptInvitationRoute, createInvitationRoute } from "./auth/invitations.ts";
@@ -84,6 +85,7 @@ export const createApp = ({
   };
   api.use(requireSession);
   api.route("/", companyRoutes());
+  api.route("/", auditRoutes({ now }));
   api.route("/", syncRoutes({ hub, now, ...(keepAliveMs ? { keepAliveMs } : {}) }));
   if (signIn) {
     const deps = { db, ...signIn };

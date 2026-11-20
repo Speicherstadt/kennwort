@@ -632,6 +632,24 @@ vorgänger-hash, ereignis))`); Ereignisse, die ein Client auslöst (Export, Reco
 signiert er. Clients merken sich den letzten Stand, der Export für Prüfer enthält die Kette, und die
 Prüfung findet jede geänderte, fehlende oder eingeschobene Zeile.
 
+Ein Ereignis ist `enc("kennwort/audit-event/v1", firma, nr, zeit, wer, was, worum, signatur)`; die
+Kette beginnt bei 32 Null-Bytes und hat je Firma eigene Nummern ab 0. Der Server schreibt selbst:
+Anmeldung (jede neue Sitzung), Einladung erstellt und angenommen, Tresor angelegt. Ein Client
+signiert `sign("audit", firma, wer, was, worum)` mit seinem Ed25519-Schlüssel; `worum` ist eine ID,
+die er einmal wählt, dieselbe Handlung mit derselben ID zweimal gilt als wiederholt.
+
+Die Prüfung (`verifyAudit`) meldet die erste Zeile, an der etwas nicht stimmt: andere Firma, Lücke in
+den Nummern, falscher Vorgänger, geänderter Inhalt, fehlende oder falsche Signatur, wiederholte
+Handlung. Weil der Server kein Geheimnis kennt, könnte er die ganze Kette neu berechnen; dagegen
+hilft der Stand, den sich ein Client gemerkt hat: Ist die Kette kürzer, ist sie gekürzt, steht an
+seiner Stelle ein anderer Hash, ist sie umgeschrieben.
+
+`GET /api/audit` gibt Inhabern und Admins die Kette ihrer Firma als Export für Prüfer,
+`POST /api/audit` nimmt eine signierte Handlung eines Clients an.
+
+Umgesetzt in `packages/core/src/audit/chain.ts` (Kette, Signatur, Prüfung; Mutation-Tests bei
+100 %) und `apps/server/src/audit/` (Tabelle `audit_events`, Routen).
+
 **Wehrt ab:** E-23.
 
 ### P-21 Sync

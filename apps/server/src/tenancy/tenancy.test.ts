@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { createApp } from "../app.ts";
 import { createAuth } from "../auth/better-auth.ts";
 import { migrate, openDatabase } from "../db/database.ts";
-import { accounts, companies, invitations, vaults } from "../db/schema.ts";
+import { accounts, auditEvents, companies, invitations, vaults } from "../db/schema.ts";
 import { createLog } from "../log.ts";
 import type { Session } from "./session.ts";
 
@@ -93,6 +93,36 @@ const cases: Record<string, () => Promise<void>> = {
   "GET /api/accounts/:accountId": async () => {
     expect((await asJonas("/api/accounts/max")).status).toBe(404);
     expect((await asJonas("/api/accounts/anna")).status).toBe(200);
+  },
+  "GET /api/audit": async () => {
+    // Jonas (owner) gets only Weber Haustechnik's chain, though Müller Elektro has one too
+    app.db
+      .insert(auditEvents)
+      .values({
+        companyId: "mueller",
+        seq: 0,
+        time: 1,
+        actor: "max",
+        action: "signed-in",
+        subject: "session",
+        signature: Buffer.alloc(0),
+        prevHash: Buffer.alloc(32),
+        hash: Buffer.alloc(32),
+      })
+      .run();
+    const exported = (await (await asJonas("/api/audit")).json()) as {
+      companyId: string;
+      events: { companyId: string }[];
+    };
+    expect(exported.companyId).toBe("weber");
+    expect(exported.events.every((event) => event.companyId === "weber")).toBe(true);
+  },
+  "POST /api/audit": async () => {
+    const signature = encodeBytes(new Uint8Array(65).fill(1));
+    const body = { action: "export", subject: "export-t", signature };
+    expect((await jonasSends("POST", "/api/audit", body)).status).toBe(201);
+    const rows = app.db.select().from(auditEvents).all();
+    expect(rows.find((row) => row.subject === "export-t")?.companyId).toBe("weber");
   },
   "POST /api/vaults": async () => {
     // Müller Elektro's vault ID cannot be taken over; a new vault lands in Jonas's company

@@ -1,0 +1,155 @@
+/**
+ * The audit log as a hash chain (docs/sicherheitsdesign.md, P-20; E-23): every event is bound to
+ * the one before it, so a check finds every changed, missing or inserted line. Events a client
+ * triggers (export, recovery, key rotation) carry the client's signature; the server cannot make
+ * them up. A client remembers the head it saw, so a shortened log stands out as well.
+ *
+ *   hash = SHA-512/256(enc("kennwort/audit/v1", prevHash, eventBytes))
+ */
+import { constantTimeEqual, DIGEST_LENGTH, digest, encode, sign, verify } from "@kennwort/crypto";
+import { z } from "zod";
+import { ok } from "../result.ts";
+import { bytes } from "../sync/bytes.ts";
+
+/** What the server records itself, and what only a client may sign */
+export const SERVER_ACTIONS = [
+  "invitation-created",
+  "invitation-accepted",
+  "signed-in",
+  "vault-created",
+] as const;
+export const CLIENT_ACTIONS = ["export", "recovery", "key-rotation"] as const;
+export const AuditAction = z.enum([...SERVER_ACTIONS, ...CLIENT_ACTIONS]);
+export type AuditAction = z.infer<typeof AuditAction>;
+export type ClientAction = (typeof CLIENT_ACTIONS)[number];
+
+export const AuditEvent = z.object({
+  companyId: z.string(),
+  seq: z.number().int().nonnegative(),
+  time: z.number().int().nonnegative(),
+  actor: z.string(),
+  action: AuditAction,
+  /** What the event is about: an invitation, a vault, or an ID the signing client chose */
+  subject: z.string(),
+  /** Empty for events the server records; the actor's signature for client actions */
+  signature: bytes(),
+  prevHash: bytes(DIGEST_LENGTH),
+  hash: bytes(DIGEST_LENGTH),
+});
+export type AuditEvent = z.infer<typeof AuditEvent>;
+/** The export for auditors, as GET /api/audit returns it; parsed before verifyAudit */
+export const AuditExport = z.object({ companyId: z.string(), events: z.array(AuditEvent) });
+export type AuditExport = z.infer<typeof AuditExport>;
+
+export type AuditFields = Omit<AuditEvent, "prevHash" | "hash">;
+
+export const AUDIT_GENESIS = new Uint8Array(DIGEST_LENGTH);
+
+const eventBytes = (f: AuditFields) =>
+  encode(
+    "kennwort/audit-event/v1",
+    f.companyId,
+    f.seq,
+    f.time,
+    f.actor,
+    f.action,
+    f.subject,
+    f.signature,
+  );
+
+export const auditHash = (prevHash: Uint8Array, fields: AuditFields) =>
+  digest(encode("kennwort/audit/v1", prevHash, eventBytes(fields)));
+
+/** The next link of the chain; the server calls this inside the transaction that stores it */
+export const chainAudit = (prevHash: Uint8Array, fields: AuditFields): AuditEvent => ({
+  ...fields,
+  prevHash,
+  hash: auditHash(prevHash, fields),
+});
+
+/** A client's signature over a client action; the subject is an ID the client chose, once */
+export type ClientEvent = {
+  companyId: string;
+  actor: string;
+  action: ClientAction;
+  subject: string;
+};
+const signedFields = (e: ClientEvent) => [e.companyId, e.actor, e.action, e.subject] as const;
+export const signAudit = (edSecretKey: Uint8Array, event: ClientEvent) =>
+  sign(edSecretKey, "audit", ...signedFields(event));
+
+export const isClientAction = (action: AuditAction): action is ClientAction =>
+  (CLIENT_ACTIONS as readonly string[]).includes(action);
+
+/** Where the chain stood: the number of events and the hash of the last one */
+export type AuditHead = { length: number; hash: Uint8Array };
+export type AuditProblem =
+  | "wrong-company"
+  | "gap"
+  | "broken-chain"
+  | "changed"
+  | "bad-signature"
+  | "replayed"
+  | "truncated"
+  | "forked";
+export type AuditCheck = {
+  companyId: string;
+  /** The actor's Ed25519 public key from its certificate, for client actions */
+  publicKeyOf: (actor: string) => Uint8Array | undefined;
+  remembered?: AuditHead;
+};
+
+const checkEvent = (
+  event: AuditEvent,
+  index: number,
+  prevHash: Uint8Array,
+  check: AuditCheck,
+): AuditProblem | undefined => {
+  if (event.companyId !== check.companyId) return "wrong-company";
+  if (event.seq !== index) return "gap";
+  if (!constantTimeEqual(event.prevHash, prevHash)) return "broken-chain";
+  if (!constantTimeEqual(event.hash, auditHash(prevHash, event))) return "changed";
+  if (!isClientAction(event.action)) return undefined;
+  // An unknown actor has no key; an empty one verifies nothing
+  const publicKey = check.publicKeyOf(event.actor) ?? new Uint8Array();
+  const signed = verify(
+    publicKey,
+    event.signature,
+    "audit",
+    ...signedFields({ ...event, action: event.action }),
+  );
+  return signed ? undefined : "bad-signature";
+};
+
+export type AuditFailure = { problem: AuditProblem; seq: number };
+const failed = (problem: AuditProblem, seq: number) => ({
+  ok: false as const,
+  error: { problem, seq },
+});
+
+/** Checks the whole chain; the head it returns is what the client remembers next time */
+export const verifyAudit = (
+  events: readonly AuditEvent[],
+  check: AuditCheck,
+): { ok: true; value: AuditHead } | { ok: false; error: AuditFailure } => {
+  let prevHash: Uint8Array = AUDIT_GENESIS;
+  // A client signs each action once, for a subject it chose: the same one twice is a replay
+  const signedSubjects = new Set<string>();
+  for (const [index, event] of events.entries()) {
+    const problem = checkEvent(event, index, prevHash, check);
+    if (problem) return failed(problem, index);
+    if (isClientAction(event.action)) {
+      const key = `${event.action}:${event.subject}`;
+      if (signedSubjects.has(key)) return failed("replayed", index);
+      signedSubjects.add(key);
+    }
+    prevHash = event.hash;
+  }
+  const { remembered } = check;
+  if (remembered && events.length < remembered.length) return failed("truncated", events.length);
+  if (remembered && remembered.length > 0) {
+    const seen = events[remembered.length - 1] as AuditEvent;
+    if (!constantTimeEqual(seen.hash, remembered.hash)) return failed("forked", seen.seq);
+  }
+  return ok({ length: events.length, hash: prevHash });
+};
