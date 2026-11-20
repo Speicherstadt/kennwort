@@ -55,6 +55,20 @@ die Passphrase. Auf einem neuen Gerät wählst du **Anderes Konto** und gibst Ko
 Passphrase ein, oder du scannst den QR-Code auf dem Recovery-Kit; danach kennt auch dieses Gerät
 dein Konto.
 
+## Neues Gerät verbinden
+
+Ohne Konto-ID und Secret Key abzutippen: Wähle auf dem neuen Gerät **Mit einem anderen Gerät
+verbinden**. Es zeigt einen QR-Code und darunter denselben Link.
+
+1. Scanne den Code mit der Kamera eines Geräts, auf dem Kennwort entsperrt ist; der Link öffnet dort
+   **Gerät hinzufügen**. Oder öffne dort **Einstellungen → Gerät hinzufügen** und füge den Link ein.
+2. Beide Geräte zeigen einen sechsstelligen Code. Nur wenn er gleich ist: auf dem neuen Gerät
+   **Code stimmt**, auf dem entsperrten **Code stimmt – Gerät hinzufügen**.
+3. Das neue Gerät ist entsperrt und kennt dein Konto; später entsperrt es mit deiner Passphrase.
+
+Der Link enthält ein Geheimnis, das der Server nie sieht; ohne es kann er dem neuen Gerät kein
+falsches Konto unterschieben. Eine Verbindung gilt zehn Minuten.
+
 ## Passphrase vergessen
 
 Auf der Entsperr-Seite führt **Passphrase vergessen?** zum Recovery Key: Konto-ID (auf einem

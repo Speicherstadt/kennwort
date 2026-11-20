@@ -427,8 +427,11 @@ trauen. Die Geräteliste zeigt jedes
 Gerät, abmelden widerruft dessen Sitzung.
 
 Umgesetzt in `packages/crypto/src/device.ts` (Fingerabdruck, Vergleichscode),
-`packages/core/src/account/pairing.ts` (Paket, erste Entsperrung) und
-`apps/server/src/auth/pairings.ts`.
+`packages/core/src/account/pairing.ts` (Paket, erste Entsperrung),
+`apps/server/src/auth/pairings.ts` und in der Web-App in `apps/web/src/pairing/`. Der QR-Code ist ein
+Link auf `/link` des Servers mit ID, Fingerabdruck und `r` im Fragment: Die Kamera-App des
+entsperrten Geräts öffnet ihn, die App liest das Fragment einmal und entfernt es sofort aus Adresse und
+Verlauf; der Link lässt sich auch einfügen. Das neue Gerät fragt alle vier Sekunden nach.
 
 **Wehrt ab:** E-09, E-10, E-25.
 

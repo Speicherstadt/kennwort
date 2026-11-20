@@ -42,7 +42,7 @@ it("shows an error and frees the button when the server cannot be reached", asyn
   document.body.append(root);
   const navigation = createNavigation(window);
   nav = navigation;
-  dispose = render(() => <App nav={navigation} session={session} />, root);
+  dispose = render(() => <App nav={navigation} session={session} api={createApi(offline)} />, root);
   flush();
   expect(root.querySelector("h1")?.textContent).toBe("Kennwort ist gesperrt");
   const field = root.querySelector("input[type=password]") as HTMLInputElement;

@@ -12,3 +12,14 @@ export const StoredWire = z.object({
 });
 
 export const SessionWire = z.object({ accountId: z.string(), token: z.string().min(1) });
+
+/** Adding a device (P-04): what the server answers the new device and the unlocked one */
+export const AnnouncedWire = z.object({ id: z.string().min(1), pollToken: z.string().min(1) });
+export const PollWire = z.discriminatedUnion("state", [
+  z.object({ state: z.literal("waiting") }),
+  z.object({ state: z.literal("package"), package: bytes() }),
+  z.object({ state: z.literal("confirmed"), package: bytes(), token: z.string().min(1) }),
+]);
+export type PollAnswer = z.infer<typeof PollWire>;
+// An X-Wing public key (F-02)
+export const PairingKeyWire = z.object({ publicKey: bytes(1216) });

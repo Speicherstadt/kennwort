@@ -1,6 +1,6 @@
 import { encodeBytes, loginKeyPair, recoveryLoginKeyPair } from "@kennwort/core";
 import { describe, expect, it } from "vitest";
-import type { Api } from "./api.ts";
+import type { AccountApi as Api } from "./api.ts";
 import { readDevice } from "./device.ts";
 import { derive, fakeApi, memory, PASSPHRASE } from "./session.test-kit.ts";
 import { createSession } from "./session.ts";

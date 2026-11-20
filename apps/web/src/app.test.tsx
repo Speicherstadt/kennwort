@@ -21,7 +21,10 @@ const open = (path: string, locale: "de" | "en" = "de") => {
   document.body.append(root);
   const navigation = createNavigation(window);
   nav = navigation;
-  dispose = render(() => <Frame nav={navigation} onLock={() => {}} onLocale={() => {}} />, root);
+  dispose = render(
+    () => <Frame nav={navigation} onLock={() => {}} onLocale={() => {}} onAddDevice={() => {}} />,
+    root,
+  );
   flush();
   return root;
 };

@@ -111,7 +111,7 @@ und die Schritte für Menschen am Ende erledigt sind.
     Passphrase und neuen Recovery Key anlegen (P-12).
   - [x] Teil 4: Neues Gerät per QR-Code – das Protokoll (P-04) in `packages/crypto`,
     `packages/core` und auf dem Server.
-  - [ ] Teil 5: Neues Gerät per QR-Code in der Web-App (QR-Code zeigen, scannen oder eingeben,
+  - [x] Teil 5: Neues Gerät per QR-Code in der Web-App (QR-Code zeigen, scannen oder eingeben,
     Vergleichscode auf beiden Geräten).
   - [ ] Teil 6: Geräteliste, Gerät abmelden.
 - [ ] **K-304 Firma, Rollen, Einladungen** – Inhaber, Admin, Mitarbeiter; Wurzelschlüssel;

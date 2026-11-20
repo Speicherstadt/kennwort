@@ -7,7 +7,7 @@ import {
   type Stored,
 } from "@kennwort/core";
 import { passphraseKeysWith } from "@kennwort/crypto";
-import type { Api } from "./api.ts";
+import type { AccountApi as Api } from "./api.ts";
 
 export const derive = (p: string, salt: Uint8Array, key: Uint8Array, account: Uint8Array) =>
   passphraseKeysWith({ m: 8, t: 1, p: 1 }, p, salt, key, account);

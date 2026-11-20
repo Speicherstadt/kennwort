@@ -68,7 +68,11 @@ const Choice = <T extends string>(props: {
   </fieldset>
 );
 
-export const SettingsPage = (props: { onLock: () => void; onLocale: (locale: Locale) => void }) => {
+export const SettingsPage = (props: {
+  onLock: () => void;
+  onLocale: (locale: Locale) => void;
+  onAddDevice: () => void;
+}) => {
   const [theme, setTheme] = createSignal<Theme>(readTheme(globalThis.localStorage));
   const chooseTheme = (next: Theme) => {
     setTheme(next);
@@ -96,6 +100,9 @@ export const SettingsPage = (props: { onLock: () => void; onLocale: (locale: Loc
           onChange={(locale) => props.onLocale(locale)}
           options={locales.map((locale) => ({ value: locale, label: languages[locale] }))}
         />
+        <Button class="w-fit" onClick={() => props.onAddDevice()}>
+          {m.settings_add_device()}
+        </Button>
         <Button class="w-fit" onClick={() => props.onLock()}>
           <Icon icon={Lock} /> {m.lock()}
         </Button>
