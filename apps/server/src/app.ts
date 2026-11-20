@@ -1,13 +1,25 @@
 /** The HTTP API (Hono): one place where every route is mounted and every request logged */
 import { sql } from "drizzle-orm";
 import { Hono, type MiddlewareHandler } from "hono";
+import type { Auth } from "./auth/better-auth.ts";
+import { acceptInvitationRoute, createInvitationRoute } from "./auth/invitations.ts";
+import { loginKeyRoutes } from "./auth/login-key.ts";
 import type { Db } from "./db/database.ts";
 import type { Log } from "./log.ts";
 import { companyRoutes, type TenantEnv } from "./tenancy/routes.ts";
 import { companyScope } from "./tenancy/scope.ts";
 import type { Authenticate } from "./tenancy/session.ts";
 
-export type Deps = { db: Db; log: Log; authenticate: Authenticate };
+/** Sign-in: Better Auth, the sign-in key routes and invitations (K-203); absent in tests of other parts */
+export type SignIn = {
+  auth: Auth;
+  secret: string;
+  now: () => number;
+  random: (length: number) => Uint8Array;
+  allow: (key: string) => boolean;
+};
+
+export type Deps = { db: Db; log: Log; authenticate: Authenticate; signIn?: SignIn };
 
 const databaseReachable = (db: Db) => {
   try {
@@ -18,7 +30,7 @@ const databaseReachable = (db: Db) => {
   }
 };
 
-export const createApp = ({ db, log, authenticate }: Deps) => {
+export const createApp = ({ db, log, authenticate, signIn }: Deps) => {
   const app = new Hono();
 
   // Method, path without query string, status and duration; nothing of headers or body
@@ -52,6 +64,14 @@ export const createApp = ({ db, log, authenticate }: Deps) => {
   };
   api.use(requireSession);
   api.route("/", companyRoutes());
+  if (signIn) {
+    const deps = { db, ...signIn };
+    api.route("/", createInvitationRoute(deps));
+    // Public: sign-in key, accepting an invitation, and Better Auth (passkeys, sessions) for the rest
+    app.route("/auth/login-key", loginKeyRoutes(deps));
+    app.route("/auth", acceptInvitationRoute(deps));
+    app.on(["GET", "POST"], "/auth/*", (c) => signIn.auth.handler(c.req.raw));
+  }
   app.route("/api", api);
 
   app.onError((error, c) => {

@@ -310,7 +310,12 @@ Geheimtexten.
 - **Notweg Passphrase**: Aus `anmelden` (F-05) wird ein Ed25519-Schlüssel; der Server kennt nur
   dessen öffentlichen Teil und schickt eine Herausforderung. Die Passphrase und `p₁` verlassen nie
   das Gerät; was der Server speichert, lässt sich ohne den Secret Key nicht raten.
-- Rate-Limits je Konto und Adresse, Sperre nach Fehlversuchen.
+- Rate-Limits je Adresse; nach fünf Fehlversuchen in 15 Minuten ist das Konto 15 Minuten
+  gesperrt, auch für den richtigen Schlüssel. Ein unbekanntes Konto bekommt eine Herausforderung
+  mit einem gleichbleibenden Schein-Salt, sodass sich Konten nicht erfragen lassen.
+
+Umgesetzt in `apps/server/src/auth/` (Better Auth mit Passkeys und Bearer-Sitzungen,
+Anmelde-Schlüssel, Einladungen) und `packages/core/src/auth/sign-in.ts` (die Seite des Geräts).
 
 **Wehrt ab:** E-24, E-27, E-03.
 
@@ -426,7 +431,10 @@ Wurzelschlüssel selbst.
 
 1. Ein Verwalter erzeugt ein Einladungsgeheimnis `s` (256 Bit); der Link trägt `s` und den
    Fingerabdruck des Firmen-Wurzelschlüssels im Fragment (`#…`), das nie zum Server geht.
-2. Der Client des Eingeladenen nimmt den Wurzelschlüssel nur an, wenn er zum Fingerabdruck im Link
+2. Der Client des Eingeladenen wählt seine Konto-ID selbst (16 zufällige Byte), leitet damit
+   seinen Anmelde-Schlüssel ab ([P-02](#p-02-anmelden)) und schickt beim Annehmen nur den
+   öffentlichen Teil; der Server bewahrt vom Einladungs-Token nur einen Hash auf. Der Client nimmt
+   den Wurzelschlüssel nur an, wenn er zum Fingerabdruck im Link
    passt, und prüft damit die Firmen-Richtlinie, bevor er etwas an den Firmen-Recovery-Schlüssel
    verpackt ([P-13](#p-13-firmen-recovery)). Ein untergeschobener Wurzelschlüssel samt Richtlinie
    mit eigenem Recovery-Schlüssel scheitert hier (E-01, E-10).

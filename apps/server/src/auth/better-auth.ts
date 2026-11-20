@@ -27,6 +27,7 @@ export type Auth = {
   $context: Promise<{
     internalAdapter: {
       createUser: (user: {
+        id: string;
         name: string;
         email: string;
         emailVerified: boolean;

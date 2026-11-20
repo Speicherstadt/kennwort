@@ -22,6 +22,8 @@ const sameHash = (a: string, b: string) =>
 
 const AcceptRequest = z.object({
   token: z.string().min(1).max(128),
+  // The device picks its account ID (16 random bytes), so it can derive its sign-in key for it first
+  accountId: z.string().regex(/^[A-Za-z0-9_-]{22}$/),
   loginPublicKey: bytes(32),
   accountSalt: bytes(16),
 });
@@ -62,6 +64,8 @@ export const acceptInvitationRoute = ({ db, auth, now }: InvitationDeps) =>
     const at = now();
     const id = c.req.param("id");
     const found = db.select().from(invitations).where(eq(invitations.id, id)).get();
+    const taken = db.select().from(accounts).where(eq(accounts.id, parsed.data.accountId)).get();
+    if (taken) return c.json({ error: "account-exists" }, 409);
     if (!found || !sameHash(found.tokenHash, hashToken(parsed.data.token)))
       return c.json({ error: "invalid-invitation" }, 410);
     // Claimed in one statement: of two requests with the same token, only one gets past this
@@ -76,8 +80,9 @@ export const acceptInvitationRoute = ({ db, auth, now }: InvitationDeps) =>
     if (!open) return c.json({ error: "invalid-invitation" }, 410);
     const context = await auth.$context;
     const user = await context.internalAdapter.createUser({
+      id: parsed.data.accountId,
       name: "",
-      email: `${encodeBytes(parsed.data.loginPublicKey)}@accounts.kennwort.invalid`,
+      email: `${parsed.data.accountId}@accounts.kennwort.invalid`,
       emailVerified: false,
       companyId: open.companyId,
     });

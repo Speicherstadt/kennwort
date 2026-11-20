@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { createApp } from "../app.ts";
+import { createAuth } from "../auth/better-auth.ts";
 import { migrate, openDatabase } from "../db/database.ts";
-import { accounts, companies } from "../db/schema.ts";
+import { accounts, companies, invitations } from "../db/schema.ts";
 import { createLog } from "../log.ts";
 import type { Session } from "./session.ts";
 
@@ -17,7 +18,7 @@ const setup = () => {
     .run();
   db.insert(accounts)
     .values([
-      { id: "jonas", companyId: "weber", createdAt: 1 },
+      { id: "jonas", companyId: "weber", role: "owner", createdAt: 1 },
       { id: "anna", companyId: "weber", createdAt: 2 },
       { id: "max", companyId: "mueller", createdAt: 3 },
     ])
@@ -28,7 +29,24 @@ const setup = () => {
   };
   const authenticate = async (request: Request) =>
     sessions[request.headers.get("x-test-session") ?? ""];
-  return createApp({ db, log: createLog("error", () => {}), authenticate });
+  const origin = "http://localhost:28100";
+  const auth = createAuth(db, {
+    secret: "test-secret-of-at-least-thirty-two-chars",
+    baseURL: origin,
+    rpID: "localhost",
+    origin,
+  });
+  const random = (length: number) => crypto.getRandomValues(new Uint8Array(length));
+  const signIn = {
+    auth,
+    secret: "test-secret-of-at-least-thirty-two-chars",
+    now: () => 1,
+    random,
+    allow: () => true,
+  };
+  return Object.assign(createApp({ db, log: createLog("error", () => {}), authenticate, signIn }), {
+    db,
+  });
 };
 
 const app = setup();
@@ -46,6 +64,20 @@ const cases: Record<string, () => Promise<void>> = {
   "GET /api/accounts": async () => {
     const list = (await (await asJonas("/api/accounts")).json()) as { id: string }[];
     expect(list.map((account) => account.id).sort()).toEqual(["anna", "jonas"]);
+  },
+  "POST /api/invitations": async () => {
+    const response = await app.request("/api/invitations", {
+      method: "POST",
+      headers: { "x-test-session": "token-jonas" },
+    });
+    const { id } = (await response.json()) as { id: string };
+    expect(
+      app.db
+        .select()
+        .from(invitations)
+        .all()
+        .find((row) => row.id === id)?.companyId,
+    ).toBe("weber");
   },
   "GET /api/accounts/:accountId": async () => {
     expect((await asJonas("/api/accounts/max")).status).toBe(404);

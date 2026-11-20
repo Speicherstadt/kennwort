@@ -15,7 +15,22 @@ describe("database", () => {
     const db = openDatabase(":memory:");
     expect(tables(db)).toEqual([]);
     migrate(db);
-    expect(tables(db)).toEqual(["__drizzle_migrations", "accounts", "companies", "instance"]);
+    expect(tables(db)).toEqual([
+      "__drizzle_migrations",
+      "accounts",
+      "auth_account",
+      "auth_passkey",
+      "auth_session",
+      "auth_user",
+      "auth_verification",
+      "companies",
+      "instance",
+      "invitations",
+      "login_challenges",
+      "login_failures",
+      "login_keys",
+      "sqlite_sequence",
+    ]);
   });
 
   it("runs each migration once", () => {
