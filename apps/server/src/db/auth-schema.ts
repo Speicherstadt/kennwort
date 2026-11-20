@@ -1,7 +1,7 @@
 // The tables Better Auth needs (user, session, account, verification and the passkey plugin's
 // passkey), as its Drizzle adapter reads them, plus Kennwort's own sign-in tables. Prefixed auth_ so
 // that Better Auth's "account" (a sign-in method) is never confused with Kennwort's accounts.
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { blob, index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 const timestamps = {
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
@@ -126,4 +126,19 @@ export const invitations = sqliteTable("invitations", {
   expiresAt: integer("expires_at").notNull(),
   acceptedAt: integer("accepted_at"),
   accountId: text("account_id"),
+});
+
+/**
+ * Adding a device (P-04): the new device's one-time public key, a hash of its poll token, and once
+ * an unlocked device of an account answers, that account and the wrapped package. Only after that
+ * device confirms the comparison code does the new device get a session; ten minutes at most.
+ */
+export const pairings = sqliteTable("pairings", {
+  id: text("id").primaryKey(),
+  publicKey: blob("public_key", { mode: "buffer" }).notNull(),
+  pollHash: text("poll_hash").notNull(),
+  accountId: text("account_id"),
+  package: blob("package", { mode: "buffer" }),
+  confirmed: integer("confirmed", { mode: "boolean" }).notNull().default(false),
+  expiresAt: integer("expires_at").notNull(),
 });

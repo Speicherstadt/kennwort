@@ -32,6 +32,7 @@ describe("database", () => {
       "login_challenges",
       "login_failures",
       "login_keys",
+      "pairings",
       "sqlite_sequence",
       "vaults",
     ]);

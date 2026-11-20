@@ -19,7 +19,11 @@ export type Stored = {
 export type Unlocked = { accountKey: Uint8Array; keyBlock: KeyBlock; state: AccountState };
 export type UnlockError = "wrong-key" | "damaged";
 
-const openWith = (accountKey: Uint8Array, stored: Stored): Result<Unlocked, UnlockError> => {
+/** AK already in hand (a new device got it in its package, P-04): open key block and state */
+export const unlockWithAccountKey = (
+  accountKey: Uint8Array,
+  stored: Stored,
+): Result<Unlocked, UnlockError> => {
   const keyBlock = openKeyBlock(accountKey, stored.accountId, stored.keyBlock);
   if (!keyBlock.ok) return err("damaged");
   const state = openState(accountKey, stored.accountId, stored.stateCounter, stored.state);
@@ -37,7 +41,7 @@ export const unlockWithPassphrase = (
   const accountKey = openAccountKey(unlock, stored.unlock.passphrase, stored.accountId, {
     kind: "passphrase",
   });
-  return accountKey.ok ? openWith(accountKey.value, stored) : err("wrong-key");
+  return accountKey.ok ? unlockWithAccountKey(accountKey.value, stored) : err("wrong-key");
 };
 
 export const unlockWithRecoveryKey = (
@@ -47,5 +51,5 @@ export const unlockWithRecoveryKey = (
   const accountKey = openAccountKey(recoveryKey, stored.unlock.recovery, stored.accountId, {
     kind: "recovery",
   });
-  return accountKey.ok ? openWith(accountKey.value, stored) : err("wrong-key");
+  return accountKey.ok ? unlockWithAccountKey(accountKey.value, stored) : err("wrong-key");
 };

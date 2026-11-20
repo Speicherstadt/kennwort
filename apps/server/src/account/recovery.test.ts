@@ -3,65 +3,21 @@
 import { describe, expect, it } from "bun:test";
 import {
   bytes,
-  createCompany,
   encodeBytes,
   renewUnlock,
   type Stored,
   signInWithPassphrase,
   signInWithRecoveryKey,
-  toWire,
   unlockWithRecoveryKey,
 } from "@kennwort/core";
-import { passphraseKeysWith } from "@kennwort/crypto";
-import { signInSetup } from "../testing/sign-in-setup.ts";
+import { ownerWithKeys as ownerWithKeysAt, quick } from "../testing/owner-with-keys.ts";
 
-const quick = (p: string, salt: Uint8Array, key: Uint8Array, account: Uint8Array) =>
-  passphraseKeysWith({ m: 8, t: 1, p: 1 }, p, salt, key, account);
 const CODE = "setup-code-of-weber-haustechnik";
 const OLD = "Heizung-Wasser-Licht-Kupfer";
 const NEW = "Rohr-Zange-Ventil-Kessel";
 
-const ownerWithKeys = async (uploadKeys = true) => {
-  const setup = await signInSetup({ setupCode: CODE, empty: true });
-  const company = createCompany(OLD, { derive: quick });
-  const { owner } = company;
-  const response = await setup.request("/auth/setup", {
-    body: {
-      code: CODE,
-      companyId: encodeBytes(company.companyId),
-      accountId: encodeBytes(owner.accountId),
-      loginPublicKey: encodeBytes(owner.upload.loginPublicKey),
-      accountSalt: encodeBytes(owner.upload.accountSalt),
-    },
-  });
-  const { token } = (await response.json()) as { token: string };
-  const u = owner.upload;
-  if (uploadKeys)
-    await setup.request("/api/account/keys", {
-      method: "PUT",
-      token,
-      body: {
-        xwingPublicKey: encodeBytes(u.xwingPublicKey),
-        edPublicKey: encodeBytes(u.edPublicKey),
-        keyBlock: encodeBytes(u.keyBlock),
-        unlock: {
-          passphrase: encodeBytes(u.unlock.passphrase),
-          recovery: encodeBytes(u.unlock.recovery),
-        },
-        recoveryLoginPublicKey: encodeBytes(u.recoveryLoginPublicKey),
-        state: encodeBytes(u.state),
-        stateCounter: 0,
-        certificate: toWire(company.certificate),
-      },
-    });
-  const post = async (path: string, body: unknown) => {
-    const answer = await setup.request(path, { body });
-    return { status: answer.status, json: await answer.json() };
-  };
-  return { setup, owner, post };
-};
-
 type Owner = Awaited<ReturnType<typeof ownerWithKeys>>;
+const ownerWithKeys = (uploadKeys = true) => ownerWithKeysAt(CODE, OLD, uploadKeys);
 
 const storedOf = async ({ setup }: Owner, token: string): Promise<Stored> => {
   const keys = (await (await setup.request("/api/account/keys", { token })).json()) as Record<

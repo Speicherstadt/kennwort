@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../app.ts";
 import { createAuth } from "../auth/better-auth.ts";
+import { DEVICE_PACKAGE_LENGTH } from "../auth/pairings.ts";
 import { migrate, openDatabase } from "../db/database.ts";
 import {
   accountKeys,
@@ -11,6 +12,7 @@ import {
   companies,
   invitations,
   loginKeys,
+  pairings,
   vaults,
 } from "../db/schema.ts";
 import { createLog } from "../log.ts";
@@ -61,6 +63,20 @@ const setup = () => {
 };
 
 const app = setup();
+const maxAnsweredPairing = () =>
+  app.db
+    .insert(pairings)
+    .values({
+      id: "max-pairing",
+      publicKey: Buffer.alloc(1216),
+      pollHash: "x",
+      accountId: "max",
+      package: Buffer.alloc(8),
+      expiresAt: Date.now() + 60_000,
+    })
+    .onConflictDoNothing()
+    .run();
+
 const asJonas = (path: string) =>
   app.request(path, { headers: { "x-test-session": "token-jonas" } });
 const jonasSends = (method: string, path: string, body: unknown) =>
@@ -133,6 +149,26 @@ const cases: Record<string, () => Promise<void>> = {
     expect((await jonasSends("PUT", "/api/account/keys", keys)).status).toBe(201);
     const rows = app.db.select().from(accountKeys).all();
     expect(rows.find((row) => row.accountId === "jonas")?.stateCounter).toBe(0);
+  },
+  "GET /api/pairings/:id": async () => {
+    // A pairing Max (Müller Elektro) answered: Jonas sees nothing of it any more
+    maxAnsweredPairing();
+    expect((await asJonas("/api/pairings/max-pairing")).status).toBe(404);
+  },
+  "PUT /api/pairings/:id": async () => {
+    maxAnsweredPairing();
+    const pkg = encodeBytes(new Uint8Array(DEVICE_PACKAGE_LENGTH));
+    expect((await jonasSends("PUT", "/api/pairings/max-pairing", { package: pkg })).status).toBe(
+      404,
+    );
+    const row = app.db.select().from(pairings).where(eq(pairings.id, "max-pairing")).get();
+    expect(row?.accountId).toBe("max");
+  },
+  "POST /api/pairings/:id/confirm": async () => {
+    maxAnsweredPairing();
+    expect((await jonasSends("POST", "/api/pairings/max-pairing/confirm", {})).status).toBe(404);
+    const row = app.db.select().from(pairings).where(eq(pairings.id, "max-pairing")).get();
+    expect(row?.confirmed).toBe(false);
   },
   "PUT /api/account/unlock": async () => {
     // Replaces only Jonas's own sign-in keys; Max's (Müller Elektro) stay as they are
