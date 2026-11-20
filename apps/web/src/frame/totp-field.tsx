@@ -1,7 +1,7 @@
 /**
  * A TOTP field in the detail (K-306 part 4): the current code in Geist Mono, in two groups, and
- * how many seconds it still holds, worked out on the device every second; copying takes the code,
- * never the key (DESIGN.md: Einmalcode 18 px, 22 px on a phone)
+ * how many seconds it still holds, worked out on the device at every whole second; copying takes
+ * the code, never the key (DESIGN.md: Einmalcode 18 px, 22 px on a phone)
  */
 import { totpCode } from "@kennwort/core";
 import { Icon, IconButton, m, type Toasts } from "@kennwort/ui";
@@ -23,8 +23,15 @@ export const TotpField = (props: {
 }) => {
   const now = () => (props.now ?? Date.now)();
   const [time, setTime] = createSignal(now());
-  const timer = setInterval(() => setTime(now()), 1000);
-  onCleanup(() => clearInterval(timer));
+  // Each tick at the start of the next whole second, so a new code shows the moment its step
+  // begins, not up to a second later (review of K-306 part 4a)
+  let timer: ReturnType<typeof setTimeout>;
+  const tick = () => {
+    setTime(now());
+    timer = setTimeout(tick, 1000 - (now() % 1000));
+  };
+  timer = setTimeout(tick, 1000 - (now() % 1000));
+  onCleanup(() => clearTimeout(timer));
   const current = () => totpCode(props.value, time());
   return (
     <div class="flex items-center gap-2 px-3.5 py-2.5">
@@ -53,7 +60,8 @@ export const TotpField = (props: {
         <IconButton
           label={m.field_copy({ field: props.label })}
           onClick={() => {
-            const result = current();
+            // The code at the click, not at the last tick
+            const result = totpCode(props.value, now());
             if (result.ok) void copyText(result.value.code, props.label, props.toasts);
           }}
         >
