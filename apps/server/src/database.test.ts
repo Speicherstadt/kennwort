@@ -28,6 +28,7 @@ describe("database", () => {
       "companies",
       "device_sessions",
       "entry_records",
+      "entry_shares",
       "group_members",
       "groups",
       "instance",

@@ -11,12 +11,18 @@ import type { SyncServer } from "./memory-server.ts";
 import {
   type AcceptError,
   type Author,
-  openRecord,
+  type EntryKey,
+  entryKeyFor,
+  openRecordWithKey,
   sealRecord,
   type VaultKeyring,
 } from "./record.ts";
 
-export type Known = { entryId: Uint8Array; version: number; content: EntryContent };
+/**
+ * An entry as the device knows it; key is the entry key it was opened or sealed with, kept only in
+ * memory, so the next version keeps it and a share covers that version too (P-09, P-10)
+ */
+export type Known = { entryId: Uint8Array; version: number; content: EntryContent; key?: EntryKey };
 /** A change; base is the version it started from, absent for a new entry */
 export type Pending = {
   entryId: Uint8Array;
@@ -70,12 +76,13 @@ export const pull = async (
   for (const record of records) {
     const mine = known.get(idKey(record.entryId));
     const knownVersion = mine?.version ?? 0;
-    const opened = openRecord(record, ctx.ring, ctx.log, ctx.trust, knownVersion);
+    const opened = openRecordWithKey(record, ctx.ring, ctx.log, ctx.trust, knownVersion);
     if (opened.ok)
       known.set(idKey(record.entryId), {
         entryId: record.entryId,
         version: record.version,
-        content: opened.value,
+        content: opened.value.content,
+        key: { entryKey: opened.value.entryKey, epoch: record.epoch },
       });
     // The version the device already has is no news; an older one is a rollback (E-13)
     else if (opened.error !== "stale" || record.version < knownVersion)
@@ -125,17 +132,22 @@ const pushChange = async (
     const current = state.device.known.get(idKey(op.entryId));
     const content = contentFor(op, current, ctx.now);
     const version = (current?.version ?? 0) + 1;
-    if (
-      (
-        await server.push(
-          sealRecord(ctx.author, ctx.ring, op.entryId, version, content, ctx.lastSeen),
-        )
-      ).ok
-    ) {
+    const key = entryKeyFor(ctx.ring, current?.key);
+    const record = sealRecord(
+      ctx.author,
+      ctx.ring,
+      op.entryId,
+      version,
+      content,
+      ctx.lastSeen,
+      key,
+    );
+    if ((await server.push(record)).ok) {
       const known = new Map(state.device.known).set(idKey(op.entryId), {
         entryId: op.entryId,
         version,
         content,
+        key,
       });
       return { state: { ...state, device: { ...state.device, known } }, done: true };
     }

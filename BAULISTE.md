@@ -165,10 +165,11 @@ und die Schritte für Menschen am Ende erledigt sind.
   - [x] Teil 5: Gruppen – ein Tresor für eine Gruppe von Mitgliedern; aufnehmen und entfernen über
     die Gruppe. Fertig, wenn: ein neues Gruppenmitglied erst Zugriff hat, wenn ein Verwalter seine
     Anfrage freigibt (P-05, Schritt 4).
-  - [ ] Teil 6: einzelnen Eintrag teilen (P-10). Fertig, wenn: der Empfänger nur diesen Eintrag
-    entschlüsseln kann (Test). Baut auf K-306 Teil 1 auf: Erst wenn Einträge aus den Tresoren
-    kommen und der Eintrags-Schlüssel (EK) über die Versionen gleich bleibt, deckt eine Freigabe
-    auch künftige Versionen und ein Widerruf (neuer EK) etwas ab.
+  - [x] Teil 6a: einzelnen Eintrag teilen (P-10), Protokoll in Crypto, Core und Server; EK bleibt
+    über die Versionen gleich, sodass eine Freigabe auch künftige Versionen abdeckt. Fertig, wenn:
+    der Empfänger nur diesen Eintrag entschlüsseln kann (Test gegen Server und Stand-in).
+  - [ ] Teil 6b: Teilen in der Web-App – Freigeben, „Mit mir geteilt“, Widerrufen mit neuem EK.
+    Fertig, wenn: Teilen und Widerrufen als Playwright-Test desktop und `@phone` laufen.
 - [ ] **K-306 Einträge** – alle Typen, Generator, TOTP mit QR-Scan, eigene Felder, frühere
   Passwörter, Suche, Favoriten, Tags.
   In Teilen, je ein Pull Request; abgehakt wird K-306, wenn alle stehen:

@@ -1,7 +1,7 @@
-import { digest, encode, sign } from "@kennwort/crypto";
+import { digest, encode, openEntryKey, sign } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
 import type { EntryContent } from "./content.ts";
-import { openRecord, sealRecord } from "./record.ts";
+import { entryKeyFor, openRecord, openRecordWithKey, sealRecord } from "./record.ts";
 import { anna, bank, contextFor, id, jonas, log, max, trust } from "./test/fixtures.ts";
 
 const ctx = contextFor(jonas);
@@ -91,6 +91,47 @@ describe("openRecord (P-09)", () => {
       ok: false,
       error: "unreadable",
     });
+  });
+});
+
+describe("the entry key across versions (P-09, P-10, P-11)", () => {
+  const keyOf = (r: typeof record) => {
+    const opened = openEntryKey(ctx.ring.vaultKey, r.entryKey, { ...ctx.ring, entryId: r.entryId });
+    if (!opened.ok) throw new Error("unreadable");
+    return opened.value;
+  };
+
+  it("opens a record with the entry key it was sealed with", () => {
+    expect(openRecordWithKey(record, ctx.ring, log, trust, 0)).toEqual({
+      ok: true,
+      value: { content: bank, entryKey: keyOf(record) },
+    });
+    expect(openRecordWithKey(record, ctx.ring, log, trust, 2)).toEqual({
+      ok: false,
+      error: "stale",
+    });
+  });
+
+  it("keeps an entry key of the same epoch for the next version", () => {
+    const key = { entryKey: keyOf(record), epoch: 0 };
+    const next = sealRecord(ctx.author, ctx.ring, entryId, 3, bank, ctx.lastSeen, key);
+    expect(keyOf(next)).toEqual(key.entryKey);
+    expect(entryKeyFor(ctx.ring, key)).toBe(key);
+  });
+
+  it("makes a new entry key without one, and in a new epoch", () => {
+    const fresh = entryKeyFor(ctx.ring, undefined);
+    expect([fresh.epoch, fresh.entryKey.length]).toEqual([0, 32]);
+    expect(entryKeyFor(ctx.ring, undefined).entryKey).not.toEqual(fresh.entryKey);
+    const old = { entryKey: keyOf(record), epoch: 1 };
+    const renewed = entryKeyFor(ctx.ring, old);
+    expect(renewed.epoch).toBe(0);
+    expect(renewed.entryKey).not.toEqual(old.entryKey);
+    const next = sealRecord(ctx.author, ctx.ring, entryId, 3, bank, ctx.lastSeen, old);
+    expect(keyOf(next)).not.toEqual(old.entryKey);
+    expect(keyOf(sealRecord(ctx.author, ctx.ring, entryId, 3, bank, ctx.lastSeen))).not.toEqual(
+      keyOf(record),
+    );
   });
 });
 

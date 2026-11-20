@@ -127,6 +127,13 @@
       "when": 1795185046476,
       "tag": "0017_vault_creator",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1795188187836,
+      "tag": "0018_entry_shares",
+      "breakpoints": true
     }
   ]
 }

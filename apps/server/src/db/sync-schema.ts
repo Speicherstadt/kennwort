@@ -135,3 +135,30 @@ export const vaultGroups = sqliteTable(
   },
   (table) => [primaryKey({ columns: [table.vaultId, table.groupId] })],
 );
+
+/**
+ * A single entry shared with a colleague outside its vault (K-305 part 6, P-10): the share as the
+ * sharer signed it, with the entry key wrapped to the recipient; one per entry and recipient
+ */
+export const entryShares = sqliteTable(
+  "entry_shares",
+  {
+    vaultId: text("vault_id")
+      .notNull()
+      .references(() => vaults.id),
+    entryId: text("entry_id").notNull(),
+    recipient: text("recipient").notNull(),
+    role: text("role", { enum: ["read"] }).notNull(),
+    validUntil: integer("valid_until").notNull(),
+    commitment: bytes("commitment"),
+    wrappedKey: bytes("wrapped_key"),
+    sharer: text("sharer").notNull(),
+    time: integer("time").notNull(),
+    signature: bytes("signature"),
+    storedAt: integer("stored_at").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.vaultId, table.entryId, table.recipient] }),
+    index("entry_shares_recipient").on(table.recipient),
+  ],
+);

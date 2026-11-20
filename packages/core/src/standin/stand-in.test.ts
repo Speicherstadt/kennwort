@@ -2,7 +2,16 @@ import { describe, expect, it } from "vitest";
 import type { LogEntry } from "../membership/log-entry.ts";
 import { encodeBytes } from "../sync/bytes.ts";
 import { syncContract } from "../sync/test/contract.ts";
-import { anna, jonas, logEntries, max, standInCompany, vaultId } from "../sync/test/fixtures.ts";
+import {
+  anna,
+  jonas,
+  logEntries,
+  max,
+  petra,
+  sandra,
+  standInCompany,
+  vaultId,
+} from "../sync/test/fixtures.ts";
 import { toWire } from "../sync/wire.ts";
 import { standIn } from "./stand-in.ts";
 
@@ -10,7 +19,8 @@ const sessions = {
   "t-jonas": { accountId: encodeBytes(jonas.id), companyId: "weber" },
   "t-anna": { accountId: encodeBytes(anna.id), companyId: "weber" },
   "t-max": { accountId: encodeBytes(max.id), companyId: "weber" },
-  "t-petra": { accountId: "petra-mueller-elektro0", companyId: "mueller" },
+  "t-sandra": { accountId: encodeBytes(sandra.id), companyId: "weber" },
+  "t-petra": { accountId: encodeBytes(petra.id), companyId: "mueller" },
 };
 
 syncContract("stand-in", async () => {

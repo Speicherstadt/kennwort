@@ -109,5 +109,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795185046476,
     "breakpoints": true,
     "sql": "ALTER TABLE `vaults` ADD `created_by` text;--> statement-breakpoint\nUPDATE `vaults` SET `created_by` = (SELECT `actor` FROM `audit_events` WHERE `audit_events`.`action` = 'vault-created' AND `audit_events`.`subject` = `vaults`.`id` AND `audit_events`.`company_id` = `vaults`.`company_id` ORDER BY `audit_events`.`seq` LIMIT 1);\n"
+  },
+  {
+    "tag": "0018_entry_shares",
+    "when": 1795188187836,
+    "breakpoints": true,
+    "sql": "CREATE TABLE `entry_shares` (\n\t`vault_id` text NOT NULL,\n\t`entry_id` text NOT NULL,\n\t`recipient` text NOT NULL,\n\t`role` text NOT NULL,\n\t`valid_until` integer NOT NULL,\n\t`commitment` blob NOT NULL,\n\t`wrapped_key` blob NOT NULL,\n\t`sharer` text NOT NULL,\n\t`time` integer NOT NULL,\n\t`signature` blob NOT NULL,\n\t`stored_at` integer NOT NULL,\n\tPRIMARY KEY(`vault_id`, `entry_id`, `recipient`),\n\tFOREIGN KEY (`vault_id`) REFERENCES `vaults`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE INDEX `entry_shares_recipient` ON `entry_shares` (`recipient`);\n"
   }
 ];

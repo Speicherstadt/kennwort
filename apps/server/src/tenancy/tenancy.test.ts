@@ -12,6 +12,7 @@ import {
   authSession,
   authUser,
   companies,
+  entryShares,
   groupMembers,
   groups,
   invitations,
@@ -154,6 +155,24 @@ app.db
   .insert(vaultKeys)
   .values({ vaultId: muellerVault, accountId: "jonas", epoch: 0, wrapped: Buffer.alloc(1) })
   .run();
+
+// a share in Müller Elektro's vault naming Jonas as its recipient must not reach him
+const muellerShare = { vaultId: muellerVault, entryId: "e", recipient: "jonas" };
+app.db
+  .insert(entryShares)
+  .values({
+    ...muellerShare,
+    role: "read",
+    validUntil: 0,
+    commitment: Buffer.alloc(32),
+    wrappedKey: Buffer.alloc(1194),
+    sharer: "max",
+    time: 1,
+    signature: Buffer.alloc(65),
+    storedAt: 1,
+  })
+  .run();
+const muellerShares = `/api/vaults/${muellerVault}/entries/e/shares`;
 
 /**
  * One case per route under /api: Jonas (Weber Haustechnik) asks for what belongs to Müller Elektro.
@@ -423,6 +442,22 @@ const cases: Record<string, () => Promise<void>> = {
   "DELETE /api/vaults/:vaultId/requests/:accountId": async () => {
     const path = `/api/vaults/${muellerVault}/requests/jonas`;
     expect((await jonasSends("DELETE", path, undefined)).status).toBe(404);
+  },
+  "PUT /api/vaults/:vaultId/entries/:entryId/shares": async () => {
+    expect((await jonasSends("PUT", muellerShares, {})).status).toBe(404);
+  },
+  "GET /api/vaults/:vaultId/entries/:entryId/shares": async () => {
+    expect((await asJonas(muellerShares)).status).toBe(404);
+  },
+  "DELETE /api/vaults/:vaultId/entries/:entryId/shares/:recipient": async () => {
+    expect((await jonasSends("DELETE", `${muellerShares}/jonas`, undefined)).status).toBe(404);
+    expect(app.db.select().from(entryShares).all()).toHaveLength(1);
+  },
+  "GET /api/shared": async () => {
+    expect(await (await asJonas("/api/shared")).json()).toEqual({ shares: [] });
+  },
+  "GET /api/shared/:vaultId/:entryId": async () => {
+    expect((await asJonas(`/api/shared/${muellerVault}/e`)).status).toBe(404);
   },
   "POST /api/vaults/:vaultId/log": async () => {
     expect((await jonasSends("POST", `/api/vaults/${muellerVault}/log`, {})).status).toBe(404);

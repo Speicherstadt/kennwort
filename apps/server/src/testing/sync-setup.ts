@@ -1,5 +1,5 @@
-// A server for the sync tests: Weber Haustechnik (Jonas, Anna, Max as in packages/core's fixtures)
-// and Müller Elektro (Petra); sessions are bearer tokens named after the person
+// A server for the sync tests: Weber Haustechnik (Jonas, Anna, Max and Sandra as in packages/core's
+// fixtures) and Müller Elektro (Petra); sessions are bearer tokens named after the person
 import { encodeBytes, toWire } from "@kennwort/core";
 import {
   anna,
@@ -8,7 +8,9 @@ import {
   jonas,
   logEntries,
   max,
+  petra,
   root,
+  sandra,
 } from "@kennwort/core/testing";
 import { createApp } from "../app.ts";
 import { migrate, openDatabase } from "../db/database.ts";
@@ -20,7 +22,8 @@ export const ids = {
   jonas: encodeBytes(jonas.id),
   anna: encodeBytes(anna.id),
   max: encodeBytes(max.id),
-  petra: "petra-mueller-elektro0",
+  sandra: encodeBytes(sandra.id),
+  petra: encodeBytes(petra.id),
 };
 export const vaultId = encodeBytes(contextFor(jonas).ring.vaultId);
 
@@ -39,13 +42,14 @@ export const syncSetup = (options: { keepAliveMs?: number } = {}) => {
       { id: ids.jonas, companyId: "weber", role: "owner", createdAt: 1 },
       { id: ids.anna, companyId: "weber", createdAt: 1 },
       { id: ids.max, companyId: "weber", createdAt: 1 },
+      { id: ids.sandra, companyId: "weber", createdAt: 1 },
       { id: ids.petra, companyId: "mueller", role: "owner", createdAt: 1 },
     ])
     .run();
   const bundle = Buffer.alloc(1);
   db.insert(accountKeys)
     .values(
-      [jonas, anna, max].map((p) => ({
+      [jonas, anna, max, sandra].map((p) => ({
         accountId: encodeBytes(p.id),
         xwingPublicKey: Buffer.from(p.xwing.publicKey),
         edPublicKey: Buffer.from(p.ed.publicKey),
@@ -63,6 +67,7 @@ export const syncSetup = (options: { keepAliveMs?: number } = {}) => {
     "t-jonas": { accountId: ids.jonas, companyId: "weber" },
     "t-anna": { accountId: ids.anna, companyId: "weber" },
     "t-max": { accountId: ids.max, companyId: "weber" },
+    "t-sandra": { accountId: ids.sandra, companyId: "weber" },
     "t-petra": { accountId: ids.petra, companyId: "mueller" },
   };
   const authenticate = async (request: Request) =>

@@ -25,6 +25,12 @@ const cases: Case[] = [
     context: [bytes(16, 0x10), 3, bytes(16, 0x30)],
   },
   { name: "empty payload, no context", payload: new Uint8Array(), purpose: "test", context: [] },
+  {
+    name: "entry key shared with a recipient",
+    payload: bytes(32, 0xc0),
+    purpose: "share",
+    context: [bytes(16, 0x10), bytes(16, 0x20), bytes(16, 0x40)],
+  },
 ];
 
 const vectors = cases.map(({ name, payload, purpose, context }, index) => {

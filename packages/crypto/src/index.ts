@@ -55,6 +55,13 @@ export {
   parseSecretKey,
   type SecretKeyError,
 } from "./secret-key.ts";
+export {
+  type ShareKeyError,
+  type SharePlace,
+  shareKeyCommitment,
+  unwrapShareKey,
+  wrapShareKey,
+} from "./share.ts";
 export { ed25519KeyPair, SIGNATURE_V1, sign, verify } from "./sign.ts";
 export {
   type EntryPlace,
