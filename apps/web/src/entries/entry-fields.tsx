@@ -11,7 +11,8 @@ import type { InputField } from "./entry-input.ts";
 import { CUSTOM_KINDS, type FieldKindChoice, kindLabel } from "./entry-types.ts";
 
 const GENERATED = new Set(["password", "passphrase"]);
-const inputType = { secret: "password", url: "url", email: "email" } as const;
+// A TOTP key is as secret as a password; its codes come with K-306 part 4
+const inputType = { secret: "password", totp: "password", url: "url", email: "email" } as const;
 
 export const FieldValue = (props: {
   field: InputField;
@@ -34,7 +35,9 @@ export const FieldValue = (props: {
         <Input
           label={props.label}
           type={inputType[props.field.kind as keyof typeof inputType] ?? "text"}
-          autocomplete={props.field.kind === "secret" ? "new-password" : "off"}
+          autocomplete={
+            props.field.kind === "secret" || props.field.kind === "totp" ? "new-password" : "off"
+          }
           value={props.field.value}
           onInput={(event) => props.onValue(event.currentTarget.value)}
         />

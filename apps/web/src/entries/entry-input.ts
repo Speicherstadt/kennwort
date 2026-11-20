@@ -7,17 +7,21 @@ import type { EntryContent } from "@kennwort/core";
 import { type EntryType, TEMPLATES, templateField } from "./entry-types.ts";
 
 type StoredField = EntryContent["fields"][number];
-/** A field as the dialog shows it; `own` fields the owner named, may rename and remove */
-export type InputField = StoredField & { own: boolean };
+/**
+ * A field as the dialog shows it; `own` fields the owner named, may rename and remove; `added` ones
+ * were added in this dialog, so one left without a name is dropped (a stored one is kept as it is)
+ */
+export type InputField = StoredField & { own: boolean; added?: boolean };
 export type EntryInput = { type: EntryType; title: string; fields: InputField[] };
 
-const fromTemplate = (type: EntryType, value: (id: string) => string) =>
+/** The type's fields; a stored field keeps the kind it was stored with (review of K-306 part 2) */
+const fromTemplate = (type: EntryType, stored: (id: string) => StoredField | undefined) =>
   TEMPLATES[type].map(
     (t): InputField => ({
       id: t.id,
       name: t.label(),
-      value: value(t.id),
-      kind: t.kind,
+      value: stored(t.id)?.value ?? "",
+      kind: stored(t.id)?.kind ?? t.kind,
       own: false,
     }),
   );
@@ -25,11 +29,11 @@ const fromTemplate = (type: EntryType, value: (id: string) => string) =>
 export const newInput = (type: EntryType): EntryInput => ({
   type,
   title: "",
-  fields: fromTemplate(type, () => ""),
+  fields: fromTemplate(type, () => undefined),
 });
 
 export const inputOf = (content: EntryContent): EntryInput => {
-  const stored = (id: string) => content.fields.find((f) => f.id === id)?.value ?? "";
+  const stored = (id: string) => content.fields.find((f) => f.id === id);
   const own = content.fields
     .filter((f) => !templateField(content.type, f.id))
     .map((f) => ({ ...f, own: true }));
@@ -45,12 +49,13 @@ export const inputOf = (content: EntryContent): EntryInput => {
  * field the new type does not have becomes the owner's own, so nothing typed is lost
  */
 export const withType = (input: EntryInput, type: EntryType): EntryInput => {
-  const value = (id: string) => input.fields.find((f) => f.id === id)?.value ?? "";
-  const kept = input.fields.filter((f) => f.own || (f.value !== "" && !templateField(type, f.id)));
+  const field = (id: string) => input.fields.find((f) => f.id === id);
+  // A field the new type has goes into its template field, own or not, so no ID comes twice
+  const kept = input.fields.filter((f) => !templateField(type, f.id) && (f.own || f.value !== ""));
   return {
     type,
     title: input.title,
-    fields: [...fromTemplate(type, value), ...kept.map((f) => ({ ...f, own: true }))],
+    fields: [...fromTemplate(type, field), ...kept.map((f) => ({ ...f, own: true }))],
   };
 };
 
@@ -61,11 +66,11 @@ const trimmed = (field: InputField): StoredField => ({
   kind: field.kind,
 });
 
-/** The content to save; an own field without a name is left out */
+/** The content to save; a field added in the dialog and left without a name is left out */
 export const contentOf = (input: EntryInput, base?: EntryContent): EntryContent => ({
   type: input.type,
   title: input.title.trim(),
-  fields: input.fields.filter((f) => !f.own || f.name.trim() !== "").map(trimmed),
+  fields: input.fields.filter((f) => !f.added || f.name.trim() !== "").map(trimmed),
   tags: base?.tags ?? [],
   favorite: base?.favorite ?? false,
   history: base?.history ?? [],

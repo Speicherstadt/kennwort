@@ -32,16 +32,17 @@ geheim ist, etwa der Benutzername oder der Netzwerkname.
 
 **Eigene Felder:** Mit **Feld hinzufügen** bekommt ein Eintrag weitere Felder mit eigenem Namen
 und einer Art: Text, Geheim, Adresse (URL), E-Mail oder mehrzeiliger Text. Ein eigenes Feld
-entfernst du mit dem Papierkorb daneben; ein eigenes Feld ohne Namen speichert Kennwort nicht.
+entfernst du mit dem Papierkorb daneben; ein neues Feld, dem du keinen Namen gibst, speichert
+Kennwort nicht.
 
 ## Einen Eintrag anlegen
 
 In der Liste der Einträge öffnet **Neu** den Dialog **Neuer Eintrag**. Du wählst den Tresor –
 angeboten werden nur Tresore, in denen du bearbeiten oder verwalten darfst – und die Art, gibst
 den Titel und die Felder ein und wählst **Speichern**. Wechselst du die Art, bevor du speicherst,
-bleiben Titel, eigene Felder und Felder mit gleichem Namen erhalten; was du in ein Feld
-geschrieben hast, das die neue Art nicht kennt, wird ein eigenes Feld. Kennwort verschlüsselt den
-Eintrag auf deinem Gerät und zeigt ihn danach an.
+bleiben Titel, eigene Felder und Felder, die beide Arten haben (etwa das Passwort), erhalten; was
+du in ein Feld geschrieben hast, das die neue Art nicht kennt, wird ein eigenes Feld. Kennwort
+verschlüsselt den Eintrag auf deinem Gerät und zeigt ihn danach an.
 
 ## Einen Eintrag ändern
 

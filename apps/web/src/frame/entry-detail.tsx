@@ -63,7 +63,7 @@ const Detail = (props: {
             <Field
               label={f.label}
               value={f.value}
-              secret={f.kind === "secret"}
+              secret={f.kind === "secret" || f.kind === "totp"}
               mono={f.kind === "url" || f.kind === "totp"}
               multiline={f.kind === "note"}
               toasts={props.toasts}

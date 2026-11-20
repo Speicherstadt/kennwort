@@ -34,6 +34,7 @@ const newOwnField = (): InputField => ({
   value: "",
   kind: "text",
   own: true,
+  added: true,
 });
 
 export const EntryEditor = (props: {

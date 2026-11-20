@@ -102,11 +102,11 @@ describe("entry input", () => {
     });
   });
 
-  it("drops an own field the owner removed, and one without a name", () => {
+  it("drops an own field the owner removed, and one added without a name", () => {
     const input = inputOf(wifi);
     const fields = [
       ...input.fields.filter((f) => f.id !== "c-router"),
-      { id: "c-new", name: "  ", value: "x", kind: "text" as const, own: true },
+      { id: "c-new", name: "  ", value: "x", kind: "text" as const, own: true, added: true },
     ];
     expect(contentOf({ ...input, fields }, wifi).fields.map((f) => f.id)).toEqual([
       "ssid",
