@@ -13,7 +13,12 @@ export type VaultsShown =
   | { state: "failed"; error: "unreachable" | "untrusted" }
   | ({ state: "ready" } & Loaded);
 
-export const createVaultStore = (api: VaultDeps, session: Session) => {
+export const createVaultStore = (
+  api: VaultDeps,
+  session: Session,
+  /** Called with every load that succeeded: the entries load from the vaults it opened */
+  onLoaded: (loaded: Loaded) => void = () => {},
+) => {
   const [shown, setShown] = createSignal<VaultsShown>({ state: "loading" });
   let personalTried = false;
   /** Only the newest load shows: an older answer that arrives later is dropped */
@@ -33,6 +38,7 @@ export const createVaultStore = (api: VaultDeps, session: Session) => {
       if (made.ok || made.error === "exists") return reload();
     }
     setShown({ state: "ready", ...loaded.value });
+    onLoaded(loaded.value);
   };
   /**
    * The personal vault only for an account that never saw a vault: if the server lists none of the

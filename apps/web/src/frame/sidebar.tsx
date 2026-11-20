@@ -4,7 +4,8 @@ import type { IconNode } from "@kennwort/ui/icons";
 import { Archive, List, ShieldCheck, Star, TriangleExclamationPoint } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { For, Show } from "solid-js";
-import { company, entries, groups, vaults } from "../demo.ts";
+import { company, entries as demoEntries, groups, vaults } from "../demo.ts";
+import type { ShownEntry } from "../entries/entries.ts";
 import type { Navigation } from "../navigation.ts";
 import type { ListFilter } from "../routes.ts";
 import type { ShownVault } from "./entry-list.tsx";
@@ -52,7 +53,11 @@ const Heading = (props: { children: JSX.Element }) => (
 const sidebarVaults = (loaded: ShownVault[] | undefined) =>
   loaded ? loaded.map((v) => ({ id: v.idText, name: v.name ?? m.vaults_unnamed() })) : vaults;
 
-export const Sidebar = (props: { nav: Navigation; vaults?: ShownVault[] | undefined }) => (
+export const Sidebar = (props: {
+  nav: Navigation;
+  vaults?: ShownVault[] | undefined;
+  entries?: ShownEntry[] | undefined;
+}) => (
   <aside
     class="hidden w-58 shrink-0 flex-col border-r border-border bg-muted p-3 lg:flex"
     aria-label={m.nav_sections()}
@@ -79,7 +84,11 @@ export const Sidebar = (props: { nav: Navigation; vaults?: ShownVault[] | undefi
         filter={{ kind: "to-change" }}
         icon={TriangleExclamationPoint}
         label={m.nav_to_change()}
-        trailing={<Badge tone="warning">{entries.filter((entry) => entry.weak).length}</Badge>}
+        trailing={
+          <Badge tone="warning">
+            {(props.entries ?? demoEntries).filter((entry) => entry.weak).length}
+          </Badge>
+        }
       />
       <Heading>{m.nav_vaults()}</Heading>
       <For each={sidebarVaults(props.vaults)}>

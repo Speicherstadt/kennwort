@@ -238,5 +238,13 @@
   "vault_groups_unknown": "Unknown group",
   "vault_groups_hint": "Whoever is in a linked group, or joins it, shows up under “Requests”. Unlinking takes nobody's access.",
   "vault_groups_outside": "in no linked group",
-  "groups_all": "All groups"
+  "groups_all": "All groups",
+  "entry_new": "New",
+  "entry_new_title": "New entry",
+  "entry_change_title": "Edit entry",
+  "entry_editor_vault": "Vault",
+  "entry_editor_title": "Title",
+  "entry_editor_save": "Save",
+  "entry_editor_read_only": "You may only read in this vault.",
+  "entry_editor_failed": "The entry could not be saved. It waits on this device until the server answers again."
 }

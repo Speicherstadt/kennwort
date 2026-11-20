@@ -43,7 +43,13 @@ export type Vault = {
 /** A vault this client does not trust: shown as such, never opened */
 export type Refused = { idText: string; error: string };
 /** People of the company as the pinned root confirms them, for names and to add to a vault */
-export type Loaded = { vaults: Vault[]; refused: Refused[]; people: MemberView[] };
+export type Loaded = {
+  vaults: Vault[];
+  refused: Refused[];
+  people: MemberView[];
+  /** The pinned root and the certificates it confirmed: what entries are checked against (P-09) */
+  trust: Trust;
+};
 
 const seconds = () => Math.floor(Date.now() / 1000);
 
@@ -127,7 +133,7 @@ export const loadVaults = async (
   const refused = results.filter((r): r is Refused => !("ring" in r));
   if (vaults.some((v) => (opened.state.logs[v.idText]?.seq ?? -1) < v.log.seq))
     await session.updateState(api, rememberLogs(vaults));
-  return { ok: true, value: { vaults, refused, people } };
+  return { ok: true, value: { vaults, refused, people, trust } };
 };
 
 export type CreateError = "uncertified" | "unreachable" | "refused" | "exists";

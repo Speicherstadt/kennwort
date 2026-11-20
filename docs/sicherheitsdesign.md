@@ -712,6 +712,10 @@ signatur  = F-03(autor, "entry", tresor-ID, eintrags-ID, version, epoche, SHA-51
 Restrisiko: Einen neuen Eintrag, den ein Client nie gesehen hat, kann der Server diesem Client
 vorenthalten.
 
+In der Web-App lädt `apps/web/src/entries/entry-store.ts` die Einträge jedes geöffneten Tresors
+mit `pull` und `sync` aus `packages/core` und prüft jeden Datensatz gegen das geprüfte Log des
+Tresors; entsperrte Inhalte liegen nur im Speicher.
+
 **Wehrt ab:** E-11, E-12, E-13, E-14, E-15, E-16, E-17.
 
 ### P-10 Einzelnen Eintrag teilen

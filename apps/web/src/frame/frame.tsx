@@ -5,6 +5,7 @@
 import { createToasts, type Locale, Toaster } from "@kennwort/ui";
 import type { JSX } from "@solidjs/web";
 import { Match, Show, Switch } from "solid-js";
+import type { ShownEntry } from "../entries/entries.ts";
 import type { Navigation } from "../navigation.ts";
 import { EntryDetail } from "./entry-detail.tsx";
 import { EntryList, type ShownVault } from "./entry-list.tsx";
@@ -27,6 +28,11 @@ export const Frame = (props: {
   vaultsPage?: (() => JSX.Element) | undefined;
   /** The company's groups (K-305 part 5); the demo's stand in where the app gives none */
   groupsPage?: (() => JSX.Element) | undefined;
+  /** The entries from the vaults (K-306) and what list and detail do with them */
+  entries?: (() => ShownEntry[] | undefined) | undefined;
+  vaultName?: ((id: string) => string) | undefined;
+  onNewEntry?: (() => void) | undefined;
+  onEditEntry?: ((entry: ShownEntry) => void) | undefined;
   /** A vault link this account cannot open: what shows instead of its entries (K-305) */
   noAccess?: ((vaultId: string) => JSX.Element | undefined) | undefined;
 }) => {
@@ -50,15 +56,20 @@ export const Frame = (props: {
               })()}
               fallback={
                 <>
-                  <Sidebar nav={props.nav} vaults={props.vaults?.()} />
+                  <Sidebar nav={props.nav} vaults={props.vaults?.()} entries={props.entries?.()} />
                   <main class="flex min-h-0 flex-1">
                     <EntryList
+                      entries={props.entries?.()}
+                      onNew={props.onNewEntry}
                       nav={props.nav}
                       filter={entries().filter}
                       selected={entries().entry}
                       vaults={props.vaults?.()}
                     />
                     <EntryDetail
+                      entries={props.entries?.()}
+                      vaultName={props.vaultName}
+                      onEdit={props.onEditEntry}
                       nav={props.nav}
                       filter={entries().filter}
                       selected={entries().entry}
@@ -70,7 +81,7 @@ export const Frame = (props: {
             >
               {(shown) => (
                 <>
-                  <Sidebar nav={props.nav} vaults={props.vaults?.()} />
+                  <Sidebar nav={props.nav} vaults={props.vaults?.()} entries={props.entries?.()} />
                   <main class="flex min-h-0 flex-1">{shown()}</main>
                 </>
               )}

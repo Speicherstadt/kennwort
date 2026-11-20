@@ -14,6 +14,7 @@ export {
   List,
   Lock,
   Pencil,
+  Plus,
   Search,
   Settings,
   Share2,

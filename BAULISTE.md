@@ -171,6 +171,17 @@ und die Schritte für Menschen am Ende erledigt sind.
     auch künftige Versionen und ein Widerruf (neuer EK) etwas ab.
 - [ ] **K-306 Einträge** – alle Typen, Generator, TOTP mit QR-Scan, eigene Felder, frühere
   Passwörter, Suche, Favoriten, Tags.
+  In Teilen, je ein Pull Request; abgehakt wird K-306, wenn alle stehen:
+  - [x] Teil 1: Einträge aus den Tresoren statt der Demo – anlegen und ändern (Login), Liste und
+    Detail aus den geprüften Einträgen (P-09, P-21). Fertig, wenn: kein Gerät einen Eintrag zeigt,
+    den es nicht geprüft hat, Leser nicht ändern können und Anlegen, Ändern und Lesen auf einem
+    zweiten Konto als Playwright-Test desktop und `@phone` laufen.
+  - [ ] Teil 2: Alle Typen (Notiz, WLAN, Karte, SSH- und API-Schlüssel, Identität) und eigene
+    Felder.
+  - [ ] Teil 3: Generator für Passwörter und Passphrasen.
+  - [ ] Teil 4: TOTP mit QR-Scan.
+  - [ ] Teil 5: Frühere Passwörter, Favoriten, Tags, Suche über alles, „Zum Ändern“ (schwache und
+    doppelte Passwörter).
 - [ ] **K-307 Austritt und Recovery** – Schlüsselwechsel, Änderungs-Markierung, Austritts-Bericht,
   Firmen-Recovery, Notfallzugriff mit Wartezeit, Wechsel des Account Key (AK), wenn ein
   Recovery-Kit in fremde Hände geraten ist (P-12).

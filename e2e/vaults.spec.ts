@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
-import { type Browser, expect, type Page } from "@playwright/test";
-import { newDevice, setUpCompany, test, unlock } from "./account.ts";
+import { expect, type Page } from "@playwright/test";
+import { setUpCompany, test, unlock } from "./account.ts";
+import { annaJoins, heading, openVaults } from "./company.ts";
 
 // K-305 part 2 (P-05, P-06): Jonas gets his personal vault and creates a shared one for the office
 test.use({ locale: "de-DE" });
@@ -10,12 +11,6 @@ const axe = async (page: Page) => {
   expect(
     violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`),
   ).toEqual([]);
-};
-const heading = (page: Page, name: string) => page.getByRole("heading", { level: 1, name });
-const openVaults = async (page: Page) => {
-  await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).first().click();
-  await page.getByRole("button", { name: "Tresore" }).click();
-  await expect(heading(page, "Tresore")).toBeVisible();
 };
 
 test.describe("vaults", { tag: "@phone" }, () => {
@@ -44,33 +39,6 @@ test.describe("vaults", { tag: "@phone" }, () => {
     await expect(heading(page, "Büro")).toBeVisible();
   });
 });
-
-/** Jonas invites Anna, she accepts on her own device, Jonas confirms her keys */
-const annaJoins = async (page: Page, browser: Browser) => {
-  await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).first().click();
-  await page.getByRole("button", { name: "Mitglieder" }).click();
-  await page.getByLabel("Name").fill("Anna");
-  await page.getByRole("button", { name: "Einladen" }).click();
-  const link = await page.getByLabel("Einladungslink").inputValue();
-  const anna = await newDevice(browser);
-  await anna.goto(link);
-  await anna.getByLabel("Passphrase", { exact: true }).fill("Anna Heizung Bad Fliese");
-  await anna.getByLabel("Passphrase wiederholen").fill("Anna Heizung Bad Fliese");
-  await anna.getByRole("button", { name: "Konto anlegen" }).click();
-  await expect(heading(anna, "Dein Recovery-Kit")).toBeVisible({ timeout: 20_000 });
-  await anna.getByRole("checkbox").check();
-  await anna.getByRole("button", { name: "Weiter" }).click();
-  await expect(heading(anna, "Alle Einträge")).toBeVisible();
-  await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).first().click();
-  await page.getByRole("button", { name: "Mitglieder" }).click();
-  const row = page
-    .getByRole("list", { name: "Mitglieder" })
-    .getByRole("listitem")
-    .filter({ hasText: "Anna" });
-  await row.getByRole("button", { name: "Bestätigen" }).click();
-  await expect(row).toContainText("Bestätigt");
-  return anna;
-};
 
 test.describe("members of a vault", { tag: "@phone" }, () => {
   test("Jonas adds Anna to Büro to read, lets her edit, then removes her", async ({
