@@ -237,3 +237,10 @@ export {
   VaultLogWire,
   VaultRequestsWire,
 } from "./sync/wire.ts";
+export {
+  base32Decode,
+  parseTotp,
+  type TotpError,
+  type TotpKey,
+  totpCode,
+} from "./totp/otpauth.ts";

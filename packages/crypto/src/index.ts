@@ -37,6 +37,7 @@ export {
   inviteMac,
   verifyInviteMac,
 } from "./invite.ts";
+export { hotp, OTP_ALGORITHMS, type OtpAlgorithm, type TotpOptions, totp } from "./otp.ts";
 export {
   ACCOUNT_SALT_LENGTH,
   PASSPHRASE_V1,
