@@ -11,6 +11,9 @@ import { bearer } from "better-auth/plugins/bearer";
 import type { Db } from "../db/database.ts";
 import { authAccount, authPasskey, authSession, authUser, authVerification } from "../db/schema.ts";
 
+/** Set by app.ts from the socket (or proxy) address before a request reaches Better Auth */
+export const CLIENT_HEADER = "x-kennwort-client";
+
 export type AuthOptions = { secret: string; baseURL: string; rpID: string; origin: string };
 
 /**
@@ -57,6 +60,8 @@ export const createAuth = (db: Db, options: AuthOptions): Auth =>
     user: { additionalFields: { companyId: { type: "string", required: true, input: false } } },
     session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24 },
     rateLimit: { enabled: true, window: 60, max: 30 },
+    // Its rate limit counts only the address app.ts puts here, never what a client sends
+    advanced: { ipAddress: { ipAddressHeaders: [CLIENT_HEADER] } },
     telemetry: { enabled: false },
     trustedOrigins: [options.origin],
     plugins: [

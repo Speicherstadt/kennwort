@@ -310,7 +310,8 @@ Geheimtexten.
 - **Notweg Passphrase**: Aus `anmelden` (F-05) wird ein Ed25519-Schlüssel; der Server kennt nur
   dessen öffentlichen Teil und schickt eine Herausforderung. Die Passphrase und `p₁` verlassen nie
   das Gerät; was der Server speichert, lässt sich ohne den Secret Key nicht raten.
-- Rate-Limits je Adresse für Herausforderung, Antwort und das Annehmen einer Einladung. Die Adresse
+- Rate-Limits je Adresse für Herausforderung, Antwort, das Annehmen einer Einladung und Better Auths
+  Endpunkte (Passkeys). Die Adresse
   ist die der Verbindung; hinter einem Reverse Proxy (`KENNWORT_BEHIND_PROXY=true`) die, die der
   Proxy zuletzt an `X-Forwarded-For` anhängt – was ein Client davor schreibt, zählt nicht.
 - Nach fünf Fehlversuchen in 15 Minuten ist das Konto 15 Minuten gesperrt, auch für den richtigen

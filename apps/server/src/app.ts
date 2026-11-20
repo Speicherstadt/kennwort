@@ -1,8 +1,8 @@
 /** The HTTP API (Hono): one place where every route is mounted and every request logged */
 import { sql } from "drizzle-orm";
 import { Hono, type MiddlewareHandler } from "hono";
-import type { Auth } from "./auth/better-auth.ts";
-import type { ClientAddress } from "./auth/client-address.ts";
+import { type Auth, CLIENT_HEADER } from "./auth/better-auth.ts";
+import type { ClientAddress, ClientEnv } from "./auth/client-address.ts";
 import { acceptInvitationRoute, createInvitationRoute } from "./auth/invitations.ts";
 import { loginKeyRoutes } from "./auth/login-key.ts";
 import type { Db } from "./db/database.ts";
@@ -72,7 +72,13 @@ export const createApp = ({ db, log, authenticate, signIn }: Deps) => {
     // Public: sign-in key, accepting an invitation, and Better Auth (passkeys, sessions) for the rest
     app.route("/auth/login-key", loginKeyRoutes(deps));
     app.route("/auth", acceptInvitationRoute(deps));
-    app.on(["GET", "POST"], "/auth/*", (c) => signIn.auth.handler(c.req.raw));
+    app.on(["GET", "POST"], "/auth/*", (c) => {
+      // Better Auth's rate limit reads the client address from this header only; a value a
+      // client sent itself is replaced (review of K-203)
+      const request = new Request(c.req.raw);
+      request.headers.set(CLIENT_HEADER, signIn.address(c.req.raw, c.env as ClientEnv));
+      return signIn.auth.handler(request);
+    });
   }
   app.route("/api", api);
 
