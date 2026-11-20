@@ -1,6 +1,6 @@
 /** The HTTP API (Hono): one place where every route is mounted and every request logged */
 import { sql } from "drizzle-orm";
-import { Hono } from "hono";
+import { Hono, type MiddlewareHandler } from "hono";
 import type { Db } from "./db/database.ts";
 import type { Log } from "./log.ts";
 import { companyRoutes, type TenantEnv } from "./tenancy/routes.ts";
@@ -43,13 +43,14 @@ export const createApp = ({ db, log, authenticate }: Deps) => {
 
   // Everything under /api needs a session; routes see only the session's company
   const api = new Hono<TenantEnv>();
-  api.use(async (c, next) => {
+  const requireSession: MiddlewareHandler<TenantEnv> = async (c, next) => {
     const session = await authenticate(c.req.raw);
     if (!session) return c.json({ error: "unauthenticated" }, 401);
     c.set("session", session);
     c.set("scope", companyScope(db, session.companyId));
     await next();
-  });
+  };
+  api.use(requireSession);
   api.route("/", companyRoutes());
   app.route("/api", api);
 
@@ -58,5 +59,6 @@ export const createApp = ({ db, log, authenticate }: Deps) => {
     return c.json({ error: "internal" }, 500);
   });
 
-  return app;
+  // The tenancy test tells the middleware from endpoints by this handler, not by method and path
+  return Object.assign(app, { requireSession });
 };
