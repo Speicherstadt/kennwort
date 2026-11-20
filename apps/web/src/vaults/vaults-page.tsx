@@ -9,10 +9,11 @@ import { createSignal, For, Match, Show, Switch } from "solid-js";
 import { Link } from "../frame/link.tsx";
 import type { Navigation } from "../navigation.ts";
 import type { Session } from "../session/session.ts";
+import type { DialogApi } from "./dialog-state.ts";
 import { VaultMembersDialog } from "./vault-members-dialog.tsx";
 import type { VaultStore } from "./vault-store.ts";
 import { roleText } from "./vault-text.ts";
-import type { CreateError, VaultDeps } from "./vaults.ts";
+import type { CreateError } from "./vaults.ts";
 
 const createText = (error: CreateError) =>
   error === "uncertified" ? m.vaults_create_uncertified() : m.vaults_create_failed();
@@ -59,7 +60,7 @@ const CreateForm = (props: { onCreate: (name: string) => Promise<CreateError | u
 export const VaultsPage = (props: {
   nav: Navigation;
   store: VaultStore;
-  api: VaultDeps;
+  api: DialogApi;
   session: Session;
 }) => {
   /** The vault whose members show: by ID, so the dialog stays open while the vaults load anew */

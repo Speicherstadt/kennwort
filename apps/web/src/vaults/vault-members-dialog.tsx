@@ -7,8 +7,11 @@ import type { Certificate, MemberView, VaultRole } from "@kennwort/core";
 import { idKey } from "@kennwort/core";
 import { Button, Dialog, getLocale, Input, m } from "@kennwort/ui";
 import { createSignal, For, Show } from "solid-js";
+import { linkGroup, outsideLinkedGroups, unlinkGroup } from "../groups/groups.ts";
 import type { Session } from "../session/session.ts";
+import { createDialogState, type DialogApi } from "./dialog-state.ts";
 import { RoleSelect, selectClass } from "./role-select.tsx";
+import { VaultGroups } from "./vault-groups.tsx";
 import {
   addToVault,
   type ChangeError,
@@ -17,9 +20,7 @@ import {
   declineRequest,
   grantRequest,
   hasExpired,
-  loadRequests,
   mayManage,
-  type Request,
   removeFromVault,
   type VaultMember,
   vaultMembers,
@@ -27,7 +28,7 @@ import {
 import { VaultRequests } from "./vault-requests.tsx";
 import type { VaultStore } from "./vault-store.ts";
 import { roleText } from "./vault-text.ts";
-import type { Vault, VaultDeps } from "./vaults.ts";
+import type { Vault } from "./vaults.ts";
 
 const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
 
@@ -59,6 +60,8 @@ const nameOf = (person: { name: string | null }) => person.name ?? m.vault_membe
 
 const MemberRow = (props: {
   member: VaultMember;
+  /** In none of the vault's linked groups (any more): a manager may want to remove them */
+  outside: boolean;
   editable: boolean;
   busy: boolean;
   onRole: (role: VaultRole) => void;
@@ -68,6 +71,9 @@ const MemberRow = (props: {
     <span class="flex-1 truncate">
       {nameOf(props.member)}
       <Show when={props.member.me}> {m.vault_members_you()}</Show>
+      <Show when={props.outside}>
+        <span class="ml-2 text-xs text-muted-foreground">{m.vault_groups_outside()}</span>
+      </Show>
       <Show when={props.member.validUntil !== 0}>
         <span class="ml-2 text-xs text-muted-foreground">
           {hasExpired(props.member)
@@ -147,24 +153,15 @@ export const VaultMembersDialog = (props: {
   onClose: () => void;
   vault: Vault;
   people: MemberView[];
-  api: VaultDeps;
+  api: DialogApi;
   session: Session;
   store: VaultStore;
 }) => {
-  const [busy, setBusy] = createSignal(false);
-  const [error, setError] = createSignal<ChangeError>();
-  const [requests, setRequests] = createSignal<Request[]>([]);
+  const state = createDialogState(props);
+  const { busy, error, requests, run } = state;
   const { api, session } = props;
-  const reloadRequests = async () =>
-    setRequests((await loadRequests(api, session, props.vault, props.people)) ?? []);
-  void reloadRequests();
-  const run = async (change: () => ReturnType<typeof addToVault>) => {
-    setBusy(true);
-    setError(await props.store.change(change));
-    await reloadRequests();
-    setBusy(false);
-  };
   const me = () => props.session.opened()?.accountId ?? new Uint8Array();
+  const outside = () => outsideLinkedGroups(props.vault, state.links(), state.groups());
   return (
     <Dialog
       open={props.open}
@@ -179,6 +176,7 @@ export const VaultMembersDialog = (props: {
           {(member) => (
             <MemberRow
               member={member}
+              outside={outside().has(idKey(member.accountId))}
               editable={mayManage(props.vault)}
               busy={busy()}
               onRole={(role) =>
@@ -191,6 +189,18 @@ export const VaultMembersDialog = (props: {
           )}
         </For>
       </ul>
+      <VaultGroups
+        groups={state.groups()}
+        links={state.links()}
+        manager={mayManage(props.vault)}
+        busy={busy()}
+        onLink={(groupId, role) =>
+          void state.runLinks(() => linkGroup(api, session, props.vault, groupId, role))
+        }
+        onUnlink={(groupId) =>
+          void state.runLinks(() => unlinkGroup(api, session, props.vault, groupId))
+        }
+      />
       <VaultRequests
         requests={requests()}
         busy={busy()}

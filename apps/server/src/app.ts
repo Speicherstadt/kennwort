@@ -14,6 +14,7 @@ import { pairingApiRoutes, pairingPublicRoutes } from "./auth/pairings.ts";
 import { setupRoute } from "./auth/setup.ts";
 import type { Db } from "./db/database.ts";
 import type { Log } from "./log.ts";
+import { groupRoutes } from "./sync/group-routes.ts";
 import { createHub, type Hub } from "./sync/hub.ts";
 import { logRoutes } from "./sync/log-routes.ts";
 import { requestRoutes } from "./sync/request-routes.ts";
@@ -102,6 +103,7 @@ export const createApp = ({
   api.route("/", deviceRoutes({ db, now }));
   api.route("/", logRoutes({ db, now }));
   api.route("/", requestRoutes({ db, now }));
+  api.route("/", groupRoutes({ db, now }));
   api.route("/", syncRoutes({ hub, now, ...(keepAliveMs ? { keepAliveMs } : {}) }));
   if (signIn) {
     const deps = { db, ...signIn };

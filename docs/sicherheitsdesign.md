@@ -477,7 +477,13 @@ Verlauf; der Link lässt sich auch einfügen. Das neue Gerät fragt alle vier Se
    gefragt hat); ein gespeichertes `aufnehmen` oder `rolle` für das Konto löscht die Anfrage. Wessen
 Zeit abgelaufen ist, der steht noch im Log und fragt erneut an; freigegeben wird er mit `rolle`
 ohne Ablaufzeit, denn ein zweites `aufnehmen` nimmt `verifyLog` nicht. Freigeben kann der Client nur
-   für ein Konto, dessen Zertifikat der gemerkte Wurzelschlüssel bestätigt.
+   für ein Konto, dessen Zertifikat der gemerkte Wurzelschlüssel bestätigt. Gruppen (`apps/server/src/sync/group-routes.ts`)
+   legen nur Anfragen an: beim Verknüpfen einer Gruppe mit einem Tresor für alle ihre Mitglieder,
+   die nicht im Tresor sind, und bei jedem späteren Beitritt; Zugriff gibt weiter nur Schritt 2.
+   Eine Anfrage merkt sich, ob eine Gruppe sie gestellt hat; wird die Gruppe gelöst, gelöscht oder
+   verlassen, bleibt sie nur, solange die Person in einer anderen verknüpften Gruppe ist. Beim
+   Freigeben schlägt der Client die höchste Rolle der verknüpften Gruppen der Person vor, höchstens
+   „bearbeiten“: Der Vorschlag kommt vom Server, „verwalten“ wählt der Verwalter selbst.
 
 So ist es gebaut: `createVault` und `addMember` in `packages/core/src/membership/vault-ops.ts`
 erzeugen den Eintrag und das an das Mitglied verpackte VKₑ; `changeAccess` und `removeMember`
@@ -815,6 +821,7 @@ begrenzt, nie auf eine fremde Person).
 | --- | --- |
 | Konten, Firmen, Geräte, Sitzungen, Anmeldezeiten, IP-Adressen | Passphrase, Secret Key, PRF-Ausgabe, AK, private Schlüssel |
 | Tresor-IDs, Mitglieder, Rollen (im signierten Log) | Tresor-Namen und -Beschreibungen (verschlüsselt mit VKₑ) |
+| Gruppen, ihre Namen und Mitglieder, welche Gruppe mit welchem Tresor verknüpft ist | – (eine Gruppe gibt keinen Zugriff, sie erzeugt nur Anfragen) |
 | Eintrags-IDs, Versionen, Größen, Zeitpunkte, Autor | Titel, URLs, Benutzernamen, Passwörter, TOTP, Notizen, Tags, Favoriten, Anhänge |
 | öffentliche Schlüssel, Zertifikate, Fingerabdrücke | Recovery Key, Einladungsgeheimnis, Schlüssel von Einmal-Links |
 | Audit-Ereignisse (wer, was, wann) | Inhalte der Ereignisse, die Einträge betreffen |

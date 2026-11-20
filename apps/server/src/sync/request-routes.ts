@@ -10,6 +10,7 @@ import { Hono } from "hono";
 import type { Db } from "../db/database.ts";
 import { vaultLog, vaultRequests, vaults } from "../db/schema.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
+import { linkedRoles } from "./group-links.ts";
 import { isCurrent, membersOf } from "./vault-chain.ts";
 
 type Deps = { db: Db; now: () => number };
@@ -53,7 +54,11 @@ export const requestRoutes = (deps: Deps) => {
       a.db
         .insert(vaultRequests)
         .values({ vaultId, accountId: c.var.session.accountId, requestedAt: deps.now() })
-        .onConflictDoNothing()
+        // Asking oneself outlasts what a group filed: unlinking the group no longer drops it
+        .onConflictDoUpdate({
+          target: [vaultRequests.vaultId, vaultRequests.accountId],
+          set: { viaGroup: null },
+        })
         .run();
       return c.json({ ok: true }, 201);
     })
@@ -68,8 +73,13 @@ export const requestRoutes = (deps: Deps) => {
         .where(eq(vaultRequests.vaultId, vaultId))
         .orderBy(asc(vaultRequests.requestedAt))
         .all();
+      const roles = linkedRoles(a.db, vaultId);
       return c.json({
-        requests: rows.map((row) => ({ accountId: row.accountId, requestedAt: row.requestedAt })),
+        requests: rows.map((row) => ({
+          accountId: row.accountId,
+          requestedAt: row.requestedAt,
+          role: roles.get(row.accountId) ?? null,
+        })),
       });
     })
     .delete("/vaults/:vaultId/requests/:accountId", (c) => {

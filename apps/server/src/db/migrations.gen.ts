@@ -97,5 +97,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795178733190,
     "breakpoints": true,
     "sql": "CREATE TABLE `vault_requests` (\n\t`vault_id` text NOT NULL,\n\t`account_id` text NOT NULL,\n\t`requested_at` integer NOT NULL,\n\tPRIMARY KEY(`vault_id`, `account_id`),\n\tFOREIGN KEY (`vault_id`) REFERENCES `vaults`(`id`) ON UPDATE no action ON DELETE no action\n);\n"
+  },
+  {
+    "tag": "0016_groups",
+    "when": 1795180998429,
+    "breakpoints": true,
+    "sql": "CREATE TABLE `group_members` (\n\t`group_id` text NOT NULL,\n\t`account_id` text NOT NULL,\n\tPRIMARY KEY(`group_id`, `account_id`),\n\tFOREIGN KEY (`group_id`) REFERENCES `groups`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE TABLE `groups` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`company_id` text NOT NULL,\n\t`name` text NOT NULL,\n\t`created_at` integer NOT NULL,\n\tFOREIGN KEY (`company_id`) REFERENCES `companies`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE INDEX `groups_company` ON `groups` (`company_id`);--> statement-breakpoint\nCREATE TABLE `vault_groups` (\n\t`vault_id` text NOT NULL,\n\t`group_id` text NOT NULL,\n\t`role` text NOT NULL,\n\tPRIMARY KEY(`vault_id`, `group_id`),\n\tFOREIGN KEY (`vault_id`) REFERENCES `vaults`(`id`) ON UPDATE no action ON DELETE no action,\n\tFOREIGN KEY (`group_id`) REFERENCES `groups`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nALTER TABLE `vault_requests` ADD `via_group` text;"
   }
 ];

@@ -103,17 +103,30 @@ export const Sidebar = (props: { nav: Navigation; vaults?: ShownVault[] | undefi
         </Link>
       </Show>
       <Heading>{m.nav_groups()}</Heading>
-      <For each={groups}>
-        {(group) => (
+      <Show
+        when={!props.vaults}
+        fallback={
           <Link
             nav={props.nav}
             href="/groups"
-            class="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent"
+            class="flex items-center gap-2 rounded-md px-2 py-1.5 text-muted-foreground hover:bg-accent"
           >
-            <span class="flex-1 truncate">{group.name}</span>
+            {m.groups_all()}
           </Link>
-        )}
-      </For>
+        }
+      >
+        <For each={groups}>
+          {(group) => (
+            <Link
+              nav={props.nav}
+              href="/groups"
+              class="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent"
+            >
+              <span class="flex-1 truncate">{group.name}</span>
+            </Link>
+          )}
+        </For>
+      </Show>
     </nav>
     <p class="mt-auto flex gap-2 px-2 text-xs text-muted-foreground">
       <Icon icon={ShieldCheck} class="shrink-0 text-success" />

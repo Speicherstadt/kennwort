@@ -25,6 +25,8 @@ export const Frame = (props: {
   /** The vaults the app loaded and their page (K-305) */
   vaults?: (() => ShownVault[] | undefined) | undefined;
   vaultsPage?: (() => JSX.Element) | undefined;
+  /** The company's groups (K-305 part 5); the demo's stand in where the app gives none */
+  groupsPage?: (() => JSX.Element) | undefined;
   /** A vault link this account cannot open: what shows instead of its entries (K-305) */
   noAccess?: ((vaultId: string) => JSX.Element | undefined) | undefined;
 }) => {
@@ -82,7 +84,7 @@ export const Frame = (props: {
         </Match>
         <Match when={route().page === "groups"}>
           <main class="flex min-h-0 flex-1">
-            <GroupsPage />
+            {props.groupsPage ? props.groupsPage() : <GroupsPage />}
           </main>
         </Match>
         <Match when={route().page === "settings"}>

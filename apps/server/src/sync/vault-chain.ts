@@ -11,12 +11,13 @@ import {
   encodeBytes,
   idKey,
   type LogEntry,
+  LogEntryWire,
   type LogError,
   verifyLog,
 } from "@kennwort/core";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import type { Db } from "../db/database.ts";
-import { accountKeys, accounts, companies } from "../db/schema.ts";
+import { accountKeys, accounts, companies, vaultLog } from "../db/schema.ts";
 
 type Member = { role: string; validUntil: number };
 
@@ -78,4 +79,16 @@ export const chainRefusal = (
   if (checked.ok) return undefined;
   const forbidden: LogError[] = ["not-manager", "uncertified-signer"];
   return forbidden.includes(checked.error) ? "forbidden" : "invalid";
+};
+
+/** The accounts that are current members of a vault by its stored log, at a time in Unix seconds */
+export const currentMembers = (db: Db, vaultId: string, now: number) => {
+  const rows = db
+    .select()
+    .from(vaultLog)
+    .where(eq(vaultLog.vaultId, vaultId))
+    .orderBy(asc(vaultLog.seq))
+    .all();
+  const members = membersOf(rows.map((row) => LogEntryWire.parse(JSON.parse(row.entry))));
+  return new Map([...members].filter(([, member]) => isCurrent(member, now)));
 };

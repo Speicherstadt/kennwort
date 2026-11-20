@@ -162,11 +162,13 @@ und die Schritte für Menschen am Ende erledigt sind.
     eine Anfrage erst mit dem Aufnehmen durch einen Verwalter Zugriff gibt – als Playwright-Test
     desktop und `@phone`. Einträge, die ein Mitglied nach Ablauf schreibt, verwirft der Client mit
     K-306, wenn die Einträge aus den Tresoren kommen.
-  - [ ] Teil 5: Gruppen – ein Tresor für eine Gruppe von Mitgliedern; aufnehmen und entfernen über
+  - [x] Teil 5: Gruppen – ein Tresor für eine Gruppe von Mitgliedern; aufnehmen und entfernen über
     die Gruppe. Fertig, wenn: ein neues Gruppenmitglied erst Zugriff hat, wenn ein Verwalter seine
     Anfrage freigibt (P-05, Schritt 4).
   - [ ] Teil 6: einzelnen Eintrag teilen (P-10). Fertig, wenn: der Empfänger nur diesen Eintrag
-    entschlüsseln kann (Test).
+    entschlüsseln kann (Test). Baut auf K-306 Teil 1 auf: Erst wenn Einträge aus den Tresoren
+    kommen und der Eintrags-Schlüssel (EK) über die Versionen gleich bleibt, deckt eine Freigabe
+    auch künftige Versionen und ein Widerruf (neuer EK) etwas ab.
 - [ ] **K-306 Einträge** – alle Typen, Generator, TOTP mit QR-Scan, eigene Felder, frühere
   Passwörter, Suche, Favoriten, Tags.
 - [ ] **K-307 Austritt und Recovery** – Schlüsselwechsel, Änderungs-Markierung, Austritts-Bericht,

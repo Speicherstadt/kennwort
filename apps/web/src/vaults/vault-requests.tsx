@@ -8,13 +8,21 @@ import { createSignal, For, Show } from "solid-js";
 import { RoleSelect } from "./role-select.tsx";
 import type { Request } from "./vault-members.ts";
 
+/**
+ * The role a grant starts with: what the linked groups suggest, but never "manage", since the
+ * suggestion comes from the server; a manager who wants another manager chooses it (review of K-305)
+ */
+export const suggestedRole = (fromGroups: VaultRole | null): VaultRole =>
+  fromGroups === "edit" ? "edit" : "read";
+
 const RequestRow = (props: {
   request: Request;
   busy: boolean;
   onGrant: (role: VaultRole) => void;
   onDecline: () => void;
 }) => {
-  const [role, setRole] = createSignal<VaultRole>("read");
+  // A linked group's role comes first; the manager may still choose another (review of K-305)
+  const [role, setRole] = createSignal<VaultRole>(suggestedRole(props.request.role));
   const name = () => props.request.name ?? m.vault_members_unnamed();
   return (
     <li class="flex flex-wrap items-center gap-2 px-3 py-2">
