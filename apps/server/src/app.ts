@@ -1,11 +1,13 @@
 /** The HTTP API (Hono): one place where every route is mounted and every request logged */
 import { sql } from "drizzle-orm";
 import { Hono, type MiddlewareHandler } from "hono";
+import { accountRoutes } from "./account/routes.ts";
 import { auditRoutes } from "./audit/routes.ts";
 import { type Auth, CLIENT_HEADER } from "./auth/better-auth.ts";
 import type { ClientAddress, ClientEnv } from "./auth/client-address.ts";
 import { acceptInvitationRoute, createInvitationRoute } from "./auth/invitations.ts";
 import { loginKeyRoutes } from "./auth/login-key.ts";
+import { setupRoute } from "./auth/setup.ts";
 import type { Db } from "./db/database.ts";
 import type { Log } from "./log.ts";
 import { createHub, type Hub } from "./sync/hub.ts";
@@ -22,6 +24,7 @@ export type SignIn = {
   random: (length: number) => Uint8Array;
   allow: (key: string) => boolean;
   address: ClientAddress;
+  setupCode?: string | undefined;
 };
 
 export type Deps = {
@@ -86,6 +89,7 @@ export const createApp = ({
   api.use(requireSession);
   api.route("/", companyRoutes());
   api.route("/", auditRoutes({ now }));
+  api.route("/", accountRoutes({ db, now }));
   api.route("/", syncRoutes({ hub, now, ...(keepAliveMs ? { keepAliveMs } : {}) }));
   if (signIn) {
     const deps = { db, ...signIn };
@@ -93,6 +97,7 @@ export const createApp = ({
     // Public: sign-in key, accepting an invitation, and Better Auth (passkeys, sessions) for the rest
     app.route("/auth/login-key", loginKeyRoutes(deps));
     app.route("/auth", acceptInvitationRoute(deps));
+    app.route("/auth", setupRoute({ ...deps, setupCode: signIn.setupCode }));
     app.on(["GET", "POST"], "/auth/*", (c) => {
       // Better Auth's rate limit reads the client address from this header only; a value a
       // client sent itself is replaced (review of K-203)

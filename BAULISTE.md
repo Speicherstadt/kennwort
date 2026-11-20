@@ -101,6 +101,12 @@ und die Schritte für Menschen am Ende erledigt sind.
   Fertig, wenn: Playwright desktop und `@phone` alle Seiten öffnet und axe grün ist.
 - [ ] **K-303 Konto und Geräte** – Konto anlegen, Entsperren, Recovery-Kit als PDF, neues Gerät per
   QR-Code, Geräteliste, Gerät abmelden, automatisches Sperren.
+  In Teilen, je ein Pull Request; abgehakt wird K-303, wenn alle stehen:
+  - [x] Teil 1: Konto anlegen (erster Inhaber mit Einrichtungs-Code, Eingeladene), Kontozustand,
+    Entsperren mit Passphrase und Recovery Key – in `packages/core` und auf dem Server.
+  - [ ] Teil 2: Konto anlegen und Entsperren in der Web-App, automatisches Sperren.
+  - [ ] Teil 3: Recovery-Kit als PDF.
+  - [ ] Teil 4: Neues Gerät per QR-Code, Geräteliste, Gerät abmelden.
 - [ ] **K-304 Firma, Rollen, Einladungen** – Inhaber, Admin, Mitarbeiter; Wurzelschlüssel;
   Richtlinien.
 - [ ] **K-305 Tresore, Gruppen, Rechte** – persönlich und geteilt, lesen/bearbeiten/verwalten,

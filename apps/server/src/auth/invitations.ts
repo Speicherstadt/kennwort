@@ -11,10 +11,11 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { recordAudit } from "../audit/store.ts";
 import type { Db } from "../db/database.ts";
-import { accounts, invitations, loginKeys } from "../db/schema.ts";
+import { accounts, invitations } from "../db/schema.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 import type { Auth } from "./better-auth.ts";
 import type { ClientAddress, ClientEnv } from "./client-address.ts";
+import { enrol } from "./enrol.ts";
 
 export const INVITATION_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -25,7 +26,7 @@ const sameHash = (a: string, b: string) =>
 const AcceptRequest = z.object({
   token: z.string().min(1).max(128),
   // The device picks its account ID (16 random bytes), so it can derive its sign-in key for it first
-  accountId: z.string().regex(/^[A-Za-z0-9_-]{22}$/),
+  accountId: bytes(16).transform((id) => encodeBytes(id)),
   loginPublicKey: bytes(32),
   accountSalt: bytes(16),
 });
@@ -92,38 +93,22 @@ export const acceptInvitationRoute = ({ db, auth, now, allow, address }: AcceptD
       .returning()
       .get();
     if (!open) return c.json({ error: "invalid-invitation" }, 410);
-    const context = await auth.$context;
-    const user = await context.internalAdapter
-      .createUser({
-        id: parsed.data.accountId,
-        name: "",
-        email: `${parsed.data.accountId}@accounts.kennwort.invalid`,
-        emailVerified: false,
-        companyId: open.companyId,
-      })
-      .catch(() => undefined);
+    const user = await enrol(
+      db,
+      auth,
+      { ...parsed.data, companyId: open.companyId, role: "member", at },
+      (tx) =>
+        tx
+          .update(invitations)
+          .set({ acceptedAt: at, accountId: parsed.data.accountId })
+          .where(eq(invitations.id, open.id))
+          .run(),
+    );
     // Lost a race for the same account ID: the invitation goes back, so it can be used again
     if (!user) {
       db.update(invitations).set({ acceptedAt: null }).where(eq(invitations.id, open.id)).run();
       return c.json({ error: "account-exists" }, 409);
     }
-    db.transaction((tx) => {
-      tx.insert(accounts)
-        .values({ id: user.id, companyId: open.companyId, role: "member", createdAt: at })
-        .run();
-      tx.insert(loginKeys)
-        .values({
-          accountId: user.id,
-          publicKey: encodeBytes(parsed.data.loginPublicKey),
-          accountSalt: encodeBytes(parsed.data.accountSalt),
-          createdAt: at,
-        })
-        .run();
-      tx.update(invitations)
-        .set({ acceptedAt: at, accountId: user.id })
-        .where(eq(invitations.id, open.id))
-        .run();
-    });
     recordAudit(db, {
       companyId: open.companyId,
       time: at,
@@ -132,7 +117,7 @@ export const acceptInvitationRoute = ({ db, auth, now, allow, address }: AcceptD
       subject: open.id,
       signature: new Uint8Array(),
     });
-    const session = await context.internalAdapter.createSession(user.id);
+    const session = await user.session();
     return session
       ? c.json({ accountId: user.id, token: session.token }, 201)
       : c.json({ error: "internal" }, 500);

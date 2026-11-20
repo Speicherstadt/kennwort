@@ -9,7 +9,9 @@ import { createLog } from "../log.ts";
 
 export const SECRET = "test-secret-of-at-least-thirty-two-chars";
 
-export const signInSetup = async (options: { rateLimit?: number; behindProxy?: boolean } = {}) => {
+export const signInSetup = async (
+  options: { rateLimit?: number; behindProxy?: boolean; setupCode?: string; empty?: boolean } = {},
+) => {
   const db = openDatabase(":memory:");
   migrate(db);
   let time = 1_800_000_000_000;
@@ -23,6 +25,7 @@ export const signInSetup = async (options: { rateLimit?: number; behindProxy?: b
     random: (length: number) => crypto.getRandomValues(new Uint8Array(length)),
     allow: rateLimiter(options.rateLimit ?? 1000, 60_000, clock.now),
     address: clientAddress(options.behindProxy ?? false),
+    setupCode: options.setupCode,
   };
   const app = createApp({
     db,
@@ -30,12 +33,14 @@ export const signInSetup = async (options: { rateLimit?: number; behindProxy?: b
     authenticate: authenticateWith(auth),
     signIn,
   });
-  db.insert(companies)
-    .values([
-      { id: "weber", createdAt: 1 },
-      { id: "mueller", createdAt: 2 },
-    ])
-    .run();
+  // A fresh server for the first owner's setup has no company yet
+  if (!options.empty)
+    db.insert(companies)
+      .values([
+        { id: "weber", createdAt: 1 },
+        { id: "mueller", createdAt: 2 },
+      ])
+      .run();
   const context = await auth.$context;
   const member = async (companyId: string, role: "owner" | "admin" | "member") => {
     const id = crypto.randomUUID();

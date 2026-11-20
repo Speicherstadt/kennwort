@@ -1,6 +1,30 @@
 // Schemas, sync, the membership log and the import parsers, shared by every client and the server.
 
 export {
+  type AccountUpload,
+  type CreateDeps,
+  createAccount,
+  createCompany,
+  type NewAccount,
+  type NewCompany,
+} from "./account/create.ts";
+export {
+  AccountState,
+  emptyState,
+  type MergeError,
+  mergeStates,
+  openState,
+  type StateError,
+  sealState,
+} from "./account/state.ts";
+export {
+  type Stored,
+  type UnlockError,
+  type Unlocked,
+  unlockWithPassphrase,
+  unlockWithRecoveryKey,
+} from "./account/unlock.ts";
+export {
   AUDIT_GENESIS,
   AuditAction,
   AuditEvent,

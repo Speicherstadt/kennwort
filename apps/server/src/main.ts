@@ -16,7 +16,7 @@ if (!config.ok) {
   console.error(JSON.stringify(failure));
   process.exit(1);
 }
-const { port, database, logLevel, publicUrl, authSecret, behindProxy } = config.value;
+const { port, database, logLevel, publicUrl, authSecret, behindProxy, setupCode } = config.value;
 const log = createLog(logLevel, (line) => console.log(line));
 
 if (database !== ":memory:") mkdirSync(dirname(database), { recursive: true });
@@ -36,6 +36,7 @@ const signIn = {
   random: (length: number) => crypto.getRandomValues(new Uint8Array(length)),
   allow: rateLimiter(20, 60_000),
   address: clientAddress(behindProxy),
+  setupCode,
 };
 const app = createApp({ db, log, authenticate: authenticateWith(auth), signIn });
 // The peer address goes to the app as its environment; the rate limits count it
