@@ -43,5 +43,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795157394460,
     "breakpoints": true,
     "sql": "ALTER TABLE `login_challenges` ADD `way` text DEFAULT 'passphrase' NOT NULL;--> statement-breakpoint\nALTER TABLE `login_keys` ADD `recovery_public_key` text;"
+  },
+  {
+    "tag": "0007_pairings",
+    "when": 1795159878233,
+    "breakpoints": true,
+    "sql": "CREATE TABLE `pairings` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`public_key` blob NOT NULL,\n\t`poll_hash` text NOT NULL,\n\t`account_id` text,\n\t`package` blob,\n\t`confirmed` integer DEFAULT false NOT NULL,\n\t`expires_at` integer NOT NULL\n);\n"
   }
 ];

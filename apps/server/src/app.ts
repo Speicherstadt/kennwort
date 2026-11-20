@@ -7,6 +7,7 @@ import { type Auth, CLIENT_HEADER } from "./auth/better-auth.ts";
 import type { ClientAddress, ClientEnv } from "./auth/client-address.ts";
 import { acceptInvitationRoute, createInvitationRoute } from "./auth/invitations.ts";
 import { loginKeyRoutes } from "./auth/login-key.ts";
+import { pairingApiRoutes, pairingPublicRoutes } from "./auth/pairings.ts";
 import { setupRoute } from "./auth/setup.ts";
 import type { Db } from "./db/database.ts";
 import type { Log } from "./log.ts";
@@ -94,8 +95,10 @@ export const createApp = ({
   if (signIn) {
     const deps = { db, ...signIn };
     api.route("/", createInvitationRoute(deps));
+    api.route("/", pairingApiRoutes(deps));
     // Public: sign-in key, accepting an invitation, and Better Auth (passkeys, sessions) for the rest
     app.route("/auth/login-key", loginKeyRoutes(deps));
+    app.route("/auth/pairings", pairingPublicRoutes(deps));
     app.route("/auth", acceptInvitationRoute(deps));
     app.route("/auth", setupRoute({ ...deps, setupCode: signIn.setupCode }));
     app.on(["GET", "POST"], "/auth/*", (c) => {

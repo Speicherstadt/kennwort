@@ -9,6 +9,13 @@ export {
   type NewCompany,
 } from "./account/create.ts";
 export {
+  type DevicePackage,
+  openDevicePackage,
+  sealDevicePackage,
+  stateHash,
+  unlockWithDevicePackage,
+} from "./account/pairing.ts";
+export {
   RENEWAL_PURPOSE,
   type RenewDeps,
   renewalFields,
