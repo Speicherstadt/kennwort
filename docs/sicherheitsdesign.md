@@ -738,4 +738,10 @@ Umgesetzt in `packages/core/src/sync/` (Zod-Schemas für Einträge, Log-Einträg
 Warteschlange, Zusammenführen, Server-Ersatz im Speicher, HTTP und SSE), mit Mutation-Tests bei
 100 %, und `apps/server/src/sync/` (Tabellen `vaults` und `entry_records`, Routen, Live-Ereignisse).
 
+Ein **Server-Ersatz** (`packages/core/src/standin/`) bietet dieselbe Sync-API als `fetch`, der
+alles im Speicher hält, Live-Ereignisse eingeschlossen; damit laufen Client-Tests ohne Server, und
+später die Demo (K-706). Eine Vertrags-Testreihe (`sync/test/contract.ts`) läuft gegen den Ersatz
+und gegen den echten Server, mit Status und Antwort jeder Anfrage; weicht einer ab, schlägt sie
+fehl. Seitdem antwortet der Server auch auf unbekannte Routen mit JSON.
+
 **Wehrt ab:** E-13, E-15.

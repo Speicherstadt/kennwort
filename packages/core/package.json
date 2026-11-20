@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./testing": "./src/sync/test/fixtures.ts",
-    "./adversary": "./src/adversary/index.ts"
+    "./adversary": "./src/adversary/index.ts",
+    "./contract": "./src/sync/test/contract.ts"
   },
   "dependencies": {
     "@kennwort/crypto": "workspace:*",

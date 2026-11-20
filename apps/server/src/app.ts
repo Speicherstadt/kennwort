@@ -108,6 +108,9 @@ export const createApp = ({
   }
   app.route("/api", api);
 
+  // Every answer is JSON, unknown routes too; clients and the stand-in (K-207) rely on it
+  app.notFound((c) => c.json({ error: "not-found" }, 404));
+
   app.onError((error, c) => {
     log("error", "unhandled", { path: c.req.path, name: error.name });
     return c.json({ error: "internal" }, 500);

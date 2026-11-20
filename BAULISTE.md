@@ -88,7 +88,7 @@ und die Schritte für Menschen am Ende erledigt sind.
   Mitglieder einschmuggeln, alte Stände, vertauschte Geheimtexte).
   Fertig, wenn: die ersten Angriffe der ETH-Studie als Tests laufen und der Client jeden erkennt;
   die übrigen folgen mit den Funktionen, die sie betreffen.
-- [ ] **K-207 Server-Ersatz im Browser** – derselbe Ersatz für Tests und spätere Demo.
+- [x] **K-207 Server-Ersatz im Browser** – derselbe Ersatz für Tests und spätere Demo.
   Fertig, wenn: die Client-Tests ohne echten Server gegen ihn laufen.
 
 ## Phase 3 – Web-App und PWA
