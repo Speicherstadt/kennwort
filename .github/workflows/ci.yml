@@ -9,6 +9,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_call: # a later release.yml runs the same checks before publishing
+    inputs:
+      all-mutants:
+        description: Run every part of the mutation tests, changed or not
+        type: boolean
+        default: true
   workflow_dispatch:
 
 # A new push to a pull request cancels its outdated run; runs on main finish
@@ -19,8 +24,9 @@ concurrency:
 permissions:
   contents: read
 
+# Three jobs side by side; `check` at the end is the one result a branch rule asks for
 jobs:
-  check:
+  unit:
     if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     steps:
@@ -46,10 +52,95 @@ jobs:
       - run: bun run build
       # The compiled server starts with an empty database and answers /health
       - run: bun run --cwd apps/server smoke
-      # The stricter gate of packages/crypto: every mutant of the code must be killed by a test
-      - run: bun run mutation
-      # What a user does, desktop and @phone, against the built web app
-      - run: bunx playwright install --with-deps chromium
-      - run: bun run e2e
       # Known vulnerabilities in the dependencies fail the run
       - run: bun audit
+
+  # What a user does, desktop and @phone, against the built web app
+  e2e:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      # The browser comes from the cache while the Playwright version in bun.lock stays the same;
+      # the system libraries it needs are installed on every run
+      - id: browsers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+      - if: steps.browsers.outputs.cache-hit != 'true'
+        run: bunx playwright install --with-deps chromium
+      - if: steps.browsers.outputs.cache-hit == 'true'
+        run: bunx playwright install-deps chromium
+      - run: bun run e2e
+
+  # The stricter gate of packages/crypto and packages/core: every mutant of the code must be killed by a
+  # test. Split into three parts that run side by side; core's two `mutate` lists together are exactly
+  # the `mutate` of packages/core/stryker.config.json. A part runs only when something it depends on
+  # changed (its package, crypto under core, the dependencies, this workflow); on a manual run, when
+  # called by another workflow or without a known base, always.
+  mutation:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - part: crypto
+            package: packages/crypto
+            mutate: ""
+            depends-on: packages/crypto
+          - part: core-sync
+            package: packages/core
+            mutate: "src/sync/**/*.ts,!src/**/*.test.ts,!src/**/test/**"
+            depends-on: packages/core packages/crypto
+          - part: core-rest
+            package: packages/core
+            mutate: "src/**/*.ts,!src/sync/**,!src/**/*.test.ts,!src/**/test/**"
+            depends-on: packages/core packages/crypto
+    name: mutation (${{ matrix.part }})
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: changed
+        env:
+          # Empty when called by another workflow: a release always runs every part
+          BASE: ${{ !inputs.all-mutants && (github.event.pull_request.base.sha || github.event.before) || '' }}
+          PATHS: ${{ matrix.depends-on }} package.json bun.lock .github/workflows/ci.yml
+        run: |
+          if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "No base to compare with: the whole part runs"
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif git diff --quiet "$BASE" HEAD -- $PATHS; then
+            echo "Nothing changed in: $PATHS"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            git diff --name-only "$BASE" HEAD -- $PATHS
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.changed.outputs.run == 'true'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - if: steps.changed.outputs.run == 'true'
+        run: bun install --frozen-lockfile
+      - if: steps.changed.outputs.run == 'true'
+        working-directory: ${{ matrix.package }}
+        env:
+          MUTATE: ${{ matrix.mutate }}
+        run: |
+          if [ -n "$MUTATE" ]; then bunx stryker run --mutate "$MUTATE"; else bunx stryker run; fi
+
+  check:
+    if: ${{ always() && !github.event.pull_request.draft }}
+    needs: [unit, e2e, mutation]
+    runs-on: ubuntu-latest
+    steps:
+      - if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: exit 1
+      - run: echo "unit, e2e and mutation passed"
