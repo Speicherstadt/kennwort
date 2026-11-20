@@ -1259,7 +1259,9 @@ Restrisiko:
   abgemeldet wird; sie bleibt verschlüsselt.
 - Hat sich die Passphrase auf einem anderen Gerät geändert, passt der Anmelde-Schlüssel aus der
   alten Kopie nicht mehr: Die App bleibt offline, bis man sperrt und mit der neuen Passphrase
-  entsperrt.
+  entsperrt. Nach der ersten Ablehnung überschreibt sie den Anmelde-Schlüssel und versucht es nicht
+  weiter, sonst sperrten ihre Versuche alle 30 Sekunden das Konto nach fünf Fehlversuchen für alle
+  Geräte.
 
 Umgesetzt in `apps/web/src/offline/` (Kopie in IndexedDB, `fetch` mit der Kopie dahinter, Hinweis,
 erneuter Versuch), `apps/web/src/session/offline-unlock.ts`, `apps/web/src/entries/entry-store.ts`

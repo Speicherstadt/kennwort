@@ -1,6 +1,6 @@
 import { encodeBytes, openState, type Stored } from "@kennwort/core";
 import { flush } from "solid-js";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { memoryKeyValue } from "../offline/key-value.ts";
 import { createLocalCopy } from "../offline/local-copy.ts";
 import type { AccountApi as Api } from "./api.ts";
@@ -113,6 +113,25 @@ describe("unlocking from the offline copy", () => {
     expect(loginKey.every((byte) => byte === 0)).toBe(true);
     // Online already: nothing to do
     expect(await session.reconnect()).toBe(true);
+  });
+
+  it("stops signing in with a sign-in key the server denies, so it cannot lock the account", async () => {
+    const { session, server, goOffline, comeBack } = await unlockedOnce();
+    session.lock();
+    goOffline();
+    await session.unlock(PASSPHRASE);
+    flush();
+    const loginKey = session.opened()?.loginKey as Uint8Array;
+    // The passphrase changed on another device meanwhile: the kept sign-in key is no longer valid
+    const tries = vi
+      .spyOn(server, "signInWithLoginKey")
+      .mockResolvedValue({ ok: false, error: "denied" });
+    comeBack();
+    // The app tries every half minute; five denials in 15 minutes lock the account for everyone
+    for (let i = 0; i < 6; i++) expect(await session.reconnect()).toBe(false);
+    expect(tries).toHaveBeenCalledTimes(1);
+    expect(loginKey.every((byte) => byte === 0)).toBe(true);
+    expect(session.opened()?.token).toBe("");
   });
 
   it("overwrites the kept sign-in key on lock", async () => {

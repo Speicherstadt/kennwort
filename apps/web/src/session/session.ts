@@ -202,6 +202,13 @@ const reconnect = async (
   const current = opened();
   if (!current?.loginKey) return Boolean(current?.token);
   const signedIn = await deps.api.signInWithLoginKey(current.accountId, current.loginKey);
+  if (!signedIn.ok && signedIn.error === "denied" && opened() === current) {
+    // The passphrase changed elsewhere: trying again every half minute would lock the account on
+    // the server after five denials (LOCKOUT), for every device. Offline until unlocked anew.
+    const { loginKey, ...rest } = current;
+    setOpened(rest);
+    loginKey.fill(0);
+  }
   if (!signedIn.ok) return false;
   const stored = await deps.api.keys(signedIn.token);
   // Locked or opened anew meanwhile: that account is not this one any more
