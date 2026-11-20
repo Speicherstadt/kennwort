@@ -18,13 +18,6 @@ vi.mock("./qr-source.ts", () => ({
 vi.mock("./qr.ts", () => ({ readQr: qr.readQr }));
 const { QrScanDialog } = await import("./qr-scan-dialog.tsx");
 
-const deferred = <T,>() => {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((r) => {
-    resolve = r;
-  });
-  return { promise, resolve };
-};
 const fakeStream = () => {
   const track = { stop: vi.fn() };
   return { track, stream: { getTracks: () => [track] } as unknown as MediaStream };
