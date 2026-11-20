@@ -206,6 +206,25 @@ describe("Tabs", () => {
     flush();
     expect(visible()).toEqual(["Zugriff"]);
   });
+  it("keeps the chosen tab when only the tabs' labels change", () => {
+    const [count, setCount] = createSignal(1);
+    const root = mount(() => (
+      <Tabs
+        label="Eintrag"
+        tabs={[
+          { id: "fields", label: "Felder", content: () => <p>Felder</p> },
+          { id: "history", label: `Verlauf (${count()})`, content: () => <p>Verlauf</p> },
+        ]}
+      />
+    ));
+    const visible = () => all(root, '[role="tabpanel"]:not([hidden])').map((p) => p.textContent);
+    key(all(root, '[role="tab"]')[0] as Element, "End");
+    expect(visible()).toEqual(["Verlauf"]);
+    setCount(2);
+    flush();
+    expect(all(root, '[role="tab"]')[1]?.textContent).toBe("Verlauf (2)");
+    expect(visible()).toEqual(["Verlauf"]);
+  });
 });
 
 describe("Combobox", () => {
