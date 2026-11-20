@@ -65,7 +65,12 @@ export const VaultsPage = (props: {
   api: DialogApi;
   session: Session;
   /** Takes someone out of a vault and rotates its key (exit.ts) */
-  onRemove: (vault: Vault, trust: Trust, accountId: Uint8Array) => Promise<Outcome>;
+  onRemove: (
+    vault: Vault,
+    trust: Trust,
+    accountId: Uint8Array,
+    left: ReadonlySet<string>,
+  ) => Promise<Outcome>;
 }) => {
   /** The vault whose members show: by ID, so the dialog stays open while the vaults load anew */
   const [membersOf, setMembersOf] = createSignal<string>();
@@ -142,7 +147,9 @@ export const VaultsPage = (props: {
                     api={props.api}
                     session={props.session}
                     store={props.store}
-                    onRemove={(accountId) => props.onRemove(vault(), ready().trust, accountId)}
+                    onRemove={(accountId) =>
+                      props.onRemove(vault(), ready().trust, accountId, ready().left)
+                    }
                   />
                 )}
               </Show>

@@ -13,7 +13,7 @@ import { sessionOf, sparkasseLogin } from "../shares/shares.test-kit.ts";
 import { shareWith } from "../shares/shares.ts";
 import { accounts, annaInBuero, certificateOf, keyHolders, recordsOf } from "./exit.test-kit.ts";
 import { catchUp, createExits, dueVaults, exitVault } from "./exit.ts";
-import { candidates } from "./vault-members.ts";
+import { addToVault, candidates } from "./vault-members.ts";
 
 // K-307 part b (P-11): Anna leaves Büro; Jonas's client signs remove and rotate, wraps the new key
 // to every member left, writes every entry again under it with Anna's mark, and makes the shares
@@ -267,11 +267,65 @@ describe("one exit at a time", () => {
       },
     };
     exits = createExits(w.deps, stores);
-    expect(await exits.remove(w.vaultOf(), w.loaded.trust, w.anna.account.accountId)).toEqual({
+    expect(
+      await exits.remove(w.vaultOf(), w.loaded.trust, w.anna.account.accountId, w.loaded.left),
+    ).toEqual({
       ok: true,
     });
     expect(await exits.catchUp(await w.exits.reload())).toEqual([]);
     expect(writes).toEqual(["rotate"]);
     expect(await recordsOf(w)).toEqual([[2, 1]]);
+  });
+});
+
+describe("security review of K-307 part b", () => {
+  it("does not make a share again to someone who left the company, though the server still lists it", async () => {
+    const w = await annaInBuero();
+    await shareWith(
+      w.shares.api,
+      w.c.session,
+      w.store,
+      w.vaultOf(),
+      w.entryIdText,
+      certificateOf(w.max),
+      0,
+    );
+    const before = [...w.shares.shares];
+    // Max leaves the company; a server that keeps the share to him lists it on
+    await w.members.api.leave("t", w.max.account.accountId);
+    const loaded = await w.reload();
+    await exitVault(w.deps, w.exits, w.vaultOf(loaded), loaded.trust, [w.anna.account.accountId]);
+    expect(await recordsOf(w)).toEqual([[2, 1]]);
+    // The new entry key reaches nobody who left: the old share stays as it was
+    expect(w.shares.shares).toEqual(before);
+  });
+
+  it("never removes this account itself when the server says it left the company", async () => {
+    const w = await annaInBuero();
+    // A server that lists Jonas, who is signed in, as gone
+    await w.members.api.leave("t", w.c.opened.accountId);
+    const loaded = await w.reload();
+    expect(loaded.left.has(idKey(w.c.opened.accountId))).toBe(false);
+    expect(dueVaults(loaded)).toEqual([]);
+    expect(await catchUp(w.deps, w.exits, loaded, new Set())).toEqual([]);
+    const after = w.vaultOf(await w.reload());
+    expect(after.log.members.has(idKey(w.c.opened.accountId))).toBe(true);
+    expect(after.ring.epoch).toBe(0);
+  });
+});
+
+describe("security review of K-307 part b: removing while someone else left the company", () => {
+  it("wraps the new key to nobody who left the company, also when removing someone else", async () => {
+    const w = await annaInBuero();
+    const added = await addToVault(w.api, w.c.session, w.vaultOf(), certificateOf(w.max), "read");
+    if (!added.ok) throw new Error(added.error);
+    // Max leaves the company; before any catch-up, Jonas removes Anna from Büro
+    await w.members.api.leave("t", w.max.account.accountId);
+    const loaded = await w.reload();
+    const exits = createExits(w.deps, w.exits);
+    expect(
+      await exits.remove(w.vaultOf(loaded), loaded.trust, w.anna.account.accountId, loaded.left),
+    ).toEqual({ ok: true });
+    expect(keyHolders(w, 1)).toEqual(accounts(w.c.opened.accountId));
   });
 });

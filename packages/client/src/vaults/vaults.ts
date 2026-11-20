@@ -150,7 +150,14 @@ export const loadVaults = async (
   const refused = results.filter((r): r is Refused => !("ring" in r));
   if (vaults.some((v) => (opened.state.logs[v.idText]?.seq ?? -1) < v.log.seq))
     await session.updateState(api, rememberLogs(vaults));
-  const left = new Set(people.filter((p) => p.leftAt != null).map((p) => idKey(p.accountId)));
+  // Never this account itself: a server that calls it gone would have it sign its own removal
+  const me = idKey(opened.accountId);
+  const left = new Set(
+    people
+      .filter((p) => p.leftAt != null)
+      .map((p) => idKey(p.accountId))
+      .filter((key) => key !== me),
+  );
   return { ok: true, value: { vaults, refused, people, trust, left } };
 };
 

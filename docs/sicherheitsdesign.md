@@ -960,7 +960,9 @@ ist. Der Server-Ersatz antwortet gleich (Vertrag `sync/test/rotation-contract.ts
 
 **In der Web-App** (K-307 Teil b, `apps/web/src/vaults/exit.ts`):
 
-1. **Aus dem Tresor entfernen** prüft jedes `entfernen` gegen das Log, wie es danach steht
+1. **Aus dem Tresor entfernen** nimmt die Person heraus und mit ihr jeden, den das Log noch nennt
+   und der laut Mitgliederliste die Firma verlassen hat, damit der neue Schlüssel keinen von ihnen
+   erreicht. Es prüft jedes `entfernen` gegen das Log, wie es danach steht
    (`verifyLog`), signiert danach den `schlüsselwechsel` (`rotateVaultKey`) und schickt beides der
    Reihe nach; nimmt der Server einen Eintrag nicht, geht der Rest nicht hinaus, und ein Entfernen
    ohne Wechsel holt der Verwalter-Client später nach. Danach versiegelt er den Namen des Tresors
@@ -968,7 +970,8 @@ ist. Der Server-Ersatz antwortet gleich (Vertrag `sync/test/rotation-contract.ts
 2. Er lädt den Tresor neu, holt die Einträge vom Server und schreibt jeden, der noch in einer
    früheren Epoche liegt, und jede wartende Änderung neu (`rotateEntries`); was schon in der
    aktuellen Epoche liegt, bekommt keine neue Version.
-3. Er verpackt die Freigaben der neu geschriebenen Einträge neu (P-10).
+3. Er verpackt die Freigaben der neu geschriebenen Einträge neu (P-10), aber keine von oder an
+   jemanden, der den Tresor oder die Firma verlassen hat, auch wenn der Server sie noch auflistet.
 4. **Aus der Firma entfernen** ruft `DELETE /api/members/:id`; danach lädt der Client die Tresore
    neu. Nach jedem Laden der Tresore holt ein Verwalter-Client nach, was seine Tresore schulden
    (`dueExits` mit den Konten, die laut Mitgliederliste ausgetreten sind): ein Entfernen mit
@@ -1014,7 +1017,8 @@ Restrisiken:
   online, bleibt der Tresor nur lesbar.
 - **Austritt nach dem Wort des Servers:** Wer die Firma verlassen hat, sagt die Mitgliederliste
   des Servers (`leftAt`), unsigniert. Behauptet ein Server das zu Unrecht, entfernt ein
-  Verwalter-Client die Person aus seinen Tresoren und wechselt den Schlüssel. Das nimmt Zugriff,
+  Verwalter-Client die Person aus seinen Tresoren und wechselt den Schlüssel, nie aber das eigene
+  Konto, mit dem er angemeldet ist. Das nimmt Zugriff,
   gibt aber keinen; die Person lässt sich wieder aufnehmen, und das Log zeigt, wer sie wann
   entfernt hat. Den Zugang zum Server kann ein Server ohnehin jederzeit nehmen.
 - Der Austritts-Bericht kennt nur die Tresore, die das Gerät des Verwalters öffnen kann; ein

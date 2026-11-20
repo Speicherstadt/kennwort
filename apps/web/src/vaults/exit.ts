@@ -16,6 +16,7 @@ import {
   type Exposure,
   encodeBytes,
   genuineShares,
+  idKey,
   type Keyring,
   type LogEntry,
   pastExposures,
@@ -96,13 +97,18 @@ const authorOf = (session: Session) => {
 /**
  * The shares of every entry the rotation wrote anew, made again under its new entry key: only those
  * genuine under the key of the version it replaced, signed by someone who still edits the vault,
- * and to nobody who left. An entry someone wrote in between keeps its shares as they are.
+ * and to nobody who left the vault or the company. An entry someone wrote in between keeps its
+ * shares as they are.
  */
-const shareAgain = async (deps: ExitDeps, vault: Vault, rotated: Rotated, trust: Trust) => {
+const shareAgain = async (deps: ExitDeps, loaded: Loaded, vault: Vault, rotated: Rotated) => {
   const me = authorOf(deps.session);
   if (!me) return;
-  const now = { ...trust, now: Math.floor(Date.now() / 1000) };
-  const gone = new Set(pastExposures(vault.entries).map((e) => e.account));
+  const now = { ...loaded.trust, now: Math.floor(Date.now() / 1000) };
+  // Whoever left the vault, and whoever left the company, which a server may still list shares to
+  const gone = new Set([
+    ...pastExposures(vault.entries).map((e) => e.account),
+    ...[...loaded.left].map((key) => encodeBytes(fromIdKey(key))),
+  ]);
   for (const [key, after] of rotated.after) {
     const before = rotated.before.get(key);
     if (!before?.key || !after.key || after.version !== before.version + 1) continue;
@@ -128,7 +134,7 @@ const rewrite = async (deps: ExitDeps, stores: ExitStores, loaded: Loaded, idTex
   if (!vault || !exposure) return { ok: false, error: "unreachable" } as const;
   const rotated = await stores.rotate(idText, exposure);
   if (!rotated.ok) return rotated;
-  await shareAgain(deps, vault, rotated.value, loaded.trust);
+  await shareAgain(deps, loaded, vault, rotated.value);
   return { ok: true } as const;
 };
 
@@ -208,8 +214,15 @@ export const createExits = (deps: ExitDeps, stores: ExitStores) => {
     return next;
   };
   return {
-    remove: (vault: Vault, trust: Trust, accountId: Uint8Array) =>
-      oneAtATime(() => exitVault(deps, stores, vault, trust, [accountId])),
+    /**
+     * Takes the person out, and with them everyone the vault still names who left the company
+     * (`left`): the new key must not reach them while their own catch-up is still to come
+     */
+    remove: (vault: Vault, trust: Trust, accountId: Uint8Array, left: ReadonlySet<string>) => {
+      const others = dueExits(vault.log, left).remove.filter((key) => key !== idKey(accountId));
+      const remove = [accountId, ...others.map(fromIdKey)];
+      return oneAtATime(() => exitVault(deps, stores, vault, trust, remove));
+    },
     catchUp: (loaded: Loaded) => oneAtATime(() => catchUp(deps, stores, loaded, tried)),
   };
 };
