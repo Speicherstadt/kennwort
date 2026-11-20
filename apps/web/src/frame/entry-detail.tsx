@@ -89,15 +89,17 @@ export const EntryDetail = (props: {
           <Icon icon={ArrowLeft} /> {m.detail_back()}
         </Link>
       </Show>
+      {/* Keyed: another entry is a new view, so nothing revealed carries over (review of K-302) */}
       <Show
         when={entry()}
+        keyed
         fallback={
           <p class="grid h-full place-items-center p-8 text-muted-foreground">
             {props.selected ? m.detail_not_found() : m.detail_none()}
           </p>
         }
       >
-        {(found) => <Detail entry={found()} toasts={props.toasts} />}
+        {(found) => <Detail entry={found} toasts={props.toasts} />}
       </Show>
     </section>
   );

@@ -41,7 +41,10 @@ export const List = (props: ListProps) => {
       role="listbox"
       aria-label={props.label}
       tabindex={0}
-      aria-activedescendant={props.selected ? optionId(base, props.selected) : undefined}
+      // Only an option that is shown can be active: a filtered list may hide the selected one
+      aria-activedescendant={
+        selectedIndex() >= 0 ? optionId(base, props.selected ?? "") : undefined
+      }
       class="grid gap-0.5 rounded-lg p-1 focus-visible:outline-2"
       onKeyDown={onKeyDown}
       onClick={(event) => {
