@@ -57,6 +57,8 @@ export const QrScanDialog = (props: { onFound: (link: string) => void; onClose: 
     opening = true;
     setWaiting(true);
     const opened = await openCamera();
+    // Settled either way: after a refusal the next click may ask again (review of K-306 part 4b)
+    opening = false;
     setWaiting(false);
     if (disposed) return stopTracks(opened);
     if (!opened) return setProblem("no-camera");
