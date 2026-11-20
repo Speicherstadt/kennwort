@@ -368,6 +368,16 @@ const cases: Record<string, () => Promise<void>> = {
     const body = { epoch: 0, name: encodeBytes(new Uint8Array(42)) };
     expect((await jonasSends("PUT", `/api/vaults/${muellerVault}/name`, body)).status).toBe(404);
   },
+  "POST /api/vaults/:vaultId/requests": async () => {
+    expect((await jonasSends("POST", `/api/vaults/${muellerVault}/requests`, {})).status).toBe(404);
+  },
+  "GET /api/vaults/:vaultId/requests": async () => {
+    expect((await asJonas(`/api/vaults/${muellerVault}/requests`)).status).toBe(404);
+  },
+  "DELETE /api/vaults/:vaultId/requests/:accountId": async () => {
+    const path = `/api/vaults/${muellerVault}/requests/jonas`;
+    expect((await jonasSends("DELETE", path, undefined)).status).toBe(404);
+  },
   "POST /api/vaults/:vaultId/log": async () => {
     expect((await jonasSends("POST", `/api/vaults/${muellerVault}/log`, {})).status).toBe(404);
   },

@@ -38,6 +38,7 @@ describe("database", () => {
       "sqlite_sequence",
       "vault_keys",
       "vault_log",
+      "vault_requests",
       "vaults",
     ]);
   });

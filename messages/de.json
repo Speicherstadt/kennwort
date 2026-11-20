@@ -204,5 +204,20 @@
   "vault_members_new_role": "Rolle",
   "vault_members_add": "Aufnehmen",
   "vault_members_stale": "Ein anderes Gerät hat den Tresor gerade geändert. Der neue Stand ist geladen – bitte noch einmal.",
-  "vault_members_failed": "Die Änderung konnte nicht gespeichert werden."
+  "vault_members_failed": "Die Änderung konnte nicht gespeichert werden.",
+  "vault_members_until": "bis {date}",
+  "vault_members_expired": "abgelaufen",
+  "vault_members_until_label": "Zugriff bis (optional)",
+  "vault_members_until_hint": "Nach diesem Tag öffnet kein Gerät den Tresor mehr für diese Person.",
+  "vault_requests_title": "Anfragen",
+  "vault_requests_role_for": "Rolle für {name}",
+  "vault_requests_grant": "Freigeben",
+  "vault_requests_decline": "Ablehnen",
+  "vault_requests_unconfirmed": "Schlüssel noch nicht bestätigt",
+  "no_access_title": "Kein Zugriff",
+  "no_access_intro": "Du bist in diesem Tresor nicht Mitglied. Seine Verwalter können dich aufnehmen; Kennwort zeigt ihnen deine Anfrage.",
+  "no_access_request": "Zugriff anfragen",
+  "no_access_sent": "Deine Anfrage ist bei den Verwaltern des Tresors.",
+  "no_access_failed": "Die Anfrage konnte nicht gesendet werden.",
+  "vault_members_past": "Dieser Tag ist schon vorbei. Wähle heute oder einen späteren Tag."
 }

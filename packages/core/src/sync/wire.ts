@@ -43,6 +43,13 @@ export const VaultKeysWire = z.object({
   keys: z.array(z.object({ epoch: z.number().int().nonnegative(), wrapped: bytes() })),
 });
 
+/** GET /api/vaults/:id/requests: who asked for access, for the vault's managers (K-305) */
+export const VaultRequestsWire = z.object({
+  requests: z.array(
+    z.object({ accountId: bytes(16), requestedAt: z.number().int().nonnegative() }),
+  ),
+});
+
 /** Any record of bytes and plain values as JSON for the wire; the schemas read it back */
 export const toWire = (value: Record<string, unknown>) =>
   Object.fromEntries(

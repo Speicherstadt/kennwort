@@ -542,3 +542,151 @@ describe("the vault's name, sealed with its key (K-305 part 2)", () => {
     expect((await rename(w, vaultId, { epoch: 0, name }, w.annaToken)).status).toBe(404);
   });
 });
+
+describe("access requests (K-305 part 4)", () => {
+  const ask = (w: Weber, vaultId: string, token = w.annaToken) =>
+    w.o.setup.request(`/api/vaults/${vaultId}/requests`, { method: "POST", token, body: {} });
+  const requestsOf = async (w: Weber, vaultId: string, token = w.o.token) => {
+    const answer = await w.o.setup.request(`/api/vaults/${vaultId}/requests`, { token });
+    if (answer.status !== 200) return answer.status;
+    return ((await answer.json()) as { requests: { accountId: string }[] }).requests.map(
+      (r) => r.accountId,
+    );
+  };
+  const drop = (w: Weber, vaultId: string, accountId: string, token = w.o.token) =>
+    w.o.setup.request(`/api/vaults/${vaultId}/requests/${accountId}`, { method: "DELETE", token });
+  const annaText = (w: Weber) => encodeBytes(w.annaId);
+
+  it("keeps Anna's request for the managers, once, and the add answers it", async () => {
+    const w = await weber();
+    const { vault, vaultId } = await createBuero(w);
+    expect((await ask(w, vaultId)).status).toBe(201);
+    expect((await ask(w, vaultId)).status).toBe(201);
+    expect(await requestsOf(w, vaultId)).toEqual([annaText(w)]);
+    // Anna is no member: she sees no requests
+    expect(await requestsOf(w, vaultId, w.annaToken)).toBe(404);
+    const s0 = stateOf(w, vault.ring.vaultId, [vault.genesis]);
+    if (!s0.ok) throw new Error(s0.error);
+    const added = addMember(
+      w.jonas.signer,
+      s0.value,
+      vault.ring,
+      w.annaCert,
+      { role: "read", validUntil: 0 },
+      NOW + 1,
+    );
+    await post(w, vaultId, {
+      entry: toWire(added.entry),
+      wrappedKey: encodeBytes(added.wrappedKey),
+    });
+    expect(await requestsOf(w, vaultId)).toEqual([]);
+    // a member does not ask again
+    expect((await ask(w, vaultId)).status).toBe(409);
+    // and only managers see requests
+    expect(await requestsOf(w, vaultId, w.annaToken)).toBe(403);
+  });
+
+  it("lets a manager decline and Anna withdraw, nobody else drop a request", async () => {
+    const w = await weber();
+    const { vault, vaultId } = await createBuero(w);
+    await ask(w, vaultId);
+    expect((await drop(w, vaultId, annaText(w))).status).toBe(200);
+    expect(await requestsOf(w, vaultId)).toEqual([]);
+    await ask(w, vaultId);
+    expect((await drop(w, vaultId, annaText(w), w.annaToken)).status).toBe(200);
+    expect(await requestsOf(w, vaultId)).toEqual([]);
+    // Anna as a reader may not drop Jonas's request (there is none, but the right is checked)
+    const s0 = stateOf(w, vault.ring.vaultId, [vault.genesis]);
+    if (!s0.ok) throw new Error(s0.error);
+    const added = addMember(
+      w.jonas.signer,
+      s0.value,
+      vault.ring,
+      w.annaCert,
+      { role: "read", validUntil: 0 },
+      NOW + 1,
+    );
+    await post(w, vaultId, {
+      entry: toWire(added.entry),
+      wrappedKey: encodeBytes(added.wrappedKey),
+    });
+    const jonasText = encodeBytes(w.jonas.signer.accountId);
+    expect((await drop(w, vaultId, jonasText, w.annaToken)).status).toBe(403);
+  });
+
+  it("takes the request of a member whose time ran out; renewing her access answers it", async () => {
+    const w = await weber();
+    const { vault, vaultId } = await createBuero(w);
+    const s0 = stateOf(w, vault.ring.vaultId, [vault.genesis]);
+    if (!s0.ok) throw new Error(s0.error);
+    const ranOut = Math.floor(Date.now() / 1000) - 10;
+    const added = addMember(
+      w.jonas.signer,
+      s0.value,
+      vault.ring,
+      w.annaCert,
+      { role: "read", validUntil: ranOut },
+      NOW + 1,
+    );
+    await post(w, vaultId, {
+      entry: toWire(added.entry),
+      wrappedKey: encodeBytes(added.wrappedKey),
+    });
+    expect((await ask(w, vaultId)).status).toBe(201);
+    expect(await requestsOf(w, vaultId)).toEqual([annaText(w)]);
+    const s1 = stateOf(w, vault.ring.vaultId, [vault.genesis, added.entry]);
+    if (!s1.ok) throw new Error(s1.error);
+    const renewed = changeAccess(
+      w.jonas.signer,
+      s1.value,
+      vault.ring.vaultId,
+      w.annaId,
+      { role: "read", validUntil: 0 },
+      NOW + 2,
+    );
+    expect((await post(w, vaultId, { entry: toWire(renewed) })).status).toBe(201);
+    expect(await requestsOf(w, vaultId)).toEqual([]);
+  });
+
+  it("a role change that leaves her time run out does not answer her request", async () => {
+    const w = await weber();
+    const { vault, vaultId } = await createBuero(w);
+    const s0 = stateOf(w, vault.ring.vaultId, [vault.genesis]);
+    if (!s0.ok) throw new Error(s0.error);
+    const ranOut = Math.floor(Date.now() / 1000) - 10;
+    const added = addMember(
+      w.jonas.signer,
+      s0.value,
+      vault.ring,
+      w.annaCert,
+      { role: "read", validUntil: ranOut },
+      NOW + 1,
+    );
+    await post(w, vaultId, {
+      entry: toWire(added.entry),
+      wrappedKey: encodeBytes(added.wrappedKey),
+    });
+    expect((await ask(w, vaultId)).status).toBe(201);
+    const s1 = stateOf(w, vault.ring.vaultId, [vault.genesis, added.entry]);
+    if (!s1.ok) throw new Error(s1.error);
+    // Jonas only changes her role in the members list; the limit (run out) stays
+    const roleOnly = changeAccess(
+      w.jonas.signer,
+      s1.value,
+      vault.ring.vaultId,
+      w.annaId,
+      { role: "edit", validUntil: ranOut },
+      NOW + 2,
+    );
+    expect((await post(w, vaultId, { entry: toWire(roleOnly) })).status).toBe(201);
+    expect(await requestsOf(w, vaultId)).toEqual([annaText(w)]);
+  });
+
+  it("knows no vault outside the company", async () => {
+    const w = await weber();
+    const unknown = encodeBytes(new Uint8Array(16).fill(9));
+    expect((await ask(w, unknown)).status).toBe(404);
+    expect(await requestsOf(w, unknown)).toBe(404);
+    expect((await drop(w, unknown, annaText(w))).status).toBe(404);
+  });
+});

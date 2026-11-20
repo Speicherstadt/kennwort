@@ -42,8 +42,23 @@ verwaltet, kann dort:
   vorher entschlüsselt hat, kann es behalten haben; den Tresor-Schlüssel zu wechseln, damit auch
   künftige Einträge geschützt sind, kommt mit dem Austritt (K-307).
 
+Beim Aufnehmen kannst du unter **Zugriff bis** einen Tag wählen. Nach diesem Tag öffnet kein Gerät
+den Tresor mehr für die Person, und der Server gibt ihr das Protokoll und den Schlüssel nicht mehr;
+in der Liste steht dann **abgelaufen**. Ein Tag, der schon vorbei ist, lässt sich nicht wählen. Wer
+abgelaufen ist, kann über den Link zum Tresor erneut Zugriff anfragen; Freigeben verlängert dann
+seinen Zugriff ohne Ende.
+
 Hat ein anderes Gerät den Tresor gerade geändert, lädt Kennwort den neuen Stand und bittet dich,
 die Änderung noch einmal zu machen.
+
+## Zugriff anfragen
+
+Schickt dir jemand den Link zu einem Tresor, in dem du nicht Mitglied bist, zeigt Kennwort **Kein
+Zugriff** und nichts vom Tresor. Mit **Zugriff anfragen** landet deine Anfrage bei seinen
+Verwaltern: Sie sehen sie unter **Mitglieder → Anfragen** und können sie **freigeben** (mit einer
+Rolle) oder **ablehnen**. Der Server gibt dir dabei nie selbst Zugriff; den Tresor-Schlüssel
+verpackt erst das Gerät eines Verwalters an deine bestätigten Schlüssel. Freigeben geht darum nur,
+wenn deine Schlüssel schon bestätigt sind.
 
 ## Was dein Gerät prüft
 

@@ -4,9 +4,15 @@ import { annaRow, jonasCompany, ownerRow, type Row, server } from "../members/me
 import type { VaultApi } from "../session/vaults-api.ts";
 import type { VaultDeps } from "./vaults.ts";
 
-type Stored = { entries: LogEntry[]; keys: Map<string, Uint8Array>; name: Uint8Array | null };
+type Stored = {
+  entries: LogEntry[];
+  keys: Map<string, Uint8Array>;
+  name: Uint8Array | null;
+  requests: Map<string, number>;
+};
 
-export const vaultServer = () => {
+/** `requester`: whose account an access request comes from (the fake knows no sessions) */
+export const vaultServer = (requester: Uint8Array = new Uint8Array(16)) => {
   const vaults = new Map<string, Stored>();
   const of = (vaultId: Uint8Array) => vaults.get(encodeBytes(vaultId));
   const api: VaultApi = {
@@ -26,7 +32,12 @@ export const vaultServer = () => {
     },
     newVault: async (_t, id) => {
       if (vaults.has(encodeBytes(id))) return "taken";
-      vaults.set(encodeBytes(id), { entries: [], keys: new Map(), name: null });
+      vaults.set(encodeBytes(id), {
+        entries: [],
+        keys: new Map(),
+        name: null,
+        requests: new Map(),
+      });
       return "ok";
     },
     appendLog: async (_t, entry, wrappedKey) => {
@@ -36,8 +47,26 @@ export const vaultServer = () => {
       if (entry.seq !== vault.entries.length) return "stale";
       vault.entries.push(entry);
       if (wrappedKey) vault.keys.set(encodeBytes(entry.accountId), wrappedKey);
+      const current = entry.validUntil === 0 || entry.validUntil > Math.floor(Date.now() / 1000);
+      if (entry.action === "add" || (entry.action === "role" && current))
+        vault.requests.delete(encodeBytes(entry.accountId));
       return "ok";
     },
+    requestAccess: async (_t, id) => {
+      of(id)?.requests.set(encodeBytes(requester), 1);
+      return of(id) !== undefined;
+    },
+    vaultRequests: async (_t, id) => {
+      const vault = of(id);
+      return vault
+        ? [...vault.requests.entries()].map(([accountId, requestedAt]) => ({
+            accountId: Buffer.from(accountId, "base64url") as Uint8Array,
+            requestedAt,
+          }))
+        : undefined;
+    },
+    dropRequest: async (_t, id, accountId) =>
+      of(id)?.requests.delete(encodeBytes(accountId)) ?? false,
     renameVault: async (_t, id, _epoch, sealed) => {
       const vault = of(id);
       if (vault) vault.name = sealed;

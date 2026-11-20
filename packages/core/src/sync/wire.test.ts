@@ -9,6 +9,7 @@ import {
   VaultKeysWire,
   VaultListWire,
   VaultLogWire,
+  VaultRequestsWire,
 } from "./wire.ts";
 
 const certificate = [...trust.certificates.values()][0];
@@ -106,5 +107,24 @@ describe("vault wire schemas", () => {
     for (const key of [{ wrapped }, { epoch: 0 }, { epoch: -1, wrapped }, { epoch: 1.5, wrapped }])
       expect(VaultKeysWire.safeParse({ keys: [key] }).success).toBe(false);
     expect(VaultKeysWire.safeParse({}).success).toBe(false);
+  });
+});
+
+// K-305 part 4: the access requests a manager sees
+describe("VaultRequestsWire", () => {
+  it("reads who asked and when, and nothing else", () => {
+    const accountId = encodeBytes(new Uint8Array(16).fill(5));
+    expect(VaultRequestsWire.parse({ requests: [{ accountId, requestedAt: 7 }] })).toEqual({
+      requests: [{ accountId: new Uint8Array(16).fill(5), requestedAt: 7 }],
+    });
+    for (const request of [
+      { requestedAt: 7 },
+      { accountId },
+      { accountId: encodeBytes(new Uint8Array(15)), requestedAt: 7 },
+      { accountId, requestedAt: -1 },
+      { accountId, requestedAt: 1.5 },
+    ])
+      expect(VaultRequestsWire.safeParse({ requests: [request] }).success).toBe(false);
+    expect(VaultRequestsWire.safeParse({}).success).toBe(false);
   });
 });

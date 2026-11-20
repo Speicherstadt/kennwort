@@ -20,6 +20,8 @@ import { ApplyPolicy } from "./policy/policy-section.tsx";
 import type { DevicesApi } from "./session/devices-api.ts";
 import type { Session } from "./session/session.ts";
 import type { VaultApi } from "./session/vaults-api.ts";
+import { NoAccess } from "./vaults/no-access.tsx";
+import { requestAccess, vaultIdOf } from "./vaults/vault-members.ts";
 import { createVaultStore, type VaultStore } from "./vaults/vault-store.ts";
 import { VaultsPage } from "./vaults/vaults-page.tsx";
 
@@ -48,6 +50,17 @@ const OpenedFrame = (props: {
         <MembersPage session={props.session} api={props.api} origin={location.origin} />
       )}
       vaults={shownVaults}
+      noAccess={(vaultId) => {
+        const shown = store.shown();
+        // A vault refused for any reason but a time run out is this account's: no "no access" then
+        const known =
+          shown.state !== "ready" ||
+          shown.vaults.some((v) => v.idText === vaultId) ||
+          shown.refused.some((r) => r.idText === vaultId && r.error !== "expired");
+        const id = vaultIdOf(vaultId);
+        if (known || !id) return undefined;
+        return <NoAccess onRequest={() => requestAccess(props.api, props.session, id)} />;
+      }}
       vaultsPage={() => (
         <VaultsPage nav={props.nav} store={store} api={props.api} session={props.session} />
       )}

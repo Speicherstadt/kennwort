@@ -16,6 +16,7 @@ import type { Db } from "./db/database.ts";
 import type { Log } from "./log.ts";
 import { createHub, type Hub } from "./sync/hub.ts";
 import { logRoutes } from "./sync/log-routes.ts";
+import { requestRoutes } from "./sync/request-routes.ts";
 import { syncRoutes } from "./sync/routes.ts";
 import { companyRoutes, type TenantEnv } from "./tenancy/routes.ts";
 import { companyScope } from "./tenancy/scope.ts";
@@ -100,6 +101,7 @@ export const createApp = ({
   api.route("/", policyRoutes({ db, now }));
   api.route("/", deviceRoutes({ db, now }));
   api.route("/", logRoutes({ db, now }));
+  api.route("/", requestRoutes({ db, now }));
   api.route("/", syncRoutes({ hub, now, ...(keepAliveMs ? { keepAliveMs } : {}) }));
   if (signIn) {
     const deps = { db, ...signIn };

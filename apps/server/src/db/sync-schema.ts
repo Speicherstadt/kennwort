@@ -72,3 +72,19 @@ export const vaultKeys = sqliteTable(
   },
   (table) => [primaryKey({ columns: [table.vaultId, table.accountId, table.epoch] })],
 );
+
+/**
+ * A company member asks for access to a vault (K-305, P-05 step 4): the server only keeps the
+ * request; access comes when a manager's client adds the member to the signed log
+ */
+export const vaultRequests = sqliteTable(
+  "vault_requests",
+  {
+    vaultId: text("vault_id")
+      .notNull()
+      .references(() => vaults.id),
+    accountId: text("account_id").notNull(),
+    requestedAt: integer("requested_at").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.vaultId, table.accountId] })],
+);

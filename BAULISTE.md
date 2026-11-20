@@ -157,12 +157,14 @@ und die Schritte für Menschen am Ende erledigt sind.
   - [x] Teil 3: Mitglieder eines Tresors – aufnehmen mit Rolle, Rolle ändern, entfernen. Fertig,
     wenn: nur bestätigte Konten aufgenommen werden und Aufnehmen, Rolle ändern und Entfernen als
     Playwright-Test desktop und `@phone` laufen.
-  - [ ] Teil 4: Gruppen – ein Tresor für eine Gruppe von Mitgliedern; aufnehmen und entfernen über
-    die Gruppe. Fertig, wenn: ein neues Gruppenmitglied erst Zugriff hat, wenn ein Verwalter es
-    aufnimmt (P-05, Schritt 4).
-  - [ ] Teil 5: Zugriff auf Zeit und Zugriff anfragen. Fertig, wenn: nach Ablauf kein Client mehr
-    einen Eintrag des Mitglieds annimmt und eine Anfrage erst mit dem Aufnehmen durch einen
-    Verwalter Zugriff gibt.
+  - [x] Teil 4: Zugriff auf Zeit und Zugriff anfragen. Fertig, wenn: nach Ablauf kein Client den
+    Tresor mehr für das Mitglied öffnet und der Server ihm Log und Schlüssel nicht mehr gibt, und
+    eine Anfrage erst mit dem Aufnehmen durch einen Verwalter Zugriff gibt – als Playwright-Test
+    desktop und `@phone`. Einträge, die ein Mitglied nach Ablauf schreibt, verwirft der Client mit
+    K-306, wenn die Einträge aus den Tresoren kommen.
+  - [ ] Teil 5: Gruppen – ein Tresor für eine Gruppe von Mitgliedern; aufnehmen und entfernen über
+    die Gruppe. Fertig, wenn: ein neues Gruppenmitglied erst Zugriff hat, wenn ein Verwalter seine
+    Anfrage freigibt (P-05, Schritt 4).
   - [ ] Teil 6: einzelnen Eintrag teilen (P-10). Fertig, wenn: der Empfänger nur diesen Eintrag
     entschlüsseln kann (Test).
 - [ ] **K-306 Einträge** – alle Typen, Generator, TOTP mit QR-Scan, eigene Felder, frühere

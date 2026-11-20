@@ -201,4 +201,5 @@ export {
   VaultKeysWire,
   VaultListWire,
   VaultLogWire,
+  VaultRequestsWire,
 } from "./sync/wire.ts";

@@ -5,48 +5,57 @@
  */
 import type { Certificate, MemberView, VaultRole } from "@kennwort/core";
 import { idKey } from "@kennwort/core";
-import { Button, Dialog, m } from "@kennwort/ui";
+import { Button, Dialog, getLocale, Input, m } from "@kennwort/ui";
 import { createSignal, For, Show } from "solid-js";
 import type { Session } from "../session/session.ts";
+import { RoleSelect, selectClass } from "./role-select.tsx";
 import {
   addToVault,
   type ChangeError,
   candidates,
   changeVaultRole,
+  declineRequest,
+  grantRequest,
+  hasExpired,
+  loadRequests,
   mayManage,
+  type Request,
   removeFromVault,
   type VaultMember,
   vaultMembers,
 } from "./vault-members.ts";
+import { VaultRequests } from "./vault-requests.tsx";
 import type { VaultStore } from "./vault-store.ts";
 import { roleText } from "./vault-text.ts";
 import type { Vault, VaultDeps } from "./vaults.ts";
 
-const ROLES: VaultRole[] = ["read", "edit", "manage"];
-const selectClass = "h-11 rounded-md border border-border bg-background px-2 text-xs md:h-8";
 const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
 
 const errorText = (error: ChangeError) =>
-  error === "stale" ? m.vault_members_stale() : m.vault_members_failed();
+  error === "stale"
+    ? m.vault_members_stale()
+    : error === "past"
+      ? m.vault_members_past()
+      : m.vault_members_failed();
+
+/** Today on this device as yyyy-mm-dd, the earliest day a time limit can end */
+const today = () => {
+  const now = new Date();
+  const two = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${two(now.getMonth() + 1)}-${two(now.getDate())}`;
+};
+
+/** The end of the chosen day on this device, in Unix seconds; no day: no end (0) */
+export const endOfDay = (day: string) => {
+  if (!day) return 0;
+  const end = new Date(`${day}T23:59:59`).getTime();
+  return Number.isNaN(end) ? 0 : Math.floor(end / 1000);
+};
+
+const dateText = (seconds: number) =>
+  new Date(seconds * 1000).toLocaleDateString(getLocale(), { dateStyle: "medium" });
 
 const nameOf = (person: { name: string | null }) => person.name ?? m.vault_members_unnamed();
-
-const RoleSelect = (props: {
-  label: string;
-  value: VaultRole;
-  disabled: boolean;
-  onChange: (role: VaultRole) => void;
-}) => (
-  <select
-    aria-label={props.label}
-    class={selectClass}
-    disabled={props.disabled}
-    value={props.value}
-    onChange={(event) => props.onChange(event.currentTarget.value as VaultRole)}
-  >
-    <For each={ROLES}>{(role) => <option value={role}>{roleText(role)}</option>}</For>
-  </select>
-);
 
 const MemberRow = (props: {
   member: VaultMember;
@@ -59,6 +68,13 @@ const MemberRow = (props: {
     <span class="flex-1 truncate">
       {nameOf(props.member)}
       <Show when={props.member.me}> {m.vault_members_you()}</Show>
+      <Show when={props.member.validUntil !== 0}>
+        <span class="ml-2 text-xs text-muted-foreground">
+          {hasExpired(props.member)
+            ? m.vault_members_expired()
+            : m.vault_members_until({ date: dateText(props.member.validUntil) })}
+        </span>
+      </Show>
     </span>
     <Show
       when={props.editable && !props.member.me}
@@ -80,14 +96,15 @@ const MemberRow = (props: {
 const AddForm = (props: {
   people: (MemberView & { certificate: Certificate })[];
   busy: boolean;
-  onAdd: (person: Certificate, role: VaultRole) => void;
+  onAdd: (person: Certificate, role: VaultRole, validUntil: number) => void;
 }) => {
   const [chosen, setChosen] = createSignal("");
   const [role, setRole] = createSignal<VaultRole>("read");
+  const [until, setUntil] = createSignal("");
   const submit = (event: SubmitEvent) => {
     event.preventDefault();
     const person = props.people.find((p) => idKey(p.accountId) === chosen());
-    if (person) props.onAdd(person.certificate, role());
+    if (person) props.onAdd(person.certificate, role(), endOfDay(until()));
   };
   return (
     <form class="grid gap-2" onSubmit={submit}>
@@ -110,6 +127,14 @@ const AddForm = (props: {
         disabled={false}
         onChange={setRole}
       />
+      <Input
+        label={m.vault_members_until_label()}
+        hint={m.vault_members_until_hint()}
+        type="date"
+        min={today()}
+        value={until()}
+        onInput={(event) => setUntil(event.currentTarget.value)}
+      />
       <Button type="submit" disabled={props.busy || chosen() === ""}>
         {m.vault_members_add()}
       </Button>
@@ -128,13 +153,18 @@ export const VaultMembersDialog = (props: {
 }) => {
   const [busy, setBusy] = createSignal(false);
   const [error, setError] = createSignal<ChangeError>();
+  const [requests, setRequests] = createSignal<Request[]>([]);
+  const { api, session } = props;
+  const reloadRequests = async () =>
+    setRequests((await loadRequests(api, session, props.vault, props.people)) ?? []);
+  void reloadRequests();
   const run = async (change: () => ReturnType<typeof addToVault>) => {
     setBusy(true);
     setError(await props.store.change(change));
+    await reloadRequests();
     setBusy(false);
   };
   const me = () => props.session.opened()?.accountId ?? new Uint8Array();
-  const { api, session } = props;
   return (
     <Dialog
       open={props.open}
@@ -161,6 +191,20 @@ export const VaultMembersDialog = (props: {
           )}
         </For>
       </ul>
+      <VaultRequests
+        requests={requests()}
+        busy={busy()}
+        onGrant={(request, role) => {
+          const certificate = request.certificate;
+          if (certificate)
+            void run(() =>
+              grantRequest(api, session, props.vault, { ...request, certificate }, role),
+            );
+        }}
+        onDecline={(request) =>
+          void run(() => declineRequest(api, session, props.vault, request.accountId))
+        }
+      />
       <Show when={error()}>
         {(e) => (
           <p class={alertClass} role="alert">
@@ -172,7 +216,9 @@ export const VaultMembersDialog = (props: {
         <AddForm
           people={candidates(props.vault, props.people)}
           busy={busy()}
-          onAdd={(person, role) => run(() => addToVault(api, session, props.vault, person, role))}
+          onAdd={(person, role, until) =>
+            run(() => addToVault(api, session, props.vault, person, role, until))
+          }
         />
       </Show>
     </Dialog>

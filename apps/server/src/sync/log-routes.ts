@@ -17,7 +17,7 @@ import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { Db } from "../db/database.ts";
-import { vaultKeys, vaultLog, vaults } from "../db/schema.ts";
+import { vaultKeys, vaultLog, vaultRequests, vaults } from "../db/schema.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 import { chainRefusal, isCurrent, membersOf } from "./vault-chain.ts";
 
@@ -104,6 +104,18 @@ const append = (s: Store, deps: Deps) => async (c: Context<TenantEnv>) => {
         storedAt: deps.now(),
       })
       .run();
+    // An add, or a role change that makes a member current again, answers their request; a role
+    // change that leaves their time run out does not (review of K-305)
+    const current = entry.validUntil === 0 || entry.validUntil > s.seconds();
+    if (entry.action === "add" || (entry.action === "role" && current))
+      tx.delete(vaultRequests)
+        .where(
+          and(
+            eq(vaultRequests.vaultId, vaultId),
+            eq(vaultRequests.accountId, encodeBytes(entry.accountId)),
+          ),
+        )
+        .run();
     // A member removed and added again in the same epoch gets the newly wrapped key
     if (wrappedKey)
       tx.insert(vaultKeys)

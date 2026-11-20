@@ -472,7 +472,12 @@ Verlauf; der Link lässt sich auch einfügen. Das neue Gerät fragt alle vier Se
 3. Das neue Mitglied entpackt VKₑ und prüft die Bindung gegen den signierten Log-Eintrag seiner
    Epoche; ein Paket, das der Server mit einem eigenen Schlüssel gebaut hat, passt nicht (E-16).
 4. Zugriff anfragen und OIDC-Gruppen: Der Server legt nur eine Anfrage ab; erst ein Verwalter
-   führt Schritt 2 aus.
+   führt Schritt 2 aus. Gebaut: `POST /api/vaults/:id/requests` (ein Konto der Firma, das nicht
+   Mitglied ist), `GET` und `DELETE` für die aktuellen Verwalter (zurückziehen darf auch, wer
+   gefragt hat); ein gespeichertes `aufnehmen` oder `rolle` für das Konto löscht die Anfrage. Wessen
+Zeit abgelaufen ist, der steht noch im Log und fragt erneut an; freigegeben wird er mit `rolle`
+ohne Ablaufzeit, denn ein zweites `aufnehmen` nimmt `verifyLog` nicht. Freigeben kann der Client nur
+   für ein Konto, dessen Zertifikat der gemerkte Wurzelschlüssel bestätigt.
 
 So ist es gebaut: `createVault` und `addMember` in `packages/core/src/membership/vault-ops.ts`
 erzeugen den Eintrag und das an das Mitglied verpackte VKₑ; `changeAccess` und `removeMember`
