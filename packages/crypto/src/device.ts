@@ -15,6 +15,6 @@ export const deviceFingerprint = (xwingPublicKey: Uint8Array) =>
 
 export const deviceCode = (xwingPublicKey: Uint8Array, pkg: Uint8Array) => {
   const hash = sha512_256(encode("kennwort/device/v1", xwingPublicKey, pkg));
-  const value = new DataView(hash.slice(0, 4).buffer).getUint32(0);
+  const value = hash.subarray(0, 4).reduce((number, byte) => number * 256 + byte, 0);
   return String(value % 1_000_000).padStart(6, "0");
 };

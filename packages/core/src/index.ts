@@ -11,6 +11,7 @@ export {
 export {
   type DevicePackage,
   openDevicePackage,
+  PAIRING_SECRET_LENGTH,
   sealDevicePackage,
   stateHash,
   unlockWithDevicePackage,

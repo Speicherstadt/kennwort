@@ -40,20 +40,21 @@ const content = {
   stateHash: stateHash(account.upload.state),
 };
 const device = xwingKeyPair();
+const secret = new Uint8Array(32).fill(0x5a);
 
 describe("the device package", () => {
   it("opens only with the one-time key it was wrapped to, and holds what was put in", () => {
-    const pkg = sealDevicePackage(device.publicKey, content);
-    expect(openDevicePackage(device.secretKey, device.publicKey, pkg)).toEqual({
+    const pkg = sealDevicePackage(device.publicKey, secret, content);
+    expect(openDevicePackage(device.secretKey, device.publicKey, secret, pkg)).toEqual({
       ok: true,
       value: content,
     });
     const other = xwingKeyPair();
-    expect(openDevicePackage(other.secretKey, other.publicKey, pkg)).toEqual({
+    expect(openDevicePackage(other.secretKey, other.publicKey, secret, pkg)).toEqual({
       ok: false,
       error: "not-authentic",
     });
-    expect(openDevicePackage(device.secretKey, other.publicKey, pkg)).toEqual({
+    expect(openDevicePackage(device.secretKey, other.publicKey, secret, pkg)).toEqual({
       ok: false,
       error: "not-authentic",
     });
@@ -68,16 +69,47 @@ describe("the device package", () => {
       content.stateHash,
     );
     const elsewhere = wrap(to, payload, { purpose: "vault-key", context: [] });
-    expect(openDevicePackage(device.secretKey, device.publicKey, elsewhere)).toEqual({
+    expect(openDevicePackage(device.secretKey, device.publicKey, secret, elsewhere)).toEqual({
       ok: false,
       error: "not-authentic",
     });
   });
 
+  // Review of K-303: the server knows the one-time key and could wrap its own package to it; without
+  // the pairing secret from the QR code that package does not open, whatever code it shows
+  it("opens only with the pairing secret from the QR code", () => {
+    const to = { publicKey: device.publicKey, fingerprint: deviceFingerprint(device.publicKey) };
+    const payload = encode(
+      content.accountKey,
+      content.accountId,
+      content.secretKey,
+      content.stateHash,
+    );
+    const fakes = [
+      wrap(to, payload, { purpose: "device", context: [] }),
+      wrap(to, payload, { purpose: "device", context: [new Uint8Array(32).fill(1)] }),
+      sealDevicePackage(device.publicKey, new Uint8Array(32).fill(1), content),
+    ];
+    for (const fake of fakes)
+      expect(openDevicePackage(device.secretKey, device.publicKey, secret, fake)).toEqual({
+        ok: false,
+        error: "not-authentic",
+      });
+  });
+
+  it("takes only a 32-byte pairing secret", () => {
+    expect(() => sealDevicePackage(device.publicKey, new Uint8Array(31), content)).toThrow(
+      new RangeError("pairing secret must be 32 bytes"),
+    );
+    expect(() =>
+      openDevicePackage(device.secretKey, device.publicKey, new Uint8Array(33), new Uint8Array(1)),
+    ).toThrow(RangeError);
+  });
+
   it("refuses a package of the wrong shape", () => {
     const to = { publicKey: device.publicKey, fingerprint: deviceFingerprint(device.publicKey) };
     const wrapped = (...parts: Uint8Array[]) =>
-      wrap(to, encode(...parts), { purpose: "device", context: [] });
+      wrap(to, encode(...parts), { purpose: "device", context: [secret] });
     const k = (n: number) => new Uint8Array(n);
     for (const pkg of [
       wrapped(k(32), k(16), k(16)),
@@ -86,9 +118,9 @@ describe("the device package", () => {
       wrapped(k(32), k(15), k(16), k(32)),
       wrapped(k(32), k(16), k(17), k(32)),
       wrapped(k(32), k(16), k(16), k(33)),
-      wrap(to, Uint8Array.of(0, 0, 0, 9), { purpose: "device", context: [] }),
+      wrap(to, Uint8Array.of(0, 0, 0, 9), { purpose: "device", context: [secret] }),
     ])
-      expect(openDevicePackage(device.secretKey, device.publicKey, pkg)).toEqual({
+      expect(openDevicePackage(device.secretKey, device.publicKey, secret, pkg)).toEqual({
         ok: false,
         error: "malformed",
       });

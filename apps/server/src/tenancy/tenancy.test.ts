@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../app.ts";
 import { createAuth } from "../auth/better-auth.ts";
+import { DEVICE_PACKAGE_LENGTH } from "../auth/pairings.ts";
 import { migrate, openDatabase } from "../db/database.ts";
 import {
   accountKeys,
@@ -156,7 +157,8 @@ const cases: Record<string, () => Promise<void>> = {
   },
   "PUT /api/pairings/:id": async () => {
     maxAnsweredPairing();
-    expect((await jonasSends("PUT", "/api/pairings/max-pairing", { package: "AAAA" })).status).toBe(
+    const pkg = encodeBytes(new Uint8Array(DEVICE_PACKAGE_LENGTH));
+    expect((await jonasSends("PUT", "/api/pairings/max-pairing", { package: pkg })).status).toBe(
       404,
     );
     const row = app.db.select().from(pairings).where(eq(pairings.id, "max-pairing")).get();

@@ -399,23 +399,27 @@ Passphrase.
 
 1. Das neue Gerät erzeugt ein Einmal-Schlüsselpaar (X-Wing), meldet den öffentlichen Schlüssel beim
    Server an (`POST /auth/pairings`) und bekommt eine Kopplungs-ID und ein Abfrage-Token, von dem
-   der Server nur einen Hash behält. Es zeigt einen QR-Code mit Kopplungs-ID und dem Fingerabdruck
-   des Schlüssels: `SHA-512/256(enc("kennwort/fp-device/v1", pk))`. Der Schlüssel selbst (1216 Byte)
+   der Server nur einen Hash behält. Es zeigt einen QR-Code mit Kopplungs-ID, dem Fingerabdruck
+   des Schlüssels – `SHA-512/256(enc("kennwort/fp-device/v1", pk))` – und einem zufälligen
+   Kopplungs-Geheimnis `r` (32 Byte), das nie zum Server geht. Der Schlüssel selbst (1216 Byte)
    passt nicht gut in einen QR-Code; der Fingerabdruck bindet ihn ebenso.
 2. Ein entsperrtes Gerät scannt ihn, lädt den Schlüssel vom Server und nimmt ihn nur, wenn sein
    Fingerabdruck zu dem im QR-Code passt; so kommt der Schlüssel am Server vorbei, ohne dass er ihn
    tauschen kann.
 3. Es verpackt AK, Konto-ID, Secret Key und den Hash seines aktuellen Kontozustands
-   (`SHA-512/256` über den versiegelten Kontozustand) an den Einmal-Schlüssel (F-02, Zweck `device`)
-   und schickt das Paket über den Server; die erste Antwort gilt, danach ändert sich die Kopplung
+   (`SHA-512/256` über den versiegelten Kontozustand) an den Einmal-Schlüssel (F-02, Zweck `device`,
+   Kontext `r`) und schickt das Paket über den Server. Weil `r` in Schlüsselableitung und AAD
+   eingeht, öffnet das neue Gerät kein Paket, das der Server selbst verpackt hat: Er kennt den
+   Einmal-Schlüssel, aber nicht `r`, und kann so auch keinen passenden Vergleichscode erzwingen; die erste Antwort gilt, danach ändert sich die Kopplung
    nicht mehr. Der Secret Key reist mit, damit das neue Gerät später wie jedes andere mit der
    Passphrase entsperrt. Das neue Gerät lädt den Kontozustand und nimmt ihn nur an, wenn sein Hash
    passt.
 4. Beide zeigen einen Vergleichscode aus `SHA-512/256(enc("kennwort/device/v1", pk, paket))`, die
-   ersten vier Byte als Zahl modulo 10⁶, sechsstellig. Erst wenn das entsperrte Gerät bestätigt
+   ersten vier Byte als Zahl modulo 10⁶, sechsstellig – eine sichtbare zweite Prüfung neben `r`. Erst wenn das entsperrte Gerät bestätigt
    (`POST /api/pairings/:id/confirm`, nur das Konto, das geantwortet hat), gibt die nächste Abfrage
    des neuen Geräts eine Sitzung für dieses Konto heraus, einmal; danach ist die Kopplung gelöscht.
-   Eine Kopplung gilt zehn Minuten.
+   Eine Kopplung gilt zehn Minuten; abgelaufene löscht der Server bei der nächsten Anmeldung eines
+   Geräts, und er nimmt nur ein Paket genau der Größe eines Gerätepakets an.
 
 Ein Gerät, das der Server ohne diesen Ablauf einträgt, hat keinen AK; ein neues Gerät übernimmt
 mit dem Kontozustand auch den geprüften Wurzelschlüssel und muss niemandem beim ersten Kontakt

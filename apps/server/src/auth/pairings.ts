@@ -8,7 +8,7 @@
  */
 import { createHash, timingSafeEqual } from "node:crypto";
 import { bytes, encodeBytes } from "@kennwort/core";
-import { and, eq, gt, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, gt, isNotNull, isNull, lte } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { Db } from "../db/database.ts";
@@ -26,7 +26,10 @@ const sameHash = (a: string, b: string) =>
 // An X-Wing public key (F-02)
 const Announce = z.object({ publicKey: bytes(1216) });
 const Poll = z.object({ pollToken: z.string().min(1).max(128) });
-const Answer = z.object({ package: bytes() });
+// A device package and nothing else: X-Wing header and ciphertext, then the box around the four
+// keys of P-04 (version, nonce, enc of 32 + 16 + 16 + 32 bytes, tag); review of K-303
+export const DEVICE_PACKAGE_LENGTH = 1 + 1120 + 1 + 24 + (4 * 4 + 96) + 16;
+const Answer = z.object({ package: bytes(DEVICE_PACKAGE_LENGTH) });
 
 export type PairingDeps = {
   db: Db;
@@ -57,6 +60,8 @@ export const pairingPublicRoutes = ({ db, auth, now, random, allow, address }: P
       if (!parsed.success) return c.json({ error: "invalid" }, 400);
       const id = encodeBytes(random(16));
       const pollToken = encodeBytes(random(32));
+      // Pairings that ran out are not kept: each announcement clears them first
+      db.delete(pairings).where(lte(pairings.expiresAt, now())).run();
       db.insert(pairings)
         .values({
           id,

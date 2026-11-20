@@ -11,8 +11,10 @@ import {
   unlockWithDevicePackage,
 } from "@kennwort/core";
 import { deviceCode, deviceFingerprint, xwingKeyPair } from "@kennwort/crypto";
+import { pairings } from "../db/schema.ts";
 import { ownerWithKeys } from "../testing/owner-with-keys.ts";
-import { PAIRING_MS } from "./pairings.ts";
+import { signInSetup } from "../testing/sign-in-setup.ts";
+import { DEVICE_PACKAGE_LENGTH, PAIRING_MS } from "./pairings.ts";
 
 const CODE = "setup-code-of-weber-haustechnik";
 const PASSPHRASE = "Heizung-Wasser-Licht-Kupfer";
@@ -38,6 +40,8 @@ const storedOf = async ({ setup }: Owner, token: string): Promise<Stored> => {
 /** The new device: a one-time key, announced; poll() as it would every few seconds */
 const newDevice = async ({ setup }: Owner) => {
   const keys = xwingKeyPair();
+  // What the QR code carries besides the ID and fingerprint; the server never sees it
+  const secret = crypto.getRandomValues(new Uint8Array(32));
   const announced = await setup.request("/auth/pairings", {
     body: { publicKey: encodeBytes(keys.publicKey) },
   });
@@ -46,11 +50,11 @@ const newDevice = async ({ setup }: Owner) => {
     const answer = await setup.request(`/auth/pairings/${id}/poll`, { body: { pollToken: token } });
     return { status: answer.status, json: (await answer.json()) as Record<string, string> };
   };
-  return { keys, id, pollToken, poll, status: announced.status };
+  return { keys, secret, id, pollToken, poll, status: announced.status };
 };
 
 /** The unlocked device answers: loads the key, checks it against the QR fingerprint, wraps */
-const answer = async (owner: Owner, id: string, fingerprint: Uint8Array) => {
+const answer = async (owner: Owner, id: string, fingerprint: Uint8Array, secret: Uint8Array) => {
   const loaded = (await (
     await owner.setup.request(`/api/pairings/${id}`, { token: owner.token })
   ).json()) as {
@@ -59,7 +63,7 @@ const answer = async (owner: Owner, id: string, fingerprint: Uint8Array) => {
   const publicKey = bytes(1216).parse(loaded.publicKey);
   expect(encodeBytes(deviceFingerprint(publicKey))).toBe(encodeBytes(fingerprint));
   const stored = await storedOf(owner, owner.token);
-  const pkg = sealDevicePackage(publicKey, {
+  const pkg = sealDevicePackage(publicKey, secret, {
     accountKey: owner.owner.accountKey,
     accountId: owner.owner.accountId,
     secretKey: owner.owner.secretKey,
@@ -80,13 +84,23 @@ describe("adding a device", () => {
     expect(device.status).toBe(201);
     expect((await device.poll()).json).toEqual({ state: "waiting" });
 
-    const sent = await answer(owner, device.id, deviceFingerprint(device.keys.publicKey));
+    const sent = await answer(
+      owner,
+      device.id,
+      deviceFingerprint(device.keys.publicKey),
+      device.secret,
+    );
     expect(sent.status).toBe(200);
     const waiting = await device.poll();
     expect(waiting.json.state).toBe("package");
     expect(waiting.json.token).toBeUndefined();
     const pkg = bytes().parse(waiting.json.package);
-    const opened = openDevicePackage(device.keys.secretKey, device.keys.publicKey, pkg);
+    const opened = openDevicePackage(
+      device.keys.secretKey,
+      device.keys.publicKey,
+      device.secret,
+      pkg,
+    );
     if (!opened.ok) throw new Error(opened.error);
     expect(opened.value.secretKey).toEqual(owner.owner.secretKey);
     // Both screens show the same code
@@ -116,12 +130,12 @@ describe("adding a device", () => {
     const confirm = (token: string) =>
       owner.setup.request(`/api/pairings/${device.id}/confirm`, { method: "POST", token });
     expect((await confirm(owner.token)).status).toBe(404);
-    await answer(owner, device.id, deviceFingerprint(device.keys.publicKey));
+    await answer(owner, device.id, deviceFingerprint(device.keys.publicKey), device.secret);
     // The first answer wins: Anna can neither answer again, nor load the key, nor confirm
     const second = await owner.setup.request(`/api/pairings/${device.id}`, {
       method: "PUT",
       token: anna.token,
-      body: { package: "AAAA" },
+      body: { package: encodeBytes(new Uint8Array(DEVICE_PACKAGE_LENGTH)) },
     });
     expect(second.status).toBe(404);
     expect(
@@ -149,9 +163,18 @@ describe("adding a device", () => {
     expect(
       (await owner.setup.request(`/api/pairings/${late.id}`, { token: owner.token })).status,
     ).toBe(404);
+    // Review of K-303: what ran out is gone with the next announcement, not kept for good
+    await newDevice(owner);
+    const ids = owner.setup.db
+      .select()
+      .from(pairings)
+      .all()
+      .map((row) => row.id);
+    expect(ids).not.toContain(late.id);
+    expect(ids).toHaveLength(1);
   });
 
-  it("refuses what is not a one-time key, a poll without token, and too many announcements", async () => {
+  it("refuses what is not a one-time key, a poll without token, and a package of the wrong size", async () => {
     const owner = await ownerWithKeys(CODE, PASSPHRASE);
     const announce = (publicKey: string) =>
       owner.setup.request("/auth/pairings", { body: { publicKey } });
@@ -163,14 +186,43 @@ describe("adding a device", () => {
     expect(
       (await owner.setup.request(`/auth/pairings/${device.id}/cancel`, { body: {} })).status,
     ).toBe(400);
+    const put = (body: unknown) =>
+      owner.setup.request(`/api/pairings/${device.id}`, {
+        method: "PUT",
+        token: owner.token,
+        body,
+      });
+    expect((await put({})).status).toBe(400);
+    // Review of K-303: exactly a device package, nothing bigger to keep
     expect(
-      (
-        await owner.setup.request(`/api/pairings/${device.id}`, {
-          method: "PUT",
-          token: owner.token,
-          body: {},
-        })
-      ).status,
+      (await put({ package: encodeBytes(new Uint8Array(DEVICE_PACKAGE_LENGTH + 1)) })).status,
     ).toBe(400);
+    expect((await put({ package: encodeBytes(new Uint8Array(300_000)) })).status).toBe(400);
+    expect((await device.poll()).json).toEqual({ state: "waiting" });
+  });
+
+  it("limits announcements and polls per address", async () => {
+    const limited = await signInSetup({ rateLimit: 1, empty: true });
+    const publicKey = encodeBytes(xwingKeyPair().publicKey);
+    const announce = () => limited.request("/auth/pairings", { body: { publicKey } });
+    const first = (await (await announce()).json()) as { id: string; pollToken: string };
+    expect((await announce()).status).toBe(429);
+    const poll = () =>
+      limited.request(`/auth/pairings/${first.id}/poll`, { body: { pollToken: first.pollToken } });
+    expect((await poll()).status).toBe(200);
+    expect((await poll()).status).toBe(429);
+  });
+
+  it("knows the exact size of a device package", () => {
+    const keys = xwingKeyPair();
+    const content = {
+      accountKey: new Uint8Array(32),
+      accountId: new Uint8Array(16),
+      secretKey: new Uint8Array(16),
+      stateHash: new Uint8Array(32),
+    };
+    expect(sealDevicePackage(keys.publicKey, new Uint8Array(32), content)).toHaveLength(
+      DEVICE_PACKAGE_LENGTH,
+    );
   });
 });

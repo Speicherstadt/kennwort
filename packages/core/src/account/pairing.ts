@@ -4,6 +4,10 @@
  * `device`). The new device accepts the state the server gives it only when its hash matches, so it
  * takes over the checked root key and trusts no one on first contact. The Secret Key travels too,
  * so the new device can later unlock with the passphrase like any other.
+ *
+ * The wrap's context holds the pairing secret from the QR code, which the server never sees: a
+ * package the server made itself does not open, however long it grinds for a matching comparison
+ * code (review of K-303; F-02 says nothing about who wrapped).
  */
 import {
   constantTimeEqual,
@@ -24,25 +28,37 @@ export type DevicePackage = {
   stateHash: Uint8Array;
 };
 
-const DEVICE = { purpose: "device", context: [] };
+export const PAIRING_SECRET_LENGTH = 32;
 const LENGTHS = [32, 16, 16, 32] as const;
+
+const deviceContext = (pairingSecret: Uint8Array) => {
+  if (pairingSecret.length !== PAIRING_SECRET_LENGTH)
+    throw new RangeError("pairing secret must be 32 bytes");
+  return { purpose: "device", context: [pairingSecret] };
+};
 
 /** The hash the package carries: of the sealed account state, as the server stores it */
 export const stateHash = (sealedState: Uint8Array) => digest(sealedState);
 
-export const sealDevicePackage = (oneTimePublicKey: Uint8Array, content: DevicePackage) =>
+export const sealDevicePackage = (
+  oneTimePublicKey: Uint8Array,
+  pairingSecret: Uint8Array,
+  content: DevicePackage,
+) =>
   wrap(
     { publicKey: oneTimePublicKey, fingerprint: deviceFingerprint(oneTimePublicKey) },
     encode(content.accountKey, content.accountId, content.secretKey, content.stateHash),
-    DEVICE,
+    deviceContext(pairingSecret),
   );
 
 export const openDevicePackage = (
   oneTimeSecretKey: Uint8Array,
   oneTimePublicKey: Uint8Array,
+  pairingSecret: Uint8Array,
   pkg: Uint8Array,
 ): Result<DevicePackage, "not-authentic" | "malformed"> => {
-  const opened = unwrap(oneTimeSecretKey, deviceFingerprint(oneTimePublicKey), pkg, DEVICE);
+  const fingerprint = deviceFingerprint(oneTimePublicKey);
+  const opened = unwrap(oneTimeSecretKey, fingerprint, pkg, deviceContext(pairingSecret));
   if (!opened.ok) return err("not-authentic");
   const parts = decode(opened.value);
   if (!parts.ok || parts.value.length !== 4 || parts.value.some((p, i) => p.length !== LENGTHS[i]))
