@@ -18,25 +18,25 @@ const FONTS: Record<Font, { name: string; base: string }> = {
   mono: { name: "F3", base: "Courier" },
 };
 
-/** WinAnsi beyond Latin-1: euro sign, quotes, ellipsis, bullet and dashes, as German and English texts use them (§D.2) */
-const WIN_ANSI: Record<string, number> = {
-  "\u20ac": 0x80,
-  "\u201e": 0x84,
-  "\u2026": 0x85,
-  "\u2018": 0x91,
-  "\u2019": 0x92,
-  "\u201c": 0x93,
-  "\u201d": 0x94,
-  "\u2022": 0x95,
-  "\u2013": 0x96,
-  "\u2014": 0x97,
+/** WinAnsi beyond Latin-1, by code point: euro sign, quotes, ellipsis, bullet and dashes, as German and English texts use them (§D.2) */
+const WIN_ANSI: Record<number, number> = {
+  8364: 0x80,
+  8222: 0x84,
+  8230: 0x85,
+  8216: 0x91,
+  8217: 0x92,
+  8220: 0x93,
+  8221: 0x94,
+  8226: 0x95,
+  8211: 0x96,
+  8212: 0x97,
 };
 
 /** WinAnsi codes for the text; what the encoding cannot print becomes "?" */
 const winAnsi = (text: string) =>
   Array.from(text, (char) => {
     const code = char.codePointAt(0) ?? 63;
-    return WIN_ANSI[char] ?? (code < 128 || (code >= 160 && code < 256) ? code : 63);
+    return WIN_ANSI[code] ?? (code < 128 || (code >= 160 && code < 256) ? code : 63);
   });
 
 /** A PDF literal string: backslash, parentheses and bytes outside ASCII escaped (§7.3.4.2) */
