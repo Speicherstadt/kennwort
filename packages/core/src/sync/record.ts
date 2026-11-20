@@ -75,7 +75,7 @@ export const sealRecord = (
 };
 
 /** JSON as a value, so content that does not parse is an error value, not a throw */
-const parseJson = (text: string): Result<unknown, "not-json"> => {
+export const parseJson = (text: string): Result<unknown, "not-json"> => {
   try {
     return ok(JSON.parse(text));
   } catch {

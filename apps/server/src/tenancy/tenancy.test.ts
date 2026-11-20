@@ -1,8 +1,10 @@
+import { encodeBytes } from "@kennwort/core";
+import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../app.ts";
 import { createAuth } from "../auth/better-auth.ts";
 import { migrate, openDatabase } from "../db/database.ts";
-import { accounts, companies, invitations } from "../db/schema.ts";
+import { accounts, companies, invitations, vaults } from "../db/schema.ts";
 import { createLog } from "../log.ts";
 import type { Session } from "./session.ts";
 
@@ -53,6 +55,14 @@ const setup = () => {
 const app = setup();
 const asJonas = (path: string) =>
   app.request(path, { headers: { "x-test-session": "token-jonas" } });
+const jonasSends = (method: string, path: string, body: unknown) =>
+  app.request(path, {
+    method,
+    headers: { "x-test-session": "token-jonas", "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+const muellerVault = encodeBytes(new Uint8Array(16).fill(0xa1));
+app.db.insert(vaults).values({ id: muellerVault, companyId: "mueller", createdAt: 3 }).run();
 
 /**
  * One case per route under /api: Jonas (Weber Haustechnik) asks for what belongs to Müller Elektro.
@@ -83,6 +93,25 @@ const cases: Record<string, () => Promise<void>> = {
   "GET /api/accounts/:accountId": async () => {
     expect((await asJonas("/api/accounts/max")).status).toBe(404);
     expect((await asJonas("/api/accounts/anna")).status).toBe(200);
+  },
+  "POST /api/vaults": async () => {
+    // Müller Elektro's vault ID cannot be taken over; a new vault lands in Jonas's company
+    expect((await jonasSends("POST", "/api/vaults", { id: muellerVault })).status).toBe(409);
+    const own = encodeBytes(new Uint8Array(16).fill(0xa2));
+    expect((await jonasSends("POST", "/api/vaults", { id: own })).status).toBe(201);
+    expect(app.db.select().from(vaults).where(eq(vaults.id, own)).get()?.companyId).toBe("weber");
+  },
+  "GET /api/vaults/:vaultId/records": async () => {
+    expect((await asJonas(`/api/vaults/${muellerVault}/records`)).status).toBe(404);
+  },
+  "GET /api/vaults/:vaultId/entries/:entryId/versions": async () => {
+    expect((await asJonas(`/api/vaults/${muellerVault}/entries/x/versions`)).status).toBe(404);
+  },
+  "PUT /api/vaults/:vaultId/records": async () => {
+    expect((await jonasSends("PUT", `/api/vaults/${muellerVault}/records`, {})).status).toBe(404);
+  },
+  "GET /api/vaults/:vaultId/events": async () => {
+    expect((await asJonas(`/api/vaults/${muellerVault}/events`)).status).toBe(404);
   },
 };
 

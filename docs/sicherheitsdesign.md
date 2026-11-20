@@ -654,7 +654,25 @@ Fehlt in einer Antwort des Servers ein Eintrag, den das Gerät kennt, meldet der
 verborgenen Eintrag (E-15), eine ältere Version als die bekannte als zurückgespielten Stand (E-13); Löschen geschieht nur über einen signierten Grabstein. Was der Client
 ablehnt, sammelt ein Abgleich über alle Abrufe, auch die nach einem Konflikt.
 
+Über HTTP (alle Routen brauchen eine Sitzung und sehen nur Tresore der eigenen Firma):
+
+| Route | Zweck |
+| --- | --- |
+| `POST /api/vaults` | Tresor anlegen; die ID wählt der Client, eine vergebene ID ist vergeben (409) |
+| `GET /api/vaults/:id/records` | die neueste Version jedes Eintrags |
+| `GET /api/vaults/:id/entries/:entry/versions` | alle Versionen eines Eintrags |
+| `PUT /api/vaults/:id/records` | nur als nächste Version; sonst 409 mit dem aktuellen Stand |
+| `GET /api/vaults/:id/events` | SSE: `ready`, dann je neue Version `record` mit Eintrag und Version |
+
+Der Server prüft nur, was er ohne Schlüssel prüfen kann: die Firma, die nächste Versionsnummer, dass
+der Autor eines Eintrags die angemeldete Person ist, und höchstens 1 MiB je Eintrag. Ein Ereignis
+sagt nur, dass es Neues gibt; der Client holt den Eintrag und prüft ihn wie jeden anderen. Wer
+Mitglied eines Tresors ist, prüft der Server noch nicht – das steht im signierten Log und kommt mit
+den Tresor-Rechten (K-305); bis dahin schützt die Verschlüsselung, und ein Test liest die Datenbank
+und findet keinen Klartext.
+
 Umgesetzt in `packages/core/src/sync/` (Zod-Schemas für Einträge, Log-Einträge und Zertifikate,
-Warteschlange, Zusammenführen, Server-Ersatz im Speicher), mit Mutation-Tests bei 100 %.
+Warteschlange, Zusammenführen, Server-Ersatz im Speicher, HTTP und SSE), mit Mutation-Tests bei
+100 %, und `apps/server/src/sync/` (Tabellen `vaults` und `entry_records`, Routen, Live-Ereignisse).
 
 **Wehrt ab:** E-13, E-15.

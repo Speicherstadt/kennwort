@@ -59,10 +59,14 @@ export const edit = (device: Device, entryId: Uint8Array, content: EntryContent)
 /** Takes every record newer than what the device knows, if it passes the checks of P-09 */
 export type Pulled = { device: Device; refused: Refused[] };
 
-export const pull = (device: Device, server: SyncServer, ctx: SyncContext): Pulled => {
+export const pull = async (
+  device: Device,
+  server: SyncServer,
+  ctx: SyncContext,
+): Promise<Pulled> => {
   const known = new Map(device.known);
   const refused: Refused[] = [];
-  const records = server.pull();
+  const records = await server.pull();
   for (const record of records) {
     const mine = known.get(idKey(record.entryId));
     const knownVersion = mine?.version ?? 0;
@@ -109,8 +113,8 @@ const allRefused = (lists: Refused[][]) => {
 };
 
 /** Pushes one change as the next version, pulling and merging again when someone was faster */
-const pushChange = (
-  start: ReturnType<typeof pull>,
+const pushChange = async (
+  start: Pulled,
   op: Pending,
   server: SyncServer,
   ctx: SyncContext,
@@ -122,7 +126,11 @@ const pushChange = (
     const content = contentFor(op, current, ctx.now);
     const version = (current?.version ?? 0) + 1;
     if (
-      server.push(sealRecord(ctx.author, ctx.ring, op.entryId, version, content, ctx.lastSeen)).ok
+      (
+        await server.push(
+          sealRecord(ctx.author, ctx.ring, op.entryId, version, content, ctx.lastSeen),
+        )
+      ).ok
     ) {
       const known = new Map(state.device.known).set(idKey(op.entryId), {
         entryId: op.entryId,
@@ -131,19 +139,23 @@ const pushChange = (
       });
       return { state: { ...state, device: { ...state.device, known } }, done: true };
     }
-    state = pull(state.device, server, ctx);
+    state = await pull(state.device, server, ctx);
     seen.push(state.refused);
   }
   return { state, done: false };
 };
 
 /** Pulls, then pushes every queued change; what the server keeps refusing stays queued */
-export const sync = (device: Device, server: SyncServer, ctx: SyncContext): Pulled => {
-  let state: Pulled = pull(device, server, ctx);
+export const sync = async (
+  device: Device,
+  server: SyncServer,
+  ctx: SyncContext,
+): Promise<Pulled> => {
+  let state: Pulled = await pull(device, server, ctx);
   const seen = [state.refused];
   const left: Pending[] = [];
   for (const op of state.device.queue) {
-    const result = pushChange(state, op, server, ctx, seen);
+    const result = await pushChange(state, op, server, ctx, seen);
     state = result.state;
     if (!result.done) left.push(op);
   }

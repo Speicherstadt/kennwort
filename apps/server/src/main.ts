@@ -41,6 +41,8 @@ const app = createApp({ db, log, authenticate: authenticateWith(auth), signIn })
 // The peer address goes to the app as its environment; the rate limits count it
 const server = Bun.serve({
   port,
+  // Bun closes a connection after 10 s without data by default; the live sync pings every 20 s
+  idleTimeout: 60,
   fetch: (request, bun) => app.fetch(request, { address: bun.requestIP(request)?.address }),
 });
 log("info", "listening", { port: server.port });

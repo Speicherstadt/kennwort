@@ -24,12 +24,14 @@ describe("database", () => {
       "auth_user",
       "auth_verification",
       "companies",
+      "entry_records",
       "instance",
       "invitations",
       "login_challenges",
       "login_failures",
       "login_keys",
       "sqlite_sequence",
+      "vaults",
     ]);
   });
 
