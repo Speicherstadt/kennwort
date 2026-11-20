@@ -5,7 +5,7 @@ import { mergeContent } from "./content.ts";
 import { edit, emptyDevice, pull, sync } from "./device.ts";
 import { memoryServer } from "./memory-server.ts";
 import { type EntryRecord, openRecord, sealRecord } from "./record.ts";
-import { anna, bank, contextFor, id, jonas, max } from "./test/fixtures.ts";
+import { anna, bank, contextFor, id, jonas, max, withField } from "./test/fixtures.ts";
 
 const entryId = id(0xe1);
 
@@ -147,5 +147,19 @@ describe("sync regressions found in the review of K-109", () => {
     const server = { push: real.push, pull: () => [byMax(0xe3), byMax(0xe4), ...real.pull()] };
     const result = sync(edit(emptyDevice(), entryId, bank), server, ctx);
     expect(result.refused.map((r) => r.entryId[0])).toEqual([0xe3, 0xe4]);
+  });
+
+  it("reports a server that replays an older version of a known entry (E-13/E-15)", () => {
+    const server = memoryServer();
+    const ctx = contextFor(jonas);
+    const v1 = sealRecord(ctx.author, ctx.ring, entryId, 1, bank, ctx.lastSeen);
+    server.push(v1);
+    let device = pull(emptyDevice(), server, ctx).device;
+    device = sync(edit(device, entryId, withField(bank, "password", "new")), server, ctx).device;
+    const rollingBack = { push: server.push, pull: () => [v1] };
+    expect(pull(device, rollingBack, ctx).refused).toEqual([
+      { entryId, version: 1, error: "rollback" },
+    ]);
+    expect(pull(device, server, ctx).refused).toEqual([]);
   });
 });

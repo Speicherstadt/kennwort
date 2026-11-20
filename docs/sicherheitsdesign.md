@@ -632,7 +632,7 @@ Titel und Typ der eigenen Seite kommen in die früheren Werte. Tags beider Seite
 wird, was eine Seite entfernt hat. So geht beim Abgleich nichts verloren.
 
 Fehlt in einer Antwort des Servers ein Eintrag, den das Gerät kennt, meldet der Client das als
-verborgenen Eintrag (E-15); Löschen geschieht nur über einen signierten Grabstein. Was der Client
+verborgenen Eintrag (E-15), eine ältere Version als die bekannte als zurückgespielten Stand (E-13); Löschen geschieht nur über einen signierten Grabstein. Was der Client
 ablehnt, sammelt ein Abgleich über alle Abrufe, auch die nach einem Konflikt.
 
 Umgesetzt in `packages/core/src/sync/` (Zod-Schemas für Einträge, Log-Einträge und Zertifikate,

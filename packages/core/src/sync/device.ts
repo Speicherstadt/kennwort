@@ -33,7 +33,11 @@ export type SyncContext = {
   now: number;
 };
 /** A record the device would not take, or ("missing") a known entry the server no longer shows (E-15) */
-export type Refused = { entryId: Uint8Array; version: number; error: AcceptError | "missing" };
+export type Refused = {
+  entryId: Uint8Array;
+  version: number;
+  error: AcceptError | "missing" | "rollback";
+};
 
 export const emptyDevice = (): Device => ({ known: new Map(), queue: [] });
 
@@ -61,16 +65,21 @@ export const pull = (device: Device, server: SyncServer, ctx: SyncContext): Pull
   const records = server.pull();
   for (const record of records) {
     const mine = known.get(idKey(record.entryId));
-    const opened = openRecord(record, ctx.ring, ctx.log, ctx.trust, mine?.version ?? 0);
+    const knownVersion = mine?.version ?? 0;
+    const opened = openRecord(record, ctx.ring, ctx.log, ctx.trust, knownVersion);
     if (opened.ok)
       known.set(idKey(record.entryId), {
         entryId: record.entryId,
         version: record.version,
         content: opened.value,
       });
-    // A version the device already has is no news, not an attack
-    else if (opened.error !== "stale")
-      refused.push({ entryId: record.entryId, version: record.version, error: opened.error });
+    // The version the device already has is no news; an older one is a rollback (E-13)
+    else if (opened.error !== "stale" || record.version < knownVersion)
+      refused.push({
+        entryId: record.entryId,
+        version: record.version,
+        error: opened.error === "stale" ? "rollback" : opened.error,
+      });
   }
   // Deleting is a signed tombstone (P-09); an entry that just vanishes is hidden, not gone
   const shown = new Set(records.map((record) => idKey(record.entryId)));
