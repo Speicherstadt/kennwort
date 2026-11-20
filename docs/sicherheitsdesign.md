@@ -115,6 +115,32 @@ gleich.
 | Entsperren | [P-03](#p-03-entsperren) | E-03 |
 | Ableitung | [F-04](#f-04-kodierung-und-ableitung) | – |
 
+### Angriffe als Tests
+
+Ein Testserver, der gezielt lügt (`packages/core/src/adversary/`), spielt die Angriffe nach: Er
+legt sich um einen ehrlichen Server oder um `fetch` und ändert, was dieser antwortet. Jeder Test
+nennt seinen Angriff, und der Client muss ihn ablehnen und sagen, warum.
+
+| Angriff | Wo | Was der Client meldet |
+| --- | --- | --- |
+| E-05 fremder Schlüssel unter einem Mitglied | `adversary/eth.test.ts` | nicht zertifizierter Autor |
+| E-06 Mitglied eingeschmuggelt | `adversary/eth.test.ts`, `membership/verify-log.test.ts` | kein Verwalter, falsche Signatur |
+| E-07 Log gekürzt, umsortiert, zurückgespielt | `adversary/eth.test.ts`, `membership/verify-log.test.ts` | Lücke, Rückfall |
+| E-08 Gabelung | `membership/verify-log.test.ts` | Gabelung |
+| E-10 anderer Wurzelschlüssel | `adversary/eth.test.ts` | nicht zertifizierter Unterzeichner |
+| E-12 Geheimtexte vertauscht oder verschoben | `adversary/eth.test.ts`, `apps/server/src/adversary/` | falsche Signatur, anderer Tresor |
+| E-13 alte Version | `adversary/eth.test.ts`, `apps/server/src/adversary/` | Rückfall |
+| E-15 Eintrag verborgen | `adversary/eth.test.ts`, `apps/server/src/adversary/` | fehlt |
+| E-16 untergeschobener Eintrags-Schlüssel | `adversary/eth.test.ts` | falsche Signatur |
+| E-17, E-19 altes Format, alte Signatur | `adversary/eth.test.ts` | falsche Signatur |
+| E-23 Audit-Log gefälscht oder gekürzt | `audit/chain.test.ts`, `apps/server/src/audit/` | siehe [P-20](#p-20-audit-log) |
+| E-24 Passphrase abgegriffen | `apps/server/src/auth/` | – (der Server bekommt sie nie) |
+
+Die übrigen folgen mit den Funktionen, die sie betreffen (Konto-Recovery, Teilen, Geräte, Austritt,
+Einmal-Links, Import und Export, ausgelieferter Code); K-701 schließt den Katalog. Beim Bau des
+Testservers fiel auf, dass der Client das Zertifikat eines Autors nicht gegen den
+Firmen-Wurzelschlüssel und das Log prüfte; das ist behoben (E-05).
+
 ## Bausteine
 
 Nur standardisierte Verfahren aus `@noble/*`, nichts selbst gebaut:
@@ -468,6 +494,8 @@ signatur  = F-03(autor, "entry", tresor-ID, eintrags-ID, version, epoche, SHA-51
   (E-13).
 - **Signatur des Autors**: Der Client prüft, dass der Autor zur angegebenen Epoche laut Log
   „bearbeiten“ durfte; so kann auch ein lesendes Mitglied, das VKₑ kennt, nichts unterschieben.
+  Der Schlüssel dazu kommt nur aus einem Zertifikat, das der Firmen-Wurzelschlüssel für genau
+  diesen Autor signiert hat und dessen Fingerabdruck das Log für ihn nennt (E-05).
 - **Löschen** ist ein signierter Grabstein mit neuer Version. Verschwindet ein bekannter Eintrag
   ohne Grabstein, warnt der Client (E-15).
 - **Schlüssel**: EK und VKₑ entstehen nur im Client. Ein EK ist unter VKₑ verschlüsselt, den der

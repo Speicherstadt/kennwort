@@ -5,6 +5,7 @@
  * never an older version than it has seen (E-13).
  */
 import {
+  constantTimeEqual,
   digest,
   encode,
   newEntryKey,
@@ -16,7 +17,8 @@ import {
   verify,
 } from "@kennwort/crypto";
 import { z } from "zod";
-import { idKey, type LogState, type Trust } from "../membership/verify-log.ts";
+import { certificateFingerprint } from "../membership/certificate.ts";
+import { certificateOf, idKey, type LogState, type Trust } from "../membership/verify-log.ts";
 import { err, ok, type Result } from "../result.ts";
 import { bytes } from "./bytes.ts";
 import { EntryContent } from "./content.ts";
@@ -103,12 +105,18 @@ export const openRecord = (
   if (idKey(record.vaultId) !== idKey(ring.vaultId) || record.epoch !== ring.epoch)
     return err("wrong-vault");
   if (record.version <= knownVersion) return err("stale");
-  const certificate = trust.certificates.get(idKey(record.author));
-  if (!certificate) return err("uncertified-author");
+  // Signed by the company root for this author, and the very certificate the signed log names for
+  // the member: a server cannot file another key under an editor (E-05, found by K-206)
+  const certificate = certificateOf(trust, record.author);
+  const member = log.members.get(idKey(record.author));
+  if (
+    !certificate ||
+    (member && !constantTimeEqual(member.fingerprint, certificateFingerprint(certificate)))
+  )
+    return err("uncertified-author");
   if (!verify(certificate.edPublicKey, record.signature, "entry", ...signedFields(record)))
     return err("bad-signature");
-  const role = log.members.get(idKey(record.author))?.role;
-  if (role !== "edit" && role !== "manage") return err("not-editor");
+  if (member?.role !== "edit" && member?.role !== "manage") return err("not-editor");
   const at = { vaultId: record.vaultId, entryId: record.entryId, epoch: record.epoch };
   const entryKey = openEntryKey(ring.vaultKey, record.entryKey, at);
   if (!entryKey.ok) return err("unreadable");

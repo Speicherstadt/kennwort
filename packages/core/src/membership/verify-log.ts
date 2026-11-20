@@ -45,7 +45,8 @@ export type Trust = {
 export const idKey = (bytes: Uint8Array) =>
   Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 
-const certificateOf = (trust: Trust, accountId: Uint8Array) => {
+/** The account's certificate, only if the company root signed it for exactly this account */
+export const certificateOf = (trust: Trust, accountId: Uint8Array) => {
   const certificate = trust.certificates.get(idKey(accountId));
   return certificate &&
     constantTimeEqual(certificate.accountId, accountId) &&
