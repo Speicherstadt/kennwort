@@ -3,7 +3,7 @@
  * is a log entry the manager signs, and for a new member the vault key of the epoch wrapped to the
  * member's certified bundle (F-02). verifyLog checks every entry these functions make; the server
  * only stores them. Removing a member without a new vault key leaves the old key with them, which
- * the key rotation (K-307, P-11) ends.
+ * the key rotation (rotation.ts, P-11) ends.
  */
 import {
   type KeyBlock,
@@ -29,7 +29,7 @@ export type Signer = { accountId: Uint8Array; edSecretKey: Uint8Array };
 export type Keyring = { vaultId: Uint8Array; epoch: number; vaultKey: Uint8Array };
 
 /** The vault key of an epoch wrapped to a member's certified bundle */
-const wrapTo = (member: Certificate, ring: Keyring) =>
+export const wrapTo = (member: Certificate, ring: Keyring) =>
   wrapVaultKey(
     { publicKey: member.xwingPublicKey, fingerprint: certificateFingerprint(member) },
     member.accountId,
@@ -37,7 +37,8 @@ const wrapTo = (member: Certificate, ring: Keyring) =>
     { vaultId: ring.vaultId, epoch: ring.epoch },
   );
 
-const next = (state: LogState) => ({
+/** Where the next entry goes: after the newest one, which it also names as last seen (E-08) */
+export const nextLink = (state: LogState) => ({
   seq: state.seq + 1,
   prevHash: state.hash,
   lastSeen: state.hash,
@@ -84,7 +85,7 @@ export const addMember = (
 ) => ({
   entry: signEntry(signer.edSecretKey, {
     vaultId: ring.vaultId,
-    ...next(state),
+    ...nextLink(state),
     epoch: ring.epoch,
     action: "add",
     accountId: member.accountId,
@@ -107,7 +108,7 @@ const memberEntry = (
 ) =>
   signEntry(signer.edSecretKey, {
     vaultId,
-    ...next(state),
+    ...nextLink(state),
     epoch: state.epoch,
     fingerprint: new Uint8Array(),
     vkCommitment: new Uint8Array(),

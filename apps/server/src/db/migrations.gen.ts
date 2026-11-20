@@ -115,5 +115,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795188187836,
     "breakpoints": true,
     "sql": "CREATE TABLE `entry_shares` (\n\t`vault_id` text NOT NULL,\n\t`entry_id` text NOT NULL,\n\t`recipient` text NOT NULL,\n\t`role` text NOT NULL,\n\t`valid_until` integer NOT NULL,\n\t`commitment` blob NOT NULL,\n\t`wrapped_key` blob NOT NULL,\n\t`sharer` text NOT NULL,\n\t`time` integer NOT NULL,\n\t`signature` blob NOT NULL,\n\t`stored_at` integer NOT NULL,\n\tPRIMARY KEY(`vault_id`, `entry_id`, `recipient`),\n\tFOREIGN KEY (`vault_id`) REFERENCES `vaults`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE INDEX `entry_shares_recipient` ON `entry_shares` (`recipient`);\n"
+  },
+  {
+    "tag": "0019_members_left",
+    "when": 1795206917661,
+    "breakpoints": true,
+    "sql": "ALTER TABLE `accounts` ADD `left_at` integer;"
   }
 ];

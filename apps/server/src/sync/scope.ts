@@ -36,7 +36,9 @@ const toRecord = (row: Row): EntryRecord =>
     signature: encodeBytes(row.signature),
   });
 
-export type Appended = { stored: true } | { stored: false; current: EntryRecord | undefined };
+export type Appended =
+  | { stored: true }
+  | { stored: false; current: EntryRecord | undefined; epoch?: true };
 
 export const syncScope = (db: Db, companyId: string) => {
   const vault = (vaultId: string) =>
@@ -100,12 +102,16 @@ export const syncScope = (db: Db, companyId: string) => {
             .all()
             .map(toRecord)
         : undefined,
-    /** Stores a record only as the next version of its entry (P-21); else names the current one */
-    append: (record: EntryRecord, storedAt: number): Appended | undefined => {
+    /**
+     * Stores a record only as the next version of its entry (P-21) and only in the vault's current
+     * epoch (P-11); else names the current one
+     */
+    append: (record: EntryRecord, storedAt: number, epoch: number): Appended | undefined => {
       const vaultId = encodeBytes(record.vaultId);
       if (!vault(vaultId)) return undefined;
       return db.transaction((tx) => {
         const current = latestOf(vaultId, encodeBytes(record.entryId));
+        if (record.epoch !== epoch) return { stored: false, current, epoch: true as const };
         if ((current?.version ?? 0) + 1 !== record.version) return { stored: false, current };
         tx.insert(entryRecords).values(toRow(record, storedAt)).run();
         return { stored: true };

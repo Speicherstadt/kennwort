@@ -6,6 +6,7 @@
  */
 import type { LogState, Trust } from "../membership/verify-log.ts";
 import { idKey } from "../membership/verify-log.ts";
+import { markForChange, marksOf, settleMarks, withMarks } from "./change-marks.ts";
 import { type EntryContent, mergeContent } from "./content.ts";
 import type { SyncServer } from "./memory-server.ts";
 import {
@@ -23,47 +24,86 @@ import {
  * memory, so the next version keeps it and a share covers that version too (P-09, P-10)
  */
 export type Known = { entryId: Uint8Array; version: number; content: EntryContent; key?: EntryKey };
+/** Someone who left: their account (base64url), when, and the epochs whose vault key they held */
+export type Exposure = { account: string; at: number; epochs: readonly number[] };
 /**
  * A change; base is the version it started from, absent for a new entry. rekey seals it under a
- * new entry key, whatever key a pull brings meanwhile: revoking a share (P-10)
+ * new entry key, whatever key a pull brings meanwhile: revoking a share (P-10). exposedTo marks the
+ * secrets of the version it replaces "to change" if that version lay in an epoch the person who
+ * left could read (P-11)
  */
 export type Pending = {
   entryId: Uint8Array;
   base: { version: number; content: EntryContent } | undefined;
   content: EntryContent;
   rekey?: true;
+  exposedTo?: Exposure;
 };
 export type Device = { known: ReadonlyMap<string, Known>; queue: readonly Pending[] };
 export type SyncContext = {
   author: Author;
+  /** The vault key of the log's current epoch: every version is written under it */
   ring: VaultKeyring;
+  /** Keys of earlier epochs, to read versions a rotation has not re-encrypted yet (P-11) */
+  older?: readonly VaultKeyring[];
   log: LogState;
   trust: Trust;
   lastSeen: Uint8Array;
   now: number;
 };
-/** A record the device would not take, or ("missing") a known entry the server no longer shows (E-15) */
+/**
+ * A record the device would not take, ("missing") a known entry the server no longer shows (E-15),
+ * or ("newer-epoch") a record of an epoch the checked log does not reach: the server withholds a
+ * rotation or rolled the log back (E-07, E-26)
+ */
 export type Refused = {
   entryId: Uint8Array;
   version: number;
-  error: AcceptError | "missing" | "rollback";
+  error: AcceptError | "missing" | "rollback" | "newer-epoch";
 };
 
 export const emptyDevice = (): Device => ({ known: new Map(), queue: [] });
+
+/**
+ * The change's content with the change marks of what it changes: marks are the core's, not the
+ * caller's, so a dialog that knows nothing of them cannot drop one; a secret the change gives a new
+ * value leaves its mark (P-11)
+ */
+const carryMarks = (previous: EntryContent | undefined, content: EntryContent) =>
+  withMarks(content, previous ? settleMarks(marksOf(previous), previous, content) : []);
 
 /** Queues a change; a second change to the same entry before a sync keeps the first one's base */
 export const edit = (device: Device, entryId: Uint8Array, content: EntryContent): Device => {
   const queued = device.queue.find((op) => idKey(op.entryId) === idKey(entryId));
   if (queued) {
+    const next = carryMarks(queued.content, content);
     return {
       ...device,
-      queue: device.queue.map((op) => (op === queued ? { ...op, content } : op)),
+      queue: device.queue.map((op) => (op === queued ? { ...op, content: next } : op)),
     };
   }
   const known = device.known.get(idKey(entryId));
   const base = known && { version: known.version, content: known.content };
-  const op = { entryId, base, content };
+  const op = { entryId, base, content: carryMarks(known?.content, content) };
   return { ...device, queue: [...device.queue, op] };
+};
+
+/**
+ * After someone left and the vault key rotated (P-11): every entry the device knows is written
+ * again, under the new epoch's key and so under a new entry key, and the secrets of a version the
+ * person could read are marked "to change". Queued changes go along and get the marks too.
+ */
+export const rotateEntries = (device: Device, exposure: Exposure): Device => {
+  const queued = new Set(device.queue.map((op) => idKey(op.entryId)));
+  const unchanged = [...device.known.values()]
+    .filter((known) => !queued.has(idKey(known.entryId)))
+    .map((known) => ({
+      entryId: known.entryId,
+      base: { version: known.version, content: known.content },
+      content: known.content,
+    }));
+  const queue = [...device.queue, ...unchanged].map((op) => ({ ...op, exposedTo: exposure }));
+  return { ...device, queue };
 };
 
 /**
@@ -84,8 +124,15 @@ export const rekey = (device: Device, entryId: Uint8Array): Device => {
   };
 };
 
-/** Takes every record newer than what the device knows, if it passes the checks of P-09 */
-export type Pulled = { device: Device; refused: Refused[] };
+/**
+ * Takes every record newer than what the device knows, if it passes the checks of P-09. blocked
+ * says why nothing was pushed: the key in hand is not the current epoch's (P-11, E-26)
+ */
+export type Pulled = { device: Device; refused: Refused[]; blocked?: "stale-key" };
+
+/** The key a record of this epoch was sealed under, if the device holds it; else the current one */
+const ringOf = (ctx: SyncContext, epoch: number) =>
+  ctx.older?.find((ring) => ring.epoch === epoch) ?? ctx.ring;
 
 export const pull = async (
   device: Device,
@@ -98,7 +145,17 @@ export const pull = async (
   for (const record of records) {
     const mine = known.get(idKey(record.entryId));
     const knownVersion = mine?.version ?? 0;
-    const opened = openRecordWithKey(record, ctx.ring, ctx.log, ctx.trust, knownVersion);
+    if (record.epoch > ctx.log.epoch) {
+      refused.push({ entryId: record.entryId, version: record.version, error: "newer-epoch" });
+      continue;
+    }
+    const opened = openRecordWithKey(
+      record,
+      ringOf(ctx, record.epoch),
+      ctx.log,
+      ctx.trust,
+      knownVersion,
+    );
     if (opened.ok)
       known.set(idKey(record.entryId), {
         entryId: record.entryId,
@@ -125,10 +182,19 @@ export const pull = async (
 const MAX_ATTEMPTS = 5;
 
 /** The content to push for a change, merged if the entry moved on since the change began */
-const contentFor = (op: Pending, current: Known | undefined, now: number) =>
+const mergedFor = (op: Pending, current: Known | undefined, now: number) =>
   op.base && current && current.version !== op.base.version
     ? mergeContent(op.base.content, op.content, current.content, now)
     : op.content;
+
+/** As merged, and marked "to change" if it replaces a version the person who left could read */
+const contentFor = (op: Pending, current: Known | undefined, now: number) => {
+  const content = mergedFor(op, current, now);
+  const exposed = op.exposedTo;
+  return exposed && current?.key && exposed.epochs.includes(current.key.epoch)
+    ? markForChange(content, exposed.account, exposed.at)
+    : content;
+};
 
 /** Every refusal once, from all pulls of one sync: a server must not hide one behind a retry */
 const allRefused = (lists: Refused[][]) => {
@@ -186,6 +252,8 @@ export const sync = async (
   ctx: SyncContext,
 ): Promise<Pulled> => {
   let state: Pulled = await pull(device, server, ctx);
+  // Never a new version under a key the log has moved on from: whoever left may hold it (E-26)
+  if (ctx.ring.epoch !== ctx.log.epoch) return { ...state, blocked: "stale-key" };
   const seen = [state.refused];
   const left: Pending[] = [];
   for (const op of state.device.queue) {

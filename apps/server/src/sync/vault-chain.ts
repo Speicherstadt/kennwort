@@ -81,14 +81,21 @@ export const chainRefusal = (
   return forbidden.includes(checked.error) ? "forbidden" : "invalid";
 };
 
-/** The accounts that are current members of a vault by its stored log, at a time in Unix seconds */
-export const currentMembers = (db: Db, vaultId: string, now: number) => {
-  const rows = db
+const storedEntries = (db: Db, vaultId: string) =>
+  db
     .select()
     .from(vaultLog)
     .where(eq(vaultLog.vaultId, vaultId))
     .orderBy(asc(vaultLog.seq))
-    .all();
-  const members = membersOf(rows.map((row) => LogEntryWire.parse(JSON.parse(row.entry))));
+    .all()
+    .map((row) => LogEntryWire.parse(JSON.parse(row.entry)));
+
+/** The accounts that are current members of a vault by its stored log, at a time in Unix seconds */
+export const currentMembers = (db: Db, vaultId: string, now: number) => {
+  const members = membersOf(storedEntries(db, vaultId));
   return new Map([...members].filter(([, member]) => isCurrent(member, now)));
 };
+
+/** The epoch of the stored log's newest entry: records are written in it only (P-11) */
+export const currentEpoch = (db: Db, vaultId: string) =>
+  storedEntries(db, vaultId).at(-1)?.epoch ?? 0;

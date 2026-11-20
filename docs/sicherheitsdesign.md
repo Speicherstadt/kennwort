@@ -137,6 +137,10 @@ nennt seinen Angriff, und der Client muss ihn ablehnen und sagen, warum.
 | E-23 Audit-Log gefälscht oder gekürzt | `audit/chain.test.ts`, `apps/server/src/audit/` | siehe [P-20](#p-20-audit-log) |
 | E-22 manipulierte Web-App ausgeliefert | `apps/web/src/sw/worker.test.ts`, `worker.review.test.ts`, `server-paths.test.ts`, `e2e/pwa.spec.ts` | falscher Hash, falsche Signatur, fehlende Datei, älteres Release; fremde Seite unter `/api` nur als Text |
 | E-24 Passphrase abgegriffen | `apps/server/src/auth/` | – (der Server bekommt sie nie) |
+| E-26 Schlüsselwechsel zurückgehalten (Log ohne Wechsel, neuer Schlüssel fehlt) | `adversary/exit.test.ts`, `membership/rotation.test.ts` | Wechsel steht aus, Schlüssel zurückgehalten, neuere Epoche, alter Schlüssel |
+| E-26 alter Schlüssel für das ausgetretene Mitglied | `adversary/exit.test.ts`, `apps/server/src/sync/rotation-routes.test.ts` | neuere Epoche, falsche Epoche, kein Bearbeiter |
+| E-16 alter Tresor-Schlüssel als neuer ausgegeben | `adversary/exit.test.ts` | Bindung passt nicht |
+| E-07 Log auf vor den Austritt zurückgespielt | `adversary/exit.test.ts` | Rückfall, neuere Epoche, unbekannte Epoche |
 
 Die übrigen folgen mit den Funktionen, die sie betreffen (Konto-Recovery, Teilen, Geräte, Austritt,
 Einmal-Links, Import und Export, ausgelieferter Code); K-701 schließt den Katalog. Beim Bau des
@@ -506,8 +510,8 @@ Server legt beides ab (`POST /api/vaults/:id/log` mit Eintrag und, genau bei `an
 `aufnehmen`, dem verpackten Schlüssel); `GET /api/vaults` nennt die Tresore, in denen das Konto
 nach dem Log Mitglied ist, `GET /api/vaults/:id/log` und `/keys` geben Log und eigene Schlüssel
 nur an Konten, die gerade Mitglied sind; wer entfernt wurde oder abgelaufen ist, sieht keinen
-neuen Eintrag mehr. Seinen alten Schlüssel behält er trotzdem, bis der Schlüsselwechsel (K-307)
-ein neues VK verteilt.
+neuen Eintrag mehr. Seinen alten Schlüssel behält er trotzdem; erst der Schlüsselwechsel
+([P-11](#p-11-austritt-und-schlusselwechsel)) verteilt ein neues VK, das er nicht bekommt.
 
 Der Name eines Tresors liegt als F-01-Geheimtext mit VKₑ beim Server (`PUT /api/vaults/:id/name`,
 nur von Verwaltern, nur für die aktuelle Epoche):
@@ -585,8 +589,9 @@ nur für Nicht-Mitglieder, `rolle` und `entfernen` nur für Mitglieder, Zeiten, 
 und höchstens fünf Minuten vor seiner Uhr liegen. Dazu muss der Unterzeichner nach der Uhr des
 Servers gerade Verwalter sein: Ein Verwalter, dessen Zugriff abgelaufen ist, hängt auch mit einer
 zurückdatierten Zeit nichts mehr an (das Restrisiko oben bleibt nur gegen einen bösartigen Server).
-Wer entfernt und wieder aufgenommen wird, bekommt den Schlüssel neu verpackt. Den
-`schlüsselwechsel` nimmt er erst mit K-307, das allen Mitgliedern das neue VK mitgibt. Ob ein
+Wer entfernt und wieder aufgenommen wird, bekommt den Schlüssel neu verpackt. Einen
+`schlüsselwechsel` nimmt er nur mit dem neuen VK für genau die Mitglieder des Logs
+([P-11](#p-11-austritt-und-schlusselwechsel)). Ob ein
 Eintrag gilt, entscheidet trotzdem jeder Client mit `verifyLog`, gleich, was der Server
 durchgelassen hat.
 
@@ -610,7 +615,7 @@ durchgelassen hat.
   Wurzelschlüssel anzunehmen. Ein Gerät, das die neuere Rolle nie gesehen hat, kann der Server so
   noch täuschen; den lückenlosen Nachweis bringt erst ein signiertes Log der Firmenrollen. Wer zum Mitarbeiter wird, verliert den
   Wurzelschlüssel auf dem Server, nicht aber eine Kopie, die er schon hat; davor schützt erst ein
-  neuer Wurzelschlüssel (K-307).
+  neuer Wurzelschlüssel (K-307 Teil f, Plan unten).
 - Der Wurzelschlüssel signiert die Schlüsselbündel der Mitarbeiter (F-06) und die
   Firmen-Richtlinien, darunter den Firmen-Recovery-Schlüssel und ob Firmen-Recovery an ist.
 - Clients merken sich den Fingerabdruck des Wurzelschlüssels beim ersten Kontakt (TOFU) und zeigen
@@ -637,6 +642,17 @@ durchgelassen hat.
 - Der gemerkte Fingerabdruck steht im Schlüsselblock unter AK
   ([Schlüsselhierarchie](#schlusselhierarchie)), nicht nur auf einem Gerät: Jedes Gerät des Kontos
   prüft gegen ihn, auch eines, das mit Passphrase, Recovery-Kit oder Firmen-Recovery entsperrt.
+
+**Neuer Wurzelschlüssel (Plan, K-307 Teil f).** Geht ein Inhaber oder Admin, oder wird er zum
+Mitarbeiter, behält er eine Kopie des Wurzelschlüssels und könnte mit einem Server Bündel
+zertifizieren. Dann erzeugt der Client eines verbleibenden Inhabers einen neuen Wurzelschlüssel,
+signiert den Wechsel mit dem alten (F-03, Zweck `root-change`, alter und neuer Fingerabdruck,
+Zeit), stellt jedem aktuellen Mitglied ein neues Zertifikat aus, verpackt den neuen Schlüssel an
+Inhaber und Admins und signiert die Richtlinie neu. Weil auch der Gehende den alten Schlüssel hat,
+gilt ein solcher Wechsel nicht von selbst: Jeder Client zeigt ihn und nimmt den neuen Fingerabdruck
+erst, wenn die Person ihn bestätigt (Vergleich mit dem Inhaber); ein Client, der einen Wechsel
+gesehen hat, nimmt keinen zweiten vom alten Schlüssel. Zertifikate des alten Schlüssels gelten
+danach nur für Log-Einträge und Signaturen, die vor dem Wechsel liegen.
 
 Restrisiko: der erste Kontakt (TOFU) für Konten, die ohne Einladungslink entstehen (OIDC),
 abgeschwächt durch den Vergleichscode. Wer per Link eingeladen wird, bekommt den Fingerabdruck im
@@ -826,8 +842,8 @@ Restrisiken:
   (Schritt 5). Neuere Versionen kann der Server ihm vorenthalten.
 - **Schlüsselwechsel:** Ein Schlüsselwechsel ([P-11](#p-11-austritt-und-schlusselwechsel), K-307)
   gibt jedem Eintrag des Tresors einen neuen EK. Damit öffnet keine bestehende Freigabe die neuen
-  Versionen mehr, bis sie neu verpackt ist; das macht K-307 mit dem Schlüsselwechsel, wie beim
-  Widerruf mit `reshare`.
+  Versionen mehr, bis sie neu verpackt ist; das macht K-307 Teil b mit dem Schlüsselwechsel, wie
+  beim Widerruf mit `reshare`.
 - **Teilender verlässt den Tresor:** Der Server liefert eine Freigabe weiter aus, auch wenn ihr
   Teilender den Tresor inzwischen verlassen hat oder nur noch lesen darf; der Empfänger kennt das
   Log nicht und merkt es nicht. Nach dem Entfernen folgt ein Schlüsselwechsel (P-11, K-307), und
@@ -851,21 +867,107 @@ Restrisiken:
 
 ### P-11 Austritt und Schlüsselwechsel
 
-1. Ein Verwalter signiert `entfernen` und `schlüsselwechsel` (Epoche e + 1) im Log.
-2. Er erzeugt VKₑ₊₁ und verpackt es an die verbleibenden Mitglieder; die Bindung steht im
-   signierten `schlüsselwechsel`.
-3. Jeder Eintrag bekommt einen **neuen EK** unter VKₑ₊₁ und wird mit neuer Version neu
-   verschlüsselt. Das ausgetretene Mitglied kennt die alten EK; mit ihnen liest es keine spätere
-   Änderung, auch nicht das geänderte Passwort.
-4. Passwörter, die das ausgetretene Mitglied lesen konnte, werden „Zum Ändern“ markiert; der
-   Austritts-Bericht listet sie.
+Wer geht, behält, was er schon entschlüsselt hat, und die Tresor-Schlüssel der Epochen, in denen er
+Mitglied war; davor schützt kein Protokoll (ETH-Studie, E-26; ebenso die Whitepaper von Bitwarden,
+1Password und Passbolt). Der Schlüsselwechsel sorgt dafür, dass er nichts liest, was danach
+geschrieben wird, und die Änderungs-Markierung dafür, dass das, was er lesen konnte, geändert wird.
 
-Der Server sperrt das Mitglied sofort; den Schlüsselwechsel macht der nächste Verwalter-Client.
-Restrisiko: Bis dahin entscheidet der Server allein; was das Mitglied vor dem Austritt gelesen hat,
-kennt es weiter, deshalb gelten diese Passwörter erst nach ihrer Änderung als sicher. Änderungen
-nach dem Schlüsselwechsel liegen unter neuen EK.
+1. **Entfernen und Schlüsselwechsel**: Ein Verwalter signiert `entfernen` und gleich danach
+   `schlüsselwechsel` (Epoche e + 1) im Log. Der Eintrag `schlüsselwechsel` nennt den
+   Unterzeichner als Konto, ohne Fingerabdruck und Rolle, mit der Bindung von VKₑ₊₁ (F-02).
+2. **Neuer Tresor-Schlüssel**: Der Client erzeugt VKₑ₊₁ und verpackt es an **jedes** Mitglied, das
+   das geprüfte Log nach dem Entfernen noch nennt, auch an eines, dessen Zeit abgelaufen ist (ein
+   späteres `rolle` lässt es wieder herein, und der Server gibt Schlüssel nur aktuellen
+   Mitgliedern). Verpackt wird nur an ein Bündel, dessen Zertifikat der Firmen-Wurzelschlüssel für
+   genau dieses Konto signiert hat und dessen Fingerabdruck das Log für das Mitglied nennt; fehlt
+   eines, bricht der Wechsel ab, statt jemanden still auszulassen oder an einen fremden Schlüssel
+   zu verpacken (E-05).
+3. **Neu verschlüsseln**: Jeder Eintrag wird als nächste Version in Epoche e + 1 geschrieben, mit
+   neuem EK unter VKₑ₊₁ (EK wechselt mit der Epoche, P-09). Das ausgetretene Mitglied kennt die
+   alten EK; mit ihnen liest es keine spätere Version, auch nicht das geänderte Passwort.
+4. **Änderungs-Markierung**: Ersetzt die neue Version eine, die in einer Epoche lag, deren Schlüssel
+   die Person hatte, markiert der Client jedes geheime Feld (Art `secret` oder `totp` mit Wert) „Zum
+   Ändern“. Die Markierung steht im Inhalt des Eintrags (P-09), also verschlüsselt, mit jeder
+   Version signiert und für alle Mitglieder sichtbar; der Server kann sie nicht unbemerkt
+   entfernen:
 
-**Wehrt ab:** E-26, E-16.
+   ```text
+   toChange = [ { account: Konto-ID (base64url), at: Zeit des Wechsels (Unix-Sekunden),
+                  fields: [ IDs der geheimen Felder ] }, … ]          (fehlt, wenn leer)
+   ```
+
+   Ein Feld verlässt die Markierung, sobald sein Wert sich ändert oder es gelöscht wird; mit dem
+   letzten Feld geht die Markierung. Die Markierungen gehören dem Kern, nicht dem Dialog: Eine
+   Änderung übernimmt die Markierungen der Version, die sie ändert, und ein Dialog, der sie nicht
+   kennt, kann keine verlieren. Beim Zusammenführen (P-21) bleibt eine Markierung des gemeinsamen
+   Stands nur mit den Feldern, die beide Seiten behalten haben; eine neue mit den Feldern, die eine
+   Seite markiert hat – aber nur, solange der zusammengeführte Wert der markierte ist: Ein Passwort,
+   das die andere Seite inzwischen geändert hat, hat die Person nie gesehen. Weil die Markierung
+   erst beim Schreiben gesetzt wird, nach dem Zusammenführen, markiert sie auch eine Änderung, die
+   ein anderes Mitglied kurz vorher noch in der alten Epoche geschrieben hat.
+5. **Austritts-Bericht**: Eine reine Funktion auf dem Gerät des Verwalters (`exitReport`) nennt je
+   Tresor die Rolle der Person, seit wann und bis wann sie Mitglied war, und jeden Eintrag, den sie
+   lesen konnte, mit den Namen seiner geheimen Felder. Lesen konnte sie einen Eintrag, dessen
+   neueste Version in einer ihrer Epochen liegt (vom ersten `aufnehmen` bis zum letzten `entfernen`,
+   abgelaufen oder nicht), oder der nach dem Wechsel noch ihre Markierung trägt. Der Server sieht
+   den Bericht nie.
+
+**Was der Client prüft.** Aus dem Log weiß jeder Client, ob ein Wechsel aussteht (`rotationDue`:
+ein `entfernen` ohne späteren `schlüsselwechsel`). Er nimmt einen Tresor-Schlüssel nur gegen die
+Bindung seiner Epoche (`openRings`): Fehlt der Schlüssel der aktuellen Epoche, hält der Server den
+Wechsel zurück (`key-withheld`); ein alter Schlüssel als neuer ausgegeben passt nicht zur Bindung
+(`not-committed`, E-16); ein Schlüssel einer Epoche, die das Log nicht zeigt, verrät ein gekürztes
+Log (`no-epoch`, E-07). Ältere Schlüssel behält er nur zum Lesen von Versionen, die noch nicht neu
+verschlüsselt sind; geschrieben wird nur unter dem Schlüssel der aktuellen Epoche des Logs, sonst
+schreibt der Abgleich nichts (`stale-key`). Ein Datensatz einer Epoche, die das geprüfte Log nicht
+erreicht, ist ein zurückgehaltener Wechsel oder ein zurückgespieltes Log (`newer-epoch`), kein
+Update. Einen Datensatz, den die Person nach dem Austritt noch mit dem alten Schlüssel schreibt,
+lehnt jeder Client ab: Sie ist laut Log kein Mitglied mehr (`not-editor`).
+
+**Austritt aus der Firma.** `DELETE /api/members/:id` (Inhaber für alle anderen, Admins nur für
+Mitarbeiter, nie sich selbst) markiert das Konto als ausgetreten (`accounts.left_at`), löscht
+sofort alle seine Sitzungen, Zugriffsanfragen, Gruppenmitgliedschaften, Freigaben an es und einen
+verpackten Wurzelschlüssel und schreibt `member-left` ins Audit-Log. Danach kommt es mit keiner
+Sitzung mehr unter `/api`. Schlüssel und Zertifikat bleiben, denn die Logs, die es signiert hat,
+müssen weiter prüfbar sein; `GET /api/members` nennt die Zeit des Austritts (`leftAt`). Aus den
+Tresoren entfernen und den Schlüssel wechseln kann nur der Client eines Verwalters; was er noch
+schuldet, sagt `dueExits` aus dem geprüften Log und den Ausgetretenen.
+
+**Auf dem Server.** `POST /api/vaults/:id/log` nimmt einen `schlüsselwechsel` nur mit
+`wrappedKeys`: dem neuen Schlüssel für genau die Mitglieder, die das Log nach dem Eintrag nennt, je
+einmal und in der Größe eines verpackten Schlüssels; jeder andere Eintrag trägt keine solche Liste.
+Er legt die Schlüssel unter der neuen Epoche ab (Tabelle `vault_keys`) und löscht bei `entfernen`
+alle Schlüssel der Person für diesen Tresor, auch die alten. `PUT /api/vaults/:id/records` nimmt
+eine Version nur in der Epoche des neuesten Log-Eintrags, sonst `409` mit `error: "epoch"` und dem
+aktuellen Stand: Wer noch mit dem alten Schlüssel schreibt, schreibt für jemanden, der gegangen
+ist. Der Server-Ersatz antwortet gleich (Vertrag `sync/test/rotation-contract.ts`).
+
+Umgesetzt in `packages/core/src/membership/rotation.ts` (`rotateVaultKey`, `removeAndRotate`,
+`openRings`, `dueExits`), `membership/exit-report.ts`, `sync/change-marks.ts`, `sync/device.ts`
+(`rotateEntries`, ältere Schlüssel zum Lesen, `newer-epoch`, `stale-key`), mit Mutation-Tests bei
+100 %, und in `apps/server/src/sync/log-routes.ts`, `sync/scope.ts` und
+`apps/server/src/account/members.ts` (Migration `0019_members_left`). Die Oberfläche dazu folgt
+(K-307 Teil b).
+
+Restrisiken:
+
+- Bis ein Verwalter-Client den Wechsel macht, entscheidet der Server allein; die Person kennt bis
+  dahin den Schlüssel der aktuellen Epoche. Der Client sieht das (`rotationDue`), schreibt in Teil a
+  aber noch weiter darunter; ab Teil b holt ein Verwalter-Client den Wechsel sofort nach, und die
+  übrigen warnen.
+- Was die Person vor dem Austritt gelesen hat, kennt sie weiter; diese Passwörter gelten erst nach
+  ihrer Änderung als sicher.
+- Ein Server kann einem Mitglied, das sich den neueren Stand nie gemerkt hat, das Log von vor dem
+  Austritt zeigen. Es schreibt dann unter dem alten Schlüssel, was ein ehrlicher Server ablehnt;
+  sobald es einen neu verschlüsselten Eintrag sieht, merkt es den Angriff (`newer-epoch`).
+- Clients älterer Versionen kennen `toChange` nicht und verlieren die Markierung beim nächsten
+  Schreiben.
+- Freigaben einzelner Einträge (P-10) öffnen nach dem Wechsel keine neue Version mehr, bis ein
+  Mitglied sie neu verpackt; das macht Teil b mit `reshare`.
+- War die Person der einzige Verwalter eines Tresors, kann niemand den Schlüssel wechseln; das löst
+  erst der Notfallzugriff oder die Firmen-Recovery (Teil c, d).
+
+**Wehrt ab:** E-26, E-16, E-07.
 
 ### P-12 Recovery-Kit
 
@@ -886,8 +988,8 @@ der Größe eines verpackten AK: Eine Sitzung allein, etwa ein gestohlenes Token
 Danach melden die alte Passphrase und der alte Recovery Key nicht mehr an. AK bleibt aber derselbe,
 damit nichts anderes neu verpackt werden muss; wer den alten Recovery-Geheimtext aufbewahrt hat –
 der Server oder wer eine frühere Antwort mitgelesen hat –, öffnet AK mit dem alten Recovery Key
-weiterhin. Ist das Kit in fremde Hände geraten, schützt erst ein Wechsel von AK; der kommt mit dem
-Schlüsselwechsel (K-307).
+weiterhin. Ist das Kit in fremde Hände geraten, schützt erst ein Wechsel von AK und der
+Benutzer-Schlüssel (Plan unten, K-307 Teil e).
 
 Ein Gerät, das das Konto kennt, behält seinen Secret Key, sodass die übrigen Geräte weiter
 funktionieren; ein fremdes Gerät kennt ihn nicht und erzeugt einen neuen, den das neue Kit zeigt.
@@ -900,6 +1002,41 @@ wird oder nicht, auch wenn der Link in einem Tab aufgeht, der schon auf `/unlock
 Recovery Key steht nie im QR-Code: Ein Foto des Codes allein öffnet kein Konto, es braucht weiter die
 Passphrase. Das PDF schreibt die Web-App selbst (`apps/web/src/kit/`), ohne PDF-Bibliothek; den
 QR-Code erzeugt `uqr`.
+
+#### Wechsel des Account Key nach einem Kit in fremden Händen (Plan, K-307 Teil e)
+
+Das Kit trägt Secret Key und Recovery Key. Wer beides hat und dazu einen Recovery-Geheimtext (der
+Server, ein Dieb der Datenbank, wer eine frühere Antwort mitgelesen hat), öffnet AK und damit den
+Schlüsselblock: die privaten X-Wing- und Ed25519-Schlüssel. Mit dem X-Wing-Schlüssel entpackt er
+jeden Tresor-Schlüssel, der je an das Konto verpackt wurde und auf dem Server liegt. Ein neuer AK
+allein hilft darum nicht; es braucht neue Benutzer-Schlüssel und in jedem Tresor des Kontos einen
+Schlüsselwechsel, als ob die Person ginge und mit neuen Schlüsseln wiederkäme:
+
+1. Ein entsperrtes Gerät erzeugt AK′, einen neuen Secret Key, neue X-Wing- und Ed25519-Schlüssel und
+   einen neuen Recovery Key; die Passphrase bleibt, ihr Geheimtext wird mit dem neuen Secret Key neu
+   abgeleitet (F-05). Schlüsselblock, Kontozustand (Zähler läuft weiter) und jeder Entsperr-Weg
+   kommen unter AK′; Passkeys werden neu verpackt. Die ID des persönlichen Tresors steht danach im
+   Kontozustand, weil sie aus dem alten AK abgeleitet war.
+2. `PUT /api/account/rekey` ersetzt alles in einem Schritt, nur mit einer Signatur des bisherigen
+   Ed25519-Schlüssels über Konto und alle neuen Werte (Zweck `account-rekey`), und löscht die alten
+   Geheimtexte und alle anderen Sitzungen. Gegen jemanden, der sie schon kopiert hat, hilft das
+   Löschen nicht, nur gegen einen späteren Diebstahl.
+3. Das neue Bündel braucht ein neues Zertifikat. Weil der alte Schlüssel als verraten gilt, kann er
+   das neue Bündel nicht bezeugen: Ein Inhaber oder Admin vergleicht den Fingerabdruck des neuen
+   Bündels mit der Person (Vergleichscode wie in P-04) und stellt ein Zertifikat mit späterem Datum
+   aus. Clients nehmen ein neues Bündel für ein bekanntes Konto nur mit einem neueren Zertifikat des
+   gemerkten Wurzelschlüssels und zeigen den Wechsel an (P-07).
+4. In jedem Tresor des Kontos signiert ein Verwalter `entfernen` für den alten Fingerabdruck,
+   `aufnehmen` für den neuen und `schlüsselwechsel` ([P-11](#p-11-austritt-und-schlusselwechsel));
+   Einträge werden neu verschlüsselt, aber nicht markiert, wenn die Person dieselbe bleibt. Ist die
+   Person selbst Verwalter, macht ihr Client das mit dem neuen Schlüssel, nachdem das neue
+   Zertifikat steht.
+5. Freigaben an das Konto (P-10) werden an das neue Bündel neu verpackt, die Hinterlegung für die
+   Firmen-Recovery ([P-13](#p-13-firmen-recovery)) neu angelegt, und der Wechsel kommt signiert ins
+   Audit-Log.
+
+Kein Format ändert sich: AK′, Schlüsselblock und Log-Einträge nutzen F-01, F-02, F-03 und P-06 wie
+bisher; neu ist nur der Zweck `account-rekey` der Signatur, mit eigenen Testvektoren.
 
 **Wehrt ab:** E-01.
 
@@ -925,6 +1062,27 @@ QR-Code erzeugt `uqr`.
 Ein Server, der eine Wiederherstellung mit eigenem Schlüssel unterschiebt, scheitert an der
 fehlenden Signatur der Richtlinie.
 
+Die Bausteine stehen in `packages/crypto/src/company-recovery.ts`. Der Plan für den Rest
+(K-307 Teil c):
+
+- **Schlüssel anlegen**: Der Client eines Inhabers erzeugt das X-Wing-Paar, verpackt den privaten
+  Teil an jeden Inhaber (F-02, Zweck `company-recovery-key`, Kontext Firmen-ID und Konto-ID) und
+  signiert eine neue Richtlinie (F-07) mit `recovery = 1` und dem Fingerabdruck. Der Server legt
+  den öffentlichen Schlüssel und die Pakete ab (`PUT /api/company/recovery-key`, nur Inhaber); ein
+  Inhaber nimmt den privaten Teil nur, wenn sein öffentlicher Teil den Fingerabdruck der gültigen
+  Richtlinie hat. Einen neuen Inhaber bekommt ihn verpackt wie den Wurzelschlüssel (P-07).
+- **Hinterlegen**: Jedes Konto hinterlegt AK beim Entsperren, sobald die gültige Richtlinie
+  Firmen-Recovery verlangt und noch keine Hinterlegung zu diesem Fingerabdruck besteht
+  (`PUT /api/account/recovery-deposit`); schaltet die Richtlinie Firmen-Recovery aus, löscht der
+  Client die Hinterlegung, und der Server löscht alle.
+- **Neuer Schlüssel, wenn ein Inhaber geht**: Er hatte den privaten Recovery-Schlüssel und damit
+  jeden hinterlegten AK. Der Client eines verbleibenden Inhabers erzeugt einen neuen Schlüssel und
+  eine neue Richtlinie; jedes Konto hinterlegt danach neu. Die alten Hinterlegungen löscht der
+  Server; wer sie kopiert hat, öffnet mit ihnen nur die alten AK – darum gilt für ein Konto, dessen
+  AK der Gehende öffnen konnte, dasselbe wie für ein Kit in fremden Händen (P-12, Teil e), wenn der
+  Inhaber nicht ehrlich ging.
+- **Wiederherstellen** wie oben, im Audit-Log signiert (`recovery`).
+
 **Wehrt ab:** E-01, E-02, E-10.
 
 ### P-14 Notfallzugriff
@@ -940,6 +1098,28 @@ fehlenden Signatur der Richtlinie.
 Restrisiko: Die Wartezeit setzt der Server durch; ein bösartiger Server kann sie verkürzen, aber nur
 zugunsten einer Person, die der Gebende selbst gewählt hat (E-04 ist damit auf die Wartezeit
 begrenzt, nie auf eine fremde Person).
+
+Plan für den Bau (K-307 Teil d):
+
+```text
+paket   = F-02(zertifiziertes Bündel der Person, VKₑ, zweck = "emergency",
+               kontext = tresor-ID, epoche, geber-ID, person-ID)
+freigabe = F-03(geber, "emergency", geber-ID, person-ID, wartezeit (Sekunden), zeit,
+                [ (tresor-ID, epoche, bindung(VKₑ, "vault-key", tresor-ID, epoche)) … ])
+```
+
+- Die Bindung ist dieselbe wie im Log (P-06); die Person nimmt einen Schlüssel nur, wenn er zu ihr
+  passt und das Log des Tresors dieselbe Bindung für die Epoche signiert hat. So kann der Gebende
+  nur Tresore weitergeben, deren Schlüssel er wirklich hat.
+- Der Server legt Freigabe und Pakete ab (`PUT /api/emergency/:person`), nimmt eine Anfrage der
+  Person an (`POST /api/emergency/:geber/request`), benachrichtigt den Gebenden (K-602) und gibt
+  die Pakete erst nach Ablauf der Wartezeit heraus, wenn der Gebende nicht widersprochen hat
+  (`DELETE …/request`). Die Wartezeit liegt zwischen einem und 30 Tagen; die Person sieht sie in der
+  signierten Freigabe und zeigt sie an.
+- Nach jedem Schlüsselwechsel (P-11) erneuert der Client des Gebenden die Pakete für die neue
+  Epoche; bis dahin öffnet der Notfallzugriff nur ältere Versionen. Verlässt der Gebende oder die
+  Person die Firma, löscht der Server die Freigabe.
+- Nutzt die Person den Zugriff, ist das ein signiertes Ereignis im Audit-Log.
 
 **Wehrt ab:** E-04, E-05.
 
@@ -1138,8 +1318,9 @@ Mitgliedschaft vor jeder Meldung und jedem Ping erneut und endet, sobald jemand 
 seine Zeit abgelaufen ist. Der Stand-in (`packages/core/src/standin/`) prüft dasselbe und nimmt
 Log-Einträge wie der Server: Er läuft `verifyLog` mit dem Wurzelschlüssel, den Zertifikaten und der
 Uhr der Firma, die man ihm gibt, nimmt die Genesis nur von dem Konto, das den Tresor angelegt hat,
-will danach einen Verwalter nach seiner Uhr und nimmt
-keinen Schlüsselwechsel vor K-307; der gemeinsame Vertrag (`sync/test/contract.ts`) hält beide
+will danach einen Verwalter nach seiner Uhr, nimmt einen
+Schlüsselwechsel nur mit dem neuen Schlüssel für genau die Mitglieder und Versionen nur in der
+aktuellen Epoche (P-11); der gemeinsame Vertrag (`sync/test/contract.ts`) hält beide
 gleich.
 
 Zusammenführen heißt dreiseitig gegen den Stand, von dem die Änderung ausging: Was nur eine Seite
