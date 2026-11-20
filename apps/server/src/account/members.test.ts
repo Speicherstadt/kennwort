@@ -5,12 +5,14 @@ import {
   bytes,
   CertificateWire,
   certifyInvited,
+  changeRole,
   createAccount,
   emptyState,
   encodeBytes,
   invitationMac,
   isCertified,
   newInvitation,
+  openRootGrant,
   toWire,
 } from "@kennwort/core";
 import { ownerWithKeys, quick } from "../testing/owner-with-keys.ts";
@@ -62,7 +64,7 @@ const invite = async (
   });
   expect(made.status).toBe(201);
   const { token } = (await made.json()) as { token: string };
-  const anna = createAccount("Anna Heizung Bad Fliese", emptyState(new Uint8Array(32)), {
+  const anna = createAccount("Anna Heizung Bad Fliese", emptyState(o.owner.state.rootFingerprint), {
     derive: quick,
   });
   const accepted = await o.setup.request(`/auth/invitations/${encodeBytes(invitation.id)}/accept`, {
@@ -276,5 +278,131 @@ describe("members (K-304, P-08)", () => {
       body,
     });
     expect(answer.status).toBe(400);
+  });
+});
+
+describe("roles (K-304 part 3)", () => {
+  /** Jonas has invited and certified Anna; returns her certificate as the server has it */
+  const certifiedAnna = async () => {
+    const o = await ownerWithKeys(CODE, PASSPHRASE);
+    const { anna, annaToken } = await invite(o);
+    const pending = (await members(o)).find((m) => m.id === encodeBytes(anna.accountId)) as Member;
+    const certified = certifyPending(o, pending);
+    if (!certified.ok) throw new Error(certified.error);
+    await o.setup.request(`/api/members/${encodeBytes(anna.accountId)}/certificate`, {
+      method: "PUT",
+      token: o.token,
+      body: toWire(certified.value),
+    });
+    const root = o.owner.state.rootSecretKey;
+    if (!root) throw new Error("no root");
+    return { o, anna, annaToken, certificate: certified.value, root };
+  };
+  const putRole = (o: Owner, token: string, id: Uint8Array, body: unknown) =>
+    o.setup.request(`/api/members/${encodeBytes(id)}/role`, { method: "PUT", token, body });
+  const wireOf = (change: ReturnType<typeof changeRole>) => ({
+    certificate: toWire(change.certificate),
+    ...(change.rootGrant ? { rootGrant: encodeBytes(change.rootGrant) } : {}),
+  });
+
+  it("makes Anna an admin with the root key, and a member again without it", async () => {
+    const { o, anna, annaToken, certificate, root } = await certifiedAnna();
+    const promoted = changeRole(root, certificate, "admin");
+    expect((await putRole(o, o.token, anna.accountId, wireOf(promoted))).status).toBe(200);
+    const listed = (await members(o)).find((m) => m.id === encodeBytes(anna.accountId));
+    expect(listed?.role).toBe("admin");
+    expect(CertificateWire.parse(listed?.certificate).role).toBe("admin");
+    const grant = (await (
+      await o.setup.request("/api/account/root-grant", { token: annaToken })
+    ).json()) as { rootGrant: string };
+    const opened = openRootGrant(
+      anna.keyBlock,
+      anna.accountId,
+      o.company.companyId,
+      bytes().parse(grant.rootGrant),
+    );
+    expect(opened).toEqual({ ok: true, value: root });
+    const audit = (await (await o.setup.request("/api/audit", { token: o.token })).json()) as {
+      events: { action: string; subject: string }[];
+    };
+    expect(audit.events.at(-1)).toMatchObject({
+      action: "role-changed",
+      subject: encodeBytes(anna.accountId),
+    });
+
+    const demoted = changeRole(root, promoted.certificate, "member");
+    expect((await putRole(o, o.token, anna.accountId, wireOf(demoted))).status).toBe(200);
+    expect((await o.setup.request("/api/account/root-grant", { token: annaToken })).status).toBe(
+      404,
+    );
+    expect((await members(o)).find((m) => m.id === encodeBytes(anna.accountId))?.role).toBe(
+      "member",
+    );
+  });
+
+  it("lets only owners change roles, never their own, and only for certified accounts", async () => {
+    const { o, anna, annaToken, certificate, root } = await certifiedAnna();
+    const promoted = wireOf(changeRole(root, certificate, "admin"));
+    expect((await putRole(o, annaToken, anna.accountId, promoted)).status).toBe(403);
+    const own = changeRole(root, o.company.certificate, "admin");
+    expect((await putRole(o, o.token, o.owner.accountId, wireOf(own))).status).toBe(409);
+    expect((await putRole(o, o.token, new Uint8Array(16), promoted)).status).toBe(404);
+    // As admin, Anna still may not change roles
+    await putRole(o, o.token, anna.accountId, promoted);
+    const back = wireOf(changeRole(root, o.company.certificate, "member"));
+    expect((await putRole(o, annaToken, o.owner.accountId, back)).status).toBe(403);
+    // An account without a certificate gets no role
+    const { anna: sandra } = await invite(o);
+    const sandraKeys = {
+      ...certificate,
+      accountId: sandra.accountId,
+      xwingPublicKey: sandra.upload.xwingPublicKey,
+      edPublicKey: sandra.upload.edPublicKey,
+    };
+    expect(
+      (await putRole(o, o.token, sandra.accountId, wireOf(changeRole(root, sandraKeys, "admin"))))
+        .status,
+    ).toBe(409);
+  });
+
+  it("refuses a role without its root key, a member with one, and other keys or companies", async () => {
+    const { o, anna, certificate, root } = await certifiedAnna();
+    const admin = changeRole(root, certificate, "admin");
+    const member = changeRole(root, certificate, "member");
+    const put = (body: unknown) => putRole(o, o.token, anna.accountId, body);
+    expect((await put({ certificate: toWire(admin.certificate) })).status).toBe(400);
+    expect(
+      (
+        await put({
+          ...wireOf(member),
+          rootGrant: encodeBytes(admin.rootGrant ?? new Uint8Array()),
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (await put({ ...wireOf(admin), rootGrant: encodeBytes(new Uint8Array(100)) })).status,
+    ).toBe(400);
+    const otherKeys = changeRole(
+      root,
+      { ...certificate, edPublicKey: new Uint8Array(32).fill(1) },
+      "admin",
+    );
+    expect((await put(wireOf(otherKeys))).status).toBe(400);
+    const otherCompany = changeRole(
+      root,
+      { ...certificate, companyId: new Uint8Array(16) },
+      "admin",
+    );
+    expect((await put(wireOf(otherCompany))).status).toBe(400);
+    const otherAccount = changeRole(
+      root,
+      { ...certificate, accountId: o.owner.accountId },
+      "admin",
+    );
+    expect((await put(wireOf(otherAccount))).status).toBe(400);
+    expect((await put({})).status).toBe(400);
+    expect((await members(o)).find((m) => m.id === encodeBytes(anna.accountId))?.role).toBe(
+      "member",
+    );
   });
 });

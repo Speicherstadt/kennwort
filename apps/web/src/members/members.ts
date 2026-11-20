@@ -7,11 +7,14 @@
 import {
   type AccountState,
   type Certificate,
+  type CompanyRole,
   certifyInvited,
+  changeRole,
   checkMembers,
   encodeBytes,
   type MemberView,
   newInvitation,
+  openRootGrant,
   type PendingMember,
   trustedRoot,
 } from "@kennwort/core";
@@ -46,9 +49,55 @@ export const loadMembers = async (
 export const mayInvite = (me: MemberView | undefined) =>
   me?.status === "certified" && (me.role === "owner" || me.role === "admin");
 
-/** Confirming needs the root key and a certificate of one's own (it names the company) */
+/** Confirming needs the root key and an owner's or admin's certificate (it names the company) */
 export const mayConfirm = (opened: Opened, me: MemberView | undefined) =>
-  opened.state.rootSecretKey !== undefined && me?.status === "certified";
+  opened.state.rootSecretKey !== undefined && mayInvite(me);
+
+/** Only owners give roles, with the root key at hand */
+export const mayChangeRoles = (opened: Opened, me: MemberView | undefined) =>
+  mayConfirm(opened, me) && me?.role === "owner";
+
+/** An owner or admin without the root key yet: an owner may have wrapped it to this account */
+export const needsRoot = (opened: Opened, me: MemberView | undefined) =>
+  opened.state.rootSecretKey === undefined && mayInvite(me);
+
+export type AdoptError = "none" | "not-authentic" | "other-root" | "failed";
+
+/**
+ * Takes the root key an owner wrapped to this account, only if it is the root this account pinned
+ * (openRootGrant), and keeps it in the account state for every device of the account (P-07)
+ */
+export const adoptRoot = async (
+  api: MembersDeps,
+  session: Session,
+  me: MemberView | undefined,
+): Promise<{ ok: true } | { ok: false; error: AdoptError }> => {
+  const opened = session.opened();
+  const company = me?.certificate?.companyId;
+  if (!opened || !company) return { ok: false, error: "failed" };
+  const grant = await api.rootGrant(opened.token);
+  if (!grant) return { ok: false, error: "none" };
+  const root = openRootGrant(opened.keyBlock, opened.accountId, company, grant);
+  if (!root.ok) return root;
+  const saved = await session.updateState(api, (state) => ({
+    ...state,
+    rootSecretKey: root.value,
+  }));
+  return saved.ok ? { ok: true } : { ok: false, error: "failed" };
+};
+
+/** An owner gives another certified member a new role (root-grant.ts) */
+export const setRole = async (
+  api: MembersDeps,
+  opened: Opened,
+  view: MemberView,
+  role: CompanyRole,
+) => {
+  const root = opened.state.rootSecretKey;
+  if (!root || !view.certificate) return false;
+  const { certificate, rootGrant } = changeRole(root, view.certificate, role);
+  return api.changeRole(opened.token, certificate, rootGrant);
+};
 
 /** The link's fragment never reaches the server: the secret and the pinned root fingerprint */
 export const invitationLink = (

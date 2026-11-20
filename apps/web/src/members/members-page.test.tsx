@@ -1,3 +1,4 @@
+import { certify } from "@kennwort/core";
 import { ed25519KeyPair } from "@kennwort/crypto";
 import { setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
@@ -113,6 +114,40 @@ describe("MembersPage", () => {
     const gone = await show(c, { ...s.api, members: async () => undefined });
     expect(gone.querySelector('[role="alert"]')?.textContent).toBe(
       "Die Mitglieder konnten nicht geladen werden.",
+    );
+  });
+});
+
+describe("MembersPage roles", () => {
+  it("lets Jonas give a confirmed member another role, but not himself", async () => {
+    const c = await jonasCompany();
+    const { row } = annaRow(c);
+    const root = c.opened.state.rootSecretKey ?? new Uint8Array();
+    const certificate = certify(root, {
+      accountId: row.id,
+      xwingPublicKey: row.xwingPublicKey ?? new Uint8Array(),
+      edPublicKey: row.edPublicKey ?? new Uint8Array(),
+      companyId: c.certificate.companyId,
+      role: "member",
+      issuedAt: 1,
+    });
+    const s = server(c, [ownerRow(c), { ...row, certificate, invitation: null }]);
+    const page = await show(c, s.api);
+    expect(page.querySelectorAll("select")).toHaveLength(1);
+    const select = page.querySelector<HTMLSelectElement>('select[aria-label="Rolle von Anna"]');
+    if (!select) throw new Error("no role select");
+    expect(select.value).toBe("member");
+    select.value = "admin";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    await settle();
+    expect(s.roles.map((r) => r.certificate.role)).toEqual(["admin"]);
+    expect(s.roles[0]?.rootGrant).toBeDefined();
+    s.api.changeRole = async () => false;
+    select.value = "owner";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    await settle();
+    expect(page.querySelector('[role="alert"]')?.textContent).toBe(
+      "Die Rolle konnte nicht geändert werden.",
     );
   });
 });

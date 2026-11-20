@@ -47,6 +47,7 @@ export {
   PairingKeyWire,
   type PollAnswer,
   PollWire,
+  RootGrantWire,
   SessionWire,
   StaleWire,
   StoredWire,
@@ -114,6 +115,13 @@ export {
   type MemberView,
   trustedRoot,
 } from "./membership/members.ts";
+export {
+  changeRole,
+  grantRoot,
+  openRootGrant,
+  ROOT_GRANT_LENGTH,
+  type RootGrantError,
+} from "./membership/root-grant.ts";
 export {
   idKey,
   isMember,

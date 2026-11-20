@@ -6,6 +6,7 @@ import {
   InvitedWire,
   PairingKeyWire,
   PollWire,
+  RootGrantWire,
   SessionWire,
   StaleWire,
   StoredWire,
@@ -121,5 +122,13 @@ describe("invitations and the account state", () => {
     expect(StaleWire.safeParse({ error: "not-found", stateCounter: 3 }).success).toBe(false);
     expect(StaleWire.safeParse({ error: "stale", stateCounter: 1.5 }).success).toBe(false);
     expect(StaleWire.safeParse({ error: "stale" }).success).toBe(false);
+  });
+});
+
+describe("the root grant", () => {
+  it("reads the wrapped key and nothing else", () => {
+    expect(RootGrantWire.parse({ rootGrant: "AQID" }).rootGrant).toEqual(Uint8Array.of(1, 2, 3));
+    expect(RootGrantWire.safeParse({ rootGrant: 3 }).success).toBe(false);
+    expect(RootGrantWire.safeParse({}).success).toBe(false);
   });
 });

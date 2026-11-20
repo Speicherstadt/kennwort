@@ -22,3 +22,15 @@ export const accountKeys = sqliteTable("account_keys", {
   inviteMac: blob("invite_mac", { mode: "buffer" }),
   updatedAt: integer("updated_at").notNull(),
 });
+
+/**
+ * The company root key wrapped to an owner's or admin's certified bundle (K-304, P-07); only that
+ * account's client can open it, and it takes it only if it is the root it pinned
+ */
+export const rootGrants = sqliteTable("root_grants", {
+  accountId: text("account_id")
+    .primaryKey()
+    .references(() => accounts.id),
+  wrapped: bytes("wrapped"),
+  createdAt: integer("created_at").notNull(),
+});
