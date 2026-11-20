@@ -155,5 +155,12 @@
   "members_role_of": "Rolle von {name}",
   "members_role_failed": "Die Rolle konnte nicht geändert werden.",
   "members_root_grant_invalid": "Der Firmenschlüssel, den der Server dir gibt, ist nicht der deiner Firma. Kennwort nimmt ihn nicht an.",
-  "members_root_adopt_failed": "Der Firmenschlüssel konnte gerade nicht übernommen werden. Versuch es noch einmal."
+  "members_root_adopt_failed": "Der Firmenschlüssel konnte gerade nicht übernommen werden. Versuch es noch einmal.",
+  "policy_title": "Firmen-Richtlinien",
+  "policy_invalid": "Die Richtlinien vom Server sind nicht gültig unterschrieben. Kennwort hält sich an die letzten gültigen.",
+  "policy_lock_after": "Kennwort sperrt sich nach {minutes} Minuten ohne Nutzung.",
+  "policy_lock_label": "Sperren nach (Minuten)",
+  "policy_save": "Speichern",
+  "policy_saved": "Gespeichert. Die neue Zeit gilt auf allen Geräten.",
+  "policy_failed": "Die Richtlinien konnten nicht gespeichert werden."
 }

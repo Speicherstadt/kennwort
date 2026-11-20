@@ -123,6 +123,17 @@ export {
   ROOT_GRANT_LENGTH,
   type RootGrantError,
 } from "./membership/root-grant.ts";
+  checkPolicy,
+  isSignedPolicy,
+  LOCK_MINUTES,
+  type Policy,
+  type PolicyError,
+  PolicyWire,
+  policyToWire,
+  signPolicy,
+  standardPolicy,
+  type UnsignedPolicy,
+} from "./membership/policy.ts";
 export {
   idKey,
   isMember,

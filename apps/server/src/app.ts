@@ -2,6 +2,7 @@
 import { sql } from "drizzle-orm";
 import { Hono, type MiddlewareHandler } from "hono";
 import { memberRoutes } from "./account/members.ts";
+import { policyRoutes } from "./account/policy.ts";
 import { accountRoutes } from "./account/routes.ts";
 import { auditRoutes } from "./audit/routes.ts";
 import { type Auth, CLIENT_HEADER } from "./auth/better-auth.ts";
@@ -95,6 +96,7 @@ export const createApp = ({
   api.route("/", auditRoutes({ now }));
   api.route("/", accountRoutes({ db, now }));
   api.route("/", memberRoutes({ db, now }));
+  api.route("/", policyRoutes({ db, now }));
   api.route("/", deviceRoutes({ db, now }));
   api.route("/", syncRoutes({ hub, now, ...(keepAliveMs ? { keepAliveMs } : {}) }));
   if (signIn) {

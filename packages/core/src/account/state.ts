@@ -31,6 +31,8 @@ export const AccountState = z.object({
    * plays back after an owner changed it (review of K-304)
    */
   certificates: z.record(z.string(), z.number().int().nonnegative()).default({}),
+  /** The newest company policy version seen (K-304): an older one is a rollback */
+  policy: z.number().int().nonnegative().default(0),
 });
 export type AccountState = z.infer<typeof AccountState>;
 
@@ -134,6 +136,7 @@ export const mergeStates = (
     ),
     invitations: { ...theirs.invitations, ...mine.invitations },
     certificates: newest(mine.certificates, theirs.certificates),
+    policy: Math.max(mine.policy, theirs.policy),
   });
 };
 
@@ -148,4 +151,5 @@ export const emptyState = (
   versions: {},
   invitations: {},
   certificates: {},
+  policy: 0,
 });

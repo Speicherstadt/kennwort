@@ -10,12 +10,15 @@ import { bytes, encodeBytes } from "../sync/bytes.ts";
 import { CertificateWire } from "../sync/wire.ts";
 import { type Certificate, type CompanyRole, isCertified } from "./certificate.ts";
 import type { PendingMember } from "./invitation.ts";
+import { PolicyWire } from "./policy.ts";
 
 const Role = z.enum(["owner", "admin", "member"]);
 
 export const CompanyWire = z.object({
   id: z.string().min(1),
   rootPublicKey: bytes(32).nullable(),
+  /** The signed policy, none until an owner has saved one (K-304, F-07) */
+  policy: PolicyWire.nullable().default(null),
 });
 
 export const MembersWire = z.object({

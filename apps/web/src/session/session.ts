@@ -116,6 +116,7 @@ const createLock = (deps: SessionDeps) => {
   const schedule = deps.schedule ?? ((run, ms) => setTimeout(run, ms));
   const cancel = deps.cancel ?? ((timer) => clearTimeout(timer as number));
   let timer: unknown;
+  let lockAfter = deps.lockAfterMs ?? LOCK_AFTER_MS;
   const lock = () => {
     cancel(timer);
     opened()?.accountKey.fill(0);
@@ -125,7 +126,12 @@ const createLock = (deps: SessionDeps) => {
   const touch = () => {
     if (!opened()) return;
     cancel(timer);
-    timer = schedule(lock, deps.lockAfterMs ?? LOCK_AFTER_MS);
+    timer = schedule(lock, lockAfter);
+  };
+  /** The company policy's lock time (K-304); it counts from the next use on */
+  const setLockAfter = (ms: number) => {
+    lockAfter = ms;
+    touch();
   };
   // Another account opened while one is unlocked (setup or invitation) drops the first one properly
   const open = (value: Opened) => {
@@ -133,7 +139,7 @@ const createLock = (deps: SessionDeps) => {
     setOpened(value);
     touch();
   };
-  return { opened, setOpened, lock, touch, open };
+  return { opened, setOpened, lock, touch, open, setLockAfter };
 };
 
 /** The account state changed and written back; the open account sees the new one (state-sync.ts) */
@@ -148,7 +154,7 @@ const stateUpdater =
   };
 
 export const createSession = (deps: SessionDeps) => {
-  const { opened, setOpened, lock, touch, open } = createLock(deps);
+  const { opened, setOpened, lock, touch, open, setLockAfter } = createLock(deps);
   const [device, setDevice] = createSignal<DeviceAccount | undefined>(readDevice(deps.storage));
   const remember = (accountId: Uint8Array, secretKey: Uint8Array) => {
     rememberDevice(deps.storage, accountId, secretKey);
@@ -165,6 +171,7 @@ export const createSession = (deps: SessionDeps) => {
     device,
     lock,
     touch,
+    setLockAfter,
     /** The first owner: company, root key and account, all made on this device */
     setUp: async (code: string, passphrase: string) => {
       const company = createCompany(passphrase, deps.derive ? { derive: deps.derive } : {});

@@ -18,6 +18,7 @@ describe("account state", () => {
     versions: { bank: 2 },
     invitations: { einladung1: "anna" },
     certificates: { anna: 5, max: 9 },
+    policy: 3,
   };
   const key = new Uint8Array(32).fill(9);
   const account = new Uint8Array(16).fill(4);
@@ -62,6 +63,7 @@ describe("account state", () => {
       versions: { bank: 3, mail: 1 },
       invitations: { einladung2: "max" },
       certificates: { anna: 7, max: 3, sandra: 1 },
+      policy: 2,
     };
     expect(mergeStates(state, theirs)).toEqual({
       ok: true,
@@ -76,6 +78,7 @@ describe("account state", () => {
         versions: { bank: 3, mail: 1 },
         invitations: { einladung1: "anna", einladung2: "max" },
         certificates: { anna: 7, max: 9, sandra: 1 },
+        policy: 3,
       },
     });
     expect(mergeStates(state, emptyState(root))).toEqual({ ok: true, value: state });
@@ -115,6 +118,18 @@ describe("account state", () => {
     expect(mergeStates(state, swapped)).toEqual({ ok: false, error: "other-bundle" });
   });
 
+  it("keeps the newer policy version from either side", () => {
+    const newer = { ...emptyState(root), policy: 7 };
+    expect(
+      mergeStates(state, newer).ok &&
+        (mergeStates(state, newer) as { value: AccountState }).value.policy,
+    ).toBe(7);
+    expect(
+      mergeStates(newer, state).ok &&
+        (mergeStates(newer, state) as { value: AccountState }).value.policy,
+    ).toBe(7);
+  });
+
   it("refuses one invitation certified for two accounts, keeps it for the same one", () => {
     const other = { ...emptyState(root), invitations: { einladung1: "mallory" } };
     expect(mergeStates(state, other)).toEqual({ ok: false, error: "other-invitation" });
@@ -123,7 +138,7 @@ describe("account state", () => {
   });
 
   it("reads a state written before invitations were remembered", () => {
-    const { invitations: _, certificates: __, ...older } = state;
+    const { invitations: _, certificates: __, policy: ___, ...older } = state;
     const place = { purpose: "account-state", context: [account, 2] };
     const json = JSON.stringify({
       ...older,
@@ -132,7 +147,10 @@ describe("account state", () => {
       logs: { buero: { seq: 3, hash: "AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM" } },
     });
     const opened = openState(key, account, 2, seal(key, new TextEncoder().encode(json), place));
-    expect(opened).toEqual({ ok: true, value: { ...state, invitations: {}, certificates: {} } });
+    expect(opened).toEqual({
+      ok: true,
+      value: { ...state, invitations: {}, certificates: {}, policy: 0 },
+    });
   });
 });
 

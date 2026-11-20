@@ -24,7 +24,11 @@ describe("loadMembers", () => {
     const { api } = server(c, [ownerRow(c)]);
     const lying = {
       ...api,
-      company: async () => ({ id: "weber", rootPublicKey: ed25519KeyPair().publicKey }),
+      company: async () => ({
+        id: "weber",
+        rootPublicKey: ed25519KeyPair().publicKey,
+        policy: null,
+      }),
     };
     expect(await loadMembers(lying, c.opened)).toEqual({ ok: false, error: "root-mismatch" });
   });
