@@ -26,7 +26,7 @@ export type Phase = "starting" | "connect" | "locked" | "open";
 export type PopupAccountDeps = {
   area: SessionArea | undefined;
   alarms: AlarmsApi | undefined;
-  /** The server's API for this device (account.ts: fetch against the device's server) */
+  /** The server's API for this device (server-api.ts: fetch against the device's server only) */
   apiFor: (device: DeviceRecord) => Api;
   now?: () => number;
   random?: (length: number) => Uint8Array;
