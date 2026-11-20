@@ -49,11 +49,9 @@
         "@kennwort/crypto": "workspace:*",
         "@kennwort/ui": "workspace:*",
         "@solidjs/web": "2.0.3",
+        "jsqr": "1.4.0",
         "solid-js": "2.0.3",
         "uqr": "0.1.3",
-      },
-      "devDependencies": {
-        "jsqr": "1.4.0",
       },
     },
     "packages/core": {
