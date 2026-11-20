@@ -118,5 +118,13 @@
   "add_error_link": "Das ist kein Link zum Verbinden.",
   "add_error_gone": "Diese Verbindung gibt es nicht mehr. Starte sie auf dem neuen Gerät neu.",
   "add_error_key": "Der Server hat einen anderen Schlüssel geliefert als der Code zeigt. Das Gerät wurde nicht hinzugefügt.",
-  "settings_add_device": "Gerät hinzufügen"
+  "settings_add_device": "Gerät hinzufügen",
+  "devices_title": "Angemeldete Geräte",
+  "devices_this_device": "Dieses Gerät",
+  "devices_unnamed": "Unbekanntes Gerät",
+  "devices_last_seen": "Zuletzt aktiv: {time}",
+  "devices_sign_out": "Abmelden",
+  "devices_sign_out_this": "Dieses Gerät abmelden",
+  "devices_load_failed": "Die Geräte konnten nicht geladen werden.",
+  "devices_remove_failed": "Das Gerät konnte nicht abgemeldet werden."
 }

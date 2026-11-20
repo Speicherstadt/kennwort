@@ -3,6 +3,7 @@
  * detail side by side from md; on a phone one screen at a time with the tab bar at the bottom
  */
 import { createToasts, type Locale, Toaster } from "@kennwort/ui";
+import type { JSX } from "@solidjs/web";
 import { Match, Switch } from "solid-js";
 import type { Navigation } from "../navigation.ts";
 import { EntryDetail } from "./entry-detail.tsx";
@@ -17,6 +18,8 @@ export const Frame = (props: {
   onLock: () => void;
   onLocale: (locale: Locale) => void;
   onAddDevice: () => void;
+  /** The device list in the settings (K-303); the app passes it with the session's token */
+  devices?: (() => JSX.Element) | undefined;
 }) => {
   const toasts = createToasts();
   const route = () => props.nav.route();
@@ -61,6 +64,7 @@ export const Frame = (props: {
               onLock={props.onLock}
               onLocale={props.onLocale}
               onAddDevice={props.onAddDevice}
+              devices={props.devices}
             />
           </main>
         </Match>

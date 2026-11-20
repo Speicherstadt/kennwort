@@ -18,6 +18,8 @@ import {
   toWire,
   type UnlockUpload,
 } from "@kennwort/core";
+import type { DeviceIdentity } from "./device-identity.ts";
+import { deviceCalls } from "./devices-api.ts";
 import { pairingCalls } from "./pairing-api.ts";
 export type ApiError = "wrong-code" | "invalid-invitation" | "too-many-requests" | "unexpected";
 type Answer<T> = { ok: true; value: T } | { ok: false; error: ApiError };
@@ -58,13 +60,23 @@ export type Call = (
   token?: string,
 ) => Promise<{ status: number; json: unknown }>;
 
-export const createApi = (send: typeof fetch = fetch) => {
+/** Every request names the device (K-303, device list): one session per device on the server */
+const identityHeaders = (identity: DeviceIdentity | undefined): Record<string, string> =>
+  identity
+    ? {
+        "x-kennwort-device": identity.id,
+        "x-kennwort-device-name": encodeURIComponent(identity.name),
+      }
+    : {};
+
+export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity) => {
   /** Status 0 when the server cannot be reached: errors are values here too (review of K-303) */
   const call: Call = async (method, path, body, token) => {
     const response = await send(path, {
       method,
       headers: {
         "content-type": "application/json",
+        ...identityHeaders(identity),
         ...(token ? { authorization: `Bearer ${token}` } : {}),
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -81,6 +93,7 @@ export const createApi = (send: typeof fetch = fetch) => {
   const post: Post = (path, body) => call("POST", path, body);
   return {
     ...pairingCalls(call),
+    ...deviceCalls(call),
     setup: async (code: string, companyId: Uint8Array, upload: AccountUpload) =>
       session(
         await call("POST", "/auth/setup", {
@@ -133,4 +146,7 @@ export const createApi = (send: typeof fetch = fetch) => {
 
 export type Api = ReturnType<typeof createApi>;
 /** What the session needs: everything but the pairing calls (P-04), which pairing/ uses */
-export type AccountApi = Omit<Api, keyof ReturnType<typeof pairingCalls>>;
+export type AccountApi = Omit<
+  Api,
+  keyof ReturnType<typeof pairingCalls> | keyof ReturnType<typeof deviceCalls>
+>;

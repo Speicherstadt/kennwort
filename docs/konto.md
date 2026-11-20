@@ -69,6 +69,17 @@ verbinden**. Es zeigt einen QR-Code und darunter denselben Link.
 Der Link enthält ein Geheimnis, das der Server nie sieht; ohne es kann er dem neuen Gerät kein
 falsches Konto unterschieben. Eine Verbindung gilt zehn Minuten.
 
+## Geräte
+
+Unter **Einstellungen → Angemeldete Geräte** stehen alle Geräte, auf denen du angemeldet bist, mit
+Browser, System und wann sie zuletzt aktiv waren; dein aktuelles ist als **Dieses Gerät** markiert.
+
+- **Abmelden** beendet die Sitzung eines anderen Geräts, etwa eines verlorenen Telefons. Es bekommt
+  danach nichts mehr vom Server, bis es sich neu anmeldet – und dafür braucht es deine Passphrase.
+- **Dieses Gerät abmelden** sperrt Kennwort und lässt das Gerät Konto-ID und Secret Key vergessen.
+  Danach zeigt es wieder die Begrüßung; zum Entsperren brauchst du das Recovery-Kit oder ein anderes
+  Gerät.
+
 ## Passphrase vergessen
 
 Auf der Entsperr-Seite führt **Passphrase vergessen?** zum Recovery Key: Konto-ID (auf einem

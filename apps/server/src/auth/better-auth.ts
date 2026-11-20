@@ -40,7 +40,7 @@ export type Auth = {
   api: {
     getSession: (input: {
       headers: Headers;
-    }) => Promise<{ user: { id: string; companyId?: unknown } } | null>;
+    }) => Promise<{ user: { id: string; companyId?: unknown }; session: { id: string } } | null>;
   };
   $context: Promise<{
     internalAdapter: {
@@ -51,7 +51,7 @@ export type Auth = {
         emailVerified: boolean;
         companyId: string;
       }) => Promise<{ id: string }>;
-      createSession: (userId: string) => Promise<{ token: string } | null>;
+      createSession: (userId: string) => Promise<{ id: string; token: string } | null>;
     };
   }>;
 };
@@ -113,5 +113,7 @@ export const authenticateWith = (auth: Auth) => async (request: Request) => {
   const found = await auth.api.getSession({ headers: request.headers });
   if (!found) return undefined;
   const companyId = (found.user as { companyId?: unknown }).companyId;
-  return typeof companyId === "string" ? { accountId: found.user.id, companyId } : undefined;
+  return typeof companyId === "string"
+    ? { accountId: found.user.id, companyId, sessionId: found.session.id }
+    : undefined;
 };

@@ -15,6 +15,7 @@ import { accounts, invitations } from "../db/schema.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 import type { Auth } from "./better-auth.ts";
 import type { ClientAddress, ClientEnv } from "./client-address.ts";
+import { startSession } from "./devices.ts";
 import { enrol } from "./enrol.ts";
 
 export const INVITATION_MS = 7 * 24 * 60 * 60 * 1000;
@@ -117,7 +118,7 @@ export const acceptInvitationRoute = ({ db, auth, now, allow, address }: AcceptD
       subject: open.id,
       signature: new Uint8Array(),
     });
-    const session = await user.session();
+    const session = await startSession(db, auth, user.id, c.req.raw);
     return session
       ? c.json({ accountId: user.id, token: session.token }, 201)
       : c.json({ error: "internal" }, 500);

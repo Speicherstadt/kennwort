@@ -46,6 +46,7 @@ später).
 | Icons | `lucide` (die Icon-Daten ohne Framework) mit einer eigenen Icon-Komponente in `packages/ui` statt `lucide-solid` | `lucide-solid` baut auf Solid 1 (`splitProps`, `solid-js/web`) und läuft mit Solid 2 nicht; die Daten sind dieselben, und eine Abhängigkeit weniger läuft im Client |
 | Lizenz | AGPL-3.0 mit Namensnennung nach § 7(b) und kommerzieller Lizenz wie bei haben, dazu ein kurzes CLA für Beitragende | erlaubt die iPhone-App im App Store und die kommerzielle Lizenz trotz Beiträgen von außen |
 | Merge | Der Agenten-Loop merged alles selbst, wenn CI grün ist und das unabhängige Review keine Befunde mehr hat; er wartet nie auf einen Menschen | der Loop soll ohne Warten durchlaufen |
+| Geräte und Sitzungen | Jedes Gerät schickt eine zufällige Geräte-ID und einen Namen aus dem Browser mit; der Server hält pro Gerät und Konto genau eine Sitzung, die Geräteliste zeigt diese Sitzungen | Better Auth kennt nur Sitzungen; ohne Geräte-ID würde jede Anmeldung eine neue Zeile in der Liste, und „Gerät abmelden“ träfe nur eine von mehreren Sitzungen desselben Geräts |
 
 ## Stack
 

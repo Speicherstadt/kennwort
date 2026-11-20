@@ -15,7 +15,7 @@ import {
 } from "@kennwort/core";
 import { createSignal } from "solid-js";
 import type { AccountApi } from "./api.ts";
-import { type DeviceAccount, readDevice, rememberDevice } from "./device.ts";
+import { type DeviceAccount, forgetDevice, readDevice, rememberDevice } from "./device.ts";
 import { recoverAccount } from "./recover.ts";
 
 export const LOCK_AFTER_MS = 10 * 60 * 1000;
@@ -177,6 +177,12 @@ export const createSession = (deps: SessionDeps) => {
     adopt: (value: Opened, secretKey: Uint8Array) => {
       remember(value.accountId, secretKey);
       open(value);
+    },
+    /** This device signed out (K-303, device list): locked, and it no longer knows the account */
+    forget: () => {
+      lock();
+      forgetDevice(deps.storage);
+      setDevice(undefined);
     },
     accountIdText: () => {
       const value = opened();

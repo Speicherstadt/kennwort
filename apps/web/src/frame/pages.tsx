@@ -72,6 +72,7 @@ export const SettingsPage = (props: {
   onLock: () => void;
   onLocale: (locale: Locale) => void;
   onAddDevice: () => void;
+  devices?: (() => JSX.Element) | undefined;
 }) => {
   const [theme, setTheme] = createSignal<Theme>(readTheme(globalThis.localStorage));
   const chooseTheme = (next: Theme) => {
@@ -100,6 +101,7 @@ export const SettingsPage = (props: {
           onChange={(locale) => props.onLocale(locale)}
           options={locales.map((locale) => ({ value: locale, label: languages[locale] }))}
         />
+        {props.devices?.()}
         <Button class="w-fit" onClick={() => props.onAddDevice()}>
           {m.settings_add_device()}
         </Button>

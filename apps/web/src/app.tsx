@@ -11,11 +11,15 @@ import { type PairDeps, PairPage } from "./account/pair-page.tsx";
 import { RecoverPage } from "./account/recover-page.tsx";
 import { SetupPage } from "./account/setup-page.tsx";
 import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
+import { DevicesSection } from "./frame/devices-section.tsx";
 import { Frame } from "./frame/frame.tsx";
 import type { Navigation } from "./navigation.ts";
+import type { DevicesApi } from "./session/devices-api.ts";
 import type { Session } from "./session/session.ts";
 
-export const App = (props: { nav: Navigation; session: Session; api: PairDeps; hash?: string }) => {
+export type AppApi = PairDeps & DevicesApi;
+
+export const App = (props: { nav: Navigation; session: Session; api: AppApi; hash?: string }) => {
   const [otherAccount, setOtherAccount] = createSignal(false);
   const [locale, setShownLocale] = createSignal(getLocale());
   const changeLocale = (next: Locale) => {
@@ -97,6 +101,20 @@ export const App = (props: { nav: Navigation; session: Session; api: PairDeps; h
               onLock={() => props.session.lock()}
               onLocale={changeLocale}
               onAddDevice={() => props.nav.go("/link")}
+              devices={() => (
+                <Show when={props.session.opened()?.token}>
+                  {(token) => (
+                    <DevicesSection
+                      token={token()}
+                      api={props.api}
+                      onSignedOut={() => {
+                        props.session.forget();
+                        props.nav.replace("/entries");
+                      }}
+                    />
+                  )}
+                </Show>
+              )}
             />
           </Match>
         </Switch>

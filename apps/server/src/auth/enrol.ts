@@ -55,5 +55,5 @@ export const enrol = async (
       })
       .run();
   });
-  return { id: user.id, session: () => context.internalAdapter.createSession(user.id) };
+  return { id: user.id };
 };

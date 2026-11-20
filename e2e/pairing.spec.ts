@@ -98,3 +98,54 @@ test.describe("adding a device", { tag: "@phone" }, () => {
     await expect(page.getByRole("alert")).toHaveText("Das ist kein Link zum Verbinden.");
   });
 });
+
+// K-303 part 6: the devices signed in, each can be signed out
+test.describe("the device list", { tag: "@phone" }, () => {
+  const openSettings = async (page: Page) => {
+    await page
+      .getByRole("link", { name: "Einstellungen" })
+      .filter({ visible: true })
+      .first()
+      .click();
+    return page.getByRole("region", { name: "Angemeldete Geräte" });
+  };
+
+  test("shows both devices; signing the other out ends its session, signing this one out forgets the account", async ({
+    page,
+    browser,
+  }) => {
+    await setUpCompany(page);
+    const device = await newDevice(browser);
+    const link = await startPairing(device);
+    await openSettings(page);
+    await page.getByRole("button", { name: "Gerät hinzufügen" }).click();
+    await page.getByLabel("Link vom neuen Gerät").fill(link);
+    await page.getByRole("button", { name: "Verbinden" }).click();
+    await compareAndConfirm(page, device);
+    await page.getByRole("button", { name: "Fertig" }).click();
+
+    const devices = await openSettings(page);
+    await expect(devices.getByRole("listitem")).toHaveCount(2);
+    await expect(devices.getByRole("listitem").filter({ hasText: "Dieses Gerät" })).toHaveCount(1);
+    await expect(devices.getByRole("listitem").first()).toContainText("Zuletzt aktiv:");
+    await axe(page);
+
+    // The other device is signed out: its session no longer opens anything on the server
+    await devices.getByRole("button", { name: "Abmelden", exact: true }).click();
+    await expect(devices.getByRole("listitem")).toHaveCount(1);
+    const signedOut = await openSettings(device);
+    await expect(signedOut.getByRole("alert")).toHaveText(
+      "Die Geräte konnten nicht geladen werden.",
+    );
+
+    // This device signed out: locked, and it no longer knows the account
+    await devices.getByRole("button", { name: "Dieses Gerät abmelden" }).click();
+    await expect(
+      page.getByRole("button", { name: "Mit einem anderen Gerät verbinden" }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(
+      page.getByRole("button", { name: "Mit einem anderen Gerät verbinden" }),
+    ).toBeVisible();
+  });
+});

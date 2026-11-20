@@ -57,6 +57,13 @@
       "when": 1795159878233,
       "tag": "0007_pairings",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1795165855342,
+      "tag": "0008_device_sessions",
+      "breakpoints": true
     }
   ]
 }

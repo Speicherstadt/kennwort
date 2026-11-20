@@ -16,6 +16,7 @@ import type { Db } from "../db/database.ts";
 import { loginChallenges, loginKeys } from "../db/schema.ts";
 import type { Auth } from "./better-auth.ts";
 import type { ClientAddress, ClientEnv } from "./client-address.ts";
+import { startSession } from "./devices.ts";
 import { clearFailures, isLocked, recordFailure } from "./limits.ts";
 
 const CHALLENGE_MS = 2 * 60 * 1000;
@@ -108,7 +109,7 @@ export const loginKeyRoutes = ({ db, secret, auth, now, random, allow, address }
         return c.json({ error: "denied" }, 401);
       }
       clearFailures(db, accountId);
-      const session = await (await auth.$context).internalAdapter.createSession(accountId);
+      const session = await startSession(db, auth, accountId, c.req.raw);
       return session ? c.json({ token: session.token }) : c.json({ error: "internal" }, 500);
     });
 };

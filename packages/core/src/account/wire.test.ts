@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { encodeBytes } from "../sync/bytes.ts";
-import { AnnouncedWire, PairingKeyWire, PollWire, SessionWire, StoredWire } from "./wire.ts";
+import {
+  AnnouncedWire,
+  DevicesWire,
+  PairingKeyWire,
+  PollWire,
+  SessionWire,
+  StoredWire,
+} from "./wire.ts";
 
 const b = (length: number, fill = 1) => encodeBytes(new Uint8Array(length).fill(fill));
 const stored = {
@@ -73,5 +80,29 @@ describe("the pairing answers", () => {
       expect(PollWire.safeParse(bad).success).toBe(false);
     expect(PairingKeyWire.parse({ publicKey: b(1216) }).publicKey).toHaveLength(1216);
     expect(PairingKeyWire.safeParse({ publicKey: b(1215) }).success).toBe(false);
+  });
+});
+
+describe("the device list", () => {
+  it("reads devices with or without a name and refuses what is not one", () => {
+    const device = {
+      id: "s1",
+      name: "Firefox · Linux",
+      signedInAt: 1,
+      lastSeenAt: 2,
+      current: true,
+    };
+    expect(
+      DevicesWire.parse({ devices: [device, { ...device, name: null }] }).devices,
+    ).toHaveLength(2);
+    for (const bad of [
+      { ...device, id: "" },
+      { ...device, name: 3 },
+      { ...device, signedInAt: "1" },
+      { ...device, lastSeenAt: undefined },
+      { ...device, current: "ja" },
+    ])
+      expect(DevicesWire.safeParse({ devices: [bad] }).success).toBe(false);
+    expect(DevicesWire.safeParse({}).success).toBe(false);
   });
 });
