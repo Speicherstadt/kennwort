@@ -36,6 +36,30 @@ export type SessionDeps = {
   cancel?: (timer: unknown) => void;
 };
 
+const signInError = (error: string): SessionError =>
+  error === "denied"
+    ? "wrong-passphrase"
+    : error === "too-many-requests" || error === "locked"
+      ? "too-many-requests"
+      : "unexpected";
+
+/** Signs in with the sign-in key (P-02), loads the ciphertexts and opens them (P-03) */
+const signInAndUnlock = async (
+  api: Api,
+  accountId: Uint8Array,
+  passphrase: string,
+  secretKey: Uint8Array,
+): Promise<Outcome<Opened>> => {
+  const signedIn = await api.signIn(accountId, passphrase, secretKey);
+  if (!signedIn.ok) return { ok: false, error: signInError(signedIn.error) };
+  const stored = await api.keys(signedIn.token);
+  if (!stored) return { ok: false, error: "unexpected" };
+  const unlocked = unlockWithPassphrase(stored, passphrase, secretKey);
+  if (!unlocked.ok)
+    return { ok: false, error: unlocked.error === "wrong-key" ? "wrong-passphrase" : "unexpected" };
+  return { ok: true, value: { ...unlocked.value, accountId, token: signedIn.token } };
+};
+
 export const createSession = (deps: SessionDeps) => {
   const [opened, setOpened] = createSignal<Opened>();
   const [device, setDevice] = createSignal<DeviceAccount | undefined>(readDevice(deps.storage));
@@ -107,27 +131,10 @@ export const createSession = (deps: SessionDeps) => {
       const key = secretKey ?? known?.secretKey;
       const id = bytes(16).safeParse(accountIdText ?? known?.accountId);
       if (!key || !id.success) return { ok: false, error: "wrong-passphrase" };
-      const signedIn = await deps.api.signIn(id.data, passphrase, key);
-      if (!signedIn.ok)
-        return {
-          ok: false,
-          error:
-            signedIn.error === "denied"
-              ? "wrong-passphrase"
-              : signedIn.error === "too-many-requests"
-                ? "too-many-requests"
-                : "unexpected",
-        };
-      const stored = await deps.api.keys(signedIn.token);
-      if (!stored) return { ok: false, error: "unexpected" };
-      const unlocked = unlockWithPassphrase(stored, passphrase, key);
-      if (!unlocked.ok)
-        return {
-          ok: false,
-          error: unlocked.error === "wrong-key" ? "wrong-passphrase" : "unexpected",
-        };
+      const result = await signInAndUnlock(deps.api, id.data, passphrase, key);
+      if (!result.ok) return result;
       remember(id.data, key);
-      open({ ...unlocked.value, accountId: id.data, token: signedIn.token });
+      open(result.value);
       return { ok: true, value: true };
     },
     accountIdText: () => {

@@ -15,6 +15,7 @@ import {
 } from "@kennwort/core";
 import { passphraseKeysWith } from "@kennwort/crypto";
 import { sql } from "drizzle-orm";
+import { companies } from "../db/schema.ts";
 import { signInSetup } from "../testing/sign-in-setup.ts";
 
 const quick = (p: string, salt: Uint8Array, key: Uint8Array, account: Uint8Array) =>
@@ -103,7 +104,10 @@ describe("setting up the company", () => {
     const unlocked = await unlockElsewhere(setup, company.owner, PASSPHRASE);
     expect(unlocked.ok && unlocked.value.state).toEqual(company.owner.state);
     expect(unlocked.ok && unlocked.value.state.rootSecretKey).toHaveLength(32);
-    expect((await setUp(setup)).response.status).toBe(409);
+    // The code opens new companies only: a second owner gets a company of their own
+    const second = await setUp(setup);
+    expect(second.response.status).toBe(201);
+    expect(setup.db.select().from(companies).all()).toHaveLength(2);
   });
 
   it("refuses a wrong code, and any setup on a server without a code", async () => {

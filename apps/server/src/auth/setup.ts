@@ -1,11 +1,12 @@
 /**
- * The first owner creates the company (P-07): with the setup code the admin put into the server's
- * settings, once, while no company exists. The company ID and the account come from the device,
+ * An owner creates a company (P-07) with the setup code the operator put into the server's
+ * settings; one server carries many companies (docs/plan.md, Entscheidungen), so the code is the
+ * operator's key to new companies, never to existing ones. The company ID and the account come from the device,
  * which also makes the root key; the server gets only IDs, the sign-in key and the salt.
  */
 import { timingSafeEqual } from "node:crypto";
 import { bytes, encodeBytes } from "@kennwort/core";
-import { count, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { Db } from "../db/database.ts";
@@ -48,13 +49,14 @@ export const setupRoute = ({ db, auth, now, setupCode, allow, address }: SetupDe
     if (!sameCode(parsed.data.code, setupCode)) return c.json({ error: "wrong-code" }, 401);
     const at = now();
     const { companyId, ...account } = parsed.data;
-    // Claimed without an await in between: of two setups at once, only one finds no company
-    const claimed = db.transaction((tx) => {
-      if ((tx.select({ n: count() }).from(companies).get()?.n ?? 0) > 0) return false;
-      tx.insert(companies).values({ id: companyId, createdAt: at }).run();
-      return true;
-    });
-    if (!claimed) return c.json({ error: "already-set-up" }, 409);
+    // The company ID is the device's; one that exists already is not taken over
+    const claimed = db
+      .insert(companies)
+      .values({ id: companyId, createdAt: at })
+      .onConflictDoNothing()
+      .returning()
+      .get();
+    if (!claimed) return c.json({ error: "company-exists" }, 409);
     const owner = await enrol(db, auth, { ...account, companyId, role: "owner", at });
     if (!owner) {
       db.delete(companies).where(eq(companies.id, companyId)).run();
