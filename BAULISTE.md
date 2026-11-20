@@ -12,8 +12,11 @@ und die Schritte für Menschen am Ende erledigt sind.
    Loop sie im selben Pull Request nach, bevor er Code schreibt; streichen darf er keins.
 3. Ein Punkt, ein Branch, ein Pull Request (Titel mit der Nummer, z. B. `K-104: Hybrid-KEM`). Tests
    zuerst, dann Code, Docs und Texte de/en, `bun run check` grün.
-4. **Unabhängiges Review** durch einen eigenen Sub-Agenten (`tdd-review`): ein Befund braucht einen
-   fehlschlagenden Test. Befunde fixen, bis keine mehr kommen.
+4. **Unabhängiges Review nur für Sicherheitsrelevantes**: Berührt der Pull Request Kryptografie,
+   Sync, Mitglieder-Log, Freigaben, Anmeldung, Zugriffsprüfung, Entsperren, Schlüssel, Kopplung,
+   Autofill, das signierte Update, die CSP oder die Liste erlaubter Pakete (genaue Liste in
+   `CLAUDE.md`, „The agent loop“), prüft ihn ein eigener Sub-Agent (`tdd-review`): ein Befund braucht
+   einen fehlschlagenden Test, Befunde fixen, bis keine mehr kommen. Alles andere geht ohne Review.
 5. **CI grün → selbst mergen** (Squash), den Punkt hier im selben Pull Request abhaken. Der Loop
    wartet nie auf einen Menschen, auch nicht bei `packages/crypto`: Dort gilt statt einer Freigabe
    ein strengeres Gate – Testvektoren, Property-Tests und Mutation-Tests müssen grün sein.

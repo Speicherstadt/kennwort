@@ -21,9 +21,15 @@ docs point to the site, not to `docs/*.md`.
 ## The agent loop
 
 Work through `BAULISTE.md` as it describes: the first open item whose dependencies are done, one
-item per pull request, tests first, an independent review by a separate subagent (`tdd-review`),
-then **merge it yourself** (squash) once CI is green and the review has no findings left, and tick
-the item in the same pull request. Never wait for a person: `packages/crypto` merges like the rest,
+item per pull request, tests first, then **merge it yourself** (squash) once CI is green, and tick
+the item in the same pull request. A pull request that touches security-relevant code first gets an
+independent review by a separate subagent (`tdd-review`) and merges only when it has no findings
+left; everything else merges on green CI without it, so the loop keeps moving. Security-relevant
+means: `packages/crypto`; the sync, membership log, sharing and signatures in `packages/core`;
+sign-in, sessions, access checks and the misbehaving test server in `apps/server`; unlocking,
+keys, passphrases, recovery and device pairing in any client, links that carry a secret in the
+fragment included; autofill and the extension's content scripts and storage; the signed update
+of the service worker; the CSP and the dependency allowlist. Never wait for a person: `packages/crypto` merges like the rest,
 behind the stricter gate of test vectors, property and mutation tests; an item that fails three
 times goes under "Zurückgestellt" with the reason and the loop goes on with the next independent
 one. Steps only a person can do (signing keys, stores, the iOS app) are not on the loop's path;
@@ -57,7 +63,8 @@ scratchpad and name the source in comments and commit messages where it settles 
 - Add a runtime dependency without adding it to the allowlist with the reason; the client should
   stay at a handful of packages.
 - Skip, weaken or delete a test or a security gate to get green; report a skipped test as passed.
-- Push to `main`, merge without the independent review, create or comment on issues and pull
+- Push to `main`, merge security-relevant code ("The agent loop") without the independent review,
+  create or comment on issues and pull
   requests without being asked.
 - Stop the user's processes or work around `sudo`.
 
@@ -88,7 +95,8 @@ zensical build --strict    # when docs/ or mkdocs.yml changed
 - One feature per pull request; it carries only its own commits.
 - Before every push check whether the branch's pull request is still open. If it is merged, start
   again from the current `origin/main` and open a **new** pull request.
-- An independent review by a separate subagent before the merge (`tdd-review`).
+- An independent review by a separate subagent (`tdd-review`) before merging security-relevant code
+  ("The agent loop"); other pull requests merge on green CI.
 - Merge method: squash.
 
 ## Working rules
