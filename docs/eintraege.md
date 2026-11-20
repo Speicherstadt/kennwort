@@ -1,8 +1,9 @@
 ---
 title: Einträge
 description: >-
-  Wie Kennwort Zugänge in Tresoren speichert: einen Eintrag anlegen und ändern, was ein Gerät
-  prüft, bevor es einen Eintrag zeigt, und was der Server davon sieht.
+  Wie Kennwort Zugänge in Tresoren speichert: einen Eintrag anlegen und ändern, Passwörter und
+  Passphrasen erzeugen, was ein Gerät prüft, bevor es einen Eintrag zeigt, und was der Server
+  davon sieht.
 ---
 
 # Einträge
@@ -27,6 +28,25 @@ ausgegraut.
 
 Erreicht dein Gerät den Server gerade nicht, sagt Kennwort das; die Änderung wartet auf dem Gerät,
 bis du es wieder versuchst.
+
+## Passwörter und Passphrasen erzeugen
+
+Der **Generator** erzeugt auf deinem Gerät ein zufälliges Passwort oder eine Passphrase:
+
+- **Passwort**: 8 bis 64 Zeichen aus Klein- und Großbuchstaben, nach Wahl mit Ziffern und
+  Sonderzeichen (`!#$%&*+-=?@^_`); von jeder gewählten Art ist mindestens ein Zeichen dabei.
+- **Passphrase**: 3 bis 10 Wörter aus der Wortliste der Electronic Frontier Foundation (7776
+  englische Wörter), getrennt durch Bindestrich, Punkt, Unterstrich oder Leerzeichen, nach Wahl
+  groß beginnend und mit einer angehängten Ziffer.
+
+Unter dem Ergebnis steht, wie stark es ist, in Bit: so viele Ja-Nein-Fragen müsste jemand
+erraten, der deine Einstellungen kennt. Unter 60 Bit gilt als schwach, ab 80 Bit als stark; ein
+Passwort mit 20 Zeichen und allen Arten hat 124 Bit, eine Passphrase aus fünf Wörtern 64 Bit.
+**Neu erzeugen** würfelt neu, **Kopieren** legt das Ergebnis in die Zwischenablage.
+
+Kennwort merkt sich auf diesem Gerät die Einstellungen, nie ein erzeugtes Passwort. Im Dialog
+eines Eintrags füllt **Passwort erzeugen** das Passwortfeld mit den zuletzt gewählten Einstellungen
+für Passwörter.
 
 ## Was dein Gerät prüft
 

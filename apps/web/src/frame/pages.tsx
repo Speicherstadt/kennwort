@@ -1,9 +1,10 @@
-/** The other sections: generator (K-306 fills it), groups, settings, and a page that does not exist */
-import { Button, getLocale, Icon, type Locale, locales, m } from "@kennwort/ui";
+/** The other sections: generator, groups, settings, and a page that does not exist */
+import { Button, getLocale, Icon, type Locale, locales, m, type Toasts } from "@kennwort/ui";
 import { Archive, Lock, Users } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { createSignal, For, Show } from "solid-js";
 import { groups } from "../demo.ts";
+import { GeneratorPanel } from "../generator/generator-panel.tsx";
 import type { Navigation } from "../navigation.ts";
 import { applyTheme, readTheme, type Theme } from "../theme.ts";
 import { Link } from "./link.tsx";
@@ -17,9 +18,10 @@ const Page = (props: { title: string; children: JSX.Element }) => (
   </section>
 );
 
-export const GeneratorPage = () => (
+export const GeneratorPage = (props: { toasts: Toasts }) => (
   <Page title={m.nav_generator()}>
-    <p class="text-muted-foreground">{m.generator_intro()}</p>
+    <p class="mb-4 text-muted-foreground">{m.generator_intro()}</p>
+    <GeneratorPanel toasts={props.toasts} />
   </Page>
 );
 

@@ -90,7 +90,7 @@ export const Frame = (props: {
         </Match>
         <Match when={route().page === "generator"}>
           <main class="flex min-h-0 flex-1">
-            <GeneratorPage />
+            <GeneratorPage toasts={toasts} />
           </main>
         </Match>
         <Match when={route().page === "groups"}>

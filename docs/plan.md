@@ -54,6 +54,7 @@ später).
 | Gruppen nach den Anfragen | Zugriff anfragen kommt vor den Gruppen (K-305); eine Gruppe erzeugt beim Eintritt eines Mitglieds nur Anfragen an die Verwalter ihrer Tresore | Bei Ende-zu-Ende-Verschlüsselung gibt nur ein Verwalter-Client Zugriff; Gruppen bauen darum auf den Anfragen auf, nicht umgekehrt |
 | Einzelnen Eintrag teilen nach den Einträgen | K-305 Teil 6 (P-10) kommt nach K-306 Teil 1; der Eintrags-Schlüssel bleibt dann über die Versionen eines Eintrags gleich | Heute bekommt jede Version einen neuen EK; eine Freigabe soll aber auch spätere Versionen öffnen, und erst ein Widerruf wechselt den EK |
 | Persönlicher Tresor | Jedes Konto bekommt beim ersten Öffnen einen Tresor „Persönlich“, dessen ID aus dem AK abgeleitet ist | Ein Ort für eigene Zugänge ohne Zutun; dieselbe ID auf allen Geräten verhindert doppelte Tresore |
+| Generator | Passwörter aus Klein- und Großbuchstaben, nach Wahl Ziffern und Sonderzeichen, je mindestens eines; Passphrasen aus der englischen EFF-Wortliste (7776 Wörter, 12,9 Bit je Wort); Stärke in Bit: unter 60 schwach, unter 80 gut, ab 80 stark | Eine gute deutsche Wortliste mit klarer Lizenz fehlt; die EFF-Liste ist geprüft, frei (CC BY 3.0 US) und meidet verwechselbare Wörter. Die Bits zählen, was ein Angreifer schafft, der die Einstellungen kennt; die Grenzen folgen dem, was Offline-Raten gegen einen Server mit Secret Key heute nicht erreicht |
 
 ## Stack
 

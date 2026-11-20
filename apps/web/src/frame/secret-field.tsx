@@ -11,7 +11,7 @@ export type FieldProps = {
   toasts: Toasts;
 };
 
-const copy = async (text: string, label: string, toasts: Toasts) => {
+export const copyText = async (text: string, label: string, toasts: Toasts) => {
   try {
     await navigator.clipboard.writeText(text);
     toasts.show(m.field_copied({ field: label }), "success");
@@ -41,7 +41,7 @@ export const Field = (props: FieldProps) => {
       </Show>
       <IconButton
         label={m.field_copy({ field: props.label })}
-        onClick={() => copy(props.value, props.label, props.toasts)}
+        onClick={() => copyText(props.value, props.label, props.toasts)}
       >
         <Icon icon={Copy} />
       </IconButton>

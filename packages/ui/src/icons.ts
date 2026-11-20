@@ -15,6 +15,7 @@ export {
   Lock,
   Pencil,
   Plus,
+  RefreshCw,
   Search,
   Settings,
   Share2,
