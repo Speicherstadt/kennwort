@@ -22,6 +22,7 @@ type Owner = Awaited<ReturnType<typeof ownerWithKeys>>;
 type Member = {
   id: string;
   role: string;
+  name: string | null;
   xwingPublicKey: string | null;
   edPublicKey: string | null;
   certificate: unknown;
@@ -53,7 +54,11 @@ const invite = async (
   const invitation = newInvitation(o.owner.accountKey, o.owner.accountId);
   const made = await o.setup.request("/api/invitations", {
     token: o.token,
-    body: { id: encodeBytes(invitation.id), sealedSecret: encodeBytes(invitation.sealedSecret) },
+    body: {
+      id: encodeBytes(invitation.id),
+      sealedSecret: encodeBytes(invitation.sealedSecret),
+      label: "Anna",
+    },
   });
   expect(made.status).toBe(201);
   const { token } = (await made.json()) as { token: string };
@@ -100,6 +105,7 @@ const certifyPending = (o: Owner, member: Member) => {
       accountId: o.owner.accountId,
       companyId: o.company.companyId,
       rootSecretKey: o.owner.state.rootSecretKey,
+      certified: {},
     },
     {
       accountId: bytes(16).parse(member.id),
@@ -219,6 +225,18 @@ describe("members (K-304, P-08)", () => {
     ).toBeNull();
   });
 
+  it("names a member after the invitation; the first owner has no name, the company its root", async () => {
+    const o = await ownerWithKeys(CODE, PASSPHRASE);
+    const { anna } = await invite(o);
+    const listed = await members(o);
+    expect(listed.find((m) => m.id === encodeBytes(anna.accountId))?.name).toBe("Anna");
+    expect(listed.find((m) => m.id === encodeBytes(o.owner.accountId))?.name).toBeNull();
+    const company = (await (await o.setup.request("/api/company", { token: o.token })).json()) as {
+      rootPublicKey: string;
+    };
+    expect(company.rootPublicKey).toBe(encodeBytes(o.company.rootPublicKey));
+  });
+
   it("shows the invitation only to the admin who made it", async () => {
     const o = await ownerWithKeys(CODE, PASSPHRASE);
     const { anna, annaToken } = await invite(o);
@@ -235,12 +253,15 @@ describe("members (K-304, P-08)", () => {
     const good = {
       id: encodeBytes(new Uint8Array(16).fill(7)),
       sealedSecret: encodeBytes(new Uint8Array(73)),
+      label: "Anna",
     };
     expect((await post({})).status).toBe(400);
     expect((await post({ ...good, sealedSecret: encodeBytes(new Uint8Array(72)) })).status).toBe(
       400,
     );
     expect((await post({ ...good, id: encodeBytes(new Uint8Array(15)) })).status).toBe(400);
+    for (const label of [undefined, "", "   ", "x".repeat(65), "Anna\nMax", "Anna\u0000"])
+      expect((await post({ ...good, label })).status).toBe(400);
     expect((await post(good)).status).toBe(201);
     expect((await post(good)).status).toBe(409);
   });

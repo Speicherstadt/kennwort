@@ -37,6 +37,13 @@ const InvitationRequest = z.object({
   id: bytes(16).transform((id) => encodeBytes(id)),
   // F-01 around the 32-byte secret: version, nonce, secret and tag
   sealedSecret: bytes(1 + 24 + 32 + 16),
+  /** Who it is for, shown in the member list; plain text the server sees, like any account data */
+  label: z
+    .string()
+    .trim()
+    .min(1)
+    .max(64)
+    .refine((text) => !/\p{Cc}/u.test(text)),
 });
 
 export type InvitationDeps = {
@@ -56,7 +63,7 @@ export const createInvitationRoute = ({ db, now, random }: InvitationDeps) =>
       return c.json({ error: "forbidden" }, 403);
     const parsed = InvitationRequest.safeParse(await c.req.json().catch(() => undefined));
     if (!parsed.success) return c.json({ error: "invalid" }, 400);
-    const { id, sealedSecret } = parsed.data;
+    const { id, sealedSecret, label } = parsed.data;
     const token = encodeBytes(random(32));
     const expiresAt = now() + INVITATION_MS;
     const inserted = db
@@ -68,6 +75,7 @@ export const createInvitationRoute = ({ db, now, random }: InvitationDeps) =>
         tokenHash: hashToken(token),
         expiresAt,
         sealedSecret: Buffer.from(sealedSecret),
+        label,
       })
       .onConflictDoNothing()
       .returning()

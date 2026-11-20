@@ -124,8 +124,12 @@ und die Schritte für Menschen am Ende erledigt sind.
     sieht, MAC über das Bündel des Eingeladenen, der Client des Einladenden prüft ihn und
     zertifiziert erst dann; Mitgliederliste auf dem Server. Fertig, wenn: ein Bündel, das der Server
     unterschiebt oder austauscht, nicht zertifiziert wird (Test gegen den lügenden Server).
-  - [ ] Teil 2: Mitglieder und Einladen in der Web-App – Mitglieder-Seite mit Rolle und
-    Zertifikat, Einladungslink zeigen und kopieren, ausstehende Mitglieder bestätigen.
+  - [x] Teil 2: Mitglieder und Einladen in der Web-App – Mitglieder-Seite mit Rolle und
+    Zertifikat, Einladungslink zeigen und kopieren, ausstehende Mitglieder bestätigen. Fertig, wenn:
+    der Client den öffentlichen Wurzelschlüssel nur nimmt, wenn er zum gemerkten Fingerabdruck
+    passt, „Bestätigt“ nur bei einem Zertifikat dieses Schlüssels steht, eine Einladung höchstens
+    ein Konto zertifiziert (im Kontozustand gemerkt) und Einladen, Annehmen und Bestätigen als
+    Playwright-Test desktop und `@phone` laufen.
   - [ ] Teil 3: Rollen ändern – Inhaber, Admin, Mitarbeiter; neues Zertifikat, der Wurzelschlüssel
     an jeden Verwalter verpackt, immer mindestens ein Inhaber.
   - [ ] Teil 4: Firmen-Richtlinien, vom Wurzelschlüssel signiert (automatisches Sperren,

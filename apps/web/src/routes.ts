@@ -13,6 +13,7 @@ export type Route =
   | { page: "generator" }
   | { page: "groups" }
   | { page: "settings" }
+  | { page: "members" }
   | { page: "setup" }
   | { page: "unlock" }
   | { page: "recover" }
@@ -76,6 +77,7 @@ export const parseRoute = (path: string): Route => {
     (first === "generator" ||
       first === "groups" ||
       first === "settings" ||
+      first === "members" ||
       first === "setup" ||
       first === "unlock" ||
       first === "recover" ||

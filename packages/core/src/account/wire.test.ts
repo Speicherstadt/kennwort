@@ -3,9 +3,11 @@ import { encodeBytes } from "../sync/bytes.ts";
 import {
   AnnouncedWire,
   DevicesWire,
+  InvitedWire,
   PairingKeyWire,
   PollWire,
   SessionWire,
+  StaleWire,
   StoredWire,
 } from "./wire.ts";
 
@@ -104,5 +106,20 @@ describe("the device list", () => {
     ])
       expect(DevicesWire.safeParse({ devices: [bad] }).success).toBe(false);
     expect(DevicesWire.safeParse({}).success).toBe(false);
+  });
+});
+
+describe("invitations and the account state", () => {
+  it("reads an invitation's token and refuses one without", () => {
+    expect(InvitedWire.parse({ token: "t", expiresAt: 5 })).toEqual({ token: "t", expiresAt: 5 });
+    expect(InvitedWire.safeParse({ token: "", expiresAt: 5 }).success).toBe(false);
+    expect(InvitedWire.safeParse({ token: "t" }).success).toBe(false);
+  });
+
+  it("reads a stale answer with the server's counter, and nothing else as stale", () => {
+    expect(StaleWire.parse({ error: "stale", stateCounter: 3 }).stateCounter).toBe(3);
+    expect(StaleWire.safeParse({ error: "not-found", stateCounter: 3 }).success).toBe(false);
+    expect(StaleWire.safeParse({ error: "stale", stateCounter: 1.5 }).success).toBe(false);
+    expect(StaleWire.safeParse({ error: "stale" }).success).toBe(false);
   });
 });

@@ -289,8 +289,9 @@ Umgesetzt in `packages/crypto/src/account.ts` (AK, Schlüsselblock, Entsperr-Weg
 `commitment.ts` (Bindungen) und `company-recovery.ts` (P-13).
 
 Was ein Client sich merkt, um den Server zu prüfen, liegt im **Kontozustand**: Fingerabdruck des
-Firmen-Wurzelschlüssels, bekannte Schlüsselbündel, der letzte Stand jedes Mitgliedschafts-Logs und
-die höchste Version jedes Eintrags. Er ist ein F-01-Geheimtext unter AK (Zweck `account-state`,
+Firmen-Wurzelschlüssels, bekannte Schlüsselbündel, der letzte Stand jedes Mitgliedschafts-Logs,
+die höchste Version jedes Eintrags und die Einladungen, die das Konto zertifiziert hat, mit dem
+Konto dazu. Er ist ein F-01-Geheimtext unter AK (Zweck `account-state`,
 Kontext Konto-ID und ein Zähler) auf dem Server; jedes Gerät lädt ihn beim Entsperren, führt ihn
 mit seinem eigenen Stand zusammen (der höhere Stand gewinnt; ein anderer Wurzelschlüssel, ein anderes
 Bündel für ein bekanntes Konto oder ein anderer Hash an derselben Stelle eines Logs ist ein Angriff) und schreibt ihn mit höherem Zähler zurück. So kennt jedes Gerät eines Kontos, auch eines,
@@ -510,6 +511,12 @@ Umgesetzt in `packages/core/src/membership/` (`verifyLog`, Zertifikate nach F-06
   ihn zum Vergleich an. Ein anderer Wurzelschlüssel oder ein neues Bündel für ein bekanntes Konto
   löst eine deutliche Warnung aus und wird nicht stillschweigend übernommen.
 
+- Den öffentlichen Wurzelschlüssel schickt der erste Inhaber beim Anlegen der Firma mit; der Server
+  gibt ihn unter `GET /api/company` heraus. Ein Client nimmt ihn nur, wenn sein Fingerabdruck dem
+  gemerkten gleicht, und prüft damit jedes Zertifikat der Mitgliederliste (`GET /api/members`):
+  bestätigt ist ein Mitglied nur mit einem Zertifikat dieses Wurzelschlüssels für genau sein Konto,
+  seine Schlüssel und seine Rolle. Passt der Wurzelschlüssel nicht, vertraut der Client keinem
+  Mitglied und sagt das.
 - Der gemerkte Fingerabdruck steht im Schlüsselblock unter AK
   ([Schlüsselhierarchie](#schlusselhierarchie)), nicht nur auf einem Gerät: Jedes Gerät des Kontos
   prüft gegen ihn, auch eines, das mit Passphrase, Recovery-Kit oder Firmen-Recovery entsperrt.
@@ -555,10 +562,17 @@ Audit-Log. Mit den eigenen Schlüsseln (`PUT /api/account/keys`) nimmt er ein Ze
 Inhaber, der die Firma mit dem Einrichtungs-Code angelegt hat, und nur mit der Rolle `owner`; ein
 Eingeladener kann sich so kein eigenes Zertifikat ablegen. Eine Einladung macht immer einen Mitarbeiter: Der Client zertifiziert die Rolle `member`,
 gleich was der Server behauptet. Eine höhere Rolle vergibt nur ein Inhaber in einem eigenen Schritt.
-Zertifizieren kann nur, wer den Wurzelschlüssel hat.
+Zertifizieren kann nur, wer den Wurzelschlüssel hat. Eine Einladung zertifiziert genau ein Konto:
+Bevor der Client das Zertifikat hochlädt, merkt er sich Einladung und Konto im Kontozustand (und
+den Fingerabdruck des Bündels unter den bekannten Bündeln); zeigt der Server später ein zweites Konto
+mit derselben Einladung, etwa mit jemandem, der den Link gesehen hat, lehnt der Client ab. Zwei
+Konten mit derselben Einladung in einer Liste nennt er nicht vertrauenswürdig. Der Name eines
+Mitglieds ist die Beschriftung, die der Einladende eingetippt hat; der Server sieht sie wie jede
+Kontoangabe, und sie bestätigt nichts.
 
 Umgesetzt in `packages/crypto/src/invite.ts` (MAC), `packages/core/src/membership/invitation.ts`
-(Einladung, Prüfen und Zertifizieren) und `apps/server/src/account/members.ts`.
+(Einladung, Prüfen und Zertifizieren), `packages/core/src/membership/members.ts` (Mitgliederliste
+prüfen), `apps/server/src/account/members.ts` und in der Web-App in `apps/web/src/members/`.
 
 **Wehrt ab:** E-01, E-02, E-05, E-10.
 

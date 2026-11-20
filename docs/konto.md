@@ -24,6 +24,30 @@ Wer einen Kennwort-Server betreibt, setzt in seinen Einstellungen einen Einricht
 Ein IT-Dienstleister legt mit demselben Code weitere Firmen auf seinem Server an. Eine bestehende
 Firma öffnet der Code nicht: In eine Firma kommt man nur mit einer Einladung.
 
+## Mitglieder einladen
+
+Unter **Einstellungen → Mitglieder** stehen alle Konten deiner Firma mit ihrer Rolle. **Bestätigt**
+heißt: Dein Gerät hat geprüft, dass der Firmenschlüssel genau diese Schlüssel für genau dieses Konto
+und diese Rolle unterschrieben hat. Was es nicht prüfen kann, steht als **Wartet auf Bestätigung**
+oder **Nicht vertrauenswürdig** da.
+
+Als Inhaber oder Admin lädst du hier ein:
+
+1. Gib unter **Jemanden einladen** einen Namen ein und wähle **Einladen**.
+2. Kopiere den **Einladungslink** und schick ihn auf einem Weg, dem du vertraust. Er gilt sieben Tage
+   und nur einmal.
+3. Hat die Person ihr Konto angelegt, erscheint sie in der Liste mit **Bestätigen**. Dein Gerät prüft
+   dabei, dass ihre Schlüssel zu deiner Einladung gehören; nur dann bestätigt es sie.
+
+Bestätigen kann, wer die Einladung erstellt hat. Eine Einladung macht immer einen Mitarbeiter und
+gilt für genau ein Konto, auch wenn der Server später ein zweites dafür zeigt.
+
+!!! warning "Wenn der Firmenschlüssel nicht passt"
+    Zeigt Kennwort statt der Mitglieder den Hinweis, dass der Firmenschlüssel nicht zu deinem Konto
+    passt, hat der Server einen anderen Schlüssel geliefert als den, den dein Gerät beim Anlegen oder
+    über den Einladungslink kennt. Kennwort vertraut dann keinem Mitglied. Sprich mit dem, der den
+    Server betreibt.
+
 ## Einladung annehmen
 
 Ein Inhaber oder Admin schickt dir einen Einladungslink. Er gilt sieben Tage und nur einmal. Öffne

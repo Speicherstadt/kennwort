@@ -19,6 +19,7 @@ export const ownerWithKeys = async (code: string, passphrase: string, uploadKeys
       accountId: encodeBytes(owner.accountId),
       loginPublicKey: encodeBytes(owner.upload.loginPublicKey),
       accountSalt: encodeBytes(owner.upload.accountSalt),
+      rootPublicKey: encodeBytes(company.rootPublicKey),
     },
   });
   const { token } = (await response.json()) as { token: string };

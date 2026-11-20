@@ -16,6 +16,7 @@ describe("routes", () => {
       ["/generator", { page: "generator" }],
       ["/groups", { page: "groups" }],
       ["/settings", { page: "settings" }],
+      ["/members", { page: "members" }],
       ["/setup", { page: "setup" }],
       ["/unlock", { page: "unlock" }],
       ["/recover", { page: "recover" }],

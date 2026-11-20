@@ -16,6 +16,7 @@ describe("account state", () => {
     bundles: { anna: new Uint8Array(32).fill(2) },
     logs: { buero: { seq: 3, hash: new Uint8Array(32).fill(3) } },
     versions: { bank: 2 },
+    invitations: { einladung1: "anna" },
   };
   const key = new Uint8Array(32).fill(9);
   const account = new Uint8Array(16).fill(4);
@@ -58,6 +59,7 @@ describe("account state", () => {
         kunden: { seq: 1, hash: new Uint8Array(32).fill(6) },
       },
       versions: { bank: 3, mail: 1 },
+      invitations: { einladung2: "max" },
     };
     expect(mergeStates(state, theirs)).toEqual({
       ok: true,
@@ -70,9 +72,11 @@ describe("account state", () => {
           kunden: { seq: 1, hash: new Uint8Array(32).fill(6) },
         },
         versions: { bank: 3, mail: 1 },
+        invitations: { einladung1: "anna", einladung2: "max" },
       },
     });
     expect(mergeStates(state, emptyState(root))).toEqual({ ok: true, value: state });
+    expect(mergeStates(emptyState(root), state)).toEqual({ ok: true, value: state });
   });
 
   it("takes the longer log and the higher version from either side; the same place with another hash is refused", () => {
@@ -106,6 +110,26 @@ describe("account state", () => {
     });
     const swapped = { ...emptyState(root), bundles: { anna: new Uint8Array(32).fill(9) } };
     expect(mergeStates(state, swapped)).toEqual({ ok: false, error: "other-bundle" });
+  });
+
+  it("refuses one invitation certified for two accounts, keeps it for the same one", () => {
+    const other = { ...emptyState(root), invitations: { einladung1: "mallory" } };
+    expect(mergeStates(state, other)).toEqual({ ok: false, error: "other-invitation" });
+    const same = { ...emptyState(root), invitations: { einladung1: "anna" } };
+    expect(mergeStates(state, same)).toEqual({ ok: true, value: state });
+  });
+
+  it("reads a state written before invitations were remembered", () => {
+    const { invitations: _, ...older } = state;
+    const place = { purpose: "account-state", context: [account, 2] };
+    const json = JSON.stringify({
+      ...older,
+      rootFingerprint: "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE",
+      bundles: { anna: "AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI" },
+      logs: { buero: { seq: 3, hash: "AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM" } },
+    });
+    const opened = openState(key, account, 2, seal(key, new TextEncoder().encode(json), place));
+    expect(opened).toEqual({ ok: true, value: { ...state, invitations: {} } });
   });
 });
 

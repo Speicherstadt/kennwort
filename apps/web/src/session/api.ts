@@ -20,6 +20,7 @@ import {
 } from "@kennwort/core";
 import type { DeviceIdentity } from "./device-identity.ts";
 import { deviceCalls } from "./devices-api.ts";
+import { memberCalls } from "./members-api.ts";
 import { pairingCalls } from "./pairing-api.ts";
 export type ApiError = "wrong-code" | "invalid-invitation" | "too-many-requests" | "unexpected";
 type Answer<T> = { ok: true; value: T } | { ok: false; error: ApiError };
@@ -95,12 +96,20 @@ export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity)
   return {
     ...pairingCalls(call),
     ...deviceCalls(call),
-    setup: async (code: string, companyId: Uint8Array, upload: AccountUpload) =>
+    ...memberCalls(call),
+    /** The root key's public half goes along, for every member to check certificates (P-07) */
+    setup: async (
+      code: string,
+      companyId: Uint8Array,
+      upload: AccountUpload,
+      rootPublicKey: Uint8Array,
+    ) =>
       session(
         await call("POST", "/auth/setup", {
           code,
           companyId: encodeBytes(companyId),
           ...enrolment(upload),
+          rootPublicKey: encodeBytes(rootPublicKey),
         }),
       ),
     accept: async (invitationId: string, token: string, upload: AccountUpload) =>
@@ -156,5 +165,7 @@ export type Api = ReturnType<typeof createApi>;
 /** What the session needs: everything but the pairing calls (P-04), which pairing/ uses */
 export type AccountApi = Omit<
   Api,
-  keyof ReturnType<typeof pairingCalls> | keyof ReturnType<typeof deviceCalls>
+  | keyof ReturnType<typeof pairingCalls>
+  | keyof ReturnType<typeof deviceCalls>
+  | keyof ReturnType<typeof memberCalls>
 >;

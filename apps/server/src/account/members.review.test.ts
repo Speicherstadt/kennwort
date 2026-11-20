@@ -21,7 +21,11 @@ describe("members (review of K-304 part 1)", () => {
     const invitation = newInvitation(o.owner.accountKey, o.owner.accountId);
     const made = await o.setup.request("/api/invitations", {
       token: o.token,
-      body: { id: encodeBytes(invitation.id), sealedSecret: encodeBytes(invitation.sealedSecret) },
+      body: {
+        id: encodeBytes(invitation.id),
+        sealedSecret: encodeBytes(invitation.sealedSecret),
+        label: "Anna",
+      },
     });
     const { token } = (await made.json()) as { token: string };
     const anna = createAccount("Anna Heizung Bad Fliese", emptyState(new Uint8Array(32)), {

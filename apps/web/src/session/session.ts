@@ -4,6 +4,7 @@
  * nothing usable lingers once the references are gone.
  */
 import {
+  type AccountState,
   bytes,
   createAccount,
   createCompany,
@@ -18,6 +19,7 @@ import { createSignal } from "solid-js";
 import type { AccountApi } from "./api.ts";
 import { type DeviceAccount, forgetDevice, readDevice, rememberDevice } from "./device.ts";
 import { recoverAccount } from "./recover.ts";
+import { type StateDeps, saveState } from "./state-sync.ts";
 
 export const LOCK_AFTER_MS = 10 * 60 * 1000;
 
@@ -86,9 +88,31 @@ const finishEnrolment = async (
   return { ok: true, value: { accountId, secretKey, recoveryKey } };
 };
 
-export const createSession = (deps: SessionDeps) => {
+/** An invitee's new account and its MAC over the bundle (P-08); undefined for a malformed ID */
+const invitedAccount = (
+  deps: SessionDeps,
+  invitationId: string,
+  rootFingerprint: Uint8Array,
+  secret: Uint8Array,
+  passphrase: string,
+) => {
+  const id = bytes(16).safeParse(invitationId);
+  if (!id.success) return undefined;
+  const account = createAccount(
+    passphrase,
+    emptyState(rootFingerprint),
+    deps.derive ? { derive: deps.derive } : {},
+  );
+  const { accountId, xwingPublicKey, edPublicKey } = account.upload;
+  return {
+    account,
+    mac: invitationMac(secret, id.data, { accountId, xwingPublicKey, edPublicKey }),
+  };
+};
+
+/** The open account in memory and the automatic lock (P-03) */
+const createLock = (deps: SessionDeps) => {
   const [opened, setOpened] = createSignal<Opened>();
-  const [device, setDevice] = createSignal<DeviceAccount | undefined>(readDevice(deps.storage));
   const schedule = deps.schedule ?? ((run, ms) => setTimeout(run, ms));
   const cancel = deps.cancel ?? ((timer) => clearTimeout(timer as number));
   let timer: unknown;
@@ -109,6 +133,12 @@ export const createSession = (deps: SessionDeps) => {
     setOpened(value);
     touch();
   };
+  return { opened, setOpened, lock, touch, open };
+};
+
+export const createSession = (deps: SessionDeps) => {
+  const { opened, setOpened, lock, touch, open } = createLock(deps);
+  const [device, setDevice] = createSignal<DeviceAccount | undefined>(readDevice(deps.storage));
   const remember = (accountId: Uint8Array, secretKey: Uint8Array) => {
     rememberDevice(deps.storage, accountId, secretKey);
     setDevice(readDevice(deps.storage));
@@ -127,7 +157,12 @@ export const createSession = (deps: SessionDeps) => {
     /** The first owner: company, root key and account, all made on this device */
     setUp: async (code: string, passphrase: string) => {
       const company = createCompany(passphrase, deps.derive ? { derive: deps.derive } : {});
-      const token = await deps.api.setup(code, company.companyId, company.owner.upload);
+      const token = await deps.api.setup(
+        code,
+        company.companyId,
+        company.owner.upload,
+        company.rootPublicKey,
+      );
       return enrolled(company.owner, token, (t) =>
         deps.api.uploadKeys(t, company.owner.upload, company.certificate),
       );
@@ -144,15 +179,9 @@ export const createSession = (deps: SessionDeps) => {
       secret: Uint8Array,
       passphrase: string,
     ) => {
-      const id = bytes(16).safeParse(invitationId);
-      if (!id.success) return { ok: false as const, error: "invalid-invitation" as const };
-      const account = createAccount(
-        passphrase,
-        emptyState(rootFingerprint),
-        deps.derive ? { derive: deps.derive } : {},
-      );
-      const { accountId, xwingPublicKey, edPublicKey } = account.upload;
-      const mac = invitationMac(secret, id.data, { accountId, xwingPublicKey, edPublicKey });
+      const invited = invitedAccount(deps, invitationId, rootFingerprint, secret, passphrase);
+      if (!invited) return { ok: false as const, error: "invalid-invitation" as const };
+      const { account, mac } = invited;
       const token = await deps.api.accept(invitationId, inviteToken, account.upload);
       return enrolled(account, token, (t) =>
         deps.api.uploadKeys(t, account.upload, undefined, mac),
@@ -189,6 +218,14 @@ export const createSession = (deps: SessionDeps) => {
     adopt: (value: Opened, secretKey: Uint8Array) => {
       remember(value.accountId, secretKey);
       open(value);
+    },
+    /** Changes the account state and writes it back merged with the server's (state-sync.ts) */
+    updateState: async (api: StateDeps, change: (state: AccountState) => AccountState) => {
+      const current = opened();
+      if (!current) return { ok: false as const, error: "unreachable" as const };
+      const saved = await saveState(api, current, change);
+      if (saved.ok && opened() === current) setOpened({ ...current, state: saved.value });
+      return saved;
     },
     /** This device signed out (K-303, device list): locked, and it no longer knows the account */
     forget: () => {

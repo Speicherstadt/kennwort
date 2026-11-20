@@ -43,10 +43,12 @@ export {
   AnnouncedWire,
   type DeviceEntry,
   DevicesWire,
+  InvitedWire,
   PairingKeyWire,
   type PollAnswer,
   PollWire,
   SessionWire,
+  StaleWire,
   StoredWire,
 } from "./account/wire.ts";
 export {
@@ -104,6 +106,14 @@ export {
   signEntry,
   type VaultRole,
 } from "./membership/log-entry.ts";
+export {
+  CompanyWire,
+  checkMembers,
+  type MemberStatus,
+  MembersWire,
+  type MemberView,
+  trustedRoot,
+} from "./membership/members.ts";
 export {
   idKey,
   isMember,

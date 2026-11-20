@@ -9,6 +9,7 @@ import { certify } from "../membership/certificate.ts";
 import { certifyInvited, invitationMac, newInvitation } from "../membership/invitation.ts";
 import { entryHash, type LogEntry, signEntry } from "../membership/log-entry.ts";
 import { idKey, remember, type Trust, verifyLog } from "../membership/verify-log.ts";
+import { encodeBytes } from "../sync/bytes.ts";
 import { edit, emptyDevice, pull, type Refused, sync } from "../sync/device.ts";
 import { memoryServer } from "../sync/memory-server.ts";
 import { type EntryRecord, sealRecord } from "../sync/record.ts";
@@ -64,6 +65,7 @@ describe("E-02 the server enrols an account of its own through an invitation (P-
     accountId: jonas.id,
     companyId: id(0xc0),
     rootSecretKey: root.secretKey,
+    certified: {},
   };
   /** Jonas invited Anna; the server holds the sealed secret, Anna's bundle and her MAC */
   const invited = () => {
@@ -89,6 +91,15 @@ describe("E-02 the server enrols an account of its own through an invitation (P-
       invitation: { ...served, mac: forged },
     });
     expect(result).toEqual({ ok: false, error: "mac-mismatch" });
+  });
+
+  it("cannot get a second account certified under an invitation used once", () => {
+    const { invitation, served } = invited();
+    const used = { ...certifier, certified: { [encodeBytes(served.id)]: encodeBytes(anna.id) } };
+    // Someone who saw the link made the MAC: still one invitation, one member
+    const mac = invitationMac(invitation.secret, invitation.id, bundle(mallory));
+    const result = certifyInvited(used, { ...bundle(mallory), invitation: { ...served, mac } });
+    expect(result).toEqual({ ok: false, error: "used" });
   });
 
   it("cannot reuse Anna's answer for a second invitation it made up", () => {

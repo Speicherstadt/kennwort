@@ -15,7 +15,11 @@ export const companyRoutes = () =>
     .get("/company", (c) => {
       const company = c.var.scope.company();
       return company
-        ? c.json({ id: company.id, createdAt: company.createdAt })
+        ? c.json({
+            id: company.id,
+            createdAt: company.createdAt,
+            rootPublicKey: company.rootPublicKey,
+          })
         : c.json({ error: "not-found" }, 404);
     })
     .get("/accounts", (c) => c.json(c.var.scope.accounts().map(publicAccount)))

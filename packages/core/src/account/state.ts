@@ -21,6 +21,11 @@ export const AccountState = z.object({
   logs: z.record(z.string(), Remembered),
   /** The highest version of each entry, by entry ID */
   versions: z.record(z.string(), z.number().int().positive()),
+  /**
+   * Invitations this account's admin client has certified, by invitation ID, with the account it
+   * certified: one invitation makes one member, whatever the server shows later (K-304)
+   */
+  invitations: z.record(z.string(), z.string()).default({}),
 });
 export type AccountState = z.infer<typeof AccountState>;
 
@@ -83,7 +88,7 @@ const newerLogs = (mine: AccountState["logs"], theirs: AccountState["logs"]) => 
   return merged;
 };
 
-export type MergeError = "other-root" | "other-bundle" | "other-log";
+export type MergeError = "other-root" | "other-bundle" | "other-log" | "other-invitation";
 
 /** Both devices' knowledge, the higher of each; a different root or bundle for one account is refused */
 export const mergeStates = (
@@ -97,6 +102,10 @@ export const mergeStates = (
   }
   const logs = newerLogs(mine.logs, theirs.logs);
   if (!logs) return err("other-log");
+  for (const [id, account] of Object.entries(theirs.invitations)) {
+    const known = mine.invitations[id];
+    if (known !== undefined && known !== account) return err("other-invitation");
+  }
   const rootSecretKey = mine.rootSecretKey ?? theirs.rootSecretKey;
   return ok({
     rootFingerprint: mine.rootFingerprint,
@@ -109,6 +118,7 @@ export const mergeStates = (
         Math.max(mine.versions[id] ?? 0, theirs.versions[id] ?? 0),
       ]),
     ),
+    invitations: { ...theirs.invitations, ...mine.invitations },
   });
 };
 
@@ -121,4 +131,5 @@ export const emptyState = (
   bundles: {},
   logs: {},
   versions: {},
+  invitations: {},
 });

@@ -128,6 +128,8 @@ export const invitations = sqliteTable("invitations", {
   accountId: text("account_id"),
   /** The invitation secret sealed under the creator's AK (P-08); the server cannot open it */
   sealedSecret: blob("sealed_secret", { mode: "buffer" }),
+  /** Who the invitation is for, as the inviting admin typed it; a label, never checked */
+  label: text("label"),
 });
 
 /**

@@ -47,6 +47,7 @@ const setUp = async (setup: Setup) => {
       accountId: encodeBytes(owner.accountId),
       loginPublicKey: encodeBytes(owner.upload.loginPublicKey),
       accountSalt: encodeBytes(owner.upload.accountSalt),
+      rootPublicKey: encodeBytes(company.rootPublicKey),
     },
   });
   return { company, response };
@@ -120,8 +121,13 @@ describe("setting up the company", () => {
       accountId: encodeBytes(company.owner.accountId),
       loginPublicKey: encodeBytes(company.owner.upload.loginPublicKey),
       accountSalt: encodeBytes(company.owner.upload.accountSalt),
+      rootPublicKey: encodeBytes(company.rootPublicKey),
     };
     expect((await setup.request("/auth/setup", { body })).status).toBe(401);
+    const { rootPublicKey: _, ...withoutRoot } = body;
+    expect(
+      (await setup.request("/auth/setup", { body: { ...withoutRoot, code: CODE } })).status,
+    ).toBe(400);
     expect((await setup.request("/auth/setup", { body: { ...body, companyId: "x" } })).status).toBe(
       400,
     );

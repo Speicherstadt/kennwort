@@ -1,5 +1,6 @@
 import { ed25519KeyPair, open, xwingKeyPair } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
+import { encodeBytes } from "../sync/bytes.ts";
 import { isCertified } from "./certificate.ts";
 import {
   type Certifier,
@@ -16,6 +17,7 @@ const jonas: Certifier = {
   accountId: new Uint8Array(16).fill(0xa1),
   companyId: new Uint8Array(16).fill(0xc0),
   rootSecretKey: root.secretKey,
+  certified: {},
 };
 const bundleOf = (seed: number) => ({
   accountId: new Uint8Array(16).fill(seed),
@@ -124,6 +126,17 @@ describe("certifyInvited", () => {
     expect(certifyInvited(jonas, moved)).toEqual({ ok: false, error: "not-mine" });
     const admin = { ...jonas, accountId: new Uint8Array(16).fill(0xa2) };
     expect(certifyInvited(admin, pending)).toEqual({ ok: false, error: "not-mine" });
+  });
+
+  it("certifies one account per invitation; the same one again, another never", () => {
+    const { pending } = invitedAnna();
+    const id = encodeBytes(pending.invitation.id);
+    const before = { ...jonas, certified: { [id]: encodeBytes(anna.accountId) } };
+    expect(certifyInvited(before, pending).ok).toBe(true);
+    const other = { ...jonas, certified: { [id]: encodeBytes(new Uint8Array(16).fill(0xee)) } };
+    expect(certifyInvited(other, pending)).toEqual({ ok: false, error: "used" });
+    const unrelated = { ...jonas, certified: { [encodeBytes(new Uint8Array(16))]: "max" } };
+    expect(certifyInvited(unrelated, pending).ok).toBe(true);
   });
 
   it("certifies a member whatever role the server claims for the invitee", () => {
