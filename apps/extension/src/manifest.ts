@@ -5,7 +5,17 @@
  */
 import type { ManifestV3Export } from "@crxjs/vite-plugin";
 
+/** The manifest as an object (ManifestV3Export also allows a function or a promise) */
+type ManifestV3 = Extract<ManifestV3Export, { manifest_version: number }>;
+
 export type Browser = "chrome" | "firefox";
+
+/**
+ * Only for the end-to-end tests (`vite build --mode e2e`): activeTab reveals the tab's address only
+ * after a real click on the extension's button, which Playwright cannot make, so the test build may
+ * read the addresses of the test pages under .test instead. A release never carries it.
+ */
+export const E2E_HOSTS = ["https://*.test/*"];
 
 /** Fixed, so Firefox keeps the extension's storage and permissions across reinstalls */
 export const GECKO_ID = "extension@kennwort.app";
@@ -25,8 +35,9 @@ const common = {
   default_locale: "de",
   version: "0.0.0",
   action: { default_popup: "popup.html", default_title: "__MSG_extension_action__" },
-  // Only the session area for unlocked keys; host access comes with filling in (K-403)
-  permissions: ["storage"],
+  // The session area for unlocked keys, the lock alarm, and the address of the active tab only
+  // after a click on the button (activeTab); access to websites comes with filling in (K-403)
+  permissions: ["storage", "alarms", "activeTab"],
   content_security_policy: { extension_pages: CONTENT_SECURITY_POLICY },
 };
 
@@ -36,7 +47,7 @@ const common = {
  * in `browser_specific_settings.gecko`. 140 (the current ESR) is the first version that reads
  * `data_collection_permissions`, which addons.mozilla.org requires; `storage.session` came in 115.
  */
-export const manifest = (browser: Browser): ManifestV3Export =>
+const forBrowser = (browser: Browser): ManifestV3 =>
   browser === "firefox"
     ? {
         ...common,
@@ -45,10 +56,14 @@ export const manifest = (browser: Browser): ManifestV3Export =>
           gecko: {
             id: GECKO_ID,
             strict_min_version: "140.0",
-            // Nothing leaves the device yet; the sync (K-402) sends only ciphertext to the
-            // company's own server and has to look at this again
+            // Nothing goes to the developer or a third party: the popup talks only to the
+            // company's own server, which the user enters, and sends it only ciphertexts, public
+            // keys and a signature (P-02, P-15); the address of the tab never leaves the popup
             data_collection_permissions: { required: ["none"] },
           },
         },
       }
     : { ...common, background: { service_worker: WORKER, type: "module" } };
+
+export const manifest = (browser: Browser, e2e = false): ManifestV3Export =>
+  e2e ? { ...forBrowser(browser), host_permissions: E2E_HOSTS } : forBrowser(browser);

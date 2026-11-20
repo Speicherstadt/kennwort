@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { CONTENT_SECURITY_POLICY, GECKO_ID, manifest } from "./manifest.ts";
+import { CONTENT_SECURITY_POLICY, E2E_HOSTS, GECKO_ID, manifest } from "./manifest.ts";
 
 type Manifest = Record<string, unknown> & {
   background: Record<string, unknown>;
@@ -13,8 +13,8 @@ const messages = (locale: string): Record<string, { message: string }> =>
   JSON.parse(readFileSync(join(locales, locale, "messages.json"), "utf8"));
 
 describe.each(["chrome", "firefox"] as const)("the manifest for %s", (browser) => {
-  it("asks only for the storage permission and no host access yet", () => {
-    expect(built(browser).permissions).toEqual(["storage"]);
+  it("asks for the session area, the lock alarm and the active tab, and no host access yet", () => {
+    expect(built(browser).permissions).toEqual(["storage", "alarms", "activeTab"]);
     expect(built(browser)).not.toHaveProperty("host_permissions");
     expect(built(browser)).not.toHaveProperty("content_scripts");
   });
@@ -52,4 +52,18 @@ it("runs the background as a module service worker in Chrome and Edge", () => {
 it("runs the background from scripts with a fixed ID in Firefox", () => {
   expect(built("firefox").background).toEqual({ scripts: ["src/background.ts"] });
   expect(built("firefox").browser_specific_settings).toMatchObject({ gecko: { id: GECKO_ID } });
+});
+
+it("gives only the end-to-end build access to the test pages under .test", () => {
+  expect(manifest("chrome", true)).toEqual({ ...manifest("chrome"), host_permissions: E2E_HOSTS });
+  expect(E2E_HOSTS).toEqual(["https://*.test/*"]);
+});
+
+it("builds a release only without the test hosts (vite.config.ts)", () => {
+  const config = readFileSync(join(import.meta.dirname, "..", "vite.config.ts"), "utf8");
+  expect(config).toContain('manifest(browser, mode === "e2e")');
+  const { scripts } = JSON.parse(
+    readFileSync(join(import.meta.dirname, "..", "package.json"), "utf8"),
+  );
+  expect(scripts.build).not.toContain("e2e");
 });
