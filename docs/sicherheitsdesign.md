@@ -290,8 +290,8 @@ Umgesetzt in `packages/crypto/src/account.ts` (AK, Schlüsselblock, Entsperr-Weg
 
 Was ein Client sich merkt, um den Server zu prüfen, liegt im **Kontozustand**: Fingerabdruck des
 Firmen-Wurzelschlüssels, bekannte Schlüsselbündel, der letzte Stand jedes Mitgliedschafts-Logs,
-die höchste Version jedes Eintrags und die Einladungen, die das Konto zertifiziert hat, mit dem
-Konto dazu. Er ist ein F-01-Geheimtext unter AK (Zweck `account-state`,
+die höchste Version jedes Eintrags, die Einladungen, die das Konto zertifiziert hat, mit dem Konto
+dazu, und je Konto das Ausstellungsdatum des neuesten Zertifikats, das es gesehen hat. Er ist ein F-01-Geheimtext unter AK (Zweck `account-state`,
 Kontext Konto-ID und ein Zähler) auf dem Server; jedes Gerät lädt ihn beim Entsperren, führt ihn
 mit seinem eigenen Stand zusammen (der höhere Stand gewinnt; ein anderer Wurzelschlüssel, ein anderes
 Bündel für ein bekanntes Konto oder ein anderer Hash an derselben Stelle eines Logs ist ein Angriff) und schreibt ihn mit höherem Zähler zurück. So kennt jedes Gerät eines Kontos, auch eines,
@@ -512,7 +512,12 @@ Umgesetzt in `packages/core/src/membership/` (`verifyLog`, Zertifikate nach F-06
   Empfängers holt ihn mit `GET /api/account/root-grant` und nimmt ihn nur, wenn sein öffentlicher
   Teil den gemerkten Fingerabdruck hat; einen Schlüssel, den der Server selbst verpackt hat, lehnt er
   ab. Danach steht er im Kontozustand, für jedes Gerät des Kontos. Rollen gibt nur ein Inhaber, und
-  nie sich selbst: So bleibt immer ein Inhaber. Wer zum Mitarbeiter wird, verliert den
+  nie sich selbst: So bleibt immer ein Inhaber; der Server prüft den Aufrufer dafür noch einmal in
+  derselben Transaktion, in der er schreibt. Ein neues Zertifikat ist immer später ausgestellt als
+  das, das es ersetzt, und jeder Client merkt sich je Konto das neueste, das er gesehen hat (im
+  Kontozustand); ein älteres, das der Server zurückspielt, gilt nicht mehr, auch nicht, um einen
+  Wurzelschlüssel anzunehmen. Ein Gerät, das die neuere Rolle nie gesehen hat, kann der Server so
+  noch täuschen; den lückenlosen Nachweis bringt erst ein signiertes Log der Firmenrollen. Wer zum Mitarbeiter wird, verliert den
   Wurzelschlüssel auf dem Server, nicht aber eine Kopie, die er schon hat; davor schützt erst ein
   neuer Wurzelschlüssel (K-307).
 - Der Wurzelschlüssel signiert die Schlüsselbündel der Mitarbeiter (F-06) und die

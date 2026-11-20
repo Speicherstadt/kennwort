@@ -64,11 +64,9 @@ export const changeRole = (
   now: () => number = Date.now,
 ) => {
   const { signature: _, ...unsigned } = current;
-  const certificate = certify(rootSecretKey, {
-    ...unsigned,
-    role,
-    issuedAt: Math.floor(now() / 1000),
-  });
+  // Always later than the one it replaces, so clients can tell the newer role (review of K-304)
+  const issuedAt = Math.max(Math.floor(now() / 1000), current.issuedAt + 1);
+  const certificate = certify(rootSecretKey, { ...unsigned, role, issuedAt });
   return {
     certificate,
     rootGrant: role === "member" ? undefined : grantRoot(rootSecretKey, certificate),

@@ -221,7 +221,10 @@ export const MembersPage = (props: { session: Session; api: MembersDeps; origin:
     const list = ready();
     if (!current || !list || !needsRoot(current, list.me)) return;
     const adopted = await adoptRoot(props.api, props.session, list.me);
-    if (!adopted.ok && adopted.error !== "none") setProblem(m.members_root_grant_invalid());
+    if (adopted.ok || adopted.error === "none") return;
+    setProblem(
+      adopted.error === "failed" ? m.members_root_adopt_failed() : m.members_root_grant_invalid(),
+    );
   };
   void loadAndAdopt();
   const ready = () => {
@@ -241,7 +244,7 @@ export const MembersPage = (props: { session: Session; api: MembersDeps; origin:
     if (!current) return;
     setBusy(true);
     setProblem(undefined);
-    const changed = await setRole(props.api, current, view, role);
+    const changed = await setRole(props.api, props.session, view, role);
     setBusy(false);
     if (!changed) setProblem(m.members_role_failed());
     await refresh();

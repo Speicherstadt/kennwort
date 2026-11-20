@@ -1,7 +1,13 @@
 import { ed25519KeyPair, rootFingerprint, xwingKeyPair } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
 import { type Certificate, certify } from "./certificate.ts";
-import { CompanyWire, checkMembers, MembersWire, trustedRoot } from "./members.ts";
+import {
+  CompanyWire,
+  checkMembers,
+  MembersWire,
+  newerCertificates,
+  trustedRoot,
+} from "./members.ts";
 
 // K-304 part 2: what a client can say about each member, whatever the server claims
 const root = ed25519KeyPair(new Uint8Array(32).fill(1));
@@ -113,6 +119,29 @@ describe("checkMembers", () => {
       expect(view?.status).toBe("waiting");
       expect(view?.pending).toBeUndefined();
     }
+  });
+
+  it("does not count a certificate older than the newest seen for the account", () => {
+    const listed = row(anna, { certificate: cert(anna, "member") });
+    const id = Buffer.from(anna.id).toString("base64url");
+    for (const [seen, status] of [
+      [0, "certified"],
+      [1, "certified"],
+      [2, "invalid"],
+    ] as const)
+      expect(checkMembers(root.publicKey, [listed], { [id]: seen })[0]?.status).toBe(status);
+  });
+
+  it("names the newer issue times to remember, and nothing when none is newer", () => {
+    const views = checkMembers(root.publicKey, [
+      row(jonas, { role: "owner", certificate: cert(jonas, "owner") }),
+      row(anna),
+    ]);
+    const id = Buffer.from(jonas.id).toString("base64url");
+    expect(newerCertificates(views, {})).toEqual({ [id]: 1 });
+    expect(newerCertificates(views, { [id]: 1 })).toBeUndefined();
+    expect(newerCertificates(views, { [id]: 0, other: 4 })).toEqual({ [id]: 1, other: 4 });
+    expect(newerCertificates(views, { [id]: 2 })).toBeUndefined();
   });
 
   it("refuses to offer one invitation for two accounts", () => {

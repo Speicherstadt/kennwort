@@ -45,6 +45,19 @@ describe("changeRole", () => {
     }
   });
 
+  it("issues the new certificate later than the one it replaces, even within one second", () => {
+    const later = { ...annaMember, issuedAt: 5000 };
+    expect(changeRole(root.secretKey, later, "admin", () => 2_000_000).certificate.issuedAt).toBe(
+      5001,
+    );
+    expect(changeRole(root.secretKey, later, "admin", () => 5_001_999).certificate.issuedAt).toBe(
+      5001,
+    );
+    expect(changeRole(root.secretKey, later, "admin", () => 5_002_000).certificate.issuedAt).toBe(
+      5002,
+    );
+  });
+
   it("gives a member no root key, and uses the current time by default", () => {
     const { certificate, rootGrant } = changeRole(root.secretKey, annaMember, "member");
     expect(rootGrant).toBeUndefined();

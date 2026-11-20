@@ -13,6 +13,7 @@ import {
   checkMembers,
   encodeBytes,
   type MemberView,
+  newerCertificates,
   newInvitation,
   openRootGrant,
   type PendingMember,
@@ -41,7 +42,7 @@ export const loadMembers = async (
   if (!company || !members) return { ok: false, error: "unreachable" };
   const root = trustedRoot(opened.state.rootFingerprint, company.rootPublicKey);
   if (!root) return { ok: false, error: "root-mismatch" };
-  const views = checkMembers(root, members);
+  const views = checkMembers(root, members, opened.state.certificates);
   return { ok: true, value: { views, me: views.find((v) => same(v.accountId, opened.accountId)) } };
 };
 
@@ -86,17 +87,33 @@ export const adoptRoot = async (
   return saved.ok ? { ok: true } : { ok: false, error: "failed" };
 };
 
-/** An owner gives another certified member a new role (root-grant.ts) */
+/** Remembers the newest certificate seen per account, so an older one played back does not count */
+export const rememberCertificates = (api: MembersDeps, session: Session, views: MemberView[]) =>
+  session.updateState(api, (state) => {
+    const newer = newerCertificates(views, state.certificates);
+    return newer ? { ...state, certificates: newer } : undefined;
+  });
+
+/**
+ * An owner gives another certified member a new role (root-grant.ts); the new certificate is
+ * remembered before it is uploaded, so the old role never counts again on this account's devices
+ */
 export const setRole = async (
   api: MembersDeps,
-  opened: Opened,
+  session: Session,
   view: MemberView,
   role: CompanyRole,
 ) => {
-  const root = opened.state.rootSecretKey;
-  if (!root || !view.certificate) return false;
+  const opened = session.opened();
+  const root = opened?.state.rootSecretKey;
+  if (!opened || !root || !view.certificate) return false;
   const { certificate, rootGrant } = changeRole(root, view.certificate, role);
-  return api.changeRole(opened.token, certificate, rootGrant);
+  const id = encodeBytes(certificate.accountId);
+  const remembered = await session.updateState(api, (state) => ({
+    ...state,
+    certificates: { ...state.certificates, [id]: certificate.issuedAt },
+  }));
+  return remembered.ok && (await api.changeRole(opened.token, certificate, rootGrant));
 };
 
 /** The link's fragment never reaches the server: the secret and the pinned root fingerprint */

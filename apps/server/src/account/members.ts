@@ -82,13 +82,34 @@ const fitsKeys = (certificate: Certificate, member: Member, companyId: string, k
   same(certificate.xwingPublicKey, keys.xwingPublicKey) &&
   same(certificate.edPublicKey, keys.edPublicKey);
 
-/** Role, certificate and root key at once; a member keeps no root key on the server */
-const storeRole = (db: Db, at: number, member: Member, change: z.infer<typeof RoleChange>) =>
+/**
+ * Role, certificate and root key at once; a member keeps no root key on the server. The caller is
+ * checked again inside the transaction: it is an owner and never the member it changes, so one owner
+ * always remains, also when two owners demote each other at the same time (review of K-304)
+ */
+const storeRole = (
+  db: Db,
+  at: number,
+  callerId: string,
+  member: Member,
+  change: z.infer<typeof RoleChange>,
+) =>
   db.transaction((tx) => {
+    const caller = tx.select().from(accounts).where(eq(accounts.id, callerId)).get();
+    if (caller?.role !== "owner") return false;
     tx.update(accounts)
       .set({ role: change.certificate.role })
       .where(eq(accounts.id, member.id))
       .run();
+    const owners = tx
+      .select()
+      .from(accounts)
+      .where(and(eq(accounts.companyId, member.companyId), eq(accounts.role, "owner")))
+      .all();
+    if (owners.length === 0) {
+      tx.rollback();
+      return false;
+    }
     tx.update(accountKeys)
       .set({ certificate: JSON.stringify(toWire(change.certificate)), updatedAt: at })
       .where(eq(accountKeys.accountId, member.id))
@@ -98,6 +119,7 @@ const storeRole = (db: Db, at: number, member: Member, change: z.infer<typeof Ro
       tx.insert(rootGrants)
         .values({ accountId: member.id, wrapped: Buffer.from(change.rootGrant), createdAt: at })
         .run();
+    return true;
   });
 
 export const memberRoutes = ({ db, now }: { db: Db; now: () => number }) =>
@@ -164,7 +186,8 @@ export const memberRoutes = ({ db, now }: { db: Db; now: () => number }) =>
         (certificate.role === "member") !== (rootGrant === undefined)
       )
         return c.json({ error: "invalid" }, 400);
-      storeRole(db, now(), member, parsed.data);
+      if (!storeRole(db, now(), me.id, member, parsed.data))
+        return c.json({ error: "forbidden" }, 403);
       scope.audit({
         time: now(),
         actor: me.id,

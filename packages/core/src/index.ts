@@ -113,6 +113,7 @@ export {
   type MemberStatus,
   MembersWire,
   type MemberView,
+  newerCertificates,
   trustedRoot,
 } from "./membership/members.ts";
 export {

@@ -14,7 +14,14 @@ import { derive, fakeApi, memory, PASSPHRASE } from "../session/session.test-kit
 import { createSession } from "../session/session.ts";
 import { stateServer } from "../session/state-server.test-kit.ts";
 import { jonasCompany, server } from "./members.test-kit.ts";
-import { adoptRoot, mayChangeRoles, mayConfirm, needsRoot, setRole } from "./members.ts";
+import {
+  adoptRoot,
+  mayChangeRoles,
+  mayConfirm,
+  needsRoot,
+  rememberCertificates,
+  setRole,
+} from "./members.ts";
 
 // K-304 part 3: Jonas makes Anna an admin; Anna's client takes the root key
 const company = new Uint8Array(16).fill(0xc0);
@@ -82,8 +89,8 @@ describe("setRole", () => {
     const anna = await annaDevice(jonas, "member");
     const s = server(jonas, []);
     const view = { ...anna.me };
-    expect(await setRole(s.api, jonas.opened, view, "admin")).toBe(true);
-    expect(await setRole(s.api, jonas.opened, view, "member")).toBe(true);
+    expect(await setRole(s.api, jonas.session, view, "admin")).toBe(true);
+    expect(await setRole(s.api, jonas.session, view, "member")).toBe(true);
     const [admin, member] = s.roles;
     expect(admin?.certificate.role).toBe("admin");
     expect(isCertified(jonas.rootPublicKey, admin?.certificate as Certificate)).toBe(true);
@@ -102,13 +109,26 @@ describe("setRole", () => {
     expect(member?.rootGrant).toBeUndefined();
   });
 
+  it("remembers the new certificate before the upload, and uploads nothing if that fails", async () => {
+    const jonas = await jonasCompany();
+    const anna = await annaDevice(jonas, "member");
+    const s = server(jonas, []);
+    expect(await setRole(s.api, jonas.session, anna.me, "admin")).toBe(true);
+    const id = encodeBytes(anna.opened.accountId);
+    expect(jonas.session.opened()?.state.certificates[id]).toBe(s.roles[0]?.certificate.issuedAt);
+    expect(s.calls).toEqual(["state", "role"]);
+    const broken = { ...s.api, writeState: async () => ({ ok: false as const, stale: false }) };
+    expect(await setRole(broken, jonas.session, anna.me, "member")).toBe(false);
+    expect(s.roles).toHaveLength(1);
+  });
+
   it("does nothing without the root key or a certificate", async () => {
     const jonas = await jonasCompany();
     const anna = await annaDevice(jonas, "member");
     const s = server(jonas, []);
     const { certificate: _, ...uncertified } = anna.me;
-    expect(await setRole(s.api, jonas.opened, uncertified, "admin")).toBe(false);
-    expect(await setRole(s.api, anna.opened, anna.me, "admin")).toBe(false);
+    expect(await setRole(s.api, jonas.session, uncertified, "admin")).toBe(false);
+    expect(await setRole(s.api, anna.session, anna.me, "admin")).toBe(false);
     expect(s.roles).toEqual([]);
   });
 });
@@ -151,5 +171,21 @@ describe("adoptRoot", () => {
     expect(await adoptRoot(noState, anna.session, anna.me)).toEqual({ ok: false, error: "failed" });
     expect(state.current().stateCounter).toBe(0);
     expect(encodeBytes(anna.opened.accountId)).toHaveLength(22);
+  });
+});
+
+describe("rememberCertificates", () => {
+  it("keeps the newest certificate per account and writes nothing when none is newer", async () => {
+    const jonas = await jonasCompany();
+    const anna = await annaDevice(jonas, "member");
+    const s = server(jonas, []);
+    const id = encodeBytes(anna.opened.accountId);
+    expect((await rememberCertificates(s.api, jonas.session, [anna.me])).ok).toBe(true);
+    expect(jonas.session.opened()?.state.certificates[id]).toBe(1);
+    expect(await rememberCertificates(s.api, jonas.session, [anna.me])).toEqual({
+      ok: false,
+      error: "refused",
+    });
+    expect(s.calls).toEqual(["state"]);
   });
 });

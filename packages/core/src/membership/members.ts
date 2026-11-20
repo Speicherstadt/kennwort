@@ -59,7 +59,8 @@ export const trustedRoot = (pinned: Uint8Array, served: Uint8Array | null) =>
 
 const same = (a: Uint8Array, b: Uint8Array | null) => b !== null && constantTimeEqual(a, b);
 
-const certifiedFor = (root: Uint8Array, c: Certificate, member: MemberWire) =>
+const certifiedFor = (root: Uint8Array, c: Certificate, member: MemberWire, seen: number) =>
+  c.issuedAt >= seen &&
   isCertified(root, c) &&
   constantTimeEqual(c.accountId, member.id) &&
   same(c.xwingPublicKey, member.xwingPublicKey) &&
@@ -80,9 +81,10 @@ const statusOf = (
   root: Uint8Array,
   member: MemberWire,
   shared: boolean,
+  seen: number,
 ): Pick<MemberView, "status" | "certificate" | "pending"> => {
   if (member.certificate)
-    return certifiedFor(root, member.certificate, member)
+    return certifiedFor(root, member.certificate, member, seen)
       ? { status: "certified", certificate: member.certificate }
       : { status: "invalid" };
   if (shared) return { status: "invalid" };
@@ -90,8 +92,15 @@ const statusOf = (
   return pending ? { status: "pending", pending } : { status: "waiting" };
 };
 
-/** Every member with what this client can say about it, under the root from trustedRoot */
-export const checkMembers = (root: Uint8Array, members: MemberWire[]): MemberView[] => {
+/**
+ * Every member with what this client can say about it, under the root from trustedRoot; `seen`
+ * holds the newest certificate per account this account has seen, so an older one does not count
+ */
+export const checkMembers = (
+  root: Uint8Array,
+  members: MemberWire[],
+  seen: Readonly<Record<string, number>> = {},
+): MemberView[] => {
   const counts = new Map<string, number>();
   for (const m of members)
     if (m.invitation) {
@@ -104,6 +113,20 @@ export const checkMembers = (root: Uint8Array, members: MemberWire[]): MemberVie
     accountId: member.id,
     name: member.name,
     role: member.role,
-    ...statusOf(root, member, shared(member)),
+    ...statusOf(root, member, shared(member), seen[encodeBytes(member.id)] ?? 0),
   }));
+};
+
+/** The issue times to remember after a check, or undefined when nothing is newer than known */
+export const newerCertificates = (
+  views: MemberView[],
+  seen: Readonly<Record<string, number>>,
+): Record<string, number> | undefined => {
+  const newer = views.flatMap((v) => {
+    const id = encodeBytes(v.accountId);
+    return v.certificate && v.certificate.issuedAt > (seen[id] ?? 0)
+      ? [[id, v.certificate.issuedAt] as const]
+      : [];
+  });
+  return newer.length > 0 ? { ...seen, ...Object.fromEntries(newer) } : undefined;
 };
