@@ -83,7 +83,9 @@ export const createSession = (deps: SessionDeps) => {
     cancel(timer);
     timer = schedule(lock, deps.lockAfterMs ?? LOCK_AFTER_MS);
   };
+  // Another account opened while one is unlocked (setup or invitation) drops the first one properly
   const open = (value: Opened) => {
+    lock();
     setOpened(value);
     touch();
   };

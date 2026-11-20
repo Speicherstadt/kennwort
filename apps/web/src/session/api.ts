@@ -47,6 +47,7 @@ const keysBody = (upload: AccountUpload, certificate?: Certificate) => ({
 });
 
 export const createApi = (send: typeof fetch = fetch) => {
+  /** Status 0 when the server cannot be reached: errors are values here too (review of K-303) */
   const call = async (method: string, path: string, body?: unknown, token?: string) => {
     const response = await send(path, {
       method,
@@ -55,7 +56,8 @@ export const createApi = (send: typeof fetch = fetch) => {
         ...(token ? { authorization: `Bearer ${token}` } : {}),
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    });
+    }).catch(() => undefined);
+    if (!response) return { status: 0, json: undefined };
     return { status: response.status, json: await response.json().catch(() => undefined) };
   };
   const session = (answer: { status: number; json: unknown }): Answer<string> => {
