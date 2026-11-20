@@ -96,7 +96,7 @@ und die Schritte für Menschen am Ende erledigt sind.
 - [x] **K-301 UI-Paket** – `packages/ui` nach DESIGN.md: Button, Input, Dialog, Menü, Popover,
   Tooltip, Toast, Combobox, Tabs, Badge, Liste; native Elemente, eigene `cn()` und `variants()`.
   Fertig, wenn: jede Komponente mit Tastatur bedienbar ist und axe keine Fehler findet.
-- [ ] **K-302 App-Rahmen** – Rail, Seitenleiste, Liste und Detail wie im Mockup; Handy mit einem
+- [x] **K-302 App-Rahmen** – Rail, Seitenleiste, Liste und Detail wie im Mockup; Handy mit einem
   Screen und Tab-Leiste; hell und dunkel; de/en.
   Fertig, wenn: Playwright desktop und `@phone` alle Seiten öffnet und axe grün ist.
 - [ ] **K-303 Konto und Geräte** – Konto anlegen, Entsperren, Recovery-Kit als PDF, neues Gerät per

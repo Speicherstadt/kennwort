@@ -1,0 +1,107 @@
+{
+  "company": {
+    "name": "Weber Haustechnik",
+    "user": "Jonas Weber"
+  },
+  "vaults": [
+    {
+      "id": "personal",
+      "name": "Persönlich"
+    },
+    {
+      "id": "office",
+      "name": "Büro"
+    },
+    {
+      "id": "accounting",
+      "name": "Buchhaltung"
+    },
+    {
+      "id": "customers",
+      "name": "Kunden-Zugänge"
+    },
+    {
+      "id": "tablets",
+      "name": "Baustellen-Tablets"
+    }
+  ],
+  "groups": [
+    {
+      "id": "info",
+      "name": "info@",
+      "members": 3
+    },
+    {
+      "id": "invoices",
+      "name": "rechnung@",
+      "members": 2
+    }
+  ],
+  "entries": [
+    {
+      "id": "bank",
+      "title": "Sparkasse",
+      "username": "weber-haustechnik",
+      "password": "Weber-2026!",
+      "website": "https://sparkasse.test",
+      "vault": "accounting",
+      "favorite": true,
+      "weak": false,
+      "changedAt": 1794821400000,
+      "changedBy": "Anna",
+      "access": ["Jonas", "Anna"]
+    },
+    {
+      "id": "mail",
+      "title": "Mail info@",
+      "username": "info@weber-haustechnik.test",
+      "password": "sommer2019",
+      "website": "https://mail.weber-haustechnik.test",
+      "vault": "office",
+      "favorite": true,
+      "weak": true,
+      "changedAt": 1769074200000,
+      "changedBy": "Jonas",
+      "access": ["Jonas", "Anna", "Sandra"]
+    },
+    {
+      "id": "wlan",
+      "title": "WLAN Büro",
+      "username": "Weber-Buero",
+      "password": "Heizung-Wasser-Licht-42",
+      "website": "",
+      "vault": "office",
+      "favorite": false,
+      "weak": false,
+      "changedAt": 1791538200000,
+      "changedBy": "Sandra",
+      "access": ["Jonas", "Anna", "Sandra", "Max"]
+    },
+    {
+      "id": "datev",
+      "title": "DATEV",
+      "username": "jonas.weber",
+      "password": "datev123",
+      "website": "https://datev.test",
+      "vault": "accounting",
+      "favorite": false,
+      "weak": true,
+      "changedAt": 1751794200000,
+      "changedBy": "Jonas",
+      "access": ["Jonas", "Anna"]
+    },
+    {
+      "id": "tablet",
+      "title": "Tablet Baustelle 1",
+      "username": "baustelle1",
+      "password": "Kupfer-Rohr-Flansch-7",
+      "website": "",
+      "vault": "tablets",
+      "favorite": false,
+      "weak": false,
+      "changedAt": 1794130200000,
+      "changedBy": "Max",
+      "access": ["Jonas", "Max"]
+    }
+  ]
+}

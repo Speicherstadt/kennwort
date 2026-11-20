@@ -1,32 +1,98 @@
 import { setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
+import { flush } from "solid-js";
 import { afterEach, describe, expect, it } from "vitest";
 import { App } from "./app.tsx";
+import { createNavigation, type Navigation } from "./navigation.ts";
 
-describe("App", () => {
-  let dispose = () => {};
-  afterEach(() => {
+let dispose = () => {};
+let nav: Navigation | undefined;
+afterEach(() => {
+  dispose();
+  nav?.dispose();
+  document.body.innerHTML = "";
+  delete document.documentElement.dataset.theme;
+});
+
+const open = (path: string, locale: "de" | "en" = "de") => {
+  setLocale(locale, { reload: false });
+  window.history.replaceState(null, "", path);
+  const root = document.createElement("div");
+  document.body.append(root);
+  const navigation = createNavigation(window);
+  nav = navigation;
+  dispose = render(() => <App nav={navigation} />, root);
+  flush();
+  return root;
+};
+const heading = (root: ParentNode) => root.querySelector("h1")?.textContent;
+const click = (el: Element | null | undefined) => {
+  (el as HTMLElement).click();
+  flush();
+};
+
+describe("App frame", () => {
+  it("opens all entries in German and in English", () => {
+    expect(heading(open("/"))).toBe("Alle Einträge");
     dispose();
-    document.body.innerHTML = "";
+    expect(heading(open("/entries", "en"))).toBe("All entries");
   });
 
-  const mount = () => {
-    const root = document.createElement("div");
-    document.body.append(root);
-    dispose = render(() => <App />, root);
-    return root;
-  };
-
-  it("shows the German texts by default", () => {
-    setLocale("de", { reload: false });
-    expect(mount().querySelector("h1")?.textContent).toBe("Kennwort");
-    expect(document.body.textContent).toContain("nur für euch lesbar");
+  it("opens an entry from the list into the URL and hides its password until revealed", () => {
+    const root = open("/entries");
+    const option = [...root.querySelectorAll('[role="option"]')].find((o) =>
+      o.textContent?.includes("Sparkasse"),
+    );
+    click(option);
+    expect(window.location.pathname).toBe("/entries/bank");
+    expect(root.querySelectorAll("h1")[1]?.textContent).toBe("Sparkasse");
+    expect(root.textContent).not.toContain("Weber-2026!");
+    click(root.querySelector('button[aria-label="Passwort aufdecken"]'));
+    expect(root.textContent).toContain("Weber-2026!");
+    expect(
+      root.querySelector('button[aria-label="Passwort verdecken"]')?.getAttribute("aria-pressed"),
+    ).toBe("true");
   });
 
-  it("shows the English texts after switching the locale", () => {
-    setLocale("en", { reload: false });
-    expect(document.body.textContent).not.toContain("readable only by you");
-    mount();
-    expect(document.body.textContent).toContain("readable only by you");
+  it("filters by the sidebar's lists and follows the back button", () => {
+    const root = open("/entries");
+    click(root.querySelector('a[href="/to-change"]'));
+    expect(heading(root)).toBe("Zum Ändern");
+    expect(
+      [...root.querySelectorAll('[role="option"]')].map(
+        (o) => o.querySelector(".font-medium")?.textContent,
+      ),
+    ).toEqual(["DATEV", "Mail info@"]);
+    window.history.back();
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    flush();
+    expect(heading(root)).toBe("Alle Einträge");
+  });
+
+  it("opens every section and says when a page or entry does not exist", () => {
+    expect(heading(open("/generator"))).toBe("Generator");
+    dispose();
+    expect(heading(open("/groups"))).toBe("Gruppen");
+    dispose();
+    expect(heading(open("/settings"))).toBe("Einstellungen");
+    dispose();
+    expect(heading(open("/nope"))).toBe("Diese Seite gibt es nicht");
+    dispose();
+    expect(open("/entries/unknown").textContent).toContain("Diesen Eintrag gibt es hier nicht.");
+  });
+
+  it("switches to dark and back to the system setting in the settings", () => {
+    const root = open("/settings");
+    click(root.querySelector('input[value="dark"]'));
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    click(root.querySelector('input[value="system"]'));
+    expect(document.documentElement.dataset.theme).toBeUndefined();
+  });
+
+  it("marks the current section in the navigation", () => {
+    const root = open("/groups");
+    expect(
+      [...root.querySelectorAll('[aria-current="page"]')].map((a) => a.getAttribute("href")),
+    ).toContain("/groups");
   });
 });
