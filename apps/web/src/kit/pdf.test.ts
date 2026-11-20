@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { literal, pdfDocument } from "./pdf.ts";
+import { literal, pdfDocument, textString } from "./pdf.ts";
 
 const text = (bytes: Uint8Array) => String.fromCharCode(...bytes);
 
@@ -35,7 +35,7 @@ describe("pdfDocument", () => {
     expect(file.slice(start + length)).toMatch(/^\nendstream/);
     expect(file).toContain("BT /F3 12 Tf 56 700.56 Td (K1-ABC \\(Test\\) \\\\) Tj ET");
     expect(file).toContain("0 g 1 2 3 4 re f");
-    expect(file).toContain("/Title (Recovery-Kit)");
+    expect(file).toContain("/Title <FEFF005200650063006F0076006500720079002D004B00690074>");
     for (const font of ["Helvetica", "Helvetica-Bold", "Courier"])
       expect(file).toContain(`/BaseFont /${font} /Encoding /WinAnsiEncoding`);
   });
@@ -49,5 +49,16 @@ describe("literal", () => {
     expect(literal("€ – „x“ 🔑")).toBe("(\\200 \\226 \\204x\\223 ?)");
     expect(literal("\u0080\u009f")).toBe("(??)");
     expect(literal("~ ")).toBe("(~ )");
+  });
+});
+
+describe("textString", () => {
+  // Review of K-303: WinAnsi in /Title showed the en dash as "OE" (PDFDocEncoding)
+  it("writes UTF-16BE with a byte order mark, surrogate pairs included", () => {
+    expect(textString("Kennwort – Kit")).toBe(
+      "<FEFF004B0065006E006E0077006F00720074002020130020004B00690074>",
+    );
+    expect(textString("ä🔑")).toBe("<FEFF00E4D83DDD11>");
+    expect(textString("")).toBe("<FEFF>");
   });
 });

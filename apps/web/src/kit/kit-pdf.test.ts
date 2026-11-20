@@ -1,6 +1,6 @@
 import jsQR from "jsqr";
 import { describe, expect, it } from "vitest";
-import { deviceLink, kitMarks, kitPdf, qrMarks, runs, wrap } from "./kit-pdf.ts";
+import { chunk, deviceLink, kitMarks, kitPdf, qrMarks, runs, wrap } from "./kit-pdf.ts";
 import type { Mark } from "./pdf.ts";
 
 const texts = {
@@ -31,7 +31,9 @@ describe("the recovery kit", () => {
     for (const label of Object.values(texts)) expect(shown.join(" ")).toContain(label);
     const file = String.fromCharCode(...kitPdf(kit));
     expect(file).toContain("(R1-AAAAA-BBBBB-CCCCC)");
-    expect(file).toContain("/Title (Kennwort \\226 Recovery-Kit)");
+    expect(file).toContain(
+      "/Title <FEFF004B0065006E006E0077006F00720074002020130020005200650063006F0076006500720079002D004B00690074>",
+    );
   });
 
   it("keeps everything on the page", () => {
@@ -97,6 +99,30 @@ describe("runs", () => {
       [6, 3],
     ]);
     expect(runs([false, false])).toEqual([]);
+  });
+});
+
+describe("long values", () => {
+  // Review of K-303: a long server address ran off the paper
+  it("break into lines that stay between the margins, and push what follows down", () => {
+    const server =
+      "https://kennwort.weber-haustechnik-sanitaer-heizung.kunden.example-hosting.de/x/y/z";
+    const marks = kitMarks({ ...kit, server });
+    const mono = marks.filter((mark) => mark.kind === "text" && mark.font === "mono");
+    for (const mark of mono)
+      if (mark.kind === "text")
+        expect(mark.x + mark.text.length * 0.6 * mark.size).toBeLessThanOrEqual(595.28 - 56);
+    const shown = mono.flatMap((mark) => (mark.kind === "text" ? [mark.text] : []));
+    expect(shown.join("")).toContain(server);
+    const lowest = (all: typeof marks) => Math.min(...all.map((mark) => mark.y));
+    const rects = (all: typeof marks) => all.filter((mark) => mark.kind === "rect");
+    expect(lowest(rects(marks))).toBeLessThan(lowest(rects(kitMarks(kit))));
+  });
+
+  it("chunk cuts at the width", () => {
+    expect(chunk("abcdefg", 3)).toEqual(["abc", "def", "g"]);
+    expect(chunk("abc", 3)).toEqual(["abc"]);
+    expect(chunk("", 3)).toEqual([""]);
   });
 });
 

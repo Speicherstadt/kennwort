@@ -17,4 +17,15 @@ describe("navigation", () => {
     expect(nav.route()).toEqual({ page: "entries", filter: { kind: "all" } });
     nav.dispose();
   });
+
+  it("drops the fragment and keeps the page", () => {
+    window.history.replaceState(null, "", "/unlock?x=1#account=a&secret=K1-X");
+    const nav = createNavigation(window);
+    nav.dropFragment();
+    expect(window.location.pathname + window.location.search + window.location.hash).toBe(
+      "/unlock?x=1",
+    );
+    expect(nav.route()).toEqual({ page: "unlock" });
+    nav.dispose();
+  });
 });

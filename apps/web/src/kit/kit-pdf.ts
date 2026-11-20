@@ -56,10 +56,38 @@ const paragraph = (text: string, top: number, size: number): Mark[] =>
     text: line,
   }));
 
-const field = (label: string, value: string, top: number): Mark[] => [
-  { kind: "text", x: MARGIN, y: top, size: 9, font: "sans-bold", text: label },
-  { kind: "text", x: MARGIN, y: top - 17, size: 12, font: "mono", text: value },
-];
+const VALUE_SIZE = 12;
+// Every Courier glyph is 600/1000 em wide (Adobe Core 14 metrics), so this is exact
+const VALUE_CHARS = Math.floor((A4.width - 2 * MARGIN) / (0.6 * VALUE_SIZE));
+
+/** Cuts a value without spaces (an address, a key) into lines that fit between the margins */
+export const chunk = (value: string, width: number) =>
+  value.length === 0
+    ? [""]
+    : Array.from({ length: Math.ceil(value.length / width) }, (_, index) =>
+        value.slice(index * width, (index + 1) * width),
+      );
+
+/** A label and its value, the value on as many lines as it needs; returns the marks and the next top */
+const field = (label: string, value: string, top: number): { marks: Mark[]; next: number } => {
+  const lines = chunk(value, VALUE_CHARS);
+  return {
+    marks: [
+      { kind: "text", x: MARGIN, y: top, size: 9, font: "sans-bold", text: label },
+      ...lines.map(
+        (line, index): Mark => ({
+          kind: "text",
+          x: MARGIN,
+          y: top - 17 - index * 15,
+          size: VALUE_SIZE,
+          font: "mono",
+          text: line,
+        }),
+      ),
+    ],
+    next: top - 46 - (lines.length - 1) * 15,
+  };
+};
 
 /** Dark modules as one rectangle per run in a row: fewer marks, no seams between neighbours */
 export const qrMarks = (text: string, x: number, top: number, size: number): Mark[] => {
@@ -96,14 +124,20 @@ export const kitMarks = (kit: KitContent): Mark[] => {
   const top = A4.height - MARGIN;
   const intro = paragraph(texts.intro, top - 40, 10);
   const fieldsTop = (intro.at(-1)?.y ?? top) - 40;
-  const fields = [
+  const fields: Mark[] = [];
+  let next = fieldsTop;
+  for (const [label, value] of [
     [texts.server, kit.server],
     [texts.account, kit.accountId],
     [texts.secretKey, kit.secretKey],
     [texts.recoveryKey, kit.recoveryKey],
     [texts.created, kit.created],
-  ].flatMap(([label = "", value = ""], index) => field(label, value, fieldsTop - index * 46));
-  const qrTop = fieldsTop - 5 * 46 - 10;
+  ] as const) {
+    const placed = field(label, value, next);
+    fields.push(...placed.marks);
+    next = placed.next;
+  }
+  const qrTop = next - 10;
   return [
     { kind: "text", x: MARGIN, y: top, size: 22, font: "sans-bold", text: texts.title },
     ...intro,

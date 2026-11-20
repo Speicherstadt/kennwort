@@ -92,11 +92,11 @@ describe("the gate", () => {
   });
 
   it("fills account ID and Secret Key from the kit's link, even on a device that knows an account", () => {
-    const root = open(
-      "/unlock",
-      fakeSession({ device: true }).session,
-      "#account=abc&secret=K1-XYZ",
-    );
+    const link = "#account=abc&secret=K1-XYZ";
+    const root = open(`/unlock${link}`, fakeSession({ device: true }).session, link);
+    // Dropped from the address before anyone types: the Secret Key does not stay in the history
+    expect(window.location.hash).toBe("");
+    expect(window.location.pathname).toBe("/unlock");
     expect(heading(root)).toBe("Kennwort ist gesperrt");
     const values = [...root.querySelectorAll("input")].map((input) => input.value);
     expect(values).toEqual(["abc", "K1-XYZ", ""]);

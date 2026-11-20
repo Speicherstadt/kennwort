@@ -21,6 +21,11 @@ export const App = (props: { nav: Navigation; session: Session; hash?: string })
     setShownLocale(next);
   };
   const route = () => props.nav.route();
+  // The kit's link carries the Secret Key in its fragment: read it once, then drop it from the
+  // address and the history entry at once, whether or not unlocking follows (P-12)
+  const deviceLink =
+    route().page === "unlock" ? readDeviceLink(props.hash ?? location.hash) : undefined;
+  if (deviceLink) props.nav.dropFragment();
   // Every key press or click pushes the automatic lock back (P-03)
   const touch = () => props.session.touch();
   document.addEventListener("pointerdown", touch);
@@ -40,7 +45,7 @@ export const App = (props: { nav: Navigation; session: Session; hash?: string })
           <Match when={route().page === "unlock"}>
             <UnlockPage
               session={props.session}
-              link={readDeviceLink(props.hash ?? location.hash)}
+              link={deviceLink}
               onUnlocked={() => props.nav.replace("/entries")}
             />
           </Match>

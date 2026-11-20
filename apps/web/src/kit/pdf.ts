@@ -51,6 +51,15 @@ export const literal = (text: string) =>
     )
     .join("")})`;
 
+/**
+ * A text string for the document information (§7.9.2.2): UTF-16BE with a byte order mark, as hex.
+ * Not WinAnsi: viewers read these strings as PDFDocEncoding, where 0x96 would be "OE", not a dash.
+ */
+export const textString = (text: string) => {
+  const units = Array.from({ length: text.length }, (_, index) => text.charCodeAt(index));
+  return `<FEFF${units.map((unit) => unit.toString(16).toUpperCase().padStart(4, "0")).join("")}>`;
+};
+
 const number = (value: number) => String(Math.round(value * 100) / 100);
 
 const operators = (mark: Mark) =>
@@ -69,7 +78,7 @@ export const pdfDocument = (marks: readonly Mark[], title: string): Uint8Array =
     "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
     `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${A4.width} ${A4.height}] /Resources << /Font << ${fonts} >> >> /Contents 4 0 R >>`,
     `<< /Length ${content.length} >>\nstream\n${content}\nendstream`,
-    `<< /Title ${literal(title)} /Producer (Kennwort) >>`,
+    `<< /Title ${textString(title)} /Producer (Kennwort) >>`,
     ...Object.values(FONTS).map(
       ({ base }) =>
         `<< /Type /Font /Subtype /Type1 /BaseFont /${base} /Encoding /WinAnsiEncoding >>`,
