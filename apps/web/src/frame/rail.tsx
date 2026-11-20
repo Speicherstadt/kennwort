@@ -1,5 +1,5 @@
 /** The rail on the desktop (56 px): logo, the sections as icon links, the account at the bottom */
-import { cn, Icon, m } from "@kennwort/ui";
+import { cn, Icon, IconButton, m } from "@kennwort/ui";
 import { Lock, User } from "@kennwort/ui/icons";
 import { For } from "solid-js";
 import { company } from "../demo.ts";
@@ -7,7 +7,7 @@ import type { Navigation } from "../navigation.ts";
 import { Link } from "./link.tsx";
 import { isSection, sections } from "./sections.ts";
 
-export const Rail = (props: { nav: Navigation }) => (
+export const Rail = (props: { nav: Navigation; onLock: () => void }) => (
   <nav
     aria-label={m.nav_main()}
     class="hidden w-14 shrink-0 flex-col items-center gap-2 border-r border-border bg-muted py-3 md:flex"
@@ -33,8 +33,11 @@ export const Rail = (props: { nav: Navigation }) => (
         </Link>
       )}
     </For>
+    <IconButton label={m.lock()} class="mt-auto" onClick={() => props.onLock()}>
+      <Icon icon={Lock} size={18} />
+    </IconButton>
     <span
-      class="mt-auto grid size-8 place-items-center rounded-full bg-accent text-foreground"
+      class="grid size-8 place-items-center rounded-full bg-accent text-foreground"
       role="img"
       aria-label={m.nav_account({ name: company.user })}
     >

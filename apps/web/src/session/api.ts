@@ -6,6 +6,7 @@
 import {
   type AccountUpload,
   type Certificate,
+  type Derive,
   encodeBytes,
   type Post,
   SessionWire,
@@ -88,8 +89,8 @@ export const createApi = (send: typeof fetch = fetch) => {
       );
       return parsed.success ? parsed.data : undefined;
     },
-    signIn: (accountId: Uint8Array, passphrase: string, secretKey: Uint8Array) =>
-      signInWithPassphrase(post, accountId, passphrase, secretKey),
+    signIn: (accountId: Uint8Array, passphrase: string, secretKey: Uint8Array, derive?: Derive) =>
+      signInWithPassphrase(post, accountId, passphrase, secretKey, derive),
   };
 };
 

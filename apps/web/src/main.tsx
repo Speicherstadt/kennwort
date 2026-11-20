@@ -3,6 +3,8 @@ import { getLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { App } from "./app.tsx";
 import { createNavigation } from "./navigation.ts";
+import { createApi } from "./session/api.ts";
+import { createSession } from "./session/session.ts";
 import { applyTheme, readTheme } from "./theme.ts";
 
 const root = document.getElementById("root");
@@ -11,5 +13,6 @@ if (root) {
   applyTheme(readTheme(globalThis.localStorage), document.documentElement, globalThis.localStorage);
   // Created once, outside JSX: a prop expression is a getter and would run on every read
   const nav = createNavigation();
-  render(() => <App nav={nav} />, root);
+  const session = createSession({ api: createApi(), storage: globalThis.localStorage });
+  render(() => <App nav={nav} session={session} />, root);
 }

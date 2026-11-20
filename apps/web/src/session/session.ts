@@ -7,6 +7,7 @@ import {
   bytes,
   createAccount,
   createCompany,
+  type Derive,
   emptyState,
   encodeBytes,
   type Unlocked,
@@ -33,6 +34,8 @@ export type SessionDeps = {
   storage: Pick<Storage, "getItem" | "setItem" | "removeItem"> | undefined;
   lockAfterMs?: number;
   schedule?: (run: () => void, ms: number) => unknown;
+  /** Argon2id as F-05 fixes it; only tests pass a lighter one */
+  derive?: Derive;
   cancel?: (timer: unknown) => void;
 };
 
@@ -49,12 +52,13 @@ const signInAndUnlock = async (
   accountId: Uint8Array,
   passphrase: string,
   secretKey: Uint8Array,
+  derive?: Derive,
 ): Promise<Outcome<Opened>> => {
-  const signedIn = await api.signIn(accountId, passphrase, secretKey);
+  const signedIn = await api.signIn(accountId, passphrase, secretKey, derive);
   if (!signedIn.ok) return { ok: false, error: signInError(signedIn.error) };
   const stored = await api.keys(signedIn.token);
   if (!stored) return { ok: false, error: "unexpected" };
-  const unlocked = unlockWithPassphrase(stored, passphrase, secretKey);
+  const unlocked = unlockWithPassphrase(stored, passphrase, secretKey, derive);
   if (!unlocked.ok)
     return { ok: false, error: unlocked.error === "wrong-key" ? "wrong-passphrase" : "unexpected" };
   return { ok: true, value: { ...unlocked.value, accountId, token: signedIn.token } };
@@ -105,7 +109,7 @@ export const createSession = (deps: SessionDeps) => {
     touch,
     /** The first owner: company, root key and account, all made on this device */
     setUp: async (code: string, passphrase: string) => {
-      const company = createCompany(passphrase);
+      const company = createCompany(passphrase, deps.derive ? { derive: deps.derive } : {});
       const token = await deps.api.setup(code, company.companyId, company.owner.upload);
       return enrolled(company.owner, token, (t) =>
         deps.api.uploadKeys(t, company.owner.upload, company.certificate),
@@ -118,7 +122,11 @@ export const createSession = (deps: SessionDeps) => {
       rootFingerprint: Uint8Array,
       passphrase: string,
     ) => {
-      const account = createAccount(passphrase, emptyState(rootFingerprint));
+      const account = createAccount(
+        passphrase,
+        emptyState(rootFingerprint),
+        deps.derive ? { derive: deps.derive } : {},
+      );
       const token = await deps.api.accept(invitationId, inviteToken, account.upload);
       return enrolled(account, token, (t) => deps.api.uploadKeys(t, account.upload));
     },
@@ -131,7 +139,7 @@ export const createSession = (deps: SessionDeps) => {
       const key = secretKey ?? known?.secretKey;
       const id = bytes(16).safeParse(accountIdText ?? known?.accountId);
       if (!key || !id.success) return { ok: false, error: "wrong-passphrase" };
-      const result = await signInAndUnlock(deps.api, id.data, passphrase, key);
+      const result = await signInAndUnlock(deps.api, id.data, passphrase, key, deps.derive);
       if (!result.ok) return result;
       remember(id.data, key);
       open(result.value);
