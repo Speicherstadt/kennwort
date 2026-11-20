@@ -16,6 +16,8 @@ describe("routes", () => {
       ["/generator", { page: "generator" }],
       ["/groups", { page: "groups" }],
       ["/settings", { page: "settings" }],
+      ["/setup", { page: "setup" }],
+      ["/invite/abc%2Fd", { page: "invite", id: "abc/d" }],
     ];
     for (const [path, route] of cases) {
       expect(parseRoute(path)).toEqual(route);
@@ -37,6 +39,10 @@ describe("routes", () => {
       "/settings/x",
       "/entries/%E0",
       "/vaults/%E0",
+      "/invite",
+      "/invite/a/b",
+      "/invite/%E0",
+      "/setup/x",
     ])
       expect(parseRoute(path)).toEqual({ page: "not-found" });
     expect(routePath({ page: "not-found" })).toBe("/");
