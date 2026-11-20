@@ -3,60 +3,39 @@
   "packages": {
     "solid-js": {
       "reason": "Solid 2, the reactive UI of the web app, the extension and the mobile app (docs/plan.md, Stack); small and auditable instead of React",
-      "workspaces": [
-        "packages/ui",
-        "apps/web"
-      ]
+      "workspaces": ["packages/ui", "apps/web"]
     },
     "@solidjs/web": {
       "reason": "Solid 2's DOM renderer, split out of solid-js in 2.0; the same project and release as solid-js",
-      "workspaces": [
-        "packages/ui",
-        "apps/web"
-      ]
+      "workspaces": ["packages/ui", "apps/web"]
     },
     "@noble/ciphers": {
       "reason": "XChaCha20-Poly1305 (and later ChaCha20/AES for KDBX): audited, pure TypeScript, no dependencies of its own; the only cipher library packages/crypto may use (docs/plan.md, Kryptografie)",
-      "workspaces": [
-        "packages/crypto"
-      ]
+      "workspaces": ["packages/crypto"]
     },
     "@noble/post-quantum": {
       "reason": "ML-KEM-768 and X-Wing (X25519 + ML-KEM-768, draft-connolly-cfrg-xwing-kem) to wrap keys post-quantum hybrid; audited, pure TypeScript",
-      "workspaces": [
-        "packages/crypto"
-      ]
+      "workspaces": ["packages/crypto"]
     },
     "@noble/hashes": {
       "reason": "SHA-2, HKDF-SHA-512 and Argon2id; audited, pure TypeScript, a dependency of the other @noble packages anyway",
-      "workspaces": [
-        "packages/crypto"
-      ]
+      "workspaces": ["packages/crypto"]
     },
     "@noble/curves": {
       "reason": "Ed25519 signatures (RFC 8032) and X25519 inside X-Wing; audited, pure TypeScript",
-      "workspaces": [
-        "packages/crypto"
-      ]
+      "workspaces": ["packages/crypto"]
     },
     "zod": {
       "reason": "Zod 4: every value that crosses between client and server is parsed against a schema (CLAUDE.md, docs/plan.md Stack); no dependencies of its own",
-      "workspaces": [
-        "packages/core",
-        "apps/server"
-      ]
+      "workspaces": ["packages/core", "apps/server"]
     },
     "hono": {
       "reason": "the HTTP API of the server (docs/plan.md, Stack): small, standards-based (fetch Request/Response), no dependencies",
-      "workspaces": [
-        "apps/server"
-      ]
+      "workspaces": ["apps/server"]
     },
     "drizzle-orm": {
       "reason": "typed SQL and migrations on bun:sqlite for the server (docs/plan.md, Stack); no runtime dependencies of its own",
-      "workspaces": [
-        "apps/server"
-      ]
+      "workspaces": ["apps/server"]
     }
   }
 }
