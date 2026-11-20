@@ -6,7 +6,7 @@ import {
   recoveryLoginKeyPair,
   type Stored,
 } from "@kennwort/core";
-import { passphraseKeysWith } from "@kennwort/crypto";
+import { ed25519KeyPair, passphraseKeysWith } from "@kennwort/crypto";
 import type { AccountApi as Api } from "./api.ts";
 
 export const derive = (p: string, salt: Uint8Array, key: Uint8Array, account: Uint8Array) =>
@@ -45,6 +45,15 @@ export const fakeApi = (overrides: Partial<Api> = {}) => {
       if (!upload) return { ok: false, error: "denied" };
       const { publicKey } = recoveryLoginKeyPair(recoveryKey, accountId);
       const ok = encodeBytes(publicKey) === encodeBytes(upload.recoveryLoginPublicKey);
+      const index = [...accounts.keys()].indexOf(encodeBytes(accountId));
+      return ok ? { ok: true, token: `signed-in-${index}` } : { ok: false, error: "denied" };
+    },
+    /** The sign-in key a device kept after it unlocked from its offline copy (K-308 part b) */
+    signInWithLoginKey: async (accountId, loginKey) => {
+      const upload = accounts.get(encodeBytes(accountId));
+      if (!upload) return { ok: false, error: "denied" };
+      const ok =
+        encodeBytes(ed25519KeyPair(loginKey).publicKey) === encodeBytes(upload.loginPublicKey);
       const index = [...accounts.keys()].indexOf(encodeBytes(accountId));
       return ok ? { ok: true, token: `signed-in-${index}` } : { ok: false, error: "denied" };
     },

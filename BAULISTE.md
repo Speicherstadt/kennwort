@@ -204,14 +204,17 @@ und die Schritte für Menschen am Ende erledigt sind.
 - [ ] **K-307 Austritt und Recovery** – Schlüsselwechsel, Änderungs-Markierung, Austritts-Bericht,
   Firmen-Recovery, Notfallzugriff mit Wartezeit, Wechsel des Account Key (AK), wenn ein
   Recovery-Kit in fremde Hände geraten ist (P-12).
-- [ ] **K-308 PWA** – installierbar, offline lesbar, signiertes Release-Manifest, Service Worker
+- [x] **K-308 PWA** – installierbar, offline lesbar, signiertes Release-Manifest, Service Worker
   prüft Hashes vor jedem Update.
   In Teilen, je ein Pull Request; abgehakt wird K-308, wenn beide stehen:
   - [x] Teil a: installierbar, signiertes Release-Manifest, Service Worker prüft Signatur und
     Hashes vor jedem Update (P-16). Fertig, wenn: ein Update mit falschem Hash oder falscher
     Signatur nicht aktiv wird und ein richtiges aktiv wird (Playwright-Test).
-  - [ ] Teil b: offline lesbar – Geheimtexte und der verpackte AK auf dem Gerät, Entsperren ohne
-    Server.
+  - [x] Teil b: offline lesbar – Geheimtexte und der verpackte AK auf dem Gerät, Entsperren ohne
+    Server (P-22). Fertig, wenn: Entsperren und Lesen offline als Playwright-Test (desktop und
+    `@phone`) laufen, ein Test IndexedDB nach den bekannten Klartexten und der Passphrase durchsucht
+    und nichts findet, Abmelden die Kopie löscht und ein Server, der eine ältere Version, ein
+    älteres Log oder einen älteren Kontozustand liefert, das Gerät nicht zurückwirft (Vitest).
 
 Für K-303 bis K-307 gilt: Fertig, wenn jeder Ablauf als Playwright-Test (desktop und `@phone`) läuft,
 die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.

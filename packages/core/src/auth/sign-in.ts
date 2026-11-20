@@ -45,18 +45,24 @@ const Token = z.object({ token: z.string().min(1) });
 
 export type SignInResult =
   | { ok: true; token: string }
-  | { ok: false; error: "denied" | "locked" | "too-many-requests" | "unexpected" };
+  | {
+      ok: false;
+      error: "denied" | "locked" | "too-many-requests" | "unreachable" | "unexpected";
+    };
 
 const failure = (status: number): SignInResult => ({
   ok: false,
+  // Status 0: no answer at all, so a device may unlock from its offline copy (K-308 part b)
   error:
-    status === 423
-      ? "locked"
-      : status === 429
-        ? "too-many-requests"
-        : status === 401
-          ? "denied"
-          : "unexpected",
+    status === 0
+      ? "unreachable"
+      : status === 423
+        ? "locked"
+        : status === 429
+          ? "too-many-requests"
+          : status === 401
+            ? "denied"
+            : "unexpected",
 });
 
 type Answer = (challenge: z.infer<typeof Challenge>, wireId: string) => Uint8Array;
@@ -94,6 +100,20 @@ export const signInWithPassphrase = (
     const keys = loginKeyPair(passphrase, challenge.accountSalt, secretKey, accountId, derive);
     return answerChallenge(keys.secretKey, wireId, challenge.challenge);
   });
+
+/**
+ * The same sign-in with a sign-in key derived earlier: a device that unlocked from its offline
+ * copy (K-308 part b) keeps only this key in memory, never the passphrase, to sign in once the
+ * server answers again. A server that changed the account salt meanwhile denies it.
+ */
+export const signInWithLoginKey = (
+  post: Post,
+  accountId: Uint8Array,
+  loginSecretKey: Uint8Array,
+): Promise<SignInResult> =>
+  signIn(post, accountId, "passphrase", (challenge, wireId) =>
+    answerChallenge(loginSecretKey, wireId, challenge.challenge),
+  );
 
 /** Signing in without the passphrase, with the Recovery Key alone (P-12) */
 export const signInWithRecoveryKey = (

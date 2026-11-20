@@ -12,18 +12,31 @@ import {
   emptyState,
   encodeBytes,
   invitationMac,
+  type Stored,
   type Unlocked,
   unlockWithPassphrase,
 } from "@kennwort/core";
 import { createSignal } from "solid-js";
 import type { AccountApi } from "./api.ts";
 import { type DeviceAccount, forgetDevice, readDevice, rememberDevice } from "./device.ts";
+import {
+  type AccountCopy,
+  keepAccount,
+  keepFromServer,
+  unlockFromCopy,
+  withKeptState,
+  withServedState,
+} from "./offline-unlock.ts";
 import { recoverAccount } from "./recover.ts";
 import { type StateDeps, saveState } from "./state-sync.ts";
 
 export const LOCK_AFTER_MS = 10 * 60 * 1000;
 
-export type Opened = Unlocked & { accountId: Uint8Array; token: string };
+/**
+ * An open account. Opened from the offline copy (K-308 part b) it has no token yet but the sign-in
+ * key, in memory like AK, to sign in once the server answers again; locking overwrites both.
+ */
+export type Opened = Unlocked & { accountId: Uint8Array; token: string; loginKey?: Uint8Array };
 /** What the recovery kit shows: the account ID is needed to unlock on a device that does not know it */
 export type NewKeys = { accountId: Uint8Array; secretKey: Uint8Array; recoveryKey: Uint8Array };
 export type SessionError =
@@ -32,6 +45,7 @@ export type SessionError =
   | "too-many-requests"
   | "wrong-passphrase"
   | "wrong-recovery-key"
+  | "unreachable"
   | "unexpected";
 export type Outcome<T> = { ok: true; value: T } | { ok: false; error: SessionError };
 
@@ -45,6 +59,8 @@ export type SessionDeps = {
   /** Random bytes for a new Secret Key; only tests pass fixed ones */
   random?: (length: number) => Uint8Array;
   cancel?: (timer: unknown) => void;
+  /** The device's offline copy (K-308 part b); without it the app needs the server to unlock */
+  copy?: AccountCopy;
 };
 
 export const signInError = (error: string): SessionError =>
@@ -54,22 +70,32 @@ export const signInError = (error: string): SessionError =>
       ? "too-many-requests"
       : "unexpected";
 
-/** Signs in with the sign-in key (P-02), loads the ciphertexts and opens them (P-03) */
+type Unlock = { opened: Opened; stored?: Stored };
+
+/**
+ * Signs in with the sign-in key (P-02), loads the ciphertexts and opens them (P-03), with the state
+ * this device kept merged in. A server that does not answer at all leaves the offline copy.
+ */
 const signInAndUnlock = async (
-  api: AccountApi,
+  deps: SessionDeps,
   accountId: Uint8Array,
   passphrase: string,
   secretKey: Uint8Array,
-  derive?: Derive,
-): Promise<Outcome<Opened>> => {
+): Promise<Outcome<Unlock>> => {
+  const { api, copy, derive } = deps;
   const signedIn = await api.signIn(accountId, passphrase, secretKey, derive);
+  if (!signedIn.ok && signedIn.error === "unreachable" && copy) {
+    const opened = await unlockFromCopy(copy, accountId, passphrase, secretKey, derive);
+    return opened.ok ? { ok: true, value: { opened: opened.value } } : opened;
+  }
   if (!signedIn.ok) return { ok: false, error: signInError(signedIn.error) };
   const stored = await api.keys(signedIn.token);
   if (!stored) return { ok: false, error: "unexpected" };
   const unlocked = unlockWithPassphrase(stored, passphrase, secretKey, derive);
   if (!unlocked.ok)
     return { ok: false, error: unlocked.error === "wrong-key" ? "wrong-passphrase" : "unexpected" };
-  return { ok: true, value: { ...unlocked.value, accountId, token: signedIn.token } };
+  const value = await withKeptState(copy, accountId, unlocked.value);
+  return { ok: true, value: { opened: { ...value, accountId, token: signedIn.token }, stored } };
 };
 
 /** After setup or invitation: the keys uploaded, the device remembered, the account open */
@@ -129,6 +155,7 @@ const createLock = (deps: SessionDeps) => {
   const lock = () => {
     cancel(timer);
     current?.accountKey.fill(0);
+    current?.loginKey?.fill(0);
     setOpened(undefined);
   };
   /** Any use of the app pushes the automatic lock back */
@@ -151,29 +178,77 @@ const createLock = (deps: SessionDeps) => {
   return { opened, setOpened, lock, touch, open, setLockAfter };
 };
 
-/** The account state changed and written back; the open account sees the new one (state-sync.ts) */
+/**
+ * The account state changed and written back; the open account sees the new one (state-sync.ts),
+ * and the offline copy keeps it as written
+ */
 const stateUpdater =
-  (opened: () => Opened | undefined, setOpened: (value: Opened) => void) =>
+  (opened: () => Opened | undefined, setOpened: (value: Opened) => void, copy?: AccountCopy) =>
   async (api: StateDeps, change: (state: AccountState) => AccountState | undefined) => {
     const current = opened();
     if (!current) return { ok: false as const, error: "unreachable" as const };
     const saved = await saveState(api, current, change);
-    if (saved.ok && opened() === current) setOpened({ ...current, state: saved.value });
-    return saved;
+    if (!saved.ok) return saved;
+    if (opened() === current) setOpened({ ...current, state: saved.value });
+    await copy?.keepState(encodeBytes(current.accountId), saved.kept);
+    return { ok: true as const, value: saved.value };
   };
 
-export const createSession = (deps: SessionDeps) => {
-  const { opened, setOpened, lock, touch, open, setLockAfter } = createLock(deps);
+const reconnect = async (
+  deps: SessionDeps,
+  opened: () => Opened | undefined,
+  setOpened: (value: Opened) => void,
+): Promise<boolean> => {
+  const current = opened();
+  if (!current?.loginKey) return Boolean(current?.token);
+  const signedIn = await deps.api.signInWithLoginKey(current.accountId, current.loginKey);
+  if (!signedIn.ok && signedIn.error === "denied" && opened() === current) {
+    // The passphrase changed elsewhere: trying again every half minute would lock the account on
+    // the server after five denials (LOCKOUT), for every device. Offline until unlocked anew.
+    const { loginKey, ...rest } = current;
+    setOpened(rest);
+    loginKey.fill(0);
+  }
+  if (!signedIn.ok) return false;
+  const stored = await deps.api.keys(signedIn.token);
+  // Locked or opened anew meanwhile: that account is not this one any more
+  if (opened() !== current) return false;
+  const { loginKey, ...rest } = current;
+  const next: Opened = {
+    ...rest,
+    token: signedIn.token,
+    state: stored ? withServedState(current, stored) : current.state,
+  };
+  setOpened(next);
+  loginKey.fill(0);
+  if (stored) await keepAccount(deps.copy, stored, next);
+  return true;
+};
+
+/** What the device remembers of its account (device.ts); the copy of another account goes first */
+const deviceMemory = (deps: SessionDeps) => {
   const [device, setDevice] = createSignal<DeviceAccount | undefined>(readDevice(deps.storage));
   const remember = (accountId: Uint8Array, secretKey: Uint8Array) => {
     rememberDevice(deps.storage, accountId, secretKey);
     setDevice(readDevice(deps.storage));
+    void deps.copy?.useAccount(encodeBytes(accountId));
+  };
+  return { device, setDevice, remember };
+};
+
+export const createSession = (deps: SessionDeps) => {
+  const { opened, setOpened, lock, touch, open, setLockAfter } = createLock(deps);
+  const { device, setDevice, remember } = deviceMemory(deps);
+  /** Opened with a token from the server: its ciphertexts are kept for unlocking offline */
+  const openAndKeep = (value: Opened) => {
+    open(value);
+    void keepFromServer(deps.api, deps.copy, value);
   };
   const enrolled = (
     account: ReturnType<typeof createAccount>,
     token: Outcome<string> | { ok: false; error: SessionError },
     upload: (token: string) => Promise<boolean>,
-  ) => finishEnrolment(account, token, upload, remember, open);
+  ) => finishEnrolment(account, token, upload, remember, openAndKeep);
 
   return {
     opened,
@@ -223,10 +298,12 @@ export const createSession = (deps: SessionDeps) => {
       const key = secretKey ?? known?.secretKey;
       const id = bytes(16).safeParse(accountIdText ?? known?.accountId);
       if (!key || !id.success) return { ok: false, error: "wrong-passphrase" };
-      const result = await signInAndUnlock(deps.api, id.data, passphrase, key, deps.derive);
+      const result = await signInAndUnlock(deps, id.data, passphrase, key);
       if (!result.ok) return result;
       remember(id.data, key);
-      open(result.value);
+      open(result.value.opened);
+      if (result.value.stored)
+        void keepAccount(deps.copy, result.value.stored, result.value.opened);
       return { ok: true, value: true };
     },
     /** The passphrase is forgotten: the Recovery Key opens the account and is renewed (recover.ts) */
@@ -237,22 +314,33 @@ export const createSession = (deps: SessionDeps) => {
     ): Promise<Outcome<NewKeys>> => {
       const result = await recoverAccount(deps, device(), recoveryKey, passphrase, accountIdText);
       if (!result.ok) return result;
-      remember(result.value.keys.accountId, result.value.keys.secretKey);
-      open(result.value.opened);
-      return { ok: true, value: result.value.keys };
+      const { keys, opened: served } = result.value;
+      remember(keys.accountId, keys.secretKey);
+      // The server's state, like at every unlock, with what this device kept merged in (E-07)
+      openAndKeep({ ...served, ...(await withKeptState(deps.copy, keys.accountId, served)) });
+      return { ok: true, value: keys };
     },
     /** A device joined by pairing (P-04): remember it and open the account it was given */
     adopt: (value: Opened, secretKey: Uint8Array) => {
       remember(value.accountId, secretKey);
-      open(value);
+      openAndKeep(value);
     },
+    /**
+     * Opened from the offline copy: signs in with the kept sign-in key once the server answers and
+     * merges its account state in. True once the account has a token; false while it has none.
+     */
+    reconnect: () => reconnect(deps, opened, setOpened),
     /** Changes the account state and writes it back merged with the server's (state-sync.ts) */
-    updateState: stateUpdater(opened, setOpened),
-    /** This device signed out (K-303, device list): locked, and it no longer knows the account */
+    updateState: stateUpdater(opened, setOpened, deps.copy),
+    /**
+     * This device signed out (K-303, device list): locked, it no longer knows the account, and its
+     * offline copy is gone (K-308 part b)
+     */
     forget: () => {
       lock();
       forgetDevice(deps.storage);
       setDevice(undefined);
+      void deps.copy?.forget();
     },
     accountIdText: () => {
       const value = opened();

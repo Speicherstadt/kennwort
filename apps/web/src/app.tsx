@@ -21,6 +21,9 @@ import { GroupsPage } from "./groups/groups-page.tsx";
 import type { MembersDeps } from "./members/members.ts";
 import { MembersPage } from "./members/members-page.tsx";
 import type { Navigation, TakenFragment } from "./navigation.ts";
+import type { LocalCopy } from "./offline/local-copy.ts";
+import { OfflineNotice } from "./offline/offline-notice.tsx";
+import { createOfflineView } from "./offline/offline-view.ts";
 import { ApplyPolicy } from "./policy/policy-section.tsx";
 import { createAccountQueries } from "./queries.ts";
 import type { DevicesApi } from "./session/devices-api.ts";
@@ -44,15 +47,18 @@ export type AppApi = PairDeps &
 /**
  * The vaults while the account is open: loaded when it opens, gone when it locks. So is the cache
  * of what the pages loaded from the server (queries.ts): it lives with the frame, never longer.
+ * Without the server the app reads from the offline copy (K-308 part b): it says so, offers no
+ * change, and loads anew once the server answers.
  */
 const OpenedFrame = (props: {
   nav: Navigation;
   session: Session;
   api: AppApi;
+  copy: LocalCopy | undefined;
   onLocale: (next: Locale) => void;
 }) => {
   const queries = createAccountQueries();
-  const entries = createEntries(httpServerFor(props.api.syncFetch), props.session);
+  const entries = createEntries(httpServerFor(props.api.syncFetch), props.session, props.copy);
   const sharing = createSharing(props.api, props.session, entries.keys);
   const store: VaultStore = createVaultStore(props.api, props.session, (loaded) => {
     void entries.load(loaded.vaults, loaded.trust);
@@ -61,6 +67,7 @@ const OpenedFrame = (props: {
   // Loaded once the frame is on screen: an effect's compute would load anew on every change of the
   // account state, and the frame lives only as long as the account is open
   onSettled(() => void store.reload());
+  const { offline, online } = createOfflineView(() => props.copy, props.session, store.reload);
   /** A new entry needs a vault this account may write in, loaded */
   const canWrite = () => {
     const shown = store.shown();
@@ -92,10 +99,10 @@ const OpenedFrame = (props: {
         vaults={shownVaults}
         entries={allEntries}
         vaultName={vaultName}
-        onNewEntry={canWrite() ? entries.startNew : undefined}
-        onEditEntry={entries.startChange}
-        onFavoriteEntry={entries.toggleFavorite}
-        onShareEntry={sharing.start}
+        onNewEntry={canWrite() ? online(entries.startNew) : undefined}
+        onEditEntry={online(entries.startChange)}
+        onFavoriteEntry={online(entries.toggleFavorite)}
+        onShareEntry={online(sharing.start)}
         noAccess={(vaultId) => {
           const shown = store.shown();
           // A vault refused for any reason but a time run out is this account's: no "no access" then
@@ -137,6 +144,7 @@ const OpenedFrame = (props: {
       />
       <Editor nav={props.nav} vaults={store} />
       <ShareDialog vaults={store} />
+      <OfflineNotice offline={offline()} syncedAt={props.copy?.syncedAt()} />
     </QueryClientProvider>
   );
 };
@@ -147,6 +155,8 @@ export const App = (props: {
   api: AppApi;
   /** The fragment the app was opened with (takeStartFragment); later ones come from `nav` */
   hash: string;
+  /** The device's offline copy (K-308 part b); without it the app needs the server */
+  copy?: LocalCopy;
 }) => {
   const [otherAccount, setOtherAccount] = createSignal(false);
   const [locale, setShownLocale] = createSignal(getLocale());
@@ -251,6 +261,7 @@ export const App = (props: {
               nav={props.nav}
               session={props.session}
               api={props.api}
+              copy={props.copy}
               onLocale={changeLocale}
             />
           </Match>

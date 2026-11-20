@@ -17,6 +17,7 @@ const api: Api = {
   keys: async () => undefined,
   signIn: async () => ({ ok: false, error: "denied" }),
   signInWithRecovery: async () => ({ ok: false, error: "denied" }),
+  signInWithLoginKey: async () => ({ ok: false, error: "denied" }),
   replaceUnlock: async () => false,
 };
 

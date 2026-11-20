@@ -44,7 +44,7 @@ deinem eigenen Server betreibst.
 | 🔐 Tresore und Einträge | Logins, Notizen, WLAN, Karten, SSH- und API-Schlüssel, Anhänge, TOTP, Passkeys; Generator für Passwörter und Passphrasen; frühere Passwörter, Favoriten, Tags und Suche über alles |
 | 👥 Team | Gruppen, Rollen, Zugriff anfragen, Zugriff auf Zeit, einzelnen Eintrag teilen, Austritt mit Schlüsselwechsel und Bericht |
 | 🧩 Browser-Extension | Chrome, Edge, Firefox (auch Android) und Safari; Ausfüllen erst nach Klick, Phishing-Warnung |
-| 📱 Handy | Web-App zum Installieren (PWA), die nur signierte und geprüfte Updates annimmt, und App für Android und iOS mit systemweitem Ausfüllen |
+| 📱 Handy | Web-App zum Installieren (PWA), die nur signierte und geprüfte Updates annimmt und ohne Verbindung entsperrt und liest, und App für Android und iOS mit systemweitem Ausfüllen |
 | 🔁 Umzug | Import aus Bitwarden, LastPass, 1Password, KeePass, Team Password Manager, Passbolt, den Browsern und Authenticator-Apps |
 | 🛡️ Sicherheit im Alltag | Sicherheits-Übersicht, Prüfung gegen Datenlecks, „Zum Ändern“-Liste, Einmal-Links für Externe |
 

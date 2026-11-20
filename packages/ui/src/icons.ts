@@ -6,6 +6,7 @@ export {
   ArrowLeft,
   Braces,
   Camera,
+  CloudOff,
   Copy,
   CreditCard,
   Download,

@@ -4,6 +4,8 @@ import { render } from "@solidjs/web";
 import { createSignal } from "solid-js";
 import { App } from "./app.tsx";
 import { createNavigation, takeStartFragment } from "./navigation.ts";
+import { indexedDbKeyValue } from "./offline/idb.ts";
+import { createLocalCopy } from "./offline/local-copy.ts";
 import { createApi } from "./session/api.ts";
 import { deviceIdentity } from "./session/device-identity.ts";
 import { createSession } from "./session/session.ts";
@@ -19,13 +21,16 @@ if (root) {
   const nav = createNavigation();
   // Before anything renders: a link's secret leaves the address at once (P-04, P-12)
   const hash = takeStartFragment(nav);
-  const api = createApi(fetch, deviceIdentity(globalThis.localStorage, navigator.userAgent));
-  const session = createSession({ api, storage: globalThis.localStorage });
+  // Ciphertext only, to unlock and read without the server (K-308 part b)
+  const copy = createLocalCopy(indexedDbKeyValue(globalThis.indexedDB));
+  const identity = deviceIdentity(globalThis.localStorage, navigator.userAgent);
+  const api = createApi(copy.fetch(fetch), identity);
+  const session = createSession({ api, storage: globalThis.localStorage, copy });
   const [updateReady, setUpdateReady] = createSignal(false);
   render(
     () => (
       <>
-        <App nav={nav} session={session} api={api} hash={hash} />
+        <App nav={nav} session={session} api={api} hash={hash} copy={copy} />
         <UpdateNotice ready={updateReady()} onReload={() => location.reload()} />
       </>
     ),
