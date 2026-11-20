@@ -204,5 +204,20 @@
   "vault_members_new_role": "Role",
   "vault_members_add": "Add",
   "vault_members_stale": "Another device just changed the vault. The new state is loaded – please try again.",
-  "vault_members_failed": "The change could not be saved."
+  "vault_members_failed": "The change could not be saved.",
+  "vault_members_until": "until {date}",
+  "vault_members_expired": "expired",
+  "vault_members_until_label": "Access until (optional)",
+  "vault_members_until_hint": "After this day no device opens the vault for this person.",
+  "vault_requests_title": "Requests",
+  "vault_requests_role_for": "Role for {name}",
+  "vault_requests_grant": "Grant",
+  "vault_requests_decline": "Decline",
+  "vault_requests_unconfirmed": "Keys not confirmed yet",
+  "no_access_title": "No access",
+  "no_access_intro": "You are not a member of this vault. Its managers can add you; Kennwort shows them your request.",
+  "no_access_request": "Request access",
+  "no_access_sent": "Your request is with the vault's managers.",
+  "no_access_failed": "The request could not be sent.",
+  "vault_members_past": "That day is already over. Choose today or a later day."
 }

@@ -4,7 +4,7 @@
  */
 import { createToasts, type Locale, Toaster } from "@kennwort/ui";
 import type { JSX } from "@solidjs/web";
-import { Match, Switch } from "solid-js";
+import { Match, Show, Switch } from "solid-js";
 import type { Navigation } from "../navigation.ts";
 import { EntryDetail } from "./entry-detail.tsx";
 import { EntryList, type ShownVault } from "./entry-list.tsx";
@@ -25,6 +25,8 @@ export const Frame = (props: {
   /** The vaults the app loaded and their page (K-305) */
   vaults?: (() => ShownVault[] | undefined) | undefined;
   vaultsPage?: (() => JSX.Element) | undefined;
+  /** A vault link this account cannot open: what shows instead of its entries (K-305) */
+  noAccess?: ((vaultId: string) => JSX.Element | undefined) | undefined;
 }) => {
   const toasts = createToasts();
   const route = () => props.nav.route();
@@ -39,23 +41,38 @@ export const Frame = (props: {
           })()}
         >
           {(entries) => (
-            <>
-              <Sidebar nav={props.nav} vaults={props.vaults?.()} />
-              <main class="flex min-h-0 flex-1">
-                <EntryList
-                  nav={props.nav}
-                  filter={entries().filter}
-                  selected={entries().entry}
-                  vaults={props.vaults?.()}
-                />
-                <EntryDetail
-                  nav={props.nav}
-                  filter={entries().filter}
-                  selected={entries().entry}
-                  toasts={toasts}
-                />
-              </main>
-            </>
+            <Show
+              when={(() => {
+                const f = entries().filter;
+                return f.kind === "vault" ? props.noAccess?.(f.id) : undefined;
+              })()}
+              fallback={
+                <>
+                  <Sidebar nav={props.nav} vaults={props.vaults?.()} />
+                  <main class="flex min-h-0 flex-1">
+                    <EntryList
+                      nav={props.nav}
+                      filter={entries().filter}
+                      selected={entries().entry}
+                      vaults={props.vaults?.()}
+                    />
+                    <EntryDetail
+                      nav={props.nav}
+                      filter={entries().filter}
+                      selected={entries().entry}
+                      toasts={toasts}
+                    />
+                  </main>
+                </>
+              }
+            >
+              {(shown) => (
+                <>
+                  <Sidebar nav={props.nav} vaults={props.vaults?.()} />
+                  <main class="flex min-h-0 flex-1">{shown()}</main>
+                </>
+              )}
+            </Show>
           )}
         </Match>
         <Match when={route().page === "generator"}>

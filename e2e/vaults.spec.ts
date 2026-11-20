@@ -115,6 +115,90 @@ test.describe("members of a vault", { tag: "@phone" }, () => {
   });
 });
 
+test.describe("access requests", { tag: "@phone" }, () => {
+  test("Anna opens a link to Büro, asks for access, and Jonas grants it", async ({
+    page,
+    browser,
+  }) => {
+    await setUpCompany(page);
+    const anna = await annaJoins(page, browser);
+    await openVaults(page);
+    await page.getByLabel("Name").fill("Büro");
+    await page.getByRole("button", { name: "Tresor anlegen" }).click();
+    await page.getByRole("main").getByRole("link", { name: /Büro/ }).click();
+    const link = page.url();
+
+    await anna.goto(link);
+    await unlock(anna, "Anna Heizung Bad Fliese");
+    await expect(heading(anna, "Kein Zugriff")).toBeVisible();
+    await axe(anna);
+    await anna.getByRole("button", { name: "Zugriff anfragen" }).click();
+    await expect(anna.getByRole("main").getByRole("status")).toContainText("bei den Verwaltern");
+
+    await openVaults(page);
+    await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
+    const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });
+    const requests = dialog.getByRole("list", { name: "Anfragen" });
+    await expect(requests.getByRole("listitem")).toHaveCount(1);
+    await expect(requests).toContainText("Anna");
+    await axe(page);
+    await requests.getByRole("button", { name: "Freigeben" }).click();
+    await expect(dialog.getByRole("list", { name: "Anfragen" })).toHaveCount(0);
+    await expect(dialog.getByLabel("Rolle von Anna")).toHaveValue("read");
+
+    await openVaults(anna);
+    await expect(
+      anna.getByRole("main").getByRole("list").getByRole("listitem").filter({ hasText: "Büro" }),
+    ).toContainText("Lesen");
+  });
+
+  test("Jonas adds Anna until a day; the dialog shows how long", async ({ page, browser }) => {
+    await setUpCompany(page);
+    await annaJoins(page, browser);
+    await openVaults(page);
+    await page.getByLabel("Name").fill("Büro");
+    await page.getByRole("button", { name: "Tresor anlegen" }).click();
+    await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
+    const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });
+    await dialog.getByLabel("Person").selectOption({ label: "Anna" });
+    await dialog.getByLabel("Zugriff bis (optional)").fill("2099-12-31");
+    await dialog.getByRole("button", { name: "Aufnehmen" }).click();
+    await expect(dialog.getByRole("listitem").filter({ hasText: "Anna" })).toContainText("bis");
+    await expect(dialog.getByRole("listitem").filter({ hasText: "Anna" })).toContainText("2099");
+  });
+  test("a member whose vault did not load is not told she has no access", async ({
+    page,
+    browser,
+  }) => {
+    await setUpCompany(page);
+    const anna = await annaJoins(page, browser);
+    await openVaults(page);
+    await page.getByLabel("Name").fill("Büro");
+    await page.getByRole("button", { name: "Tresor anlegen" }).click();
+    await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
+    const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });
+    await dialog.getByLabel("Person").selectOption({ label: "Anna" });
+    await dialog.getByRole("button", { name: "Aufnehmen" }).click();
+    await expect(dialog.getByLabel("Rolle von Anna")).toHaveValue("read");
+    await page.keyboard.press("Escape");
+    await page.getByRole("main").getByRole("link", { name: /Büro/ }).click();
+    const link = page.url();
+    const vaultId = new URL(link).pathname.split("/").pop();
+
+    // Anna is a member, but the log of Büro does not come through this time
+    let failed = 0;
+    await anna.route(`**/api/vaults/${vaultId}/log`, (route) => {
+      failed++;
+      return route.fulfill({ status: 503, body: "" });
+    });
+    await anna.goto(link);
+    await unlock(anna, "Anna Heizung Bad Fliese");
+    await expect.poll(() => failed).toBeGreaterThan(0);
+    await anna.waitForTimeout(1500);
+    await expect(heading(anna, "Kein Zugriff")).toHaveCount(0);
+  });
+});
+
 test("the desktop sidebar lists the vaults and leads to all of them", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await setUpCompany(page);

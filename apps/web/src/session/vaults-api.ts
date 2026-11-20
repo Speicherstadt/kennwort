@@ -5,6 +5,7 @@ import {
   VaultListWire as Listed,
   VaultLogWire as Log,
   type LogEntry,
+  VaultRequestsWire as Requests,
   toWire,
 } from "@kennwort/core";
 import type { Call } from "./api.ts";
@@ -53,4 +54,24 @@ export const vaultCalls = (call: Call) => ({
     ).status === 200,
 });
 
-export type VaultApi = ReturnType<typeof vaultCalls>;
+/** Access requests (K-305 part 4): the server keeps them, only a manager's add gives access */
+export const requestCalls = (call: Call) => ({
+  requestAccess: async (token: string, vaultId: Uint8Array) =>
+    (await call("POST", `/api/vaults/${encodeBytes(vaultId)}/requests`, {}, token)).status === 201,
+  vaultRequests: async (token: string, vaultId: Uint8Array) =>
+    parsed(
+      Requests,
+      await call("GET", `/api/vaults/${encodeBytes(vaultId)}/requests`, undefined, token),
+    )?.requests,
+  dropRequest: async (token: string, vaultId: Uint8Array, accountId: Uint8Array) =>
+    (
+      await call(
+        "DELETE",
+        `/api/vaults/${encodeBytes(vaultId)}/requests/${encodeBytes(accountId)}`,
+        undefined,
+        token,
+      )
+    ).status === 200,
+});
+
+export type VaultApi = ReturnType<typeof vaultCalls> & ReturnType<typeof requestCalls>;
