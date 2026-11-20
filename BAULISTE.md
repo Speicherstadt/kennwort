@@ -218,7 +218,8 @@ und die Schritte für Menschen am Ende erledigt sind.
   - [ ] Teil b: Austritt in der Web-App – „Aus der Firma entfernen“ und „Aus dem Tresor entfernen“
     mit Schlüsselwechsel und Neuverschlüsseln, Freigaben neu verpackt (`reshare`), Markierte unter
     „Zum Ändern“ mit Grund, Austritts-Bericht; ein Verwalter-Client holt ausstehende Wechsel nach
-    (`dueExits`), andere Clients schreiben nicht, solange einer aussteht, und warnen. Fertig, wenn:
+    (`dueExits`), ein Eintrag aus einer Epoche vor einem Austritt bekommt beim Schreiben seine
+    Markierung, auch wenn der Server ihn vor dem Wechsel versteckt hat, andere Clients schreiben nicht, solange einer aussteht, und warnen. Fertig, wenn:
     Entfernen aus Firma und Tresor, die Markierung und der Bericht als Playwright-Test desktop und
     `@phone` laufen und die entfernte Person danach keinen neuen Eintrag öffnet.
   - [ ] Teil c: Firmen-Recovery (P-13) – Schlüssel anlegen und an Inhaber verpacken, Schalter in

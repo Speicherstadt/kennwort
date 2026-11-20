@@ -953,6 +953,11 @@ Umgesetzt in `packages/core/src/membership/rotation.ts` (`rotateVaultKey`, `remo
 
 Restrisiken:
 
+- **Vor dem Wechsel versteckter Eintrag:** `rotateEntries` verschlüsselt nur die Einträge neu, die
+  das rotierende Gerät kennt. Hält der Server einen Eintrag vor diesem Gerät zurück und zeigt ihn
+  später anderen Mitgliedern, bleibt er in der alten Epoche ohne Markierung und wandert beim
+  nächsten Ändern ohne Markierung in die neue. Schließen soll das K-307 Teil b: Jedes Schreiben
+  kennt die früheren Austritte (Expositionen im `SyncContext`) und markiert danach.
 - Bis ein Verwalter-Client den Wechsel macht, entscheidet der Server allein; die Person kennt bis
   dahin den Schlüssel der aktuellen Epoche. Der Client sieht das (`rotationDue`), schreibt in Teil a
   aber noch weiter darunter; ab Teil b holt ein Verwalter-Client den Wechsel sofort nach, und die
