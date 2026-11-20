@@ -409,11 +409,19 @@ erst, wenn ein entsperrtes Gerät ihn angelegt hat (E-01, E-03). Nach Leerlauf s
 und löscht alle Schlüssel aus dem Speicher; die Web-App nach zehn Minuten ohne Tastendruck oder
 Klick, und beim Sperren überschreibt sie AK.
 
-Das Gerät merkt sich Konto-ID und Secret Key (in der Web-App im `localStorage`), nie die Passphrase
-und nie AK. Antwortet der Server nicht, entsperrt die Web-App aus ihrer Offline-Kopie
-([P-22](#p-22-offline-kopie)). Der Secret Key ist der zweite Faktor gegen einen Server, der
-Passphrasen errät: Wer nur die Daten des Servers hat, muss 128 Bit Secret Key mitraten. Wer das
-Gerät hat, braucht weiter die Passphrase.
+Das Gerät merkt sich Konto-ID und Secret Key (in der Web-App im `localStorage`, in der Extension in
+`chrome.storage.session` bis zum Schließen des Browsers), nie die Passphrase und nie AK. Antwortet
+der Server nicht, entsperrt die Web-App aus ihrer Offline-Kopie ([P-22](#p-22-offline-kopie)); die
+Extension hat keine, sie braucht den Server. Der Secret Key ist der zweite Faktor gegen einen
+Server, der Passphrasen errät: Wer nur die Daten des Servers hat, muss 128 Bit Secret Key
+mitraten. Wer das Gerät hat, braucht weiter die Passphrase.
+
+In der Extension (K-402) lebt das Popup nur, solange es offen ist. Darum liegen AK und das
+Sitzungs-Token in `chrome.storage.session` (nur für die Extension selbst, `TRUSTED_CONTEXTS`), und ein
+Alarm des Browsers trägt die Sperrzeit: Klingelt er, löscht der Service Worker beide. Ein neues Popup
+nimmt sie nur, solange der Alarm noch läuft, und öffnet mit AK den Schlüsselblock und den
+Kontozustand neu aus den Geheimtexten des Servers; beim Sperren überschreibt es AK im Speicher.
+Entsperrt wird mit demselben Code wie in der Web-App (`packages/client/src/session/unlock.ts`).
 
 **Wehrt ab:** E-01, E-03, E-18.
 
@@ -1254,6 +1262,9 @@ Restrisiko:
 - Nie in einen Frame einer anderen Herkunft.
 - Das Inline-Menü ist ein iFrame der Extension in einem geschlossenen Shadow DOM; die Seite kann es
   weder lesen noch unbemerkt überdecken (Clickjacking, DEF CON 2025).
+- Das Popup der Extension (K-402) zeigt Einträge nach exaktem Host aus dem verschlüsselten Eintrag,
+  ohne Eltern- oder Subdomain, und kopiert nur auf Klick; ausfüllen kann es nicht. Die Adresse des
+  Tabs sieht es nur über `activeTab`, also nach einem Klick auf das Symbol.
 - Am Handy kopiert Kennwort nur auf Tipp; die App leert die Zwischenablage nach 30 Sekunden und
   markiert sie als sensibel, die PWA kann das nicht zuverlässig.
 
@@ -1453,7 +1464,8 @@ Restrisiko:
   Geräte.
 
 Umgesetzt in `apps/web/src/offline/` (Kopie in IndexedDB, `fetch` mit der Kopie dahinter, Hinweis,
-erneuter Versuch), `apps/web/src/session/offline-unlock.ts`, `apps/web/src/entries/entry-store.ts`
+erneuter Versuch), `apps/web/src/session/offline-unlock.ts`, `packages/client/src/entries/entry-store.ts`
+(mit Web-App und Extension geteilt; die Kopie gibt nur die Web-App hinein, die Extension hat keine)
 und `packages/core/src/auth/sign-in.ts` (`signInWithLoginKey`, „unreachable“ für keine Antwort).
 
 **Wehrt ab:** E-07, E-13, E-15.

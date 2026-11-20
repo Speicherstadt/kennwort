@@ -263,7 +263,7 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   axe nichts findet, ein Test zeigt, dass Schlüssel nur in `chrome.storage.session` landen, und
   ein Test scheitert, sobald der Code der Extension `chrome.storage.local`, `chrome.storage.sync`,
   `localStorage` oder IndexedDB benutzt.
-- [ ] **K-402 Popup** – entsperren, Treffer für die Seite, Suche, Favoriten, Generator.
+- [x] **K-402 Popup** – entsperren, Treffer für die Seite, Suche, Favoriten, Generator.
   Fertig, wenn: Playwright mit der geladenen Extension in einem echten Chromium gegen den e2e-Server
   ein Konto verbindet und entsperrt, für den Host einer Testseite den passenden Eintrag zeigt und
   für einen anderen Host keinen (exakter Host, ohne Subdomains), Benutzername und Passwort kopiert,
