@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../../node_modules/.tsbuild/extension",
+    "jsx": "preserve",
+    "jsxImportSource": "@solidjs/web",
+    "types": ["vite/client"]
+  },
+  "include": ["src", "src/**/*.json", "vite.config.ts"],
+  "references": [{ "path": "../../packages/ui" }]
+}

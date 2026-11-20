@@ -1,0 +1,14 @@
+{
+  "extension_name": {
+    "message": "Kennwort",
+    "description": "Name der Extension im Browser und in den Stores"
+  },
+  "extension_description": {
+    "message": "Der Passwort-Manager für kleine Firmen: selbst gehostet und Ende-zu-Ende-verschlüsselt.",
+    "description": "Beschreibung in der Liste der Extensions und in den Stores"
+  },
+  "extension_action": {
+    "message": "Kennwort öffnen",
+    "description": "Tooltip des Knopfs in der Symbolleiste"
+  }
+}

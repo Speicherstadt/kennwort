@@ -1,0 +1,14 @@
+{
+  "de": {
+    "title": "Kennwort ist gesperrt",
+    "passkey": "Mit Passkey entsperren",
+    "passphrase": "Passphrase verwenden",
+    "notYet": "Entsperren in der Extension kommt mit einer der nächsten Versionen."
+  },
+  "en": {
+    "title": "Kennwort is locked",
+    "passkey": "Unlock with passkey",
+    "passphrase": "Use passphrase",
+    "notYet": "Unlocking in the extension comes with one of the next versions."
+  }
+}

@@ -60,6 +60,7 @@ nav:
   - Konto und Entsperren: konto.md
   - Tresore: tresore.md
   - Einträge: eintraege.md
+  - Browser-Extension: extension.md
   - Sicherheitsdesign: sicherheitsdesign.md
   - Entwicklung:
       - Projektplan: plan.md

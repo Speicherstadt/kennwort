@@ -9,6 +9,7 @@
     { "path": "packages/ui" },
     { "path": "apps/web" },
     { "path": "apps/web/scripts" },
+    { "path": "apps/extension" },
     { "path": "apps/server" },
     { "path": "e2e" }
   ]

@@ -212,9 +212,14 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
 
 ## Phase 4 – Extension
 
-- [ ] **K-401 Extension-Gerüst** – Solid, Vite, `@crxjs/vite-plugin`, MV3, Texte über Paraglide wie in der Web-App, `_locales` nur für
+- [x] **K-401 Extension-Gerüst** – Solid, Vite, `@crxjs/vite-plugin`, MV3, Texte über Paraglide wie in der Web-App, `_locales` nur für
   Name, Beschreibung und Manifest, Chrome/Edge
   und `build:firefox`; Schlüssel nur in `chrome.storage.session`.
+  Fertig, wenn: die Extension für Chrome/Edge und Firefox baut, ihr Popup in einem echten Chromium
+  (Playwright mit geladener Extension) den gesperrten Zustand auf Deutsch und Englisch zeigt und
+  axe nichts findet, ein Test zeigt, dass Schlüssel nur in `chrome.storage.session` landen, und
+  ein Test scheitert, sobald der Code der Extension `chrome.storage.local`, `chrome.storage.sync`,
+  `localStorage` oder IndexedDB benutzt.
 - [ ] **K-402 Popup** – entsperren, Treffer für die Seite, Suche, Favoriten, Generator.
 - [ ] **K-403 Inline-Menü und Ausfüllen** – Extension-iFrame im geschlossenen Shadow DOM, Ausfüllen
   nur nach Klick oder Enter, exakter Host per `tldts`, nie in fremden Frames.
