@@ -27,7 +27,7 @@ export {
 } from "./company-recovery.ts";
 export { DERIVED_LENGTH, kdf } from "./derive.ts";
 export { deviceCode, deviceFingerprint } from "./device.ts";
-export { DIGEST_LENGTH, digest } from "./digest.ts";
+export { DIGEST_LENGTH, digest, sha256 } from "./digest.ts";
 export { decode, encode, type Part } from "./encoding.ts";
 export { bundleFingerprint, recoveryFingerprint, rootFingerprint } from "./fingerprint.ts";
 export {

@@ -310,5 +310,7 @@
   "qr_image": "Bild wählen",
   "qr_not_found": "In diesem Bild ist kein QR-Code zu finden.",
   "qr_not_totp": "Dieser QR-Code enthält keinen Schlüssel für Einmalcodes.",
-  "qr_no_camera": "Kennwort darf die Kamera nicht verwenden. Wähle stattdessen einen Screenshot."
+  "qr_no_camera": "Kennwort darf die Kamera nicht verwenden. Wähle stattdessen einen Screenshot.",
+  "update_ready": "Neue Version bereit, geprüft und signiert.",
+  "update_reload": "Neu laden"
 }

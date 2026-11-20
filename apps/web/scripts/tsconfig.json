@@ -1,0 +1,7 @@
+{
+  // The build scripts of the web app run under Bun (Bun.build), the app itself in the browser
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "../../../node_modules/.tsbuild/web-scripts", "types": ["bun"] },
+  "include": ["*.ts"],
+  "references": [{ "path": ".." }, { "path": "../../../packages/crypto" }]
+}

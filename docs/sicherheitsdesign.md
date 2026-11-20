@@ -135,6 +135,7 @@ nennt seinen Angriff, und der Client muss ihn ablehnen und sagen, warum.
 | E-16 untergeschobener Eintrags-Schlüssel | `adversary/eth.test.ts` | falsche Signatur |
 | E-17, E-19 altes Format, alte Signatur | `adversary/eth.test.ts` | falsche Signatur |
 | E-23 Audit-Log gefälscht oder gekürzt | `audit/chain.test.ts`, `apps/server/src/audit/` | siehe [P-20](#p-20-audit-log) |
+| E-22 manipulierte Web-App ausgeliefert | `apps/web/src/sw/worker.test.ts`, `worker.review.test.ts`, `server-paths.test.ts`, `e2e/pwa.spec.ts` | falscher Hash, falsche Signatur, fehlende Datei, älteres Release; fremde Seite unter `/api` nur als Text |
 | E-24 Passphrase abgegriffen | `apps/server/src/auth/` | – (der Server bekommt sie nie) |
 
 Die übrigen folgen mit den Funktionen, die sie betreffen (Konto-Recovery, Teilen, Geräte, Austritt,
@@ -900,12 +901,90 @@ Verschlüsseln auf ein Vielfaches von 256 Byte aufgefüllt.
   Release-Schlüssel (Ed25519, F-03, Zweck `release`). Der Service Worker kennt den öffentlichen
   Schlüssel seit der Installation und aktiviert ein Update erst, wenn Signatur und alle Hashes
   stimmen. Der Loop signiert mit einem Test-Schlüssel; der echte kommt zur Veröffentlichung.
+  Einzelheiten unten.
 - **Extension**: Klartext-Oberfläche in der Extension, reproduzierbarer Build (K-408), Prüfung der
   Web-App durch die Extension.
 - **Abhängigkeiten**: etwa sechs Laufzeitpakete auf einer Liste mit Begründung (K-102), exakt
   gepinnt, keine Install-Skripte.
 
-Restrisiko: Die erste Installation der PWA und die PWA am Handy ohne Extension.
+#### Signierte Releases der PWA
+
+Der Build (`apps/web`, `bun run build`) legt neben die Dateien mit Hash im Namen drei Dateien mit
+festem Namen:
+
+```text
+release.json  = { format: 1, version, sequence, files: { "/pfad": sha256-hex, … } }
+release.sig   = hex(sign(release-sk, "release", Bytes von release.json))       F-03
+sw.js         = der Service Worker, der öffentliche Release-Schlüssel eingebaut
+```
+
+- `files` nennt jede Datei des Builds außer diesen dreien, auch `index.html`, das Web-App-Manifest
+  und die Icons. `version` sind die ersten 16 Hex-Zeichen des SHA-256 über die Liste der Hashes,
+  derselbe Inhalt ergibt also dieselbe Version. `sequence` ist `SOURCE_DATE_EPOCH` (bei
+  reproduzierbaren Builds die Zeit des letzten Commits), sonst die Bauzeit in Sekunden.
+- Signiert werden genau die Bytes von `release.json`; der Service Worker prüft die Signatur, bevor
+  er die Datei überhaupt liest.
+- `sw.js` baut Bun außerhalb von Vite und ohne Hash im Namen. Es bleibt Byte für Byte gleich,
+  solange sich sein Code und der Schlüssel nicht ändern; der Browser tauscht es dann nie aus, und
+  jede neue Version der App kommt über die Prüfung unten.
+
+Ablauf:
+
+1. **Installation**: Der Service Worker holt `release.json` und `release.sig` am HTTP-Cache vorbei,
+   prüft die Signatur, holt jede genannte Datei und prüft ihren Hash. Erst dann legt er die
+   geprüften Bytes in einen Cache, der nach der Version heißt. Schlägt etwas fehl, scheitert die
+   Installation, und aus dem Service Worker kommt nichts. Er merkt sich die höchste `sequence`, die
+   er je geprüft hat; ein neuer `sw.js` installiert kein älteres Release als dieses, so lässt sich
+   auch über einen Wechsel des Service Workers kein altes Release zurückspielen.
+2. **Ausliefern**: Jede Navigation bekommt `index.html` der aktuellen geprüften Version, jede andere
+   Datei kommt aus den geprüften Caches: erst der aktuellen Version, dann der davor, dann aus jedem
+   geprüften Cache, der noch da ist. Solange eine Version gilt, geht nichts davon ans Netz: Was
+   kein geprüfter Cache hat, beantwortet der Service Worker mit einem Fehler (404, bei einer
+   Navigation 503). Ein Tab, der mehrere Versionen zurückliegt, bekommt dann einen Fehler statt
+   ungeprüftem Code und muss neu laden.
+3. **Pfade des Servers**: Anfragen der App an `/api` und `/auth` gehen unverändert an den Server.
+   Eine Navigation dorthin, etwa über einen Link in einer Mail, und jede Navigation, die kein GET
+   ist, etwa ein Formular, das eine fremde Seite abschickt, liefe sonst als Dokument des Servers
+   ungeprüft unter der Herkunft der App, mit Zugriff auf ihren Speicher und ihre Caches.
+   Der Service Worker gibt deshalb Weiterleitungen unverändert weiter, wie Anmeldeabläufe über
+   `/auth` sie brauchen, und jede andere Antwort nur als Text in einer Sandbox
+   (`Content-Type: text/plain`, `Content-Security-Policy: sandbox`, `nosniff`). Ein künftiger
+   Anmeldeablauf über OpenID Connect muss darum mit einer Weiterleitung in die App enden, nicht mit
+   einer eigenen Seite.
+4. **Update**: Die Seite bittet beim Laden, wenn sie wieder sichtbar wird, und stündlich um eine
+   Prüfung; der Service Worker prüft eins nach dem anderen. Nur ein Release mit höherer `sequence`
+   als die höchste je geprüfte zählt; ein altes, korrekt signiertes Release kann der Server so nicht
+   zurückspielen. Der Service Worker prüft Signatur und alle Hashes, legt die Dateien in einen neuen
+   Cache und meldet dann „Neue Version bereit“. Aktiv wird die Version erst bei der nächsten
+   Navigation, nie unter einer laufenden Seite; die Version davor bleibt für offene Tabs, ältere
+   Caches löscht er. Schlägt eine Prüfung fehl, bleibt alles, wie es war, und nichts wird als
+   bereit gemeldet.
+5. **Gleichzeitig**: Der Zustand (aktuelle, bereite und vorige Version, höchste `sequence`) liegt
+   im Speicher des Service Workers und dahinter im Cache Storage. Jede Änderung gilt sofort und
+   ganz für den Zustand, wie er dann ist; eine Prüfung, die lange auf den Server wartet, macht eine
+   Navigation in der Zwischenzeit also nicht rückgängig. Einen Cache, den eine Prüfung gerade füllt,
+   löscht kein Aufräumen, bevor der Zustand ihn nennt.
+
+Schlüssel: Ohne `KENNWORT_RELEASE_KEY` (Ed25519-Seed, hex) signiert der Build mit dem Test-Schlüssel
+des Loops, dessen Seed öffentlich im Repository steht, und sagt das. Der Service Worker vertraut
+`KENNWORT_RELEASE_PUBLIC_KEY`, sonst der öffentlichen Hälfte des signierenden Schlüssels. Den echten
+Release-Schlüssel erzeugt und verwahrt ein Mensch zur Veröffentlichung.
+
+Restrisiko:
+
+- Die erste Installation: Was der Server beim ersten Besuch ausliefert, auch `sw.js` mit seinem
+  Schlüssel, nimmt der Browser ungeprüft. Dasselbe gilt, wenn der Browser den Speicher der Seite
+  räumt; dann ist auch die höchste `sequence` vergessen.
+- Ein geänderter `sw.js`: Der Browser vergleicht `sw.js` bei jeder Navigation mit dem Server und
+  installiert eine andere Fassung ohne Rückfrage. Ein Service Worker kann seinen eigenen Austausch
+  nicht verhindern; ein Server, der einen eigenen `sw.js` ausliefert, umgeht also die Prüfung. Die
+  Prüfung schützt gegen veränderte Dateien der App, nicht gegen einen Server, der gezielt den
+  Service Worker ersetzt. Dagegen soll die Extension helfen, die die Web-App prüft (oben).
+- Dokumente, die eine fremde Seite einbettet: Ein `<object>` oder `<embed>` auf eine Adresse des
+  Servers ist eine Anfrage der fremden Seite, die der Service Worker von Kennwort nie sieht. Ein
+  HTML-Dokument, das der Server darauf antwortet, liefe unter der Herkunft der App; verhindern
+  könnten das nur Kopfzeilen des Servers, dem Kennwort nicht vertraut.
+- Die PWA am Handy ohne Extension.
 
 **Wehrt ab:** E-22, E-17.
 

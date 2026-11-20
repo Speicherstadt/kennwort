@@ -57,6 +57,11 @@ später).
 | Persönlicher Tresor | Jedes Konto bekommt beim ersten Öffnen einen Tresor „Persönlich“, dessen ID aus dem AK abgeleitet ist | Ein Ort für eigene Zugänge ohne Zutun; dieselbe ID auf allen Geräten verhindert doppelte Tresore |
 | Generator | Passwörter aus Klein- und Großbuchstaben, nach Wahl Ziffern und Sonderzeichen, je mindestens eines; Passphrasen aus der englischen EFF-Wortliste (7776 Wörter, 12,9 Bit je Wort); Stärke in Bit: unter 60 schwach, unter 80 gut, ab 80 stark | Eine gute deutsche Wortliste mit klarer Lizenz fehlt; die EFF-Liste ist geprüft, frei (CC BY 3.0 US) und meidet verwechselbare Wörter. Die Bits zählen, was ein Angreifer schafft, der die Einstellungen kennt; die Grenzen folgen dem, was Offline-Raten gegen einen Server mit Secret Key heute nicht erreicht |
 | QR-Scan für Einmalcodes | `jsqr` in der Web-App, erst beim Scannen geladen; Kamera über `getUserMedia`, sonst ein Bild oder Screenshot | `BarcodeDetector` fehlt am Desktop unter Linux und Windows; jsQR ist reines JavaScript ohne Abhängigkeiten, und das Bild verlässt das Gerät nicht |
+| Service Worker der PWA | `sw.js` mit festem Namen, von Bun außerhalb von Vite gebaut, der öffentliche Release-Schlüssel eingebaut; jede neue Version der App kommt über das signierte Release-Manifest, nicht über einen neuen Service Worker | Ein Service Worker kann seinen eigenen Austausch nicht verhindern; bleibt er Byte für Byte gleich, tauscht der Browser ihn nie, und jedes Update läuft durch die Prüfung von Signatur und Hashes |
+| Reihenfolge der Releases | Das Release-Manifest trägt eine Folgenummer (`SOURCE_DATE_EPOCH`, sonst die Bauzeit); der Service Worker merkt sich die höchste je geprüfte und nimmt nur eine höhere, auch nicht bei der Installation eines neuen `sw.js` eine ältere | Sonst könnte der Server ein altes, korrekt signiertes Release mit einer bekannten Lücke zurückspielen |
+| Update der PWA | Eine geprüfte neue Version wartet auf das nächste Neuladen; die Seite zeigt „Neue Version bereit“ mit „Neu laden“ | Unter einer laufenden Seite die Dateien zu tauschen, mischte alte und neue Teile; die Version davor bleibt für offene Tabs |
+| Was der Service Worker nicht hat | Solange eine Version gilt, bekommt eine Datei, die kein geprüfter Cache hat, einen Fehler statt der Antwort des Netzes; eine Navigation unter `/api` oder `/auth` bekommt Weiterleitungen, sonst nur Text in einer Sandbox | Sonst holte ein alter Tab seinen nachgeladenen Code ungeprüft vom Server, und eine Seite des Servers unter `/api` liefe mit dem Speicher der App; Anmeldeabläufe leiten weiter und bleiben so möglich (Review von K-308a) |
+| App-Icon | Das Schloss der Rail (lucide `Lock` auf `--primary`), als SVG und daraus gerenderte PNGs | Ein Zeichen für die App überall; ein Schlüssel steht in der App schon für die Einträge |
 
 ## Stack
 
@@ -132,7 +137,7 @@ Code und Endgeräten, nicht in den Algorithmen.
 | Server nimmt heimlich jemanden in einen Tresor auf | signiertes Mitgliedschafts-Log, Clients prüfen die Kette | keins |
 | Server schiebt fremden öffentlichen Schlüssel unter | Firmen-Wurzelschlüssel signiert Mitarbeiterschlüssel, Warnung bei Wechsel | erster Kontakt (TOFU) |
 | Server vertauscht Einträge oder spielt alte Stände ein | AAD mit ID und Version, Versionszähler im Client | keins |
-| Server liefert manipulierte Web-App aus | Klartext-UI in der Extension; PWA mit signiertem Release-Manifest, Service Worker prüft Hashes; Extension prüft Web-App | PWA am Handy, dokumentiert |
+| Server liefert manipulierte Web-App aus | Klartext-UI in der Extension; PWA mit signiertem Release-Manifest, Service Worker prüft Signatur und Hashes; Extension prüft Web-App | erste Installation, ein ausgetauschter Service Worker und die PWA am Handy, dokumentiert |
 | Phishing-Seite will Autofill | exakter Host-Abgleich (PSL), nur nach Klick, nicht in fremden iFrames | gering |
 | Clickjacking auf das Autofill-Menü (DEF CON 2025) | Menü als Extension-iFrame im geschlossenen Shadow DOM | gering |
 | Supply-Chain im Client | etwa 6 Laufzeitpakete, gepinnt, keine Install-Skripte | gering |
@@ -217,7 +222,8 @@ Reihenfolge nach Abhängigkeiten:
 Was nur Menschen erledigen können, alles nach dem Loop:
 
 - iOS-App: AutoFill-Extension in Xcode, Signatur, App Store.
-- Signatur-Schlüssel für Release-Manifest, Extension und Apps erzeugen und verwahren.
+- Signatur-Schlüssel für Release-Manifest, Extension und Apps erzeugen und verwahren; bis dahin
+  signiert der Loop mit einem Test-Schlüssel (`KENNWORT_RELEASE_KEY`, P-16).
 - Store-Einreichungen (Chrome, Firefox, Edge, App Store, Play) und Antworten auf Reviews.
 - Pilotbetrieb bei einem echten Betrieb.
 - Externes Audit (z. B. Cure53) vor der Veröffentlichung; Befunde arbeitet der Loop ab.

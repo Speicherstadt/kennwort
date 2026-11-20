@@ -310,5 +310,7 @@
   "qr_image": "Choose image",
   "qr_not_found": "There is no QR code in this image.",
   "qr_not_totp": "This QR code holds no key for one-time codes.",
-  "qr_no_camera": "Kennwort may not use the camera. Choose a screenshot instead."
+  "qr_no_camera": "Kennwort may not use the camera. Choose a screenshot instead.",
+  "update_ready": "A new version is ready, checked and signed.",
+  "update_reload": "Reload"
 }

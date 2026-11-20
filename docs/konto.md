@@ -2,7 +2,7 @@
 title: Konto und Entsperren
 description: >-
   Wie man in Kennwort eine Firma anlegt, eine Einladung annimmt, das Recovery-Kit sichert, auf
-  einem neuen Gerät entsperrt und wann Kennwort sich selbst sperrt.
+  einem neuen Gerät entsperrt, wann Kennwort sich selbst sperrt und wie man es als App installiert.
 ---
 
 # Konto und Entsperren
@@ -146,3 +146,18 @@ auf allen Geräten aller Mitglieder. Die Richtlinie ist mit dem Firmenschlüssel
 Server kann sie nicht ändern. Beim Sperren löscht Kennwort die Schlüssel aus dem Speicher;
 nach dem Entsperren bist du wieder auf derselben Seite. Auch ein Neuladen der Seite sperrt, denn die
 Schlüssel liegen nur im Arbeitsspeicher.
+
+## Als App installieren
+
+Kennwort lässt sich aus dem Browser wie eine App installieren und startet dann in einem eigenen
+Fenster, am Handy vom Startbildschirm:
+
+- **Chrome und Edge am Computer**: das Symbol **App installieren** rechts in der Adressleiste.
+- **Android**: im Browsermenü **Zum Startbildschirm hinzufügen** oder **App installieren**.
+- **iPhone und iPad**: in Safari **Teilen → Zum Home-Bildschirm**.
+
+Eine neue Version nimmt Kennwort nur an, wenn sie vom Kennwort-Projekt signiert ist und jede Datei
+genau der signierten entspricht. Liefert dein Server etwas anderes aus, bleibt die bisherige Version
+aktiv. Ist eine geprüfte neue Version bereit, zeigt Kennwort **Neue Version bereit** mit
+**Neu laden**; bis dahin läuft die bisherige weiter. Was das schützt und was nicht, steht im
+[Sicherheitsdesign](sicherheitsdesign.md#signierte-releases-der-pwa).
