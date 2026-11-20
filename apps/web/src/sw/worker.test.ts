@@ -112,10 +112,10 @@ describe("check", () => {
     const { server, caches, deps } = await installedV1();
     server.serve(publish(build("v2"), 2).published);
     expect(await check(deps)).toEqual({ ready: true });
-    // A running v1 page still finds its own files
+    // A running v1 page still finds its own files; v1 stays the page until the next navigation
     expect(await assetText(deps, "/assets/index-v1.js")).toBe('console.log("v1")');
-    expect(await assetText(deps, "/assets/index-v2.js")).toBeUndefined();
     expect(await check(deps)).toEqual({ ready: true });
+    expect((await loadState(caches, ORIGIN)).current?.sequence).toBe(1);
     expect(await page(deps)).toContain("<title>v2</title>");
     expect(await assetText(deps, "/assets/index-v2.js")).toBe('console.log("v2")');
     // The tab still open on v1 loads its files lazily from the version before
@@ -145,7 +145,21 @@ describe("check", () => {
     }
     const names = await caches.keys();
     expect(names.filter((name) => name.startsWith("kennwort-release-"))).toHaveLength(2);
-    expect(await assetText(deps, "/assets/index-v1.js")).toBeUndefined();
+    // A tab still on v1 gets an error for its file, never the server's unchecked copy
+    server.serve(publish(build("v1"), 1).published);
+    expect((await asset(deps, "/assets/index-v1.js"))?.status).toBe(404);
+  });
+
+  it("refuses to install a release older than one it ever verified", async () => {
+    const { server, deps } = await installedV1();
+    server.serve(publish(build("v2"), 2).published);
+    await check(deps);
+    server.serve(publish(build("v1"), 1).published);
+    expect(await install(deps)).toEqual({ ok: false, error: "older" });
+    // The same release again, as a new worker installs it, is fine
+    server.serve(publish(build("v2"), 2).published);
+    expect((await install(deps)).ok).toBe(true);
+    expect(await page(deps)).toContain("<title>v2</title>");
   });
 });
 
@@ -157,10 +171,24 @@ describe("respond", () => {
     expect(await asked(`${ORIGIN}/auth`)).toBeNull();
     expect(await asked("https://elsewhere.test/assets/index-v1.js")).toBeNull();
     expect(await asked(`${ORIGIN}/assets/index-v1.js`, "POST")).toBeNull();
-    expect(await asked(`${ORIGIN}/assets/unknown.js`)).toBeNull();
     expect(
       await respond(deps, { url: `${ORIGIN}/api/x`, method: "GET", mode: "navigate" }),
     ).toBeNull();
+  });
+
+  it("answers a file of no verified release with an error, not from the network", async () => {
+    const { deps } = await installedV1();
+    const unknown = await asset(deps, "/assets/unknown.js");
+    expect(unknown?.status).toBe(404);
+    expect(await unknown?.text()).toBe("Not part of a verified release of Kennwort.");
+  });
+
+  it("answers a navigation with an error when the current version's page is gone", async () => {
+    const { caches, deps } = await installedV1();
+    for (const name of await caches.keys()) {
+      if (name.startsWith("kennwort-release-")) await caches.delete(name);
+    }
+    expect((await navigate(deps))?.status).toBe(503);
   });
 
   it("serves another page of the build by its name, an unknown one as the app", async () => {

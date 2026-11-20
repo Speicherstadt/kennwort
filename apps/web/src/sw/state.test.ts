@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { newRelease } from "./release.ts";
-import { EMPTY_STATE, installed, keptCaches, promoted, readState } from "./state.ts";
+import {
+  EMPTY_STATE,
+  installed,
+  isNewer,
+  isOlder,
+  keptCaches,
+  promoted,
+  readState,
+} from "./state.ts";
 
 const release = (sequence: number) =>
   newRelease(new Map([["/index.html", new TextEncoder().encode(`v${sequence}`)]]), sequence);
@@ -13,7 +21,17 @@ describe("worker state", () => {
       EMPTY_STATE,
     );
     const current = { version: "a", sequence: 1 };
-    expect(readState({ current })).toEqual({ ...EMPTY_STATE, current });
+    expect(readState({ current })).toEqual({ ...EMPTY_STATE, current, highest: 1 });
+  });
+
+  it("remembers the highest sequence, even beyond the versions it still holds", () => {
+    const current = { version: "a", sequence: 1 };
+    expect(readState({ current, highest: 7 }).highest).toBe(7);
+    expect(readState({ current, highest: "7" }).highest).toBe(1);
+    const state = installed(EMPTY_STATE, release(3));
+    expect(isOlder(state, release(2))).toBe(true);
+    expect(isOlder(state, release(3))).toBe(false);
+    expect(isNewer(promoted(state), release(3))).toBe(false);
   });
 
   it("keeps the version before when a new worker installs another release", () => {

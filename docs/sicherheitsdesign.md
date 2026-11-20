@@ -135,7 +135,7 @@ nennt seinen Angriff, und der Client muss ihn ablehnen und sagen, warum.
 | E-16 untergeschobener Eintrags-Schlüssel | `adversary/eth.test.ts` | falsche Signatur |
 | E-17, E-19 altes Format, alte Signatur | `adversary/eth.test.ts` | falsche Signatur |
 | E-23 Audit-Log gefälscht oder gekürzt | `audit/chain.test.ts`, `apps/server/src/audit/` | siehe [P-20](#p-20-audit-log) |
-| E-22 manipulierte Web-App ausgeliefert | `apps/web/src/sw/worker.test.ts`, `e2e/pwa.spec.ts` | falscher Hash, falsche Signatur, fehlende Datei |
+| E-22 manipulierte Web-App ausgeliefert | `apps/web/src/sw/worker.test.ts`, `worker.review.test.ts`, `server-paths.test.ts`, `e2e/pwa.spec.ts` | falscher Hash, falsche Signatur, fehlende Datei, älteres Release; fremde Seite unter `/api` nur als Text |
 | E-24 Passphrase abgegriffen | `apps/server/src/auth/` | – (der Server bekommt sie nie) |
 
 Die übrigen folgen mit den Funktionen, die sie betreffen (Konto-Recovery, Teilen, Geräte, Austritt,
@@ -933,17 +933,36 @@ Ablauf:
 1. **Installation**: Der Service Worker holt `release.json` und `release.sig` am HTTP-Cache vorbei,
    prüft die Signatur, holt jede genannte Datei und prüft ihren Hash. Erst dann legt er die
    geprüften Bytes in einen Cache, der nach der Version heißt. Schlägt etwas fehl, scheitert die
-   Installation, und aus dem Service Worker kommt nichts.
+   Installation, und aus dem Service Worker kommt nichts. Er merkt sich die höchste `sequence`, die
+   er je geprüft hat; ein neuer `sw.js` installiert kein älteres Release als dieses, so lässt sich
+   auch über einen Wechsel des Service Workers kein altes Release zurückspielen.
 2. **Ausliefern**: Jede Navigation bekommt `index.html` der aktuellen geprüften Version, jede andere
-   Datei kommt aus den geprüften Caches. `/api` und `/auth` gehen immer an den Server, ebenso alles,
-   was keine geprüfte Version enthält; danach fragen kann nur eine geprüfte Seite.
-3. **Update**: Die Seite bittet beim Laden, wenn sie wieder sichtbar wird, und stündlich um eine
-   Prüfung. Nur ein Release mit höherer `sequence` als alles Gehaltene zählt; ein altes, korrekt
-   signiertes Release kann der Server so nicht zurückspielen. Der Service Worker prüft Signatur und
-   alle Hashes in einen neuen Cache und meldet dann „Neue Version bereit“. Aktiv wird die Version
-   erst bei der nächsten Navigation, nie unter einer laufenden Seite; die Version davor bleibt für
-   offene Tabs, ältere Caches löscht er. Schlägt eine Prüfung fehl, bleibt alles, wie es war, und
-   nichts wird als bereit gemeldet.
+   Datei kommt aus den geprüften Caches: erst der aktuellen Version, dann der davor, dann aus jedem
+   geprüften Cache, der noch da ist. Solange eine Version gilt, geht nichts davon ans Netz: Was
+   kein geprüfter Cache hat, beantwortet der Service Worker mit einem Fehler (404, bei einer
+   Navigation 503). Ein Tab, der mehrere Versionen zurückliegt, bekommt dann einen Fehler statt
+   ungeprüftem Code und muss neu laden.
+3. **Pfade des Servers**: Anfragen der App an `/api` und `/auth` gehen unverändert an den Server.
+   Eine Navigation dorthin, etwa über einen Link in einer Mail, liefe sonst als Dokument des
+   Servers ungeprüft unter der Herkunft der App, mit Zugriff auf ihren Speicher und ihre Caches.
+   Der Service Worker gibt deshalb Weiterleitungen unverändert weiter, wie Anmeldeabläufe über
+   `/auth` sie brauchen, und jede andere Antwort nur als Text in einer Sandbox
+   (`Content-Type: text/plain`, `Content-Security-Policy: sandbox`, `nosniff`). Ein künftiger
+   Anmeldeablauf über OpenID Connect muss darum mit einer Weiterleitung in die App enden, nicht mit
+   einer eigenen Seite.
+4. **Update**: Die Seite bittet beim Laden, wenn sie wieder sichtbar wird, und stündlich um eine
+   Prüfung; der Service Worker prüft eins nach dem anderen. Nur ein Release mit höherer `sequence`
+   als die höchste je geprüfte zählt; ein altes, korrekt signiertes Release kann der Server so nicht
+   zurückspielen. Der Service Worker prüft Signatur und alle Hashes, legt die Dateien in einen neuen
+   Cache und meldet dann „Neue Version bereit“. Aktiv wird die Version erst bei der nächsten
+   Navigation, nie unter einer laufenden Seite; die Version davor bleibt für offene Tabs, ältere
+   Caches löscht er. Schlägt eine Prüfung fehl, bleibt alles, wie es war, und nichts wird als
+   bereit gemeldet.
+5. **Gleichzeitig**: Der Zustand (aktuelle, bereite und vorige Version, höchste `sequence`) liegt
+   im Speicher des Service Workers und dahinter im Cache Storage. Jede Änderung gilt sofort und
+   ganz für den Zustand, wie er dann ist; eine Prüfung, die lange auf den Server wartet, macht eine
+   Navigation in der Zwischenzeit also nicht rückgängig. Einen Cache, den eine Prüfung gerade füllt,
+   löscht kein Aufräumen, bevor der Zustand ihn nennt.
 
 Schlüssel: Ohne `KENNWORT_RELEASE_KEY` (Ed25519-Seed, hex) signiert der Build mit dem Test-Schlüssel
 des Loops, dessen Seed öffentlich im Repository steht, und sagt das. Der Service Worker vertraut
@@ -954,7 +973,7 @@ Restrisiko:
 
 - Die erste Installation: Was der Server beim ersten Besuch ausliefert, auch `sw.js` mit seinem
   Schlüssel, nimmt der Browser ungeprüft. Dasselbe gilt, wenn der Browser den Speicher der Seite
-  räumt.
+  räumt; dann ist auch die höchste `sequence` vergessen.
 - Ein geänderter `sw.js`: Der Browser vergleicht `sw.js` bei jeder Navigation mit dem Server und
   installiert eine andere Fassung ohne Rückfrage. Ein Service Worker kann seinen eigenen Austausch
   nicht verhindern; ein Server, der einen eigenen `sw.js` ausliefert, umgeht also die Prüfung. Die

@@ -5,6 +5,7 @@
  * through worker.ts and its checks instead.
  */
 import { fromHex } from "./release.ts";
+import { asInertDocument, isServerNavigation } from "./server-paths.ts";
 import {
   activate,
   CHECK_MESSAGE,
@@ -73,6 +74,10 @@ scope.addEventListener("activate", (event: ExtendableEvent) =>
 scope.addEventListener("fetch", (event: FetchEvent) => {
   const { request } = event;
   const asked = { url: request.url, method: request.method, mode: request.mode };
+  if (isServerNavigation(deps.origin, request.url, request.mode)) {
+    event.respondWith(scope.fetch(request).then(asInertDocument));
+    return;
+  }
   if (!handles(deps.origin, asked)) return;
   event.respondWith(respond(deps, asked).then((answer) => answer ?? scope.fetch(request)));
 });

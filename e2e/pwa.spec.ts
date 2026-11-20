@@ -66,6 +66,16 @@ const staticServer = async () => {
   let current = dist;
   const server: Server = createServer((request, response) => {
     const path = decodeURIComponent(new URL(request.url ?? "/", "http://x").pathname);
+    // A server that answers a navigation under /api with a page of its own, and /auth with a redirect
+    if (path === "/api/page") {
+      response.writeHead(200, { "content-type": "text/html" });
+      response.end("<script>document.title = 'server code ran'</script>");
+      return;
+    }
+    if (path === "/auth/redirect") {
+      response.writeHead(302, { location: "/entries" }).end();
+      return;
+    }
     if (path.startsWith("/api/") || path.startsWith("/auth/")) {
       response.writeHead(404).end();
       return;
@@ -122,6 +132,16 @@ test("the service worker activates only a signed release whose hashes hold", {
       expect(await page.locator('link[rel="manifest"]').getAttribute("href")).toBe(
         "/manifest.webmanifest",
       );
+    });
+
+    await test.step("shows a page the server answers under /api only as inert text", async () => {
+      await page.goto(`${server.url}api/page`);
+      expect(await page.evaluate(() => document.contentType)).toBe("text/plain");
+      expect(await page.title()).not.toBe("server code ran");
+      // A redirect through /auth, as in a sign-in flow, still leads into the app
+      await page.goto(`${server.url}auth/redirect`);
+      await expect(page).toHaveURL(`${server.url}entries`);
+      await page.goto(server.url);
     });
 
     await test.step("refuses a v2 with a file changed after signing", async () => {
