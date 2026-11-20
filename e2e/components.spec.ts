@@ -198,3 +198,21 @@ test("a hovered tooltip stays while the pointer moves onto it", async ({ page })
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 5 });
   await expect(tip).toBeVisible();
 });
+
+test("Tab wraps in a dialog whose last element is a closed popover's content", async ({ page }) => {
+  await page.goto("/components.html");
+  await page.getByRole("button", { name: "Eintrag löschen …" }).click();
+  const dialog = page.getByRole("dialog", { name: "Eintrag löschen?" });
+  await expect(dialog).toBeVisible();
+  // What <Popover> renders: a trigger and a closed popover="auto" with a button inside
+  await dialog.evaluate((el) => {
+    const pop = document.createElement("div");
+    pop.popover = "auto";
+    pop.id = "probe-pop";
+    pop.innerHTML = '<button type="button">Anna entfernen</button>';
+    el.append(pop);
+  });
+  await dialog.getByRole("button", { name: "Löschen", exact: true }).focus();
+  await page.keyboard.press("Tab");
+  expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+});

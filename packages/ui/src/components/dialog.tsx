@@ -17,10 +17,17 @@ export type DialogProps = {
 
 const candidates = "a[href], button, input, select, textarea, [tabindex]";
 
-/** What Tab can reach: in the tab order, not disabled and not inside something hidden (review of K-301) */
+/**
+ * What Tab can reach: in the tab order, not disabled, rendered (not hidden, not in a closed
+ * popover, not display:none) and not inert (review of K-301)
+ */
 const tabbable = (root: HTMLElement) =>
   [...root.querySelectorAll<HTMLElement>(candidates)].filter(
-    (el) => el.tabIndex >= 0 && !el.hasAttribute("disabled") && !el.closest("[hidden]"),
+    (el) =>
+      el.tabIndex >= 0 &&
+      !el.hasAttribute("disabled") &&
+      !el.closest("[hidden], [inert]") &&
+      el.checkVisibility(),
   );
 
 /**
