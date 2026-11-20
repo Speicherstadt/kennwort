@@ -59,30 +59,36 @@ const TEXT_RULES: { pattern: RegExp; rule: string }[] = [
     rule: "Context.Provider: the context is the provider (<Ctx value>)",
   },
   {
-    pattern: /<[a-z][\w-]*\b[^>]*\son[a-z]+\s*=\s*\{/,
-    rule: "lowercase on* on an element is an attribute in 2.0: use camelCase (onClick)",
-  },
-  {
     pattern: /\/\*\s*@once\s*\*\//,
     rule: "/*@once*/ is gone: use untrack for a deliberate one-time read",
   },
 ];
 
-const importedFromSolid = (source: string): Set<string> => {
-  const names = new Set<string>();
+/** A name Solid exports, as this file calls it: `effect` for `createEffect as effect`, `S.onMount` */
+type Imported = { name: string; local: string };
+
+const importedFromSolid = (source: string): Imported[] => {
+  const names: Imported[] = [];
   for (const match of source.matchAll(
     /import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*["']([^"']+)["']/g,
   )) {
     if (!SOLID_MODULES.has(match[2] as string)) continue;
     for (const part of (match[1] as string).split(",")) {
-      const name = part
+      const [name, alias] = part
         .replace(/^\s*type\s+/, "")
-        .split(/\s+as\s+/)[0]
-        ?.trim();
-      if (name) names.add(name);
+        .split(/\s+as\s+/)
+        .map((word) => word.trim());
+      if (name) names.push({ name, local: alias || name });
     }
   }
-  return names;
+  // A namespace import hides nothing: each `S.name` it is used with counts as imported
+  for (const match of source.matchAll(/import\s*\*\s*as\s+(\w+)\s+from\s*["']([^"']+)["']/g)) {
+    if (!SOLID_MODULES.has(match[2] as string)) continue;
+    const space = match[1] as string;
+    for (const use of source.matchAll(new RegExp(`\\b${space}\\.(\\w+)`, "g")))
+      names.push({ name: use[1] as string, local: `${space}.${use[1]}` });
+  }
+  return [...new Map(names.map((imported) => [imported.local, imported])).values()];
 };
 
 const lineOf = (source: string, index: number) => source.slice(0, index).split("\n").length;
@@ -121,35 +127,35 @@ export const callArguments = (source: string, open: number): string[] => {
     .filter((arg) => arg.trim() !== "");
 };
 
-/** createEffect with one function (1.x) and createMemo/createEffect with an initial value */
-const callRules = (source: string, imported: Set<string>): Finding[] => {
-  const findings: Finding[] = [];
-  for (const match of source.matchAll(
-    /\b(createEffect|createMemo|createRenderEffect)\s*(<[^(]*>)?\(/g,
-  )) {
-    const name = match[1] as string;
-    if (!imported.has(name)) continue;
-    const args = callArguments(source, (match.index ?? 0) + match[0].length - 1);
-    const line = lineOf(source, match.index ?? 0);
-    if (name !== "createMemo" && args.length === 1)
-      findings.push({
-        line,
-        rule: `${name} with one function (1.x): split it into compute and apply`,
-      });
-    const second = name === "createMemo" ? args[1] : undefined;
-    if (second !== undefined && !second.trim().startsWith("{"))
-      findings.push({
-        line,
-        rule: "createMemo's second argument is options now, not an initial value",
-      });
-  }
-  return findings;
-};
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** createEffect with one function (1.x) and createMemo with an initial value */
+const callRules = (source: string, imported: Imported[]): Finding[] =>
+  imported
+    .filter(({ name }) => ["createEffect", "createMemo", "createRenderEffect"].includes(name))
+    .flatMap(({ name, local }) =>
+      [
+        ...source.matchAll(new RegExp(`(?<![\\w.$])${escapeRegExp(local)}\\s*(<[^(]*>)?\\(`, "g")),
+      ].flatMap((match): Finding[] => {
+        const args = callArguments(source, (match.index ?? 0) + match[0].length - 1);
+        const line = lineOf(source, match.index ?? 0);
+        if (name !== "createMemo" && args.length === 1)
+          return [
+            { line, rule: `${name} with one function (1.x): split it into compute and apply` },
+          ];
+        const second = name === "createMemo" ? args[1] : undefined;
+        if (second !== undefined && !second.trim().startsWith("{"))
+          return [
+            { line, rule: "createMemo's second argument is options now, not an initial value" },
+          ];
+        return [];
+      }),
+    );
 
 /** onCleanup inside a ref callback: refs are unowned in 2.0, the cleanup never runs */
 const refRules = (source: string): Finding[] =>
-  [...source.matchAll(/ref=\{\s*\(?\s*\w*\s*\)?\s*=>\s*\{/g)].flatMap((match) => {
-    const open = (match.index ?? 0) + match[0].length - 1;
+  [...source.matchAll(/\bref=\{\s*(?:async\s+)?(?:function\b|\(|\w+\s*=>)/g)].flatMap((match) => {
+    const open = (match.index ?? 0) + match[0].indexOf("{");
     const body = source.slice(open, Math.max(open, bracketEnd(source, open)));
     return /\bonCleanup\s*\(/.test(body)
       ? [
@@ -161,12 +167,42 @@ const refRules = (source: string): Finding[] =>
       : [];
   });
 
+/**
+ * The opening tags of DOM elements (lowercase names), with what stands inside `{}` and quotes
+ * blanked out, so an attribute matches wherever the formatter puts it, also on its own line
+ */
+const elementTags = (source: string): { start: number; text: string }[] =>
+  [...source.matchAll(/<[a-z][\w-]*/g)].flatMap((match) => {
+    const start = match.index ?? 0;
+    let text = "";
+    for (let i = start; i < source.length; i++) {
+      const c = source[i] as string;
+      if (c === ">") return [{ start, text }];
+      if (c === "{" || c === '"' || c === "'") {
+        const end = c === "{" ? bracketEnd(source, i) : source.indexOf(c, i + 1);
+        if (end < 0) return [];
+        text += c + source.slice(i + 1, end).replace(/[^\n]/g, " ") + source[end];
+        i = end;
+      } else text += c;
+    }
+    return [];
+  });
+
+/** A lowercase on* on an element: in 2.0 an attribute holding the function's text, no handler */
+const handlerRules = (source: string): Finding[] =>
+  elementTags(source).flatMap(({ start, text }) =>
+    [...text.matchAll(/\son[a-z]+\s*=\s*\{/g)].map((match) => ({
+      line: lineOf(source, start + (match.index ?? 0) + 1),
+      rule: "lowercase on* on an element is an attribute in 2.0: use camelCase (onClick)",
+    })),
+  );
+
 export const solid2Findings = (source: string): Finding[] => {
   const imported = importedFromSolid(source);
-  const removed = [...imported]
-    .filter((name) => name in REMOVED)
-    .map((name) => ({
-      line: lineOf(source, source.search(new RegExp(`\\b${name}\\b`))),
+  const removed = [...new Map(imported.map((i) => [i.name, i])).values()]
+    .filter(({ name }) => name in REMOVED)
+    .map(({ name, local }) => ({
+      line: lineOf(source, source.search(new RegExp(`\\b${escapeRegExp(local)}\\b`))),
       rule: `${name} is gone in Solid 2.0: use ${REMOVED[name]}`,
     }));
   const text = source.split("\n").flatMap((text, i) =>
@@ -175,7 +211,11 @@ export const solid2Findings = (source: string): Finding[] => {
       rule,
     })),
   );
-  return [...removed, ...text, ...callRules(source, imported), ...refRules(source)].sort(
-    (a, b) => a.line - b.line,
-  );
+  return [
+    ...removed,
+    ...text,
+    ...callRules(source, imported),
+    ...refRules(source),
+    ...handlerRules(source),
+  ].sort((a, b) => a.line - b.line);
 };

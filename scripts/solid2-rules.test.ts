@@ -78,6 +78,49 @@ describe("solid2Findings (docs/solid-2.0/MIGRATION.md)", () => {
   });
 });
 
+describe("solid2Findings, as the formatter lays the code out", () => {
+  it("finds a lowercase handler on an element whose attributes stand on their own lines", () => {
+    const source = [
+      "<button",
+      '  type="button"',
+      '  class={cn(open() && "bg-accent")}',
+      "  onclick={() => go(1)}",
+      ">",
+      "<Menu",
+      "  onselect={pick}",
+      "/>",
+      "const sizes = new Map<string, number>();",
+    ].join("\n");
+    expect(rules(source)).toEqual(["4: lowercase on* on an element is an attribute in 2.0"]);
+  });
+
+  it("finds onCleanup in a ref callback with a typed parameter", () => {
+    expect(
+      rules("<div\n  ref={(el: HTMLDivElement) => {\n    onCleanup(() => el.blur());\n  }}\n/>"),
+    ).toEqual(["2: onCleanup in a ref callback"]);
+    expect(rules("<div ref={function (el) { onCleanup(stop); }} />")).toEqual([
+      "1: onCleanup in a ref callback",
+    ]);
+  });
+
+  it("follows Solid's names under another name or a namespace", () => {
+    expect(
+      rules(
+        'import { createEffect as effect } from "solid-js";\neffect(() => { el.title = name(); });',
+      ),
+    ).toEqual(["2: createEffect with one function (1.x)"]);
+    expect(
+      rules(
+        'import * as Solid from "solid-js";\nSolid.onMount(go);\nSolid.createEffect(() => go());\nSolid.createEffect(() => stop());',
+      ),
+    ).toEqual([
+      "2: onMount is gone in Solid 2.0",
+      "3: createEffect with one function (1.x)",
+      "4: createEffect with one function (1.x)",
+    ]);
+  });
+});
+
 describe("callArguments", () => {
   it("splits at top-level commas only, past strings and nested brackets", () => {
     // A template literal with a placeholder, put together so no linter takes it for a mistake
