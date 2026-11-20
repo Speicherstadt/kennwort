@@ -21,14 +21,19 @@ export const QrScanDialog = (props: { onFound: (link: string) => void; onClose: 
   const [stream, setStream] = createSignal<MediaStream>();
   let video: HTMLVideoElement | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  // Once the dialog is gone, nothing that was still on its way may act: a camera that opens late
+  // is stopped, a frame read late hands on nothing (review of K-306 part 4b)
+  let disposed = false;
+  const stopTracks = (media: MediaStream | undefined) => {
+    for (const track of media?.getTracks() ?? []) track.stop();
+  };
   const stop = () => {
     clearTimeout(timer);
-    for (const track of stream()?.getTracks() ?? []) track.stop();
+    stopTracks(stream());
   };
-  onCleanup(stop);
   /** True when the text is a TOTP link and was handed on; anything else says why not */
   const take = (text: string | undefined) => {
-    if (text === undefined) return false;
+    if (disposed || text === undefined) return false;
     if (!/^otpauth:/i.test(text.trim()) || !parseTotp(text).ok) {
       setProblem("not-totp");
       return false;
@@ -39,11 +44,13 @@ export const QrScanDialog = (props: { onFound: (link: string) => void; onClose: 
   };
   const scanFrame = async () => {
     const pixels = video && pixelsOfVideo(video);
-    if (pixels && take(await readQr(pixels))) return;
+    const text = pixels && (await readQr(pixels));
+    if (disposed || take(text)) return;
     timer = setTimeout(() => void scanFrame(), SCAN_EVERY_MS);
   };
   const startCamera = async () => {
     const opened = await openCamera();
+    if (disposed) return stopTracks(opened);
     if (!opened) return setProblem("no-camera");
     setProblem(undefined);
     setStream(opened);
@@ -57,6 +64,7 @@ export const QrScanDialog = (props: { onFound: (link: string) => void; onClose: 
     if (!file) return;
     const pixels = await pixelsOfImage(file);
     const text = pixels && (await readQr(pixels));
+    if (disposed) return;
     if (text === undefined) setProblem("not-found");
     else take(text);
   };
@@ -64,9 +72,16 @@ export const QrScanDialog = (props: { onFound: (link: string) => void; onClose: 
     const image = [...(event.clipboardData?.files ?? [])].find((f) => f.type.startsWith("image/"));
     if (image) void fromImage(image);
   };
+  // On the whole page while the dialog is open: right after it opens, the focus is on its header
+  document.addEventListener("paste", onPaste);
+  onCleanup(() => {
+    disposed = true;
+    stop();
+    document.removeEventListener("paste", onPaste);
+  });
   return (
     <Dialog open onClose={props.onClose} title={m.qr_scan()}>
-      <div class="grid gap-3 p-4 pt-2" onPaste={onPaste}>
+      <div class="grid gap-3 p-4 pt-2">
         <p class="text-[13px] text-muted-foreground">{m.qr_scan_intro()}</p>
         <video
           ref={(el) => {

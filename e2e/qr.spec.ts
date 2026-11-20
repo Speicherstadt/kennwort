@@ -1,4 +1,4 @@
-import { writeFileSync } from "node:fs";
+import { rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
@@ -83,5 +83,6 @@ test("Jonas scans the DATEV setup code with the camera", async () => {
     await expect(dialog.getByLabel("Einmalcode", { exact: true })).toHaveValue(QR.totp.text);
   } finally {
     await browser.close();
+    rmSync(video, { force: true });
   }
 });
