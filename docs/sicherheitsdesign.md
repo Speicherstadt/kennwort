@@ -505,8 +505,9 @@ Der Client prüft bei jedem Abruf die ganze Kette ab seinem letzten Stand:
   vertauscht, eingeschoben: E-07);
 - jede Signatur gültig, der Unterzeichner zu diesem Zeitpunkt Verwalter, sein Schlüssel und der des
   Mitglieds durch die Firma zertifiziert (unsigniert, fremd: E-06, E-07). „Zu diesem Zeitpunkt“
-  heißt zur signierten Zeit des Eintrags; diese Zeiten steigen nie und liegen höchstens fünf
-  Minuten vor der Uhr des Prüfenden (`CLOCK_SKEW_SECONDS`), weil die Uhren der Geräte auseinandergehen.
+  heißt zur signierten Zeit des Eintrags; diese Zeiten sinken nie und liegen höchstens fünf
+  Minuten vor der Uhr des Prüfenden (`CLOCK_SKEW_SECONDS`), weil die Uhren der Geräte
+  auseinandergehen.
   Restrisiko: Ein Verwalter, dessen Zugriff abgelaufen ist, kann noch Einträge mit einer Zeit vor
   dem Ablauf anhängen, solange niemand danach geschrieben hat;
 - jeder VKₑ, den der Client entpackt, passt zur `vk-bindung` des Eintrags `anlegen` bzw.
@@ -531,9 +532,10 @@ nur für Nicht-Mitglieder, `rolle` und `entfernen` nur für Mitglieder, Zeiten, 
 und höchstens fünf Minuten vor seiner Uhr liegen. Dazu muss der Unterzeichner nach der Uhr des
 Servers gerade Verwalter sein: Ein Verwalter, dessen Zugriff abgelaufen ist, hängt auch mit einer
 zurückdatierten Zeit nichts mehr an (das Restrisiko oben bleibt nur gegen einen bösartigen Server).
-Wer entfernt und wieder aufgenommen wird, bekommt den Schlüssel neu verpackt. Den `schlüsselwechsel` nimmt er erst mit K-307, das allen Mitgliedern das
-neue VK mitgibt. Ob ein Eintrag gilt, entscheidet trotzdem jeder Client mit `verifyLog`, gleich,
-was der Server durchgelassen hat.
+Wer entfernt und wieder aufgenommen wird, bekommt den Schlüssel neu verpackt. Den
+`schlüsselwechsel` nimmt er erst mit K-307, das allen Mitgliedern das neue VK mitgibt. Ob ein
+Eintrag gilt, entscheidet trotzdem jeder Client mit `verifyLog`, gleich, was der Server
+durchgelassen hat.
 
 **Wehrt ab:** E-06, E-07, E-08, E-16, E-19.
 
