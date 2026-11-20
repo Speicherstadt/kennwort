@@ -42,8 +42,9 @@ export default defineConfig({
       },
     },
     {
-      // The showcase of packages/ui is built for these tests only (apps/web/vite.config.ts)
-      command: `KENNWORT_SHOWCASE=1 bun run --cwd apps/web build && KENNWORT_API=http://localhost:${serverPort} bun run --cwd apps/web preview`,
+      // The showcase of packages/ui is built for these tests only (apps/web/vite.config.ts); the
+      // extension is built first for e2e/extension.spec.ts, which loads it into its own Chromium
+      command: `bun run --cwd apps/extension build:chrome && KENNWORT_SHOWCASE=1 bun run --cwd apps/web build && KENNWORT_API=http://localhost:${serverPort} bun run --cwd apps/web preview`,
       port,
       reuseExistingServer: false,
     },

@@ -1,0 +1,19 @@
+{
+  "name": "@kennwort/extension",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build && vite build --mode firefox && bun build/check-bundle.ts chrome firefox",
+    "build:chrome": "vite build && bun build/check-bundle.ts chrome",
+    "build:firefox": "vite build --mode firefox && bun build/check-bundle.ts firefox"
+  },
+  "dependencies": {
+    "@kennwort/ui": "workspace:*",
+    "@solidjs/web": "2.0.3",
+    "solid-js": "2.0.3"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "3.0.0"
+  }
+}

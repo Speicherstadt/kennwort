@@ -3,11 +3,11 @@
   "packages": {
     "solid-js": {
       "reason": "Solid 2, the reactive UI of the web app, the extension and the mobile app (docs/plan.md, Stack); small and auditable instead of React",
-      "workspaces": ["packages/ui", "apps/web"]
+      "workspaces": ["packages/ui", "apps/web", "apps/extension"]
     },
     "@solidjs/web": {
       "reason": "Solid 2's DOM renderer, split out of solid-js in 2.0; the same project and release as solid-js",
-      "workspaces": ["packages/ui", "apps/web"]
+      "workspaces": ["packages/ui", "apps/web", "apps/extension"]
     },
     "@noble/ciphers": {
       "reason": "XChaCha20-Poly1305 (and later ChaCha20/AES for KDBX): audited, pure TypeScript, no dependencies of its own; the only cipher library packages/crypto may use (docs/plan.md, Kryptografie)",

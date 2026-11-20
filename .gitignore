@@ -25,5 +25,7 @@ apps/mobile/gen/
 
 # Paraglide output, compiled from messages/ by `bun run i18n`
 packages/ui/src/paraglide/
+# The extension's Paraglide runtime without localStorage (package.json, "i18n")
+apps/extension/paraglide/
 project.inlang/cache/
 project.inlang/.gitignore

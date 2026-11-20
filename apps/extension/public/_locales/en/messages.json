@@ -1,0 +1,14 @@
+{
+  "extension_name": {
+    "message": "Kennwort",
+    "description": "The extension's name in the browser and the stores"
+  },
+  "extension_description": {
+    "message": "The password manager for small businesses: self-hosted and end-to-end encrypted.",
+    "description": "Description in the browser's list of extensions and in the stores"
+  },
+  "extension_action": {
+    "message": "Open Kennwort",
+    "description": "Tooltip of the toolbar button"
+  }
+}
