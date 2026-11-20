@@ -119,13 +119,14 @@ export const createPopupAccount = (deps: PopupAccountDeps) => {
       deps.derive,
     );
     if (!result.ok) return result;
-    if (!(await store.keep(record, result.value, now()))) {
-      result.value.accountKey.fill(0);
+    const { opened: value } = result.value;
+    if (!(await store.keep(record, value, now()))) {
+      value.accountKey.fill(0);
       await Promise.all([store.clearKeys(), timer.stop()]);
       return { ok: false, error: "storage-failed" };
     }
     setDevice(record);
-    open(result.value);
+    open(value);
     return { ok: true };
   };
 

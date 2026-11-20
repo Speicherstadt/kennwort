@@ -359,5 +359,6 @@
   "error_insecure_server": "The server must be reachable over HTTPS.",
   "error_invalid_account": "The account ID or Secret Key is not in the right format.",
   "error_storage_failed": "The extension could not store the keys protected. Restart the browser.",
-  "popup_copy": "Copy {field} of {title}"
+  "popup_copy": "Copy {field} of {title}",
+  "error_server_unreachable": "The server cannot be reached. Check the address and the connection."
 }

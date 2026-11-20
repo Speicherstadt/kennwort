@@ -359,5 +359,6 @@
   "error_insecure_server": "Der Server muss über HTTPS erreichbar sein.",
   "error_invalid_account": "Konto-ID oder Secret Key hat nicht das richtige Format.",
   "error_storage_failed": "Die Extension konnte die Schlüssel nicht geschützt ablegen. Starte den Browser neu.",
-  "popup_copy": "{field} von {title} kopieren"
+  "popup_copy": "{field} von {title} kopieren",
+  "error_server_unreachable": "Der Server ist nicht erreichbar. Prüf die Adresse und die Verbindung."
 }

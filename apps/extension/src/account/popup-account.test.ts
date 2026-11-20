@@ -119,6 +119,17 @@ describe("connecting and unlocking", () => {
     expect(area.items.size).toBe(0);
   });
 
+  it("says the server cannot be reached, with no offline copy to fall back on", async () => {
+    const server = accountServer();
+    const unreachable = {
+      ...server.api,
+      signIn: async () => ({ ok: false as const, error: "unreachable" as const }),
+    };
+    const { account, input, area } = setup({ apiFor: () => unreachable });
+    expect(await account.connect(input)).toEqual({ ok: false, error: "unreachable" });
+    expect(area.items.size).toBe(0);
+  });
+
   it("sets the lock alarm to the lock time the account state remembers", async () => {
     const { account, input, alarms } = setup();
     await account.connect(input);
