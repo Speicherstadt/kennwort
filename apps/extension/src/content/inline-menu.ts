@@ -6,7 +6,8 @@
  *
  * - the message comes from the extension's service worker and names this menu's nonce;
  * - the worker's exact host is this document's host (the worker checked the stored addresses);
- * - the menu is still open, uncovered and opaque as the page shows it (menu-frame.ts).
+ * - the menu is still open, uncovered and opaque as the page shows it (menu-frame.ts);
+ * - only into fields the page still shows (field-shown.ts).
  *
  * Events the page makes up itself (`isTrusted` false) open nothing.
  */

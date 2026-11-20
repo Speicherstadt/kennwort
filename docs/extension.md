@@ -106,6 +106,9 @@ Was die Extension dabei sicherstellt:
 - **Kein verdecktes Menü**: Liegt etwas über dem Menü oder ist es durchsichtig gemacht, füllt ein
   Klick nichts aus, und das Menü sagt: „Das Menü war verdeckt oder durchsichtig.“ So kann eine
   Seite dich nicht in ein unsichtbares Menü klicken lassen (Clickjacking).
+- **Nur in Felder, die du siehst**: Versteckt eine Seite ein Passwortfeld hinter einem
+  Benutzernamen-Feld (außerhalb der Seite, durchsichtig, winzig oder ausgeblendet), schreibt die
+  Extension dort nichts hinein, sondern nur in die Felder, die die Seite zeigt.
 - **Die Sperrzeit läuft weiter**: Das Menü schiebt das automatische Sperren nicht hinaus; nur das
   Popup tut das.
 

@@ -1,5 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fillLogin } from "./fill-in.ts";
+
+/** happy-dom lays out nothing: every element gets the box of an ordinary field */
+const FIELD_BOX = { x: 16, y: 16, width: 240, height: 32 };
 
 // K-403: a fill writes the values and tells the page's scripts as typing would
 const input = (type: string) => {
@@ -9,8 +12,15 @@ const input = (type: string) => {
   return element;
 };
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 beforeEach(() => {
   document.body.innerHTML = "";
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
+    DOMRect.fromRect(FIELD_BOX),
+  );
 });
 
 describe("fillLogin", () => {
@@ -43,6 +53,22 @@ describe("fillLogin", () => {
     username.value = "typed";
     fillLogin({ username, password: input("password") }, { username: "", password: "x" });
     expect(username.value).toBe("typed");
+  });
+
+  it("writes no password into a field the page hid after the menu opened", () => {
+    const username = input("text");
+    const password = input("password");
+    password.style.opacity = "0";
+    expect(fillLogin({ username, password }, { username: "jonas", password: "Kupfer-17" })).toBe(
+      true,
+    );
+    expect([username.value, password.value]).toEqual(["jonas", ""]);
+    username.style.display = "none";
+    username.value = "";
+    expect(fillLogin({ username, password }, { username: "jonas", password: "Kupfer-17" })).toBe(
+      false,
+    );
+    expect([username.value, password.value]).toEqual(["", ""]);
   });
 
   it("fills nothing when the fields are gone", () => {

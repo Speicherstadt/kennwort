@@ -1343,6 +1343,12 @@ Restrisiko:
   als etwa 100 ms um den Klick liegt, und Abdeckungen in einem geschlossenen Shadow Root der Seite
   mit `pointer-events: none`, die v2 erst nach seiner Verzögerung meldet. Firefox kennt v2 nicht;
   dort füllt das Menü nicht aus und sagt das.
+- Nur in Felder, die die Seite zeigt: Das Menü öffnet nur auf einem sichtbaren Login-Feld, und
+  gefüllt werden nur Felder, die beim Ausfüllen noch sichtbar sind, also angezeigt, nicht
+  `visibility: hidden`, mit allen Deckkräften bis zur Wurzel zusammen mindestens 0,2, mindestens
+  4 × 4 Pixel groß und nicht links oder oberhalb der Seite. Ein verstecktes Passwortfeld hinter
+  einem sichtbaren Benutzernamen-Feld bekommt nichts; das Skript der Seite läse sonst ein Passwort,
+  das der Nutzer nie hat hineingehen sehen.
 - Das Menü öffnet das Konto, das das Popup entsperrt hat, verschiebt die Sperrzeit aber nie: Sonst
   hielte eine Seite die Extension offen, indem sie immer wieder ein Login-Feld fokussiert. Das
   Content Script hält keine Geheimnisse und liest keinen Speicherbereich.
@@ -1358,7 +1364,8 @@ Punkt) bekommt keine Treffer, und selbst eine erzwungene Anfrage des Menüs lehn
 ab; ein fremdes iFrame auf einer passenden Seite bekommt kein Menü und keine Daten und kann die
 Menü-Seite nicht selbst einbetten; ein abgedecktes Menü (undurchsichtig oder mit
 `pointer-events: none`) und ein fast durchsichtiges (am Element oder an der ganzen Seite) füllen
-nichts aus, derselbe Klick ohne Trick schon. Die Regeln selbst prüfen Vitest-Tests neben dem Code
+nichts aus, derselbe Klick ohne Trick schon; ein Passwortfeld, das die Seite außerhalb der Seite,
+durchsichtig oder ein Pixel groß versteckt, bleibt leer. Die Regeln selbst prüfen Vitest-Tests neben dem Code
 (`apps/extension/src/fill`, `content`, `menu`, `page`).
 
 **Wehrt ab:** E-14.

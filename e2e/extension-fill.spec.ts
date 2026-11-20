@@ -32,6 +32,27 @@ const loginForm = (title: string, extra = "") =>
   <label>Passwort <input name="pass" type="password" autocomplete="current-password"></label><br>
   <button type="button">Anmelden</button></form>${extra}</body>`;
 
+/**
+ * A page of the exact host that shows only a user name field and hides a password field after it,
+ * each in its own way, so its script reads a password the user never saw going in
+ */
+const HIDDEN_PASSWORD: Record<string, string> = {
+  "off-screen": "position:absolute;left:-9999px;top:-9999px",
+  transparent: "opacity:0",
+  tiny: "width:1px;height:1px;padding:0;border:0",
+};
+const hiddenPasswordPage = (trick: string) => `${PORTAL}?hidden=${trick}`;
+const hiddenPasswordPages = () =>
+  Object.fromEntries(
+    Object.entries(HIDDEN_PASSWORD).map(([trick, style]) => [
+      hiddenPasswordPage(trick),
+      `<!doctype html><html lang="de"><title>Newsletter</title><body style="margin:16px">
+      <form><label>Benutzername <input name="user" autocomplete="username"></label>
+      <input name="pass" type="password" aria-label="Passwort" style="${style}">
+      <button type="button">Weiter</button></form></body>`,
+    ]),
+  );
+
 const PAGES: Record<string, string> = {
   [PORTAL]: loginForm("Portal"),
   // A matching page with its own login and a login form of another origin in an iframe
@@ -42,6 +63,7 @@ const PAGES: Record<string, string> = {
   [WIDGET]: loginForm("Sparkasse"),
   // The look-alike: a hyphen instead of a dot
   [PHISHING]: loginForm("Portal"),
+  ...hiddenPasswordPages(),
 };
 
 type Chrome = { runtime: { sendMessage(message: object): Promise<unknown> } };
@@ -298,5 +320,21 @@ test.describe
       await clickOn(entry);
       await expect(fields(tab).password).toHaveValue(PASSWORD);
       await expect(fields(tab).username).toHaveValue(USERNAME);
+    });
+
+    test("fills no password into a field the page hides", async () => {
+      for (const trick of Object.keys(HIDDEN_PASSWORD)) {
+        await tab.goto(hiddenPasswordPage(trick));
+        await fields(tab).username.click();
+        const menu = await menuIn(tab);
+        const entry = menu.getByRole("button", { name: FILL });
+        await expect(entry).toBeVisible({ timeout: 30_000 });
+        await expect(menu.locator("main")).toHaveAttribute("data-armed", "true");
+        await entry.click();
+        // The user name the user sees goes in, the password into the hidden field does not
+        await expect(fields(tab).username, trick).toHaveValue(USERNAME);
+        await tab.waitForTimeout(500);
+        await expect(fields(tab).password, trick).toHaveValue("");
+      }
     });
   });

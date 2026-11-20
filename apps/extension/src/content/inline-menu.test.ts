@@ -1,6 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createInlineMenu, type InlineMenuDeps } from "./inline-menu.ts";
 import type { MenuFrame } from "./menu-frame.ts";
+
+/** happy-dom lays out nothing: every element gets the box of an ordinary field */
+const FIELD_BOX = { x: 16, y: 16, width: 240, height: 32 };
 
 // K-403: the content script opens the menu on a login field, fills only on the worker's message for
 // the menu it opened, only on its own host and only while the menu shows as it is
@@ -49,8 +52,15 @@ const fill = (extra: object = {}) => ({
   ...extra,
 });
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 beforeEach(() => {
   document.body.innerHTML = "";
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
+    DOMRect.fromRect(FIELD_BOX),
+  );
 });
 
 describe("the inline menu in the page", () => {
@@ -68,6 +78,13 @@ describe("the inline menu in the page", () => {
     const foreign = setup({ mayOpen: () => false });
     foreign.menu.onFocusIn(event(foreign.field("pass")));
     expect(foreign.frame.open).not.toHaveBeenCalled();
+  });
+
+  it("opens nothing on a login field the page hides", () => {
+    const { frame, menu, field } = setup();
+    field("pass").style.opacity = "0";
+    menu.onFocusIn(event(field("pass")));
+    expect(frame.open).not.toHaveBeenCalled();
   });
 
   it("fills the login on the worker's message and closes", () => {

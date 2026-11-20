@@ -1,11 +1,28 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { loginOf } from "./login-fields.ts";
+
+/** happy-dom lays out nothing: every element gets the box of an ordinary field */
+const FIELD_BOX = { x: 16, y: 16, width: 240, height: 32 };
+
+/** One element laid out elsewhere (a spy on the element itself would replace the prototype's) */
+const placeAt = (element: Element, rect: DOMRectInit) =>
+  Object.defineProperty(element, "getBoundingClientRect", {
+    value: () => DOMRect.fromRect(rect),
+    configurable: true,
+  });
 
 // K-403: which fields the inline menu opens on and which a fill writes into
 const byId = (id: string) => document.getElementById(id);
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 beforeEach(() => {
   document.body.innerHTML = "";
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
+    DOMRect.fromRect(FIELD_BOX),
+  );
 });
 
 describe("loginOf", () => {
@@ -53,6 +70,29 @@ describe("loginOf", () => {
   ])("does not open on %s", (html) => {
     document.body.innerHTML = html;
     expect(loginOf(byId("f"))).toBeUndefined();
+  });
+
+  it.each([
+    ["not displayed", "display:none"],
+    ["transparent", "opacity:0.05"],
+    ["invisible", "visibility:hidden"],
+  ])("pairs no password field the page hides (%s) with a user name field", (_, style) => {
+    document.body.innerHTML = `<form><input id="user" autocomplete="username">
+      <input id="pass" type="password" style="${style}"></form>`;
+    expect(loginOf(byId("user"))).toEqual({ username: byId("user") });
+    expect(loginOf(byId("pass"))).toBeUndefined();
+  });
+
+  it("pairs no password field off the page or a pixel small, and no hidden user name field", () => {
+    document.body.innerHTML = `<form><input id="hidden" style="opacity:0">
+      <input id="user" autocomplete="username"><input id="pass" type="password"></form>`;
+    const user = byId("user") as HTMLElement;
+    const pass = byId("pass") as HTMLElement;
+    expect(loginOf(pass)).toEqual({ username: user, password: pass });
+    placeAt(pass, { x: -9999, y: -9999, width: 240, height: 32 });
+    expect(loginOf(user)).toEqual({ username: user });
+    placeAt(pass, { x: 16, y: 60, width: 1, height: 1 });
+    expect(loginOf(user)).toEqual({ username: user });
   });
 
   it("does not open on things that are no elements", () => {
