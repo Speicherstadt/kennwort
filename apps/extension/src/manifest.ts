@@ -4,6 +4,7 @@
  * everything the popup shows comes from Paraglide like in the web app.
  */
 import type { ManifestV3Export } from "@crxjs/vite-plugin";
+import { MENU_PAGE } from "./fill/messages.ts";
 
 /** The manifest as an object (ManifestV3Export also allows a function or a promise) */
 type ManifestV3 = Extract<ManifestV3Export, { manifest_version: number }>;
@@ -22,11 +23,24 @@ export const GECKO_ID = "extension@kennwort.app";
 const WORKER = "src/background.ts";
 
 /**
- * No remote code, no eval, no inline scripts: only the extension's own files run on its pages,
- * and nothing may embed them yet (K-403 opens the inline menu frame to web pages on its own terms)
+ * No remote code, no eval, no inline scripts: only the extension's own files run on its pages.
+ * Web pages may frame them (the inline menu sits in the page, K-403), but a page reaches only what
+ * web_accessible_resources lists: the menu page, never the popup.
  */
 export const CONTENT_SECURITY_POLICY =
-  "script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+  "script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors https: http:";
+
+/** Where the content script runs and the menu may be framed: every web page (K-403) */
+export const WEB_PAGES = ["https://*/*", "http://*/*"];
+
+/**
+ * The content script places the inline menu under login fields in every frame; it holds no secret
+ * and decides nothing about filling (src/content/main.ts). It is not given file:, data: or
+ * about:blank frames.
+ */
+const contentScripts = [
+  { matches: WEB_PAGES, js: ["src/content/main.ts"], all_frames: true, run_at: "document_idle" },
+];
 
 const common = {
   manifest_version: 3,
@@ -35,11 +49,25 @@ const common = {
   default_locale: "de",
   version: "0.0.0",
   action: { default_popup: "popup.html", default_title: "__MSG_extension_action__" },
-  // The session area for unlocked keys, the lock alarm, and the address of the active tab only
-  // after a click on the button (activeTab); access to websites comes with filling in (K-403)
-  permissions: ["storage", "alarms", "activeTab"],
+  // The session area for unlocked keys, the lock alarm, the address of the active tab only after
+  // a click on the button (activeTab), and the browser's frame tree, from which the service worker
+  // learns which frame a menu sits in and what address it has when it fills (webNavigation, K-403)
+  permissions: ["storage", "alarms", "activeTab", "webNavigation"],
+  content_scripts: contentScripts,
   content_security_policy: { extension_pages: CONTENT_SECURITY_POLICY },
 };
+
+/**
+ * The menu page is the one page web pages may load (crxjs adds the content script's own chunks).
+ * In Chrome under an address that changes each browser session (use_dynamic_url), so a page cannot
+ * frame the menu by an address it knows; Firefox gives each installation its own random address
+ * anyway. A menu framed without the content script's nonce fills nothing (fill/messages.ts).
+ */
+const menuResource = (browser: Browser) => [
+  browser === "chrome"
+    ? { resources: [MENU_PAGE], matches: WEB_PAGES, use_dynamic_url: true }
+    : { resources: [MENU_PAGE], matches: WEB_PAGES },
+];
 
 /**
  * Firefox differs in two places: it runs the background as an event page from `background.scripts`
@@ -51,6 +79,7 @@ const forBrowser = (browser: Browser): ManifestV3 =>
   browser === "firefox"
     ? {
         ...common,
+        web_accessible_resources: menuResource(browser),
         background: { scripts: [WORKER] },
         browser_specific_settings: {
           gecko: {
@@ -63,7 +92,11 @@ const forBrowser = (browser: Browser): ManifestV3 =>
           },
         },
       }
-    : { ...common, background: { service_worker: WORKER, type: "module" } };
+    : {
+        ...common,
+        web_accessible_resources: menuResource(browser),
+        background: { service_worker: WORKER, type: "module" },
+      };
 
 export const manifest = (browser: Browser, e2e = false): ManifestV3Export =>
   e2e ? { ...forBrowser(browser), host_permissions: E2E_HOSTS } : forBrowser(browser);

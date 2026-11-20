@@ -1,11 +1,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { CONTENT_SECURITY_POLICY, E2E_HOSTS, GECKO_ID, manifest } from "./manifest.ts";
+import { MENU_PAGE } from "./fill/messages.ts";
+import { CONTENT_SECURITY_POLICY, E2E_HOSTS, GECKO_ID, manifest, WEB_PAGES } from "./manifest.ts";
 
 type Manifest = Record<string, unknown> & {
   background: Record<string, unknown>;
   permissions: string[];
+  content_scripts: Record<string, unknown>[];
+  web_accessible_resources: Record<string, unknown>[];
 };
 const built = (browser: "chrome" | "firefox") => manifest(browser) as unknown as Manifest;
 const locales = join(import.meta.dirname, "..", "public", "_locales");
@@ -13,10 +16,31 @@ const messages = (locale: string): Record<string, { message: string }> =>
   JSON.parse(readFileSync(join(locales, locale, "messages.json"), "utf8"));
 
 describe.each(["chrome", "firefox"] as const)("the manifest for %s", (browser) => {
-  it("asks for the session area, the lock alarm and the active tab, and no host access yet", () => {
-    expect(built(browser).permissions).toEqual(["storage", "alarms", "activeTab"]);
+  it("asks for the session area, the lock alarm, the active tab and the frame tree, no hosts", () => {
+    expect(built(browser).permissions).toEqual(["storage", "alarms", "activeTab", "webNavigation"]);
     expect(built(browser)).not.toHaveProperty("host_permissions");
-    expect(built(browser)).not.toHaveProperty("content_scripts");
+  });
+
+  // K-403: the content script runs in every frame of a web page and only places the menu
+  it("runs the content script in every frame of http(s) pages, and nowhere else", () => {
+    expect(built(browser).content_scripts).toEqual([
+      {
+        matches: WEB_PAGES,
+        js: ["src/content/main.ts"],
+        all_frames: true,
+        run_at: "document_idle",
+      },
+    ]);
+    expect(WEB_PAGES).toEqual(["https://*/*", "http://*/*"]);
+    expect(JSON.stringify(built(browser).content_scripts)).not.toMatch(
+      /about|file|data|<all_urls>/,
+    );
+  });
+
+  it("lets web pages load the menu page and nothing else of the extension", () => {
+    const resources = built(browser).web_accessible_resources;
+    expect(resources.flatMap((entry) => entry.resources)).toEqual([MENU_PAGE]);
+    expect(resources.every((entry) => entry.matches === WEB_PAGES)).toBe(true);
   });
 
   it("takes every text from _locales, in German and English", () => {
@@ -37,8 +61,19 @@ describe.each(["chrome", "firefox"] as const)("the manifest for %s", (browser) =
     });
     expect(CONTENT_SECURITY_POLICY).toContain("script-src 'self';");
     expect(CONTENT_SECURITY_POLICY).toContain("object-src 'none'");
-    expect(CONTENT_SECURITY_POLICY).not.toMatch(/unsafe|http|\*/);
+    expect(CONTENT_SECURITY_POLICY).not.toMatch(/unsafe|\*/);
+    // Only web pages may frame them (the inline menu, K-403); scripts still come from the extension
+    const directives = CONTENT_SECURITY_POLICY.split(";").map((part) => part.trim());
+    expect(directives.filter((part) => /http/.test(part))).toEqual([
+      "frame-ancestors https: http:",
+    ]);
   });
+});
+
+it("serves the menu page in Chrome under an address that changes each session", () => {
+  expect(built("chrome").web_accessible_resources).toEqual([
+    { resources: [MENU_PAGE], matches: WEB_PAGES, use_dynamic_url: true },
+  ]);
 });
 
 it("runs the background as a module service worker in Chrome and Edge", () => {

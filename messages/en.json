@@ -383,5 +383,13 @@
   "report_no_secrets": "No secret fields",
   "report_no_entries": "No entry they could read.",
   "report_none": "This person was not a member of any of your vaults.",
-  "report_vaults": "Vaults"
+  "report_vaults": "Vaults",
+  "inline_menu_frame": "Kennwort menu",
+  "inline_menu_fill": "Fill in {title}",
+  "inline_menu_unlock": "Open to unlock",
+  "inline_menu_foreign": "Kennwort fills nothing into this frame: it belongs to another website than the page.",
+  "inline_menu_hidden": "The menu was covered or transparent. Kennwort filled nothing in.",
+  "inline_menu_not_filled": "Kennwort filled nothing in: the page no longer matches the entry.",
+  "inline_menu_unverified": "This browser cannot confirm that the menu is visible. Copy the user name and password from the popup.",
+  "inline_menu_keys": "↑↓ choose · Enter fill in · Esc close"
 }

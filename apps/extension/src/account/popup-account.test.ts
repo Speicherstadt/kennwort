@@ -290,3 +290,33 @@ describe("opening the popup again", () => {
     expect(again.phase()).toBe("connect");
   });
 });
+
+// K-403: the inline menu opens what the popup unlocked, but a page can focus a login field as
+// often as it likes, so the menu never moves the lock time and never locks
+describe("opening the account in the inline menu", () => {
+  it("opens without setting or moving the lock alarm", async () => {
+    const { account, input, deps, alarms, advance } = setup();
+    await account.connect(input);
+    const before = alarms.alarms.get(LOCK_ALARM);
+    advance(5 * 60_000);
+    const menu = createPopupAccount({ ...deps, movesLock: false });
+    await menu.restore();
+    flush();
+    expect(menu.phase()).toBe("open");
+    menu.touch();
+    menu.setLockAfter(60 * 60_000);
+    expect(alarms.alarms.get(LOCK_ALARM)).toBe(before);
+  });
+
+  it("shows locked without clearing anything when the account does not open", async () => {
+    const { account, input, deps, area, server } = setup();
+    await account.connect(input);
+    server.expire();
+    const menu = createPopupAccount({ ...deps, movesLock: false });
+    const before = stored(area);
+    await menu.restore();
+    flush();
+    expect(menu.phase()).toBe("locked");
+    expect(stored(area)).toBe(before);
+  });
+});

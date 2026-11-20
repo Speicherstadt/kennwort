@@ -1,7 +1,7 @@
 /**
  * Entries in the popup (DESIGN.md, Extension-Popup): icon, title and what is shown under it, and
- * copy buttons for the user name and the password. Copying needs a click; nothing is filled in
- * (that comes with K-403, P-17). The password never shows in the popup.
+ * copy buttons for the user name and the password. Copying needs a click; the popup fills nothing
+ * in, the inline menu does (menu/inline-menu.tsx, P-17). The password never shows in the popup.
  */
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { entryIcon } from "@kennwort/client/entries/entry-icon.ts";
