@@ -1,7 +1,8 @@
 name: CI
 
-# Text only (Markdown, docs/, the license) changes no code: on main no run, docs.yml checks docs/.
-# A pull request always runs, so a required check never stays "Pending".
+# Text only (Markdown, docs/, the license) changes no code: on main paths-ignore filters it, docs.yml checks docs/.
+# A pull request always runs, so a required check never stays "Pending"; there the job changes skips the checks.
+# The layout follows firsttris/haben (.github/workflows/ci.yml): a changes job, parts side by side, one result each.
 on:
   push:
     branches: [main]
@@ -20,8 +21,44 @@ permissions:
   contents: read
 
 jobs:
-  check:
-    if: ${{ !github.event.pull_request.draft }}
+  # What a pull request touches. A job skipped by its `if` counts as passed for the rules on main, so every job
+  # has !cancelled() and compares with 'false': when changes does not run (push, release, manual) or fails, its
+  # outputs are empty and everything runs
+  changes:
+    if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+      crypto: ${{ steps.filter.outputs.crypto }}
+      core: ${{ steps.filter.outputs.core }}
+    steps:
+      # The pull request's merge commit and its first parent, the base
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - id: filter
+        run: |
+          set -euo pipefail
+          # --no-renames: a moved file counts with its old and its new path
+          changed="$(git -c core.quotePath=false diff --no-renames --name-only HEAD^1 HEAD)"
+          printf '%s\n' "$changed"
+          # scripts/security-design.test.ts reads docs/plan.md and docs/sicherheitsdesign.md: they count as code
+          tested='^docs/(plan|sicherheitsdesign)\.md$'
+          other="$(grep -Ev '\.md$|^docs/|^LICENSE$' <<< "$changed" || true)$(grep -E "$tested" <<< "$changed" || true)"
+          if [ -n "$changed" ] && [ -z "$other" ]; then code=false; else code=true; fi
+          # The mutation tests of a package depend on its code, on crypto under core, on the dependencies (bun.lock,
+          # package.json with the Stryker version) and on this workflow
+          always='^(bun\.lock|package\.json|\.github/workflows/ci\.yml)$'
+          if grep -Eq "^packages/crypto/|$always" <<< "$changed"; then crypto=true; else crypto=false; fi
+          if grep -Eq "^packages/(core|crypto)/|$always" <<< "$changed"; then core=true; else core=false; fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "crypto=$crypto" >> "$GITHUB_OUTPUT"
+          echo "core=$core" >> "$GITHUB_OUTPUT"
+
+  unit:
+    needs: changes
+    if: ${{ !cancelled() && !github.event.pull_request.draft && needs.changes.outputs.code != 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -46,10 +83,92 @@ jobs:
       - run: bun run build
       # The compiled server starts with an empty database and answers /health
       - run: bun run --cwd apps/server smoke
-      # The stricter gate of packages/crypto: every mutant of the code must be killed by a test
-      - run: bun run mutation
-      # What a user does, desktop and @phone, against the built web app
-      - run: bunx playwright install --with-deps chromium
-      - run: bun run e2e
       # Known vulnerabilities in the dependencies fail the run
       - run: bun audit
+
+  # What a user does, desktop and @phone, against the built web app: three parts side by side
+  # (Playwright --shard), four workers each (playwright.config.ts), as many cores as the runner has
+  e2e:
+    needs: changes
+    if: ${{ !cancelled() && !github.event.pull_request.draft && needs.changes.outputs.code != 'false' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    name: e2e (${{ matrix.shard }}/3)
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      # Ubuntu mirrors fail on the runners now and then ("Could not wait for server fd"): apt tries again
+      - run: printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' | sudo tee /etc/apt/apt.conf.d/80-retries >/dev/null
+      # Chromium from the cache, per Playwright version; the system libraries are installed on every run
+      - id: playwright
+        run: echo "version=$(bunx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - id: browsers
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright.outputs.version }}-chromium
+      - if: steps.browsers.outputs.cache-hit != 'true'
+        run: bunx playwright install --with-deps chromium
+      - if: steps.browsers.outputs.cache-hit == 'true'
+        run: bunx playwright install-deps chromium
+      - run: bun run e2e --shard=${{ matrix.shard }}/3
+
+  # The stricter gate of packages/crypto and packages/core: every mutant of the code must be killed by a test.
+  # Three parts side by side; core's two `mutate` lists together are exactly the `mutate` of
+  # packages/core/stryker.config.json. In a pull request a part runs only when its area changed (job changes);
+  # on main, in a release and on a manual run every part runs.
+  mutation:
+    needs: changes
+    if: ${{ !cancelled() && !github.event.pull_request.draft && needs.changes.outputs.code != 'false' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - part: crypto
+            area: crypto
+            package: packages/crypto
+            mutate: ""
+          - part: core-sync
+            area: core
+            package: packages/core
+            mutate: "src/sync/**/*.ts,!src/**/*.test.ts,!src/**/test/**"
+          - part: core-rest
+            area: core
+            package: packages/core
+            mutate: "src/**/*.ts,!src/sync/**,!src/**/*.test.ts,!src/**/test/**"
+    name: mutation (${{ matrix.part }})
+    steps:
+      - if: needs.changes.outputs[matrix.area] == 'false'
+        run: echo "Nothing in ${{ matrix.package }} or what it depends on changed"
+      - if: needs.changes.outputs[matrix.area] != 'false'
+        uses: actions/checkout@v7
+      - if: needs.changes.outputs[matrix.area] != 'false'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - if: needs.changes.outputs[matrix.area] != 'false'
+        run: bun install --frozen-lockfile
+      - if: needs.changes.outputs[matrix.area] != 'false'
+        working-directory: ${{ matrix.package }}
+        env:
+          MUTATE: ${{ matrix.mutate }}
+        run: |
+          if [ -n "$MUTATE" ]; then bunx stryker run --mutate "$MUTATE"; else bunx stryker run; fi
+
+  # One result for the rules on main (required check "check"), however many parts the jobs split into
+  check:
+    if: ${{ always() && !github.event.pull_request.draft }}
+    needs: [changes, unit, e2e, mutation]
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          for result in "${{ needs.unit.result }}" "${{ needs.e2e.result }}" "${{ needs.mutation.result }}"; do
+            case "$result" in success | skipped) ;; *) echo "A part ended with: $result"; exit 1 ;; esac
+          done
