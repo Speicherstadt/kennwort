@@ -7,7 +7,7 @@ import type { EntryContent } from "@kennwort/core";
 import { m } from "@kennwort/ui";
 
 export type EntryType = EntryContent["type"];
-export type FieldKindChoice = "text" | "secret" | "url" | "email" | "note";
+export type FieldKindChoice = "text" | "secret" | "url" | "email" | "note" | "totp";
 export type TemplateField = { id: string; kind: FieldKindChoice; label: () => string };
 
 export const ENTRY_TYPES: readonly EntryType[] = [
@@ -31,6 +31,7 @@ export const TEMPLATES: Record<EntryType, readonly TemplateField[]> = {
     field("username", "text", m.field_username),
     field("password", "secret", m.field_password),
     field("website", "url", m.field_website),
+    field("totp", "totp", m.field_totp),
   ],
   note: [field("note", "note", m.field_note)],
   wifi: [
@@ -76,12 +77,20 @@ const KIND_LABELS: Record<FieldKindChoice, () => string> = {
   url: m.kind_url,
   email: m.kind_email,
   note: m.kind_note,
+  totp: m.kind_totp,
 };
 
 /** The label of a field kind; one this app does not offer (another app's) by its own name */
 export const kindLabel = (kind: string): string => KIND_LABELS[kind as FieldKindChoice]?.() ?? kind;
 
-export const CUSTOM_KINDS: readonly FieldKindChoice[] = ["text", "secret", "url", "email", "note"];
+export const CUSTOM_KINDS: readonly FieldKindChoice[] = [
+  "text",
+  "secret",
+  "url",
+  "email",
+  "note",
+  "totp",
+];
 
 /** The template field of a type with this ID, if it is one */
 export const templateField = (type: EntryType, id: string) =>

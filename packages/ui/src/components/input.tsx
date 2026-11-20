@@ -11,7 +11,7 @@ const fieldClass =
 
 export type InputProps = JSX.InputHTMLAttributes<HTMLInputElement> & {
   label: string;
-  hint?: string;
+  hint?: string | undefined;
 };
 
 export const Input = (props: InputProps) => {

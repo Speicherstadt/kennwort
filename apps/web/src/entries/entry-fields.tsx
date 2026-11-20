@@ -3,6 +3,7 @@
  * the generator for passwords and passphrases), long text in a text area; the owner's own fields
  * also with their name and kind, and a way to remove them
  */
+import { parseTotp } from "@kennwort/core";
 import { Icon, IconButton, Input, m, TextArea } from "@kennwort/ui";
 import { Trash2, WandSparkles } from "@kennwort/ui/icons";
 import { Show } from "solid-js";
@@ -11,7 +12,11 @@ import type { InputField } from "./entry-input.ts";
 import { CUSTOM_KINDS, type FieldKindChoice, kindLabel } from "./entry-types.ts";
 
 const GENERATED = new Set(["password", "passphrase"]);
-// A TOTP key is as secret as a password; its codes come with K-306 part 4
+
+/** What to paste into a TOTP field, or that what was pasted makes no codes */
+const totpHint = (value: string) =>
+  value.trim() === "" || parseTotp(value).ok ? m.totp_hint() : m.totp_invalid();
+// A TOTP key is as secret as a password; the detail shows its codes, never the key
 const inputType = { secret: "password", totp: "password", url: "url", email: "email" } as const;
 
 export const FieldValue = (props: {
@@ -40,6 +45,7 @@ export const FieldValue = (props: {
           }
           value={props.field.value}
           onInput={(event) => props.onValue(event.currentTarget.value)}
+          hint={props.field.kind === "totp" ? totpHint(props.field.value) : undefined}
         />
       </div>
       <Show when={props.field.kind === "secret" && GENERATED.has(props.field.id)}>
