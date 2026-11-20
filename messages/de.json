@@ -1,5 +1,9 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "app_name": "Kennwort",
-  "app_tagline": "Die Zugänge deines Teams – nur für euch lesbar."
+  "app_tagline": "Die Zugänge deines Teams – nur für euch lesbar.",
+  "ui_close": "Schließen",
+  "ui_no_matches": "Keine Treffer",
+  "ui_notifications": "Benachrichtigungen",
+  "ui_search_shortcut": "Kürzel: {key}"
 }

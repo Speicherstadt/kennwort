@@ -40,6 +40,7 @@ später).
 | --- | --- | --- |
 | Firmen-Recovery | Standard für Firmen, pro Firma abschaltbar: Der Inhaber hält einen Notfallschlüssel und kann den Zugang eines Mitarbeiters wiederherstellen | Für einen kleinen Betrieb ist „alles weg“ schlimmer als „der Chef kommt im Notfall ran“; geteilte Tresore haben ohnehin mehrere Mitglieder |
 | Betrieb | Selbst gehostet, aber von Anfang an mandantenfähig, sodass ein IT-Dienstleister viele Firmen auf einem Server betreiben kann | passt zu „mehrere Firmen“; da der Server nichts lesen kann, ist auch gehosteter Betrieb unbedenklich |
+| Icons | `lucide` (die Icon-Daten ohne Framework) mit einer eigenen Icon-Komponente in `packages/ui` statt `lucide-solid` | `lucide-solid` baut auf Solid 1 (`splitProps`, `solid-js/web`) und läuft mit Solid 2 nicht; die Daten sind dieselben, und eine Abhängigkeit weniger läuft im Client |
 | Lizenz | AGPL-3.0 mit Namensnennung nach § 7(b) und kommerzieller Lizenz wie bei haben, dazu ein kurzes CLA für Beitragende | erlaubt die iPhone-App im App Store und die kommerzielle Lizenz trotz Beiträgen von außen |
 | Merge | Der Agenten-Loop merged alles selbst, wenn CI grün ist und das unabhängige Review keine Befunde mehr hat; er wartet nie auf einen Menschen | der Loop soll ohne Warten durchlaufen |
 
@@ -58,7 +59,7 @@ stehen im CLAUDE.md.
 | Web-App | Solid 2, statische SPA/PWA | **Abweichung von React**: ein UI-Paket für Web-App und Extension, kleineres Bundle zum Auditieren |
 | Kein TanStack Start / SSR | statischer Build mit Hashes im Dateinamen | **Abweichung**: nur ein statischer Build lässt sich signieren und im Service Worker prüfen |
 | Routing, Server-Daten | `@tanstack/solid-router` und `solid-query`, wenn sie Solid 2 tragen; sonst eigener kleiner Router und Solids Async | lokaler entschlüsselter Zustand ist die Quelle, nicht der Server-Cache |
-| UI | shadcn-Stil **ohne Abhängigkeiten**: `<dialog>`, Popover-API, CSS Anchor Positioning, eigene `cn()` und `variants()`, Tailwind 4, `lucide-solid`, Geist, Zinc-Tokens (siehe DESIGN.md) | jedes Laufzeitpaket läuft dort, wo Klartext liegt |
+| UI | shadcn-Stil **ohne Abhängigkeiten**: `<dialog>`, Popover-API, CSS Anchor Positioning, eigene `cn()` und `variants()`, Tailwind 4, lucide-Icons (`lucide` statt `lucide-solid`, siehe Entscheidungen), Geist, Zinc-Tokens (siehe DESIGN.md) | jedes Laufzeitpaket läuft dort, wo Klartext liegt |
 | Krypto | `@noble/ciphers`, `@noble/curves`, `@noble/hashes`, `@noble/post-quantum` | auditiert, reines TS, ohne eigene Abhängigkeiten |
 | Sonstiges | `tldts` (Public Suffix List), `zod` | |
 | Mobile-App | Tauri 3 mit der Solid-UI aus `packages/ui`; native Autofill-Plugins: Android `AutofillService` (Kotlin), iOS AutoFill Credential Provider (Swift) | **Abweichung von Tauri 2**: Tauri 3 ist zur Zeit der Mobile-Phase voraussichtlich stabil; als letzte Phase gebaut, Rückfall auf 2.x |
