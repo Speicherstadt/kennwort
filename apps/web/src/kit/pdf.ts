@@ -18,18 +18,18 @@ const FONTS: Record<Font, { name: string; base: string }> = {
   mono: { name: "F3", base: "Courier" },
 };
 
-/** WinAnsi beyond Latin-1: the typographic marks German and English texts use (§D.2) */
+/** WinAnsi beyond Latin-1: euro sign, quotes, ellipsis, bullet and dashes, as German and English texts use them (§D.2) */
 const WIN_ANSI: Record<string, number> = {
-  "€": 0x80,
-  "„": 0x84,
-  "…": 0x85,
-  "‘": 0x91,
-  "’": 0x92,
-  "“": 0x93,
-  "”": 0x94,
-  "•": 0x95,
-  "–": 0x96,
-  "—": 0x97,
+  "\u20ac": 0x80,
+  "\u201e": 0x84,
+  "\u2026": 0x85,
+  "\u2018": 0x91,
+  "\u2019": 0x92,
+  "\u201c": 0x93,
+  "\u201d": 0x94,
+  "\u2022": 0x95,
+  "\u2013": 0x96,
+  "\u2014": 0x97,
 };
 
 /** WinAnsi codes for the text; what the encoding cannot print becomes "?" */
