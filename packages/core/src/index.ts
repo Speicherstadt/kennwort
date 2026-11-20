@@ -100,6 +100,7 @@ export {
 } from "./membership/invitation.ts";
 export {
   type Action,
+  entryBytes,
   entryHash,
   GENESIS_HASH,
   type LogEntry,
@@ -135,6 +136,18 @@ export {
   ROOT_GRANT_LENGTH,
   type RootGrantError,
 } from "./membership/root-grant.ts";
+export {
+  type Access,
+  addMember,
+  changeAccess,
+  createVault,
+  type Keyring,
+  type NewVault,
+  type OpenKeyError,
+  openVaultKey,
+  removeMember,
+  type Signer,
+} from "./membership/vault-ops.ts";
 export {
   idKey,
   isMember,

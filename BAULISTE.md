@@ -143,6 +143,24 @@ und die Schritte für Menschen am Ende erledigt sind.
     Firmen-Recovery bringt K-307 mit dessen Schlüssel; das Format trägt ihn schon.
 - [ ] **K-305 Tresore, Gruppen, Rechte** – persönlich und geteilt, lesen/bearbeiten/verwalten,
   Gruppen, Zugriff auf Zeit, Zugriff anfragen, einzelnen Eintrag teilen.
+  In Teilen, je ein Pull Request; abgehakt wird K-305, wenn alle stehen:
+  - [x] Teil 1: Tresor-Protokoll in Core und Server (P-05, P-06) – anlegen, aufnehmen, Rolle
+    ändern, entfernen; der Server legt Log und verpackte Tresor-Schlüssel ab. Fertig, wenn: der
+    Server nur die nächste, vom angemeldeten Verwalter gültig signierte Stelle der Kette nimmt,
+    Log und Schlüssel nur Mitgliedern zeigt, keine Firma die Tresore einer anderen sieht und der
+    Client die Kette vom Server mit `verifyLog` annimmt (Tests gegen den Server).
+  - [ ] Teil 2: Tresore in der Web-App – persönlicher Tresor beim ersten Anmelden, geteilte Tresore
+    anlegen, Mitglieder mit Rolle aufnehmen, ändern und entfernen. Fertig, wenn: ein Mitglied nur
+    Tresore sieht, deren Log es geprüft hat, und Aufnehmen, Rolle ändern und Entfernen als
+    Playwright-Test desktop und `@phone` laufen.
+  - [ ] Teil 3: Gruppen – ein Tresor für eine Gruppe von Mitgliedern; aufnehmen und entfernen über
+    die Gruppe. Fertig, wenn: ein neues Gruppenmitglied erst Zugriff hat, wenn ein Verwalter es
+    aufnimmt (P-05, Schritt 4).
+  - [ ] Teil 4: Zugriff auf Zeit und Zugriff anfragen. Fertig, wenn: nach Ablauf kein Client mehr
+    einen Eintrag des Mitglieds annimmt und eine Anfrage erst mit dem Aufnehmen durch einen
+    Verwalter Zugriff gibt.
+  - [ ] Teil 5: einzelnen Eintrag teilen (P-10). Fertig, wenn: der Empfänger nur diesen Eintrag
+    entschlüsseln kann (Test).
 - [ ] **K-306 Einträge** – alle Typen, Generator, TOTP mit QR-Scan, eigene Felder, frühere
   Passwörter, Suche, Favoriten, Tags.
 - [ ] **K-307 Austritt und Recovery** – Schlüsselwechsel, Änderungs-Markierung, Austritts-Bericht,

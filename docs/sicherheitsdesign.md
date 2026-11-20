@@ -474,6 +474,15 @@ Verlauf; der Link lässt sich auch einfügen. Das neue Gerät fragt alle vier Se
 4. Zugriff anfragen und OIDC-Gruppen: Der Server legt nur eine Anfrage ab; erst ein Verwalter
    führt Schritt 2 aus.
 
+So ist es gebaut: `createVault` und `addMember` in `packages/core/src/membership/vault-ops.ts`
+erzeugen den Eintrag und das an das Mitglied verpackte VKₑ; `changeAccess` und `removeMember`
+signieren `rolle` und `entfernen`, `openVaultKey` entpackt VKₑ nur, wenn das Log es bindet. Der
+Server legt beides ab (`POST /api/vaults/:id/log` mit Eintrag und, genau bei `anlegen` und
+`aufnehmen`, dem verpackten Schlüssel); `GET /api/vaults` nennt die Tresore, in denen das Konto
+nach dem Log Mitglied ist, `GET /api/vaults/:id/log` und `/keys` geben Log und eigene Schlüssel
+nur an Konten, die einen Schlüssel des Tresors halten. Ein Entfernter hält seinen alten
+Schlüssel, bis der Schlüsselwechsel (K-307) ein neues VK verteilt.
+
 **Wehrt ab:** E-02, E-05, E-06, E-16, E-27.
 
 ### P-06 Mitgliedschafts-Log
@@ -510,6 +519,14 @@ wieder etwas voneinander sehen.
 
 Umgesetzt in `packages/core/src/membership/` (`verifyLog`, Zertifikate nach F-06); wie
 `packages/crypto` mit Mutation-Tests bei einer Schwelle von 100 %.
+
+Der Server hält die Kette nur ganz, damit ein ehrlicher Server nichts Widersprüchliches
+speichert: Er nimmt einen Eintrag nur mit der nächsten `seq` und dem Hash des letzten, vom
+angemeldeten Konto unterzeichnet und mit dessen hinterlegtem Schlüssel gültig signiert; den
+Genesis-Eintrag nur vom Anlegenden selbst, jeden weiteren nur von einem Konto, das nach den
+gespeicherten Einträgen gerade Verwalter ist; `anlegen` und `schlüsselwechsel` nicht mitten in der
+Kette (den Schlüsselwechsel bringt K-307). Ob ein Eintrag gilt, entscheidet trotzdem jeder Client
+mit `verifyLog`, gleich, was der Server durchgelassen hat.
 
 **Wehrt ab:** E-06, E-07, E-08, E-16, E-19.
 
