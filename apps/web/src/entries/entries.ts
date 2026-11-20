@@ -14,6 +14,9 @@ export type ShownField = {
   kind: EntryContent["fields"][number]["kind"];
 };
 
+/** An earlier value of a secret field (K-306 part 5), as the detail shows it */
+export type ShownHistory = { fieldId: string; label: string; value: string; replacedAt: number };
+
 /** What list, detail and filter show of an entry; the demo's entries have the same shape */
 export type ShownEntry = {
   id: string;
@@ -27,7 +30,12 @@ export type ShownEntry = {
   website: string;
   vault: string;
   favorite: boolean;
+  tags: string[];
+  /** Earlier values of the secret fields there are now, newest first */
+  history: ShownHistory[];
+  /** „Zum Ändern“ (to-change.ts): a weak password, and how many entries share it (0: none) */
   weak: boolean;
+  reused: number;
   changedAt: number;
   changedBy: string;
   access: string[];
@@ -64,6 +72,19 @@ const shownFields = (content: EntryContent): ShownField[] =>
     kind: f.kind,
   }));
 
+/**
+ * The earlier values of the entry's secret fields, newest first. The history also keeps a title,
+ * a type or another field's value the merge kept (P-21), and a TOTP key; those stay in the
+ * content but are not earlier passwords, and a TOTP key shows nowhere in plain text.
+ */
+const historyOf = (content: EntryContent): ShownHistory[] =>
+  content.history
+    .flatMap((item) => {
+      const field = content.fields.find((f) => f.id === item.fieldId && f.kind === "secret");
+      return field ? [{ ...item, label: labelOf(content, field) }] : [];
+    })
+    .sort((a, b) => b.replacedAt - a.replacedAt);
+
 export const subtitleOf = (fields: readonly ShownField[]) =>
   fields.find(
     (f) => f.value !== "" && (f.kind === "text" || f.kind === "url" || f.kind === "email"),
@@ -78,7 +99,10 @@ export const shown = (entry: StoredEntry): ShownEntry => ({
   ...loginOf(entry.content),
   vault: entry.vaultIdText,
   favorite: entry.content.favorite,
+  tags: entry.content.tags,
+  history: historyOf(entry.content),
   weak: false,
+  reused: 0,
   changedAt: 0,
   changedBy: "",
   access: [],

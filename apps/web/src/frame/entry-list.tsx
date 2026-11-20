@@ -7,7 +7,8 @@ import { Plus } from "@kennwort/ui/icons";
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { entries as demoEntries, vaultName } from "../demo.ts";
 import type { ShownEntry } from "../entries/entries.ts";
-import { shownEntries } from "../filter.ts";
+import { toChange } from "../entries/to-change.ts";
+import { shownEntries, toChangeCount } from "../filter.ts";
 import type { Navigation } from "../navigation.ts";
 import { type ListFilter, routePath } from "../routes.ts";
 import { entryIcon } from "./entry-icon.ts";
@@ -34,7 +35,7 @@ const chips = (entries: readonly ShownEntry[]) => [
   {
     href: "/to-change",
     kind: "to-change",
-    label: m.chip_to_change({ count: entries.filter((e) => e.weak && !e.sharedBy).length }),
+    label: m.chip_to_change({ count: toChangeCount(entries) }),
   },
   ...(entries.some((e) => e.sharedBy !== undefined)
     ? [{ href: "/shared", kind: "shared", label: m.nav_shared() }]
@@ -120,7 +121,9 @@ export const EntryList = (props: {
                   <Icon icon={entryIcon[entry.type]} />
                 </span>
               ),
-              trailing: entry.weak ? <Badge tone="warning">{m.badge_change()}</Badge> : undefined,
+              trailing: toChange(entry) ? (
+                <Badge tone="warning">{m.badge_change()}</Badge>
+              ) : undefined,
             }))}
           />
         </Show>

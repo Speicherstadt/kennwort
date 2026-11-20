@@ -1,4 +1,7 @@
-/** One entry: header with title, vault and last change, the field card, access and history (DESIGN.md, Aufbau) */
+/**
+ * One entry: header with title, vault, last change, star and buttons, the tags, why it is
+ * „Zum Ändern“, the field card, the earlier passwords, access and history (DESIGN.md, Aufbau)
+ */
 import { Button, cn, getLocale, Icon, m, type Toasts } from "@kennwort/ui";
 import { ArrowLeft, Pencil, Share2 } from "@kennwort/ui/icons";
 import { For, Show } from "solid-js";
@@ -7,6 +10,14 @@ import type { ShownEntry } from "../entries/entries.ts";
 import { typeLabel } from "../entries/entry-types.ts";
 import type { Navigation } from "../navigation.ts";
 import { type ListFilter, routePath } from "../routes.ts";
+import {
+  Card,
+  FavoriteButton,
+  HistoryCard,
+  type Saved,
+  TagList,
+  ToChangeNote,
+} from "./entry-detail-parts.tsx";
 import { entryIcon } from "./entry-icon.ts";
 import { Link } from "./link.tsx";
 import { Field } from "./secret-field.tsx";
@@ -15,15 +26,27 @@ import { TotpField } from "./totp-field.tsx";
 const date = (time: number) =>
   new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }).format(time);
 
-const Card = (props: { title: string; children: unknown }) => (
-  <section class="grid gap-1" aria-label={props.title}>
-    <h2 class="text-[11px] font-semibold tracking-[.04em] text-muted-foreground uppercase">
-      {props.title}
-    </h2>
-    <div class="divide-y divide-border rounded-xl border border-border">
-      {props.children as never}
-    </div>
-  </section>
+/** The detail's two buttons and the star; each greyed out where this account may not use it */
+const Actions = (props: {
+  entry: ShownEntry;
+  toasts: Toasts;
+  onEdit?: (() => void) | undefined;
+  onShare?: (() => void) | undefined;
+  onFavorite?: (() => Promise<Saved> | undefined) | undefined;
+}) => (
+  <div class="flex gap-2">
+    <FavoriteButton
+      favorite={props.entry.favorite}
+      toasts={props.toasts}
+      onToggle={props.onFavorite}
+    />
+    <Button disabled={!props.onShare} onClick={() => props.onShare?.()}>
+      <Icon icon={Share2} /> {m.detail_share()}
+    </Button>
+    <Button variant="primary" disabled={!props.onEdit} onClick={() => props.onEdit?.()}>
+      <Icon icon={Pencil} /> {m.detail_edit()}
+    </Button>
+  </div>
 );
 
 const Detail = (props: {
@@ -32,6 +55,7 @@ const Detail = (props: {
   vaultName: (id: string) => string;
   onEdit?: (() => void) | undefined;
   onShare?: (() => void) | undefined;
+  onFavorite?: (() => Promise<Saved> | undefined) | undefined;
 }) => (
   <div class="grid gap-5 p-4 md:p-6 xl:grid-cols-[1fr_16rem]">
     <div class="grid content-start gap-5">
@@ -52,15 +76,10 @@ const Detail = (props: {
             </Show>
           </p>
         </div>
-        <div class="flex gap-2">
-          <Button disabled={!props.onShare} onClick={() => props.onShare?.()}>
-            <Icon icon={Share2} /> {m.detail_share()}
-          </Button>
-          <Button variant="primary" disabled={!props.onEdit} onClick={() => props.onEdit?.()}>
-            <Icon icon={Pencil} /> {m.detail_edit()}
-          </Button>
-        </div>
+        <Actions {...props} />
       </div>
+      <TagList tags={props.entry.tags} />
+      <ToChangeNote entry={props.entry} />
       <Card title={m.detail_fields()}>
         <For each={props.entry.fields.filter((f) => f.value !== "")}>
           {(f) =>
@@ -79,6 +98,7 @@ const Detail = (props: {
           }
         </For>
       </Card>
+      <HistoryCard entry={props.entry} toasts={props.toasts} />
     </div>
     <Show when={props.entry.access.length > 0 || props.entry.changedAt > 0}>
       <div class="grid content-start gap-5">
@@ -106,6 +126,8 @@ export const EntryDetail = (props: {
   onEdit?: ((entry: ShownEntry) => void) | undefined;
   /** Opens sharing for an entry of a vault this account may edit (P-10) */
   onShare?: ((entry: ShownEntry) => void) | undefined;
+  /** Marks an entry of a vault this account may edit as a favorite, or no longer (K-306 part 5) */
+  onFavorite?: ((entry: ShownEntry) => Promise<Saved>) | undefined;
 }) => {
   const entry = () =>
     (props.entries ?? demoEntries).find((candidate) => candidate.id === props.selected);
@@ -141,6 +163,11 @@ export const EntryDetail = (props: {
             onShare={
               props.onShare && found.editable !== false && found.sharedBy === undefined
                 ? () => props.onShare?.(found)
+                : undefined
+            }
+            onFavorite={
+              props.onFavorite && found.editable !== false && found.sharedBy === undefined
+                ? () => props.onFavorite?.(found)
                 : undefined
             }
           />

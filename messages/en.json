@@ -40,8 +40,8 @@
   "field_website": "Website",
   "field_copy": "Copy {field}",
   "field_copied": "{field} copied",
-  "field_reveal": "Reveal password",
-  "field_hide": "Hide password",
+  "field_reveal": "Reveal {field}",
+  "field_hide": "Hide {field}",
   "generator_intro": "Creates strong passwords and passphrases.",
   "generator_password": "Password",
   "generator_passphrase": "Passphrase",
@@ -328,5 +328,16 @@
   "share_failed": "That did not work. Try again.",
   "share_not_renewed": "The entry could not be encrypted anew; the share is still in place. Try again once you are connected.",
   "share_unnamed": "Someone from the company",
-  "share_not_current": "Someone changed the entry at the same moment. The share is removed and the entry encrypted anew; please share it with the others again."
+  "share_not_current": "Someone changed the entry at the same moment. The share is removed and the entry encrypted anew; please share it with the others again.",
+  "detail_favorite": "Favorite",
+  "detail_favorite_failed": "The favorite was not saved. Try again.",
+  "detail_tags": "Tags",
+  "detail_weak": "The password is weak and easy to guess.",
+  "detail_reused": "The same password is used in {count} entries.",
+  "detail_earlier": "Earlier passwords",
+  "detail_earlier_item": "{field} until {date}",
+  "entry_editor_tags": "Tags",
+  "entry_editor_new_tag": "New tag",
+  "entry_editor_add_tag": "Add tag",
+  "entry_editor_remove_tag": "Remove tag {tag}"
 }

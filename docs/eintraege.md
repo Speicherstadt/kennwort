@@ -2,8 +2,9 @@
 title: Einträge
 description: >-
   Wie Kennwort Zugänge in Tresoren speichert: die Arten von Einträgen und eigene Felder, einen
-  Eintrag anlegen, ändern und einzeln teilen, Passwörter und Passphrasen erzeugen, was ein Gerät prüft, bevor es
-  einen Eintrag zeigt, und was der Server davon sieht.
+  Eintrag anlegen, ändern und einzeln teilen, frühere Passwörter, Favoriten, Tags, die Suche und
+  „Zum Ändern“, Passwörter und Passphrasen erzeugen, was ein Gerät prüft, bevor es einen Eintrag
+  zeigt, und was der Server davon sieht.
 ---
 
 # Einträge
@@ -75,6 +76,78 @@ ausgegraut.
 
 Erreicht dein Gerät den Server gerade nicht, sagt Kennwort das; die Änderung wartet auf dem Gerät,
 bis du es wieder versuchst.
+
+### Frühere Passwörter
+
+Änderst du ein Passwort oder ein anderes geheimes Feld, merkt sich der Eintrag den alten Wert mit
+dem Tag der Änderung. Im Eintrag stehen sie unter **Frühere Passwörter**, das neueste zuerst, als
+Punkte, bis du eines aufdeckst; kopieren kannst du sie wie das Passwort selbst. So kommst du noch
+an ein Konto, wenn eine Änderung beim Dienst nicht geklappt hat.
+
+Ein Eintrag behält je Feld die letzten zehn Werte; ein älterer fällt bei der nächsten Änderung
+weg. Leerst du ein geheimes Feld, kommt sein Wert ebenfalls dazu; entfernst du ein eigenes Feld
+ganz, nimmt es seine früheren Werte mit. Die früheren Werte liegen im selben Geheimtext wie der
+Eintrag: Wer den Eintrag lesen darf, sieht auch sie, der Server keinen davon. Den Schlüssel eines
+Einmalcodes zeigt Kennwort auch hier nie.
+
+Haben zwei Geräte dasselbe Feld gleichzeitig geändert, kommt der Wert, der nicht bleibt, ebenfalls
+in die früheren Werte des Eintrags; geheime Felder zeigt Kennwort davon unter
+**Frühere Passwörter**.
+
+## Favoriten und Tags
+
+Der Stern im Eintrag macht ihn zum **Favoriten**; in der Seitenleiste (am Handy als Filter über
+der Liste) zeigt **Favoriten** nur diese Einträge. Der Favorit gehört zum Eintrag, nicht zu dir:
+Wer im Tresor Mitglied ist, sieht dieselben Favoriten, und markieren kann nur, wer dort bearbeiten
+oder verwalten darf. Für die anderen ist der Stern ausgegraut. Eigene Favoriten für jede Person
+sind noch nicht gebaut.
+
+**Tags** fasst Einträge über Tresore hinweg zusammen, etwa „Steuer“ oder „Baustelle“. Du
+vergibst sie im Dialog des Eintrags unter **Tags**: einen Namen eingeben und Enter oder
+**Tag hinzufügen**; das Kreuz am Tag entfernt ihn wieder. Im Eintrag stehen die Tags unter dem
+Titel, und die Suche findet einen Eintrag auch über seine Tags. Groß- und Kleinschreibung zählt
+dabei nicht: „Büro“ und „büro“ sind derselbe Tag.
+
+## Suchen
+
+Die Suche über der Liste (Taste `/`) findet Einträge über den Titel, die Art (etwa „WLAN“), die
+Tags und den Inhalt jedes Felds, das nicht geheim ist: Benutzername, Website, E-Mail, Notizen,
+eigene Textfelder. Groß- und Kleinschreibung und Akzente zählen nicht, „buro“ findet „Büro“ und
+„strasse“ findet „Straße“. Passwörter, andere geheime Felder, frühere Passwörter und Schlüssel von
+Einmalcodes durchsucht Kennwort nie; wer ein Passwort eintippt, erfährt so nicht, in welchem
+Eintrag es steht. Die Suche läuft auf deinem Gerät, der Server sieht sie nicht.
+
+## Zum Ändern
+
+**Zum Ändern** sammelt Einträge, deren Passwort schwach ist oder in mehr als einem Eintrag steht,
+den du sehen kannst; die Seitenleiste zeigt, wie viele es sind, am Handy der Filter
+„Zum Ändern · N“. In der Liste tragen sie den Hinweis „ändern“, und im Eintrag steht, warum:
+„Das Passwort ist schwach …“ oder „Dasselbe Passwort steht in N Einträgen.“ Sobald du das
+Passwort änderst, verschwindet der Eintrag aus der Liste.
+
+Geprüft werden die Passwörter von Logins und WLAN und die Passphrase eines SSH-Schlüssels. Eine
+PIN, eine Prüfnummer oder ein API-Schlüssel ist kurz oder vom Dienst vorgegeben; die prüft
+Kennwort nicht, ebenso wenig eigene geheime Felder.
+
+Als **schwach** gilt ein Passwort,
+
+- das in einer Liste der 1000 häufigsten Passwörter steht, auch mit Ziffern oder Zeichen davor
+  oder dahinter und in beliebiger Schreibung („Password1!“ wie „password“), oder
+- das nach Länge und Art der Zeichen unter 60 Bit kommt, der Grenze des Generators. Dabei zählt
+  jede Art von Zeichen, die vorkommt (Klein- und Großbuchstaben, Ziffern, Sonderzeichen,
+  Umlaute), und eine Folge desselben Zeichens nur einmal.
+
+Das ist eine grobe Schätzung. Die Liste stammt aus englischsprachigen Datenlecks; deutsche Wörter
+wie „Passwort“ oder „Hallo“, Namen, die deutsche Tastaturreihe „qwertz“ oder Daten erkennt sie
+nicht. „Sommer2019“ fällt nur wegen seiner Länge auf, „Sommer2019!xyz“ nicht. Ein Passwort, das hier nicht auftaucht, ist darum nicht
+sicher stark; der Generator macht eines, das es ist. Ob ein Passwort in einem Datenleck
+aufgetaucht ist, prüft Kennwort noch nicht.
+
+**Doppelt** ist ein Passwort, das genau so in mindestens einem anderen Eintrag steht, auch in
+einem, der mit dir geteilt ist. Dein Gerät vergleicht die entschlüsselten Einträge im Speicher,
+jedes Mal, wenn sie sich ändern. Weder die Passwörter noch Prüfsummen davon noch das Ergebnis
+gehen an den Server oder werden gespeichert; ein anderes Mitglied sieht seine eigene Liste, je
+nachdem, welche Einträge es lesen kann.
 
 ## Einen einzelnen Eintrag teilen
 

@@ -1,7 +1,7 @@
 import type { EntryContent } from "@kennwort/core";
 import { setLocale } from "@kennwort/ui";
 import { beforeEach, describe, expect, it } from "vitest";
-import { contentOf, inputOf, newInput, withType } from "./entry-input.ts";
+import { contentOf, inputOf, newInput, withTag, withType } from "./entry-input.ts";
 
 // K-306 part 2: every type with its fields, and fields of the owner's own
 beforeEach(() => setLocale("de", { reload: false }));
@@ -34,6 +34,7 @@ describe("entry input", () => {
         { id: "cvc", name: "Prüfnummer", value: "", kind: "secret", own: false },
         { id: "pin", name: "PIN", value: "", kind: "secret", own: false },
       ],
+      tags: [],
     });
     expect(newInput("note").fields).toEqual([
       { id: "note", name: "Notiz", value: "", kind: "note", own: false },
@@ -51,6 +52,7 @@ describe("entry input", () => {
         { id: "c-router", name: "Router", value: "192.168.1.1", kind: "url", own: true },
         { id: "x-totp", name: "Einmalcode", value: "otpauth://totp/x", kind: "totp", own: true },
       ],
+      tags: ["Büro"],
     });
   });
 
@@ -72,7 +74,7 @@ describe("entry input", () => {
         f.id === "c-router" ? { ...f, value: " https://router.lan " } : f,
       ),
     };
-    expect(contentOf(changed, wifi)).toEqual({
+    expect(contentOf(changed, wifi, 9)).toEqual({
       ...wifi,
       title: "Büro-WLAN 2",
       fields: [
@@ -143,6 +145,38 @@ describe("entry input", () => {
         { id: "website", name: "Website", value: "https://r.lan", kind: "url", own: true },
         { id: "c-1", name: "Seriennummer", value: "123", kind: "text", own: true },
       ],
+      tags: [],
     });
+  });
+});
+
+// K-306 part 5: tags edited in the dialog, a replaced secret kept in the history
+describe("tags and earlier passwords", () => {
+  it("adds a tag trimmed and sorted, once whatever its case, and never an empty one", () => {
+    expect(withTag(["Büro"], "  Bank ")).toEqual(["Bank", "Büro"]);
+    expect(withTag(["Büro"], "büro")).toEqual(["Büro"]);
+    expect(withTag(["Büro"], "   ")).toEqual(["Büro"]);
+    const tags = ["Büro"];
+    expect(withTag(tags, "Bank")).not.toBe(tags);
+    expect(tags).toEqual(["Büro"]);
+  });
+
+  it("saves the dialog's tags, cleaned, instead of the stored ones", () => {
+    const input = { ...inputOf(wifi), tags: ["Router", " Büro ", "büro", ""] };
+    expect(contentOf(input, wifi, 9).tags).toEqual(["Büro", "Router"]);
+  });
+
+  it("keeps a replaced password in the history with the time of the change", () => {
+    const input = inputOf(wifi);
+    const changed = {
+      ...input,
+      fields: input.fields.map((f) => (f.id === "password" ? { ...f, value: "Neu-2027" } : f)),
+    };
+    expect(contentOf(changed, wifi, 1_800_000_000).history).toEqual([
+      ...wifi.history,
+      { fieldId: "password", value: "Rohr-2026", replacedAt: 1_800_000_000 },
+    ]);
+    // Saved unchanged, nothing is added
+    expect(contentOf(input, wifi, 1_800_000_000).history).toEqual(wifi.history);
   });
 });

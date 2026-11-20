@@ -1,7 +1,7 @@
 /**
- * A new entry or a change to one (K-306 parts 1 and 2), in a dialog: for a new entry the vault
+ * A new entry or a change to one (K-306 parts 1, 2 and 5), in a dialog: for a new entry the vault
  * (only vaults this account may edit in) and the type; the title, the type's fields and the
- * owner's own, which can be added, renamed and removed
+ * owner's own, which can be added, renamed and removed, and the tags
  */
 import { encodeBytes } from "@kennwort/core";
 import { randomBytes } from "@kennwort/crypto";
@@ -14,6 +14,7 @@ import { Choice } from "./choice.tsx";
 import { FieldValue, OwnField } from "./entry-fields.tsx";
 import { type EntryInput, type InputField, withType } from "./entry-input.ts";
 import type { SaveError } from "./entry-store.ts";
+import { TagsInput } from "./entry-tags.tsx";
 import { ENTRY_TYPES, type EntryType, typeLabel } from "./entry-types.ts";
 
 export type EditorVault = { idText: string; name: string };
@@ -127,6 +128,7 @@ export const EntryEditor = (props: {
         >
           <Icon icon={Plus} /> {m.entry_editor_add_field()}
         </Button>
+        <TagsInput tags={input().tags} onChange={(tags) => update((now) => ({ ...now, tags }))} />
         <Show when={error()}>
           {(e) => (
             <p

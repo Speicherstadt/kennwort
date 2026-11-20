@@ -4,7 +4,7 @@
  * Another language renders everything anew instead of reloading the page, which would lock it.
  */
 import { getLocale, type Locale, m, setLocale } from "@kennwort/ui";
-import { createSignal, Match, onCleanup, Show, Switch } from "solid-js";
+import { createMemo, createSignal, Match, onCleanup, Show, Switch } from "solid-js";
 import { AddDevicePage } from "./account/add-device-page.tsx";
 import { InvitePage } from "./account/invite-page.tsx";
 import { type PairDeps, PairPage } from "./account/pair-page.tsx";
@@ -13,6 +13,7 @@ import { SetupPage } from "./account/setup-page.tsx";
 import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
 import { createEntries } from "./entries/entries-wiring.tsx";
 import { httpServerFor } from "./entries/entry-store.ts";
+import { markToChange } from "./entries/to-change.ts";
 import { DevicesSection } from "./frame/devices-section.tsx";
 import { Frame } from "./frame/frame.tsx";
 import { GroupsPage } from "./groups/groups-page.tsx";
@@ -66,6 +67,8 @@ const OpenedFrame = (props: {
     const shown = store.shown();
     return shown.state === "ready" ? shown.vaults : undefined;
   };
+  /** Every entry this account sees, marked „Zum Ändern“ against all of them (K-306 part 5) */
+  const allEntries = createMemo(() => markToChange([...entries.entries(), ...sharing.entries()]));
   const Editor = entries.editor;
   const ShareDialog = sharing.dialog;
   return (
@@ -79,10 +82,11 @@ const OpenedFrame = (props: {
           <MembersPage session={props.session} api={props.api} origin={location.origin} />
         )}
         vaults={shownVaults}
-        entries={() => [...entries.entries(), ...sharing.entries()]}
+        entries={allEntries}
         vaultName={vaultName}
         onNewEntry={canWrite() ? entries.startNew : undefined}
         onEditEntry={entries.startChange}
+        onFavoriteEntry={entries.toggleFavorite}
         onShareEntry={sharing.start}
         noAccess={(vaultId) => {
           const shown = store.shown();

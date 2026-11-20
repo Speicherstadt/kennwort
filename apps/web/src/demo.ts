@@ -11,14 +11,37 @@ export type DemoEntry = ShownEntry;
 export const company: { name: string; user: string } = data.company;
 export const vaults: { id: string; name: string }[] = data.vaults;
 export const groups: { id: string; name: string; members: number }[] = data.groups;
+/** A field whose label follows the app's language, read when shown, not when this module loads */
+const field = (
+  id: string,
+  label: () => string,
+  value: string,
+  kind: DemoEntry["fields"][number]["kind"],
+) => ({
+  id,
+  get label() {
+    return label();
+  },
+  value,
+  kind,
+});
+
 /** The demo's logins in the shape of the real entries: type and fields */
 export const entries: DemoEntry[] = data.entries.map((entry) => {
   const fields: DemoEntry["fields"] = [
-    { id: "username", label: m.field_username(), value: entry.username, kind: "text" },
-    { id: "password", label: m.field_password(), value: entry.password, kind: "secret" },
-    { id: "website", label: m.field_website(), value: entry.website, kind: "url" },
+    field("username", m.field_username, entry.username, "text"),
+    field("password", m.field_password, entry.password, "secret"),
+    field("website", m.field_website, entry.website, "url"),
   ];
-  return { ...entry, type: "login", fields, subtitle: subtitleOf(fields) };
+  return {
+    ...entry,
+    type: "login",
+    fields,
+    subtitle: subtitleOf(fields),
+    tags: [],
+    history: [],
+    reused: 0,
+  };
 });
 
 export const vaultName = (id: string) => vaults.find((vault) => vault.id === id)?.name ?? id;

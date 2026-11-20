@@ -135,3 +135,47 @@ describe("shown types", () => {
     expect(entry({ ...base, type: "note", title: "Alarm", fields: [] }).subtitle).toBe("");
   });
 });
+
+// K-306 part 5: the earlier passwords and the tags an entry shows
+describe("shown history and tags", () => {
+  it("shows the earlier values of the secret fields there are now, newest first", () => {
+    setLocale("de", { reload: false });
+    const login = shown({
+      idText: "e3",
+      vaultIdText: "v1",
+      role: "edit",
+      version: 3,
+      content: {
+        type: "login",
+        title: "Sparkasse",
+        fields: [
+          { id: "username", name: "", value: "weber", kind: "text" },
+          { id: "password", name: "", value: "neu", kind: "secret" },
+          { id: "c-pin", name: "PIN", value: "9876", kind: "secret" },
+          { id: "totp", name: "", value: "JBSWY3DP", kind: "totp" },
+        ],
+        tags: ["Bank"],
+        favorite: true,
+        history: [
+          { fieldId: "password", value: "alt-1", replacedAt: 10 },
+          { fieldId: "c-pin", value: "1234", replacedAt: 30 },
+          { fieldId: "password", value: "alt-2", replacedAt: 20 },
+          // Kept by the merge, but no earlier password: a title, a username, a TOTP key, a
+          // field that is gone
+          { fieldId: "title", value: "Spk", replacedAt: 40 },
+          { fieldId: "username", value: "anna", replacedAt: 40 },
+          { fieldId: "totp", value: "OLDKEY", replacedAt: 40 },
+          { fieldId: "c-gone", value: "x", replacedAt: 40 },
+        ],
+      },
+    });
+    expect(login.history).toEqual([
+      { fieldId: "c-pin", label: "PIN", value: "1234", replacedAt: 30 },
+      { fieldId: "password", label: "Passwort", value: "alt-2", replacedAt: 20 },
+      { fieldId: "password", label: "Passwort", value: "alt-1", replacedAt: 10 },
+    ]);
+    expect(login.tags).toEqual(["Bank"]);
+    expect(login.favorite).toBe(true);
+    expect([login.weak, login.reused]).toEqual([false, 0]);
+  });
+});
