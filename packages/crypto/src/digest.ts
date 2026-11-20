@@ -1,5 +1,11 @@
-/** SHA-512/256 (FIPS 180-4), the hash of chains and fingerprints in docs/sicherheitsdesign.md */
-import { sha512_256 } from "@noble/hashes/sha2.js";
+/**
+ * SHA-512/256 (FIPS 180-4), the hash of chains and fingerprints in docs/sicherheitsdesign.md, and
+ * SHA-256 for the files of a release manifest (P-16), the hash browsers and tools such as sha256sum
+ * use, so anyone can check a released file without Kennwort's code.
+ */
+import { sha256 as nobleSha256, sha512_256 } from "@noble/hashes/sha2.js";
 
 export const DIGEST_LENGTH = 32;
 export const digest = (bytes: Uint8Array): Uint8Array => sha512_256(bytes);
+
+export const sha256 = (bytes: Uint8Array): Uint8Array => nobleSha256(bytes);

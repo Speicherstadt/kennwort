@@ -18,7 +18,8 @@ export default defineConfig({
   workers: process.env.CI ? 4 : "50%",
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "github" : "list",
-  use: { baseURL: `http://localhost:${port}`, trace: "off" },
+  // No service worker outside e2e/pwa.spec.ts: the other tests check the app, not its updates (P-16)
+  use: { baseURL: `http://localhost:${port}`, trace: "off", serviceWorkers: "block" },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"], launchOptions } },
     { name: "phone", grep: /@phone/, use: { ...devices["Pixel 7"], launchOptions } },
