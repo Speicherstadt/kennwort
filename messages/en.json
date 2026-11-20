@@ -1,7 +1,6 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "app_name": "Kennwort",
-  "app_tagline": "Your team's logins – readable only by you.",
   "ui_close": "Close",
   "ui_no_matches": "No matches",
   "ui_notifications": "Notifications",
