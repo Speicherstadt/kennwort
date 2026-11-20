@@ -1,3 +1,4 @@
+import { loadVaults, newVault, type Vault } from "@kennwort/client/vaults/vaults.ts";
 import { idKey } from "@kennwort/core";
 import { flush } from "solid-js";
 import { describe, expect, it } from "vitest";
@@ -10,7 +11,6 @@ import {
   vaultMembers,
 } from "./vault-members.ts";
 import { certifiedAnna, jonasWithVaults } from "./vaults.test-kit.ts";
-import { loadVaults, newVault, type Vault } from "./vaults.ts";
 
 // K-305 part 3: Jonas adds Anna to the vault Büro, makes her an editor and removes her again
 const buero = async () => {

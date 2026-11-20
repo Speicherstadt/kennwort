@@ -22,7 +22,15 @@ export type SessionArea = {
 export type Keys = Record<string, Uint8Array>;
 export type KeyError = "unavailable" | "storage-failed" | "malformed";
 
-const ITEM = "kennwort-keys";
+/** The unlocked keys; cleared on lock */
+export const KEYS_ITEM = "kennwort-keys";
+/** What the extension knows of its account (server, account ID, Secret Key); kept over a lock */
+export const DEVICE_ITEM = "kennwort-device";
+/**
+ * The account state as this device last saw or wrote it, sealed under AK (a ciphertext); kept over
+ * a lock so a server that plays back an older one cannot throw the device back (review of K-402)
+ */
+export const STATE_ITEM = "kennwort-state";
 
 /** The browser's session area, or undefined where there is none (a page, a test, an old browser) */
 export const browserSessionArea = (): SessionArea | undefined =>
@@ -60,8 +68,11 @@ const decode = (stored: unknown): Keys | undefined => {
   return Object.fromEntries(entries.map(([name, value]) => [name, Uint8Array.from(value)]));
 };
 
-/** Store, read and clear the unlocked keys; every call answers with a value, never a throw */
-export const createSessionKeys = (area: SessionArea | undefined) => {
+/**
+ * Store, read and clear one item of the area: the unlocked keys, or the device's account (both
+ * gone when the browser closes); every call answers with a value, never a throw
+ */
+export const createSessionKeys = (area: SessionArea | undefined, item = KEYS_ITEM) => {
   const attempt = async <T>(run: (area: SessionArea) => Promise<Result<T, KeyError>>) => {
     if (!area) return err("unavailable" as const);
     try {
@@ -73,17 +84,17 @@ export const createSessionKeys = (area: SessionArea | undefined) => {
   return {
     /** Replaces the stored keys with these: unlocking sets them all at once */
     store: (keys: Keys) =>
-      attempt(async (session) => ok(await session.set({ [ITEM]: encode(keys) }))),
+      attempt(async (session) => ok(await session.set({ [item]: encode(keys) }))),
     /** The stored keys, or undefined when locked */
     read: () =>
       attempt<Keys | undefined>(async (session) => {
-        const stored = (await session.get(ITEM))[ITEM];
+        const stored = (await session.get(item))[item];
         if (stored === undefined) return ok(undefined);
         const keys = decode(stored);
         return keys ? ok(keys) : err("malformed");
       }),
     /** Locks: the keys are gone from the area */
-    clear: () => attempt(async (session) => ok(await session.remove(ITEM))),
+    clear: () => attempt(async (session) => ok(await session.remove(item))),
   };
 };
 

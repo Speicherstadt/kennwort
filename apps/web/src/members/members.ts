@@ -4,6 +4,10 @@
  * root key confirms it; a confirmation is remembered in the account state before it is uploaded,
  * so one invitation makes one member even if the upload fails and is tried again.
  */
+
+import type { MembersApi } from "@kennwort/client/session/members-api.ts";
+import type { PolicyApi } from "@kennwort/client/session/policy-api.ts";
+import type { StateDeps } from "@kennwort/client/session/state-sync.ts";
 import {
   type AccountState,
   type Certificate,
@@ -20,10 +24,7 @@ import {
   trustedRoot,
 } from "@kennwort/core";
 import { bundleFingerprint, constantTimeEqual } from "@kennwort/crypto";
-import type { MembersApi } from "../session/members-api.ts";
-import type { PolicyApi } from "../session/policy-api.ts";
 import type { Opened, Session } from "../session/session.ts";
-import type { StateDeps } from "../session/state-sync.ts";
 
 export type MembersDeps = MembersApi & PolicyApi & StateDeps;
 

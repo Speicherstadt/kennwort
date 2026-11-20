@@ -36,6 +36,7 @@ export {
   type Stored,
   type UnlockError,
   type Unlocked,
+  unlockWithAccountKey,
   unlockWithPassphrase,
   unlockWithRecoveryKey,
 } from "./account/unlock.ts";

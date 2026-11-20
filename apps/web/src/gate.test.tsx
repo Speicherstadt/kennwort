@@ -1,3 +1,4 @@
+import { createApi } from "@kennwort/client/session/api.ts";
 import { emptyState } from "@kennwort/core";
 import { setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
@@ -7,7 +8,6 @@ import { readInvitation } from "./account/invite-page.tsx";
 import { readDeviceLink } from "./account/unlock-page.tsx";
 import { App } from "./app.tsx";
 import { createNavigation, type Navigation, takeStartFragment } from "./navigation.ts";
-import { createApi } from "./session/api.ts";
 import type { Session } from "./session/session.ts";
 
 // The gate tests never reach the server; a pairing page would see it as unreachable

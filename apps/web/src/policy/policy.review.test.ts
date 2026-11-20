@@ -1,3 +1,4 @@
+import { applyPolicy, type PolicyDeps } from "@kennwort/client/policy/policy.ts";
 import { type AccountUpload, bytes, type Policy, signPolicy } from "@kennwort/core";
 import { ed25519KeyPair } from "@kennwort/crypto";
 import { flush } from "solid-js";
@@ -5,7 +6,6 @@ import { describe, expect, it } from "vitest";
 import { derive, fakeApi, memory, PASSPHRASE } from "../session/session.test-kit.ts";
 import { createSession } from "../session/session.ts";
 import { stateServer } from "../session/state-server.test-kit.ts";
-import { applyPolicy, type PolicyDeps } from "./policy.ts";
 
 // Review of K-304 part 4: a server that withholds the policy after a reload must not lengthen the
 // lock time (P-07: "Eine Richtlinie, die nicht besteht, ändert nichts: Der Client bleibt bei der

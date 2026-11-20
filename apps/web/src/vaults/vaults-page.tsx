@@ -3,6 +3,8 @@
  * shared one. A vault whose log the client did not accept shows as such, never opened (DESIGN.md:
  * show trust, don't claim it).
  */
+
+import type { CreateError } from "@kennwort/client/vaults/vaults.ts";
 import { Button, Icon, Input, m } from "@kennwort/ui";
 import { Archive, TriangleExclamationPoint, Users } from "@kennwort/ui/icons";
 import { createSignal, For, Match, onSettled, Show, Switch } from "solid-js";
@@ -13,7 +15,6 @@ import type { DialogApi } from "./dialog-state.ts";
 import { VaultMembersDialog } from "./vault-members-dialog.tsx";
 import type { VaultStore } from "./vault-store.ts";
 import { roleText } from "./vault-text.ts";
-import type { CreateError } from "./vaults.ts";
 
 const createText = (error: CreateError) =>
   error === "uncertified" ? m.vaults_create_uncertified() : m.vaults_create_failed();

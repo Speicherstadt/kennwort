@@ -1,6 +1,6 @@
+import type { AccountApi as Api } from "@kennwort/client/session/api.ts";
 import { passphraseKeysWith } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
-import type { AccountApi as Api } from "./api.ts";
 import { createSession } from "./session.ts";
 
 // Review of K-303: /setup and /invite stay reachable while an account is unlocked (app.tsx). Opening

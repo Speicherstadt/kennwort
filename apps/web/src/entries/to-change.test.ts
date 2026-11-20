@@ -1,6 +1,6 @@
+import { type ShownEntry, shown } from "@kennwort/client/entries/entries.ts";
 import type { EntryContent } from "@kennwort/core";
 import { describe, expect, it } from "vitest";
-import { type ShownEntry, shown } from "./entries.ts";
 import { checkedPasswords, markToChange, toChange } from "./to-change.ts";
 
 // K-306 part 5: weak and reused passwords, found in memory on the device

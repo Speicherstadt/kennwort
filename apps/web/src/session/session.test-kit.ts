@@ -1,4 +1,6 @@
 /** What the session tests share: a server in memory, storage in memory, a light Argon2id */
+
+import type { AccountApi as Api } from "@kennwort/client/session/api.ts";
 import {
   type AccountUpload,
   encodeBytes,
@@ -7,7 +9,6 @@ import {
   type Stored,
 } from "@kennwort/core";
 import { ed25519KeyPair, passphraseKeysWith } from "@kennwort/crypto";
-import type { AccountApi as Api } from "./api.ts";
 
 export const derive = (p: string, salt: Uint8Array, key: Uint8Array, account: Uint8Array) =>
   passphraseKeysWith({ m: 8, t: 1, p: 1 }, p, salt, key, account);

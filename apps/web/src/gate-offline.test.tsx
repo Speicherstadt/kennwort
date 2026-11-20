@@ -1,3 +1,4 @@
+import { createApi } from "@kennwort/client/session/api.ts";
 import { formatSecretKey } from "@kennwort/crypto";
 import { setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
@@ -5,7 +6,6 @@ import { flush } from "solid-js";
 import { afterEach, expect, it } from "vitest";
 import { App } from "./app.tsx";
 import { createNavigation, type Navigation } from "./navigation.ts";
-import { createApi } from "./session/api.ts";
 import { createSession } from "./session/session.ts";
 
 // Review of K-303: with the server unreachable, unlocking must end with an error, not a button

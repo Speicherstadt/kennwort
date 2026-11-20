@@ -1,11 +1,11 @@
+import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
+import { loadVaults, newVault, type Vault } from "@kennwort/client/vaults/vaults.ts";
 import { idKey } from "@kennwort/core";
 import { flush } from "solid-js";
 import { describe, expect, it } from "vitest";
 import { ownerRow } from "../members/members.test-kit.ts";
-import type { GroupApi } from "../session/groups-api.ts";
 import { addToVault } from "../vaults/vault-members.ts";
 import { certifiedAnna, jonasWithVaults } from "../vaults/vaults.test-kit.ts";
-import { loadVaults, newVault, type Vault } from "../vaults/vaults.ts";
 import {
   createGroup,
   type Group,

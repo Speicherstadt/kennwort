@@ -5,6 +5,9 @@
  * fingerprint from the QR code, wraps AK, account ID, Secret Key and the hash of the sealed state,
  * and both show the comparison code before anyone confirms.
  */
+
+import type { AccountApi } from "@kennwort/client/session/api.ts";
+import type { PairingApi } from "@kennwort/client/session/pairing-api.ts";
 import {
   type DevicePackage,
   openDevicePackage,
@@ -20,8 +23,6 @@ import {
   randomBytes,
   xwingKeyPair,
 } from "@kennwort/crypto";
-import type { AccountApi } from "../session/api.ts";
-import type { PairingApi } from "../session/pairing-api.ts";
 import type { Opened } from "../session/session.ts";
 import type { PairingLink } from "./link.ts";
 

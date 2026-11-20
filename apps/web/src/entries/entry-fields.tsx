@@ -4,6 +4,12 @@
  * area; the owner's own fields
  * also with their name and kind, and a way to remove them
  */
+
+import {
+  CUSTOM_KINDS,
+  type FieldKindChoice,
+  kindLabel,
+} from "@kennwort/client/entries/entry-types.ts";
 import { parseTotp } from "@kennwort/core";
 import { Icon, IconButton, Input, m, TextArea } from "@kennwort/ui";
 import { ScanQrCode, Trash2, WandSparkles } from "@kennwort/ui/icons";
@@ -11,7 +17,6 @@ import { createSignal, Show } from "solid-js";
 import { QrScanDialog } from "../qr/qr-scan-dialog.tsx";
 import { Choice } from "./choice.tsx";
 import type { InputField } from "./entry-input.ts";
-import { CUSTOM_KINDS, type FieldKindChoice, kindLabel } from "./entry-types.ts";
 
 const GENERATED = new Set(["password", "passphrase"]);
 

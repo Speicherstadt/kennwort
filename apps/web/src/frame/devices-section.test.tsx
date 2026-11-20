@@ -1,3 +1,4 @@
+import type { DevicesApi } from "@kennwort/client/session/devices-api.ts";
 import type { DeviceEntry } from "@kennwort/core";
 import { setLocale } from "@kennwort/ui";
 import type { JSX } from "@solidjs/web";
@@ -5,7 +6,6 @@ import { render } from "@solidjs/web";
 import { createSignal, flush } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { withQueries } from "../queries.test-kit.tsx";
-import type { DevicesApi } from "../session/devices-api.ts";
 import { DevicesSection } from "./devices-section.tsx";
 
 // K-303 part 6: the device list in the settings

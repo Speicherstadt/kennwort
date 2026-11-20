@@ -1,8 +1,9 @@
 /** A vault server in memory for the vault tests: it stores what it is given, checks nothing */
+
+import type { VaultApi } from "@kennwort/client/session/vaults-api.ts";
+import type { VaultDeps } from "@kennwort/client/vaults/vaults.ts";
 import { certify, encodeBytes, type LogEntry } from "@kennwort/core";
 import { annaRow, jonasCompany, ownerRow, type Row, server } from "../members/members.test-kit.ts";
-import type { VaultApi } from "../session/vaults-api.ts";
-import type { VaultDeps } from "./vaults.ts";
 
 type Stored = {
   entries: LogEntry[];

@@ -1,3 +1,4 @@
+import { loadVaults, newVault, type Vault } from "@kennwort/client/vaults/vaults.ts";
 import { encodeBytes, idKey } from "@kennwort/core";
 import { flush } from "solid-js";
 import { describe, expect, it } from "vitest";
@@ -12,7 +13,6 @@ import {
   vaultIdOf,
 } from "./vault-members.ts";
 import { certifiedAnna, jonasWithVaults, vaultServer } from "./vaults.test-kit.ts";
-import { loadVaults, newVault, type Vault } from "./vaults.ts";
 
 // K-305 part 4: Anna asks for access to Büro; Jonas grants it for a while, or declines
 const bueroAsked = async () => {

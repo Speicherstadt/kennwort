@@ -3,6 +3,12 @@
  * rest only with an unlocked account, else the unlock screen, or the welcome on a new device (K-303).
  * Another language renders everything anew instead of reloading the page, which would lock it.
  */
+
+import { httpServerFor } from "@kennwort/client/entries/entry-store.ts";
+import type { DevicesApi } from "@kennwort/client/session/devices-api.ts";
+import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
+import type { ShareApi } from "@kennwort/client/session/shares-api.ts";
+import type { VaultApi } from "@kennwort/client/session/vaults-api.ts";
 import { getLocale, type Locale, m, setLocale } from "@kennwort/ui";
 import { QueryClientProvider } from "@tanstack/solid-query";
 import { createMemo, createSignal, Match, onSettled, Show, Switch, untrack } from "solid-js";
@@ -13,7 +19,6 @@ import { RecoverPage } from "./account/recover-page.tsx";
 import { SetupPage } from "./account/setup-page.tsx";
 import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
 import { createEntries } from "./entries/entries-wiring.tsx";
-import { httpServerFor } from "./entries/entry-store.ts";
 import { markToChange } from "./entries/to-change.ts";
 import { DevicesSection } from "./frame/devices-section.tsx";
 import { Frame } from "./frame/frame.tsx";
@@ -26,11 +31,7 @@ import { OfflineNotice } from "./offline/offline-notice.tsx";
 import { createOfflineView } from "./offline/offline-view.ts";
 import { ApplyPolicy } from "./policy/policy-section.tsx";
 import { createAccountQueries } from "./queries.ts";
-import type { DevicesApi } from "./session/devices-api.ts";
-import type { GroupApi } from "./session/groups-api.ts";
 import type { Session } from "./session/session.ts";
-import type { ShareApi } from "./session/shares-api.ts";
-import type { VaultApi } from "./session/vaults-api.ts";
 import { createSharing } from "./shares/shares-wiring.tsx";
 import { NoAccess } from "./vaults/no-access.tsx";
 import { requestAccess, vaultIdOf } from "./vaults/vault-members.ts";

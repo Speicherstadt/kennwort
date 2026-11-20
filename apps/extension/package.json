@@ -6,9 +6,13 @@
   "scripts": {
     "build": "vite build && vite build --mode firefox && bun build/check-bundle.ts chrome firefox",
     "build:chrome": "vite build && bun build/check-bundle.ts chrome",
-    "build:firefox": "vite build --mode firefox && bun build/check-bundle.ts firefox"
+    "build:firefox": "vite build --mode firefox && bun build/check-bundle.ts firefox",
+    "build:e2e": "vite build --mode e2e && bun build/check-bundle.ts e2e"
   },
   "dependencies": {
+    "@kennwort/client": "workspace:*",
+    "@kennwort/core": "workspace:*",
+    "@kennwort/crypto": "workspace:*",
     "@kennwort/ui": "workspace:*",
     "@solidjs/web": "2.0.3",
     "solid-js": "2.0.3"

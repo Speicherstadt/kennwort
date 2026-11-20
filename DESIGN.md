@@ -66,9 +66,13 @@ und Verlauf.
 40-px-Icons; Eintrag mit Zurück-Link, großem Icon, Feldkarte; unten Tab-Leiste (Einträge,
 Generator, Gruppen, Einstellungen). Berührungsziele mindestens 44 px.
 
-**Extension-Popup (360 × 600)**: Kopf mit Logo und Sperren, Suche, „Für <Host>“ mit Treffern und
-„Ausfüllen“, Favoriten, Generator unten, Fußzeile mit Sperrzeit und Link zur Web-App. Gesperrt:
-Schloss, „Kennwort ist gesperrt“, Hauptknopf „Mit Passkey entsperren“, Link „Passphrase verwenden“.
+**Extension-Popup (360 × 600)**: Kopf mit Logo und Sperren, Suche, Filter-Chips „Alle“ und
+„Favoriten“, „Für <Host>“ mit Treffern (Kopieren von Benutzername und Passwort als Icon-Knöpfe,
+„Ausfüllen“ ab K-403), darunter alle Einträge, Fußzeile mit „Generator“, Sperrzeit und Link zur
+Web-App. Gesperrt: Schloss, „Kennwort ist gesperrt“, der Server darunter in Geist Mono, die
+Passphrase mit dem Hauptknopf „Entsperren“, Link „Anderes Konto“; „Mit Passkey entsperren“ wird der
+Hauptknopf, sobald es Entsperren per Passkey gibt. Noch nicht verbunden: „Mit Kennwort verbinden“
+mit Server, Konto-ID, Secret Key und Passphrase.
 
 **Inline-Menü**: schwebt unter dem Feld, 320 px breit; Kopf mit Logo und Host, Treffer mit Tastatur
 wählbar (↑↓, Enter, Esc), Fußzeile mit Tastenhinweis und „Neues Login“. Es ist ein iFrame der

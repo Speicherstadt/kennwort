@@ -6,9 +6,12 @@
   "exports": {
     ".": "./src/index.ts",
     "./styles.css": "./src/styles.css",
-    "./icons": "./src/icons.ts"
+    "./icons": "./src/icons.ts",
+    "./generator/*": "./src/generator/*"
   },
   "dependencies": {
+    "@kennwort/core": "workspace:*",
+    "@kennwort/crypto": "workspace:*",
     "@fontsource-variable/geist": "5.3.0",
     "@fontsource-variable/geist-mono": "5.3.0",
     "@solidjs/web": "2.0.3",

@@ -3,16 +3,16 @@
  * a button to revoke it, and a form to share with a certified colleague outside the vault, with an
  * optional last day. Revoking writes the entry anew under a new entry key (shares.ts).
  */
+
+import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
+import type { ShareApi } from "@kennwort/client/session/shares-api.ts";
+import type { Vault } from "@kennwort/client/vaults/vaults.ts";
 import { type Certificate, idKey, type MemberView, type Share, type Trust } from "@kennwort/core";
-import { Button, Dialog, Input, m } from "@kennwort/ui";
+import { Button, Dialog, Input, m, selectClass } from "@kennwort/ui";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import type { ShownEntry } from "../entries/entries.ts";
 import type { Session } from "../session/session.ts";
-import type { ShareApi } from "../session/shares-api.ts";
 import { dateText, endOfDay, today } from "../vaults/day.ts";
-import { selectClass } from "../vaults/role-select.tsx";
 import { candidates, hasExpired } from "../vaults/vault-members.ts";
-import type { Vault } from "../vaults/vaults.ts";
 import {
   type EntryKeys,
   loadShares,

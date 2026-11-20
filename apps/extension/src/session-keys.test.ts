@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   browserSessionArea,
   createSessionKeys,
+  DEVICE_ITEM,
   restrictToTrustedContexts,
   type SessionArea,
 } from "./session-keys.ts";
@@ -82,6 +83,18 @@ describe("session keys", () => {
       area.items.set("kennwort-keys", JSON.stringify(stored));
       expect(await createSessionKeys(area).read()).toEqual({ ok: false, error: "malformed" });
     }
+  });
+
+  it("keeps the device's account apart from the keys, so a lock clears only the keys", async () => {
+    const area = fakeArea();
+    const keys = createSessionKeys(area);
+    const device = createSessionKeys(area, DEVICE_ITEM);
+    await keys.store({ account: accountKey });
+    await device.store({ secret: signingKey });
+    await keys.clear();
+    expect(await keys.read()).toEqual({ ok: true, value: undefined });
+    expect(await device.read()).toEqual({ ok: true, value: { secret: signingKey } });
+    expect([...area.items.keys()]).toEqual([DEVICE_ITEM]);
   });
 
   it("answers with an error instead of throwing when the area fails or is missing", async () => {

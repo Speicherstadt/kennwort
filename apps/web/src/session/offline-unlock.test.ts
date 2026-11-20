@@ -1,9 +1,9 @@
+import type { AccountApi as Api } from "@kennwort/client/session/api.ts";
 import { encodeBytes, openState, type Stored } from "@kennwort/core";
 import { flush } from "solid-js";
 import { describe, expect, it, vi } from "vitest";
 import { memoryKeyValue } from "../offline/key-value.ts";
 import { createLocalCopy } from "../offline/local-copy.ts";
-import type { AccountApi as Api } from "./api.ts";
 import { derive, fakeApi, memory, PASSPHRASE } from "./session.test-kit.ts";
 import { createSession } from "./session.ts";
 import { stateServer } from "./state-server.test-kit.ts";

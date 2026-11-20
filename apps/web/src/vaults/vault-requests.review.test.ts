@@ -1,10 +1,11 @@
 // Review of K-305 part 4: requests of members whose time ran out, limits in the past
+
+import { loadVaults, newVault, type Vault } from "@kennwort/client/vaults/vaults.ts";
 import { encodeBytes, idKey } from "@kennwort/core";
 import { describe, expect, it, vi } from "vitest";
 import { ownerRow } from "../members/members.test-kit.ts";
 import { addToVault, grantRequest, loadRequests } from "./vault-members.ts";
 import { certifiedAnna, jonasWithVaults } from "./vaults.test-kit.ts";
-import { loadVaults, newVault, type Vault } from "./vaults.ts";
 
 const buero = async () => {
   const w = await jonasWithVaults((c) => [ownerRow(c), certifiedAnna(c)]);

@@ -4,10 +4,10 @@
  * the manager granting it. Unlinking asks nothing and removes nobody.
  */
 import type { VaultRole } from "@kennwort/core";
-import { Button, m } from "@kennwort/ui";
+import { Button, m, selectClass } from "@kennwort/ui";
 import { createSignal, For, Show } from "solid-js";
 import type { Group, Link } from "../groups/groups.ts";
-import { RoleSelect, selectClass } from "./role-select.tsx";
+import { RoleSelect } from "./role-select.tsx";
 import { roleText } from "./vault-text.ts";
 
 const LinkForm = (props: {

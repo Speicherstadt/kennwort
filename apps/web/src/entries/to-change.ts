@@ -3,7 +3,7 @@
  * account can see. Worked out in memory on the device from the decrypted entries each time they
  * change; no value, hash or mark of it is stored or sent anywhere.
  */
-import type { ShownEntry } from "./entries.ts";
+import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { isWeak } from "./password-check.ts";
 
 /**

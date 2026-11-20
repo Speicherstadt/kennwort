@@ -1,12 +1,12 @@
+import { createEntryStore, type ServerFor } from "@kennwort/client/entries/entry-store.ts";
+import { loadVaults, newVault } from "@kennwort/client/vaults/vaults.ts";
 import { type EntryRecord, memoryServer, type SyncServer } from "@kennwort/core";
 import { flush } from "solid-js";
 import { describe, expect, it } from "vitest";
 import { memoryKeyValue } from "../offline/key-value.ts";
 import { createLocalCopy } from "../offline/local-copy.ts";
 import { jonasWithVaults } from "../vaults/vaults.test-kit.ts";
-import { loadVaults, newVault } from "../vaults/vaults.ts";
 import { loginContent } from "./entries.test-kit.ts";
-import { createEntryStore, type ServerFor } from "./entry-store.ts";
 
 // K-308 part b: the entries' records stay on the device once checked (P-09); without the server the
 // store reads them from there, and with it they are what the server is checked against (E-13, E-15)

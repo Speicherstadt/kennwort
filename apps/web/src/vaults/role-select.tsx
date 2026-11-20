@@ -1,10 +1,10 @@
 /** The role in a vault as a native select (K-305) */
 import type { VaultRole } from "@kennwort/core";
+import { selectClass } from "@kennwort/ui";
 import { For } from "solid-js";
 import { roleText } from "./vault-text.ts";
 
 const ROLES: VaultRole[] = ["read", "edit", "manage"];
-export const selectClass = "h-11 rounded-md border border-border bg-background px-2 text-xs md:h-8";
 
 export const RoleSelect = (props: {
   label: string;

@@ -16,10 +16,12 @@ export {
 export { List, type ListItem, type ListProps } from "./components/list.tsx";
 export { Menu, type MenuItem, type MenuProps } from "./components/menu.tsx";
 export { Popover, type PopoverProps } from "./components/popover.tsx";
+export { selectClass } from "./components/select.ts";
 export { type Tab, Tabs, type TabsProps } from "./components/tabs.tsx";
 export { createToasts, TOAST_MS, type Toast, Toaster, type Toasts } from "./components/toast.tsx";
 export { Tooltip, type TooltipProps } from "./components/tooltip.tsx";
 export { cn } from "./lib/cn.ts";
+export { copyText } from "./lib/copy.ts";
 export { nextIndex, type Orientation } from "./lib/keys.ts";
 export { type VariantProps, variants } from "./lib/variants.ts";
 export { m } from "./paraglide/messages.js";

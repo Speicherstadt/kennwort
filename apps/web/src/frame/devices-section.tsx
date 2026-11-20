@@ -2,12 +2,13 @@
  * The devices signed in to this account (K-303, P-04): each can be signed out here. Signing out
  * this device also makes it forget the account, so the next start shows the welcome page.
  */
+
+import type { DevicesApi } from "@kennwort/client/session/devices-api.ts";
 import type { DeviceEntry } from "@kennwort/core";
 import { Button, m } from "@kennwort/ui";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createEffect, createSignal, For, Loading, Show } from "solid-js";
 import { queryKeys } from "../queries.ts";
-import type { DevicesApi } from "../session/devices-api.ts";
 
 const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
 

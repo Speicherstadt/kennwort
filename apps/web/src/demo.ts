@@ -2,9 +2,10 @@
  * The entries the frame shows until it reads the real ones (K-303 to K-306): Weber Haustechnik as
  * in DESIGN.md, Testdaten. Data, not texts: it lives in demo.json, names stay as a company typed them.
  */
+
+import { type ShownEntry, subtitleOf } from "@kennwort/client/entries/entries.ts";
 import { m } from "@kennwort/ui";
 import data from "./demo.json";
-import { type ShownEntry, subtitleOf } from "./entries/entries.ts";
 
 export type DemoEntry = ShownEntry;
 

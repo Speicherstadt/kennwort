@@ -2,11 +2,12 @@
  * Parts of an entry's detail (K-306 part 5): the favorite star, the tags, why the entry is
  * „Zum Ändern“ and its earlier passwords, masked until revealed like every secret
  */
+
+import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
+import type { SaveError } from "@kennwort/client/entries/entry-store.ts";
 import { Badge, getLocale, Icon, IconButton, m, type Toasts } from "@kennwort/ui";
 import { Star, TriangleExclamationPoint } from "@kennwort/ui/icons";
 import { createSignal, For, Show } from "solid-js";
-import type { ShownEntry } from "../entries/entries.ts";
-import type { SaveError } from "../entries/entry-store.ts";
 import { toChange } from "../entries/to-change.ts";
 import { Field } from "./secret-field.tsx";
 

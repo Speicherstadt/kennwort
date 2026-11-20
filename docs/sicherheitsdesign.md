@@ -356,7 +356,8 @@ die Geheimtexte einmal an und den Kontozustand danach nur mit dem nächsten Zäh
 
 Umgesetzt in `packages/core/src/account/` (anlegen, Kontozustand mit Zusammenführen, entsperren mit
 Passphrase und Recovery Key), `apps/server/src/account/`, `apps/server/src/auth/setup.ts` und in der
-Web-App in `apps/web/src/session/` und `apps/web/src/account/`.
+Web-App in `apps/web/src/session/` und `apps/web/src/account/`; Anmelden und Entsperren mit der
+Passphrase und die Aufrufe des Servers teilen Web-App und Extension in `packages/client/src/session/`.
 
 **Wehrt ab:** E-10, E-18, E-24.
 
@@ -408,11 +409,22 @@ erst, wenn ein entsperrtes Gerät ihn angelegt hat (E-01, E-03). Nach Leerlauf s
 und löscht alle Schlüssel aus dem Speicher; die Web-App nach zehn Minuten ohne Tastendruck oder
 Klick, und beim Sperren überschreibt sie AK.
 
-Das Gerät merkt sich Konto-ID und Secret Key (in der Web-App im `localStorage`), nie die Passphrase
-und nie AK. Antwortet der Server nicht, entsperrt die Web-App aus ihrer Offline-Kopie
-([P-22](#p-22-offline-kopie)). Der Secret Key ist der zweite Faktor gegen einen Server, der
-Passphrasen errät: Wer nur die Daten des Servers hat, muss 128 Bit Secret Key mitraten. Wer das
-Gerät hat, braucht weiter die Passphrase.
+Das Gerät merkt sich Konto-ID und Secret Key (in der Web-App im `localStorage`, in der Extension in
+`chrome.storage.session` bis zum Schließen des Browsers), nie die Passphrase und nie AK. Antwortet
+der Server nicht, entsperrt die Web-App aus ihrer Offline-Kopie ([P-22](#p-22-offline-kopie)); die
+Extension hat keine, sie braucht den Server. Der Secret Key ist der zweite Faktor gegen einen
+Server, der Passphrasen errät: Wer nur die Daten des Servers hat, muss 128 Bit Secret Key
+mitraten. Wer das Gerät hat, braucht weiter die Passphrase.
+
+In der Extension (K-402) lebt das Popup nur, solange es offen ist. Darum liegen AK und das
+Sitzungs-Token in `chrome.storage.session` (nur für die Extension selbst, `TRUSTED_CONTEXTS`), und ein
+Alarm des Browsers trägt die Sperrzeit: Klingelt er, löscht der Service Worker beide. Ein neues Popup
+nimmt sie nur, solange der Alarm noch läuft, und öffnet mit AK den Schlüsselblock und den
+Kontozustand neu aus den Geheimtexten des Servers. Den Kontozustand, den die Extension zuletzt
+gesehen oder geschrieben hat, hält sie unter AK versiegelt ebenfalls in `chrome.storage.session`, auch
+über das Sperren, und führt ihn in jeden ein, den der Server liefert: Ein älterer, den der Server
+zurückspielt, wirft sie nicht zurück (E-07, E-13). Beim Sperren überschreibt das Popup AK im Speicher.
+Entsperrt wird mit demselben Code wie in der Web-App (`packages/client/src/session/unlock.ts`).
 
 **Wehrt ab:** E-01, E-03, E-18.
 
@@ -523,8 +535,8 @@ name = F-01(VKₑ, Name in UTF-8 NFC, 1 bis 100 Zeichen, zweck = "vault-name", k
 Ein Name, den der Server aus einem anderen Tresor oder einer anderen Epoche herüberschiebt, lässt
 sich nicht öffnen; der Client zeigt dann „Tresor ohne Namen“ (`sealVaultName`, `openVaultName` in
 `packages/core/src/membership/vault-name.ts`). Restrisiko: Der Server kann einen früheren Namen
-derselben Epoche zurückspielen. Die Web-App lädt jeden Tresor über `loadVaults`
-(`apps/web/src/vaults/vaults.ts`): Log mit `verifyLog` gegen den gemerkten Stand prüfen, VKₑ nur
+derselben Epoche zurückspielen. Web-App und Extension laden jeden Tresor über `loadVaults`
+(`packages/client/src/vaults/vaults.ts`): Log mit `verifyLog` gegen den gemerkten Stand prüfen, VKₑ nur
 mit passender Bindung annehmen, nur öffnen, solange das Konto nach dem Log und der eigenen Uhr
 Mitglied ist, den neuen Stand im Kontozustand merken.
 
@@ -715,7 +727,7 @@ Umgesetzt in `packages/crypto/src/invite.ts` (MAC), `packages/core/src/membershi
 prüfen), `packages/core/src/membership/root-grant.ts` (Rollen, Wurzelschlüssel verpacken und
 annehmen), `packages/core/src/membership/policy.ts` (Firmen-Richtlinie),
 `apps/server/src/account/members.ts`, `apps/server/src/account/policy.ts` und in der Web-App in
-`apps/web/src/members/` und `apps/web/src/policy/`.
+`apps/web/src/members/` und `packages/client/src/policy/` (mit der Extension geteilt).
 
 **Wehrt ab:** E-01, E-02, E-05, E-10.
 
@@ -750,9 +762,9 @@ signatur  = F-03(autor, "entry", tresor-ID, eintrags-ID, version, epoche, SHA-51
 Restrisiko: Einen neuen Eintrag, den ein Client nie gesehen hat, kann der Server diesem Client
 vorenthalten.
 
-In der Web-App lädt `apps/web/src/entries/entry-store.ts` die Einträge jedes geöffneten Tresors
-mit `pull` und `sync` aus `packages/core` und prüft jeden Datensatz gegen das geprüfte Log des
-Tresors; entsperrte Inhalte liegen nur im Speicher.
+In Web-App und Extension lädt `packages/client/src/entries/entry-store.ts` die Einträge jedes
+geöffneten Tresors mit `pull` und `sync` aus `packages/core` und prüft jeden Datensatz gegen das
+geprüfte Log des Tresors; entsperrte Inhalte liegen nur im Speicher.
 
 **Wehrt ab:** E-11, E-12, E-13, E-14, E-15, E-16, E-17.
 
@@ -1253,6 +1265,9 @@ Restrisiko:
 - Nie in einen Frame einer anderen Herkunft.
 - Das Inline-Menü ist ein iFrame der Extension in einem geschlossenen Shadow DOM; die Seite kann es
   weder lesen noch unbemerkt überdecken (Clickjacking, DEF CON 2025).
+- Das Popup der Extension (K-402) zeigt Einträge nach exaktem Host aus dem verschlüsselten Eintrag,
+  ohne Eltern- oder Subdomain, und kopiert nur auf Klick; ausfüllen kann es nicht. Die Adresse des
+  Tabs sieht es nur über `activeTab`, also nach einem Klick auf das Symbol.
 - Am Handy kopiert Kennwort nur auf Tipp; die App leert die Zwischenablage nach 30 Sekunden und
   markiert sie als sensibel, die PWA kann das nicht zuverlässig.
 
@@ -1452,7 +1467,8 @@ Restrisiko:
   Geräte.
 
 Umgesetzt in `apps/web/src/offline/` (Kopie in IndexedDB, `fetch` mit der Kopie dahinter, Hinweis,
-erneuter Versuch), `apps/web/src/session/offline-unlock.ts`, `apps/web/src/entries/entry-store.ts`
+erneuter Versuch), `apps/web/src/session/offline-unlock.ts`, `packages/client/src/entries/entry-store.ts`
+(mit Web-App und Extension geteilt; die Kopie gibt nur die Web-App hinein, die Extension hat keine)
 und `packages/core/src/auth/sign-in.ts` (`signInWithLoginKey`, „unreachable“ für keine Antwort).
 
 **Wehrt ab:** E-07, E-13, E-15.

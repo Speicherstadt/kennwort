@@ -3,15 +3,17 @@
  * role; a manager changes roles, removes members and adds certified people of the company. Every
  * change is an entry the manager's device signs (P-05, P-06).
  */
+
+import type { Vault } from "@kennwort/client/vaults/vaults.ts";
 import type { Certificate, MemberView, VaultRole } from "@kennwort/core";
 import { idKey } from "@kennwort/core";
-import { Button, Dialog, Input, m } from "@kennwort/ui";
+import { Button, Dialog, Input, m, selectClass } from "@kennwort/ui";
 import { createSignal, For, Show } from "solid-js";
 import { linkGroup, outsideLinkedGroups, unlinkGroup } from "../groups/groups.ts";
 import type { Session } from "../session/session.ts";
 import { dateText, endOfDay, today } from "./day.ts";
 import { createDialogState, type DialogApi } from "./dialog-state.ts";
-import { RoleSelect, selectClass } from "./role-select.tsx";
+import { RoleSelect } from "./role-select.tsx";
 import { VaultGroups } from "./vault-groups.tsx";
 import {
   addToVault,
@@ -29,7 +31,6 @@ import {
 import { VaultRequests } from "./vault-requests.tsx";
 import type { VaultStore } from "./vault-store.ts";
 import { roleText } from "./vault-text.ts";
-import type { Vault } from "./vaults.ts";
 
 const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
 

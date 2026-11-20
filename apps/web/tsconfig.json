@@ -9,6 +9,7 @@
   "include": ["src", "src/**/*.json", "showcase", "vite.config.ts"],
   "references": [
     { "path": "../../packages/ui" },
+    { "path": "../../packages/client" },
     { "path": "../../packages/core" },
     { "path": "../../packages/crypto" }
   ]

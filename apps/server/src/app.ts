@@ -8,6 +8,7 @@ import { auditRoutes } from "./audit/routes.ts";
 import { type Auth, CLIENT_HEADER } from "./auth/better-auth.ts";
 import type { ClientAddress, ClientEnv } from "./auth/client-address.ts";
 import { deviceRoutes, touchDevice } from "./auth/devices.ts";
+import { extensionCors } from "./auth/extension-cors.ts";
 import { acceptInvitationRoute, createInvitationRoute } from "./auth/invitations.ts";
 import { loginKeyRoutes } from "./auth/login-key.ts";
 import { pairingApiRoutes, pairingPublicRoutes } from "./auth/pairings.ts";
@@ -81,6 +82,10 @@ export const createApp = ({
       ms: Math.round(performance.now() - started),
     });
   });
+
+  // The extension's popup calls the API from its own origin (K-402); before the session check,
+  // which a preflight without a token would fail
+  app.use(extensionCors);
 
   app.get("/health", (c) => {
     const ok = databaseReachable(db);

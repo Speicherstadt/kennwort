@@ -11,6 +11,8 @@
  *
  * Nothing unlocked goes in: no AK, no key, no passphrase, no plaintext of an entry.
  */
+
+import type { KeptState } from "@kennwort/client/session/state-sync.ts";
 import {
   bytes,
   EntryRecord,
@@ -24,8 +26,8 @@ import { createCopyFetch, isObject, parseJson } from "./copy-fetch.ts";
 import { createCopyScope } from "./copy-scope.ts";
 import type { KeyValue } from "./key-value.ts";
 
-/** The account state as this device kept it: sealed under AK with the counter in its AAD */
-export type KeptState = { counter: number; sealed: Uint8Array };
+/** The account state as this device kept it (state-sync.ts in packages/client, shared) */
+export type { KeptState };
 
 const storedToWire = (stored: Stored) => ({
   accountId: encodeBytes(stored.accountId),

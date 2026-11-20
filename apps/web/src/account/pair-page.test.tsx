@@ -1,10 +1,10 @@
+import type { PollAnswer } from "@kennwort/client/session/pairing-api.ts";
 import { setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { flush } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Navigation } from "../navigation.ts";
 import { answerPairing, type NewDevicePairing } from "../pairing/pairing.ts";
-import type { PollAnswer } from "../session/pairing-api.ts";
 import { derive, fakeApi, memory, PASSPHRASE } from "../session/session.test-kit.ts";
 import { createSession, type Session } from "../session/session.ts";
 import { type PairDeps, PairPage } from "./pair-page.tsx";

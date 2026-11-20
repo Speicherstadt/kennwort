@@ -5,7 +5,7 @@ import { defineConfig } from "vitest/config";
 // interfaces with Solid's compiler in a DOM. apps/server needs bun:sqlite and runs under `bun test`
 // (root script "test").
 const logic = ["packages/crypto", "packages/core", "apps/cli", "scripts"];
-const interfaces = ["packages/ui", "apps/web", "apps/extension", "apps/mobile"];
+const interfaces = ["packages/ui", "packages/client", "apps/web", "apps/extension", "apps/mobile"];
 const tests = (dirs: string[]) => dirs.map((dir) => `${dir}/**/*.test.{ts,tsx}`);
 
 export default defineConfig({

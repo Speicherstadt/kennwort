@@ -1,3 +1,9 @@
+import {
+  applyPolicy,
+  loadPolicy,
+  type PolicyDeps,
+  saveLockTime,
+} from "@kennwort/client/policy/policy.ts";
 import { type AccountUpload, bytes, encodeBytes, type Policy, signPolicy } from "@kennwort/core";
 import { ed25519KeyPair } from "@kennwort/crypto";
 import { flush } from "solid-js";
@@ -5,7 +11,6 @@ import { describe, expect, it } from "vitest";
 import { derive, fakeApi, memory, PASSPHRASE } from "../session/session.test-kit.ts";
 import { createSession } from "../session/session.ts";
 import { stateServer } from "../session/state-server.test-kit.ts";
-import { applyPolicy, loadPolicy, type PolicyDeps, saveLockTime } from "./policy.ts";
 
 // K-304 part 4: Jonas sets the lock time for Weber Haustechnik; every device checks and applies it
 const COMPANY = "wMDAwMDAwMDAwMDAwMDAwA";
