@@ -126,7 +126,10 @@ export const createEntryStore = (serverFor: ServerFor, session: Session) => {
     update(vaultIdText, (s) => ({ ...s, device: queued }));
     const synced = await sync(queued, server, ctx).catch(() => undefined);
     if (!synced) return { ok: false, error: "unreachable" };
-    update(vaultIdText, (s) => ({ ...s, device: withSynced(s.device, queued, synced.device) }));
+    update(vaultIdText, (s) => ({
+      ...s,
+      device: withSynced(s.device, queued, synced.device, ctx.now),
+    }));
     const stillQueued = synced.device.queue.some((op) => idKey(op.entryId) === idKey(entryId));
     return stillQueued
       ? { ok: false, error: "not-saved" }

@@ -3,7 +3,7 @@
  * a save may run at the same time, so neither replaces the device it started from; the newer
  * version of every entry wins, and the queue keeps every change no sync has taken yet.
  */
-import { type Device, idKey, type Known, type Pending } from "@kennwort/core";
+import { type Device, idKey, type Known, mergeContent, type Pending } from "@kennwort/core";
 
 /** Every entry in its newest version from both sides */
 export const newestOf = (
@@ -20,11 +20,19 @@ const sameEntry = (a: Pending) => (b: Pending) => idKey(a.entryId) === idKey(b.e
 
 /**
  * A change made on top of one that was just taken builds on the version that change became, not
- * on the one before it: otherwise the merge would see a conflict with itself
+ * on the one before it, or the merge would see a conflict with itself. That version may hold
+ * another device's change, merged in by the sync: the waiting change is merged onto it, and where
+ * both changed a field it wins, as the newer edit of this device (the other value goes to the
+ * history).
  */
-const onTopOf = (op: Pending, known: ReadonlyMap<string, Known>): Pending => {
-  const now = known.get(idKey(op.entryId));
-  return now ? { ...op, base: { version: now.version, content: now.content } } : op;
+const onTopOf = (op: Pending, known: ReadonlyMap<string, Known>, now: number): Pending => {
+  const became = known.get(idKey(op.entryId));
+  if (!became || !op.base) return op;
+  return {
+    ...op,
+    base: { version: became.version, content: became.content },
+    content: mergeContent(op.base.content, became.content, op.content, now),
+  };
 };
 
 /** A pull's entries into the device as it is now; its queue stays as it is */
@@ -38,12 +46,12 @@ export const withPulled = (now: Device, pulled: Device): Device => ({
  * entry was changed again meanwhile), the ones it could not take stay (or join, if a concurrent
  * save had not queued them)
  */
-export const withSynced = (now: Device, sent: Device, synced: Device): Device => {
+export const withSynced = (now: Device, sent: Device, synced: Device, time: number): Device => {
   const taken = sent.queue.filter((op) => !synced.queue.some(sameEntry(op)));
   // By identity: a change made to the entry after the send is a new op and still has to go
   const left = now.queue
     .filter((op) => !taken.includes(op))
-    .map((op) => (taken.some(sameEntry(op)) ? onTopOf(op, synced.known) : op));
+    .map((op) => (taken.some(sameEntry(op)) ? onTopOf(op, synced.known, time) : op));
   const failed = synced.queue.filter((op) => !left.some(sameEntry(op)));
   return { known: newestOf(now.known, synced.known), queue: [...left, ...failed] };
 };
