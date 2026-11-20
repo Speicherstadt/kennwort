@@ -83,6 +83,27 @@ test.describe("adding a device", { tag: "@phone" }, () => {
     await compareAndConfirm(page, device);
   });
 
+  test("with the link opened in the tab already on the add-device page", async ({
+    page,
+    browser,
+  }) => {
+    await setUpCompany(page);
+    const device = await newDevice(browser);
+    const link = await startPairing(device);
+    const settings = page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true });
+    await settings.first().click();
+    await page.getByRole("button", { name: "Gerät hinzufügen" }).click();
+    await expect(heading(page, "Gerät hinzufügen")).toBeVisible();
+    // Only the fragment changes: the browser does not load the page anew, the account stays open
+    await page.goto(link);
+    await expect(page.getByLabel("Link vom neuen Gerät")).toHaveValue(new URL(link).hash);
+    expect(new URL(page.url()).hash).toBe("");
+    const kept = await page.evaluate(() => location.href + JSON.stringify(history.state));
+    expect(kept).not.toContain(new URL(link).hash.slice(1));
+    await page.getByRole("button", { name: "Verbinden" }).click();
+    await compareAndConfirm(page, device);
+  });
+
   test("refuses what is not a pairing link", async ({ page }) => {
     await setUpCompany(page);
     await page

@@ -41,6 +41,8 @@ const fakeSession = (state: { opened?: boolean; device?: boolean }) => {
 /** Opens the app on a path as main.tsx does; `hash` stands in for a fragment the path has none of */
 const open = (path: string, session: Session, hash?: string) => {
   setLocale("de", { reload: false });
+  // One navigation at a time, as in the app: an earlier one would take this path's fragment
+  nav?.dispose();
   window.history.replaceState(null, "", path);
   const root = document.createElement("div");
   document.body.append(root);
@@ -54,6 +56,16 @@ const open = (path: string, session: Session, hash?: string) => {
   flush();
   return root;
 };
+/** The user opens a link to the page the tab is on: the browser changes only the fragment */
+const followFragment = async (hash: string) => {
+  const changed = new Promise((resolve) =>
+    window.addEventListener("hashchange", resolve, { once: true }),
+  );
+  window.location.hash = hash;
+  await changed;
+  flush();
+};
+const invitation = `#token=T0K3N&s=${"AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI"}&root=${"AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE"}`;
 const button = (root: ParentNode, name: string) =>
   [...root.querySelectorAll("button")].find((b) => b.textContent === name) as HTMLButtonElement;
 const heading = (root: ParentNode) => root.querySelector("h1")?.textContent;
@@ -149,5 +161,44 @@ describe("the gate", () => {
     expect(readInvitation(`#token=geheim&root=${root}`)).toBeUndefined();
     expect(readInvitation(`#token=geheim&s=kurz&root=${root}`)).toBeUndefined();
     expect(readInvitation(`#token=geheim&s=${s}&root=kurz`)).toBeUndefined();
+  });
+});
+
+// The secret in a link's fragment leaves the address before it renders or is handed to the page
+describe("a secret link", () => {
+  it("takes the invitation's fragment before it renders and offers to accept it (P-08)", () => {
+    const root = open(`/invite/abc${invitation}`, fakeSession({}).session);
+    expect(window.location.pathname + window.location.hash).toBe("/invite/abc");
+    expect(JSON.stringify(window.history.state)).not.toContain("T0K3N");
+    expect(heading(root)).toBe("Einladung annehmen");
+    expect(root.querySelector('[role="alert"]')).toBeNull();
+    expect(button(root, "Konto anlegen")).toBeDefined();
+  });
+
+  it("hands a pairing link opened in the same tab to the open page and drops it", async () => {
+    const root = open("/link", fakeSession({ opened: true }).session);
+    expect(heading(root)).toBe("Gerät hinzufügen");
+    await followFragment("#id=i&fp=f&r=S3CR3T");
+    expect(window.location.pathname + window.location.hash).toBe("/link");
+    expect(root.querySelector("input")?.value).toBe("#id=i&fp=f&r=S3CR3T");
+  });
+
+  it("hands an invitation opened in the same tab to the open page and drops it", async () => {
+    const root = open("/invite/abc", fakeSession({}).session);
+    expect(root.querySelector('[role="alert"]')?.textContent).toBe(
+      "Dieser Einladungslink ist unvollständig.",
+    );
+    await followFragment(invitation);
+    expect(window.location.pathname + window.location.hash).toBe("/invite/abc");
+    expect(root.querySelector('[role="alert"]')).toBeNull();
+    expect(button(root, "Konto anlegen")).toBeDefined();
+  });
+
+  it("hands the kit's link opened in the same tab to the unlock page and drops it", async () => {
+    const root = open("/unlock", fakeSession({ device: true }).session);
+    await followFragment("#account=abc&secret=K1-XYZ");
+    expect(window.location.pathname + window.location.hash).toBe("/unlock");
+    const values = [...root.querySelectorAll("input")].map((input) => input.value);
+    expect(values).toEqual(["abc", "K1-XYZ", ""]);
   });
 });

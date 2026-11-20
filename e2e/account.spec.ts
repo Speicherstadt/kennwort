@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page } from "@playwright/test";
+import { type APIRequestContext, expect, type Page } from "@playwright/test";
 import { newDevice, PASSPHRASE, SETUP_CODE, setUpCompany, test, unlock } from "./account.ts";
 
 // K-303 part 2: set up, keep the kit, lock, unlock, accept an invitation, against a real server
@@ -13,6 +13,33 @@ const axe = async (page: Page) => {
   ).toEqual([]);
 };
 const heading = (page: Page, name: string) => page.getByRole("heading", { level: 1, name });
+
+/**
+ * An invitation as the owner's screen makes it (K-304 part 2), which also seals the secret and puts
+ * the root fingerprint in the link; here any will do, the server cannot tell. A new ID each run:
+ * desktop and phone share one server.
+ */
+const invite = async (request: APIRequestContext, ownerToken: string) => {
+  const id = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString("base64url");
+  const made = await request.post("/api/invitations", {
+    headers: { authorization: `Bearer ${ownerToken}` },
+    data: { id, sealedSecret: "A".repeat(98), label: "Anna" },
+  });
+  expect(made.status()).toBe(201);
+  const { token } = (await made.json()) as { token: string };
+  const root = "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE";
+  const secret = "AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI";
+  return { id, token, link: `/invite/${id}#token=${token}&s=${secret}&root=${root}` };
+};
+
+/** The address is `path` without a fragment, and the history entry holds nothing of the link */
+const expectNoSecretIn = async (page: Page, path: string, token: string) => {
+  await expect.poll(() => new URL(page.url()).pathname).toBe(path);
+  expect(new URL(page.url()).hash).toBe("");
+  const kept = await page.evaluate(() => location.href + JSON.stringify(history.state));
+  expect(kept).not.toContain(token);
+  expect(kept).not.toContain("AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI");
+};
 
 test.describe("an account", { tag: "@phone" }, () => {
   test("a first owner sets up the company, keeps the kit, locks and unlocks", async ({ page }) => {
@@ -181,22 +208,12 @@ test.describe("an account", { tag: "@phone" }, () => {
 
   test("an invited member accepts the link and gets a kit", async ({ page, browser, request }) => {
     const owner = await setUpCompany(page);
-    // The owner's screen for inviting (K-304 part 2) makes ID, secret and its sealed copy and puts
-    // the root fingerprint in the link; here any will do, the server cannot tell
-    // A new ID each run: desktop and phone share one server
-    const id = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString("base64url");
-    const made = await request.post("/api/invitations", {
-      headers: { authorization: `Bearer ${owner.token}` },
-      data: { id, sealedSecret: "A".repeat(98), label: "Anna" },
-    });
-    expect(made.status()).toBe(201);
-    const { token } = (await made.json()) as { token: string };
-    const root = "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE";
-    const secret = "AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI";
-    const link = `/invite/${id}#token=${token}&s=${secret}&root=${root}`;
+    const { id, link, token } = await invite(request, owner.token);
     const member = await newDevice(browser);
     await member.goto(link);
     await expect(heading(member, "Einladung annehmen")).toBeVisible();
+    // The secret leaves the address and the history entry before anything renders (P-08)
+    await expectNoSecretIn(member, `/invite/${id}`, token);
     await axe(member);
     await member.getByLabel("Passphrase", { exact: true }).fill("Anna Heizung Bad Fliese");
     await member.getByLabel("Passphrase wiederholen").fill("Anna Heizung Bad Fliese");
@@ -205,6 +222,9 @@ test.describe("an account", { tag: "@phone" }, () => {
     await member.getByRole("checkbox").check();
     await member.getByRole("button", { name: "Weiter" }).click();
     await expect(heading(member, "Alle Einträge")).toBeVisible();
+    // Back to the invitation's entry: it holds no fragment either
+    await member.goBack();
+    await expectNoSecretIn(member, `/invite/${id}`, token);
     // The link is used up
     const again = await newDevice(browser);
     await again.goto(link);
@@ -212,6 +232,31 @@ test.describe("an account", { tag: "@phone" }, () => {
     await again.getByLabel("Passphrase wiederholen").fill("Max Werkstatt Rohr Zange");
     await again.getByRole("button", { name: "Konto anlegen" }).click();
     await expect(again.getByRole("alert")).toBeVisible({ timeout: 20_000 });
+  });
+
+  test("an invitation opened in the tab already on the invitation's page is taken and dropped", async ({
+    page,
+    browser,
+    request,
+  }) => {
+    const owner = await setUpCompany(page);
+    const { id, link, token } = await invite(request, owner.token);
+    const member = await newDevice(browser);
+    await member.goto(`/invite/${id}`);
+    await expect(member.getByRole("alert")).toHaveText("Dieser Einladungslink ist unvollständig.");
+    // Only the fragment changes: the browser does not load the page anew
+    await member.evaluate(() => {
+      (window as unknown as { samePage: boolean }).samePage = true;
+    });
+    await member.goto(link);
+    await expect(member.getByRole("button", { name: "Konto anlegen" })).toBeVisible();
+    await expect(member.getByRole("alert")).toHaveCount(0);
+    expect(await member.evaluate(() => "samePage" in window)).toBe(true);
+    await expectNoSecretIn(member, `/invite/${id}`, token);
+    await member.getByLabel("Passphrase", { exact: true }).fill("Anna Heizung Bad Fliese");
+    await member.getByLabel("Passphrase wiederholen").fill("Anna Heizung Bad Fliese");
+    await member.getByRole("button", { name: "Konto anlegen" }).click();
+    await expect(heading(member, "Dein Recovery-Kit")).toBeVisible({ timeout: 20_000 });
   });
 
   test("the app locks itself after ten minutes without use", async ({ page }) => {

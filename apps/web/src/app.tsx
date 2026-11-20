@@ -20,7 +20,7 @@ import { Frame } from "./frame/frame.tsx";
 import { GroupsPage } from "./groups/groups-page.tsx";
 import type { MembersDeps } from "./members/members.ts";
 import { MembersPage } from "./members/members-page.tsx";
-import type { Navigation } from "./navigation.ts";
+import type { Navigation, TakenFragment } from "./navigation.ts";
 import { ApplyPolicy } from "./policy/policy-section.tsx";
 import { createAccountQueries } from "./queries.ts";
 import type { DevicesApi } from "./session/devices-api.ts";
@@ -145,7 +145,7 @@ export const App = (props: {
   nav: Navigation;
   session: Session;
   api: AppApi;
-  /** The fragment the app was opened with (takeStartFragment) */
+  /** The fragment the app was opened with (takeStartFragment); later ones come from `nav` */
   hash: string;
 }) => {
   const [otherAccount, setOtherAccount] = createSignal(false);
@@ -156,14 +156,18 @@ export const App = (props: {
     setShownLocale(next);
   };
   const route = () => props.nav.route();
-  // Deliberately read once: the page the app was opened on decides what the fragment it was opened
-  // with is (takeStartFragment has already dropped a secret one from the address), so a later
-  // navigation must not read it again. The path is a plain signal, never async.
-  const startPage = untrack(() => route().page);
-  // The kit's link carries the Secret Key in its fragment (P-12), the pairing link the pairing
-  // secret (P-04)
-  const deviceLink = startPage === "unlock" ? readDeviceLink(props.hash) : undefined;
-  const pairingText = startPage === "link" ? props.hash : "";
+  // The last secret fragment and the page it is for: first the one the app was opened with
+  // (takeStartFragment has already dropped it from the address), then each one a link opened in
+  // the same tab brings (navigation.onFragment). Deliberately read once: the page the app was
+  // opened on decides what that fragment is. The path is a plain signal, never async.
+  const [link, setLink] = createSignal<TakenFragment>({
+    page: untrack(() => route().page),
+    hash: untrack(() => props.hash),
+  });
+  onSettled(() => props.nav.onFragment((taken) => setLink(taken)));
+  /** The fragment meant for a page, empty for any other */
+  const hashFor = (shown: TakenFragment, page: TakenFragment["page"]) =>
+    shown.page === page ? shown.hash : "";
   // Every key press or click pushes the automatic lock back (P-03); added once the app is on
   // screen and removed with it
   onSettled(() => {
@@ -183,13 +187,20 @@ export const App = (props: {
     <Show when={locale()} keyed>
       {(_locale) => (
         <Switch>
+          {/* Each secret page anew for every link taken, as its form reads the link once:
+              the kit's link carries the Secret Key (P-12), the pairing link the pairing secret
+              (P-04), the invitation its secret (P-08) */}
           <Match when={route().page === "unlock"}>
-            <UnlockPage
-              nav={props.nav}
-              session={props.session}
-              link={deviceLink}
-              onUnlocked={() => props.nav.replace("/entries")}
-            />
+            <Show when={link()} keyed>
+              {(shown) => (
+                <UnlockPage
+                  nav={props.nav}
+                  session={props.session}
+                  link={readDeviceLink(hashFor(shown, "unlock"))}
+                  onUnlocked={() => props.nav.replace("/entries")}
+                />
+              )}
+            </Show>
           </Match>
           <Match when={route().page === "recover"}>
             <RecoverPage nav={props.nav} session={props.session} />
@@ -198,19 +209,32 @@ export const App = (props: {
             <PairPage nav={props.nav} session={props.session} api={props.api} />
           </Match>
           <Match when={route().page === "link" && props.session.opened()}>
-            <AddDevicePage
-              nav={props.nav}
-              session={props.session}
-              api={props.api}
-              link={pairingText || undefined}
-            />
+            <Show when={link()} keyed>
+              {(shown) => (
+                <AddDevicePage
+                  nav={props.nav}
+                  session={props.session}
+                  api={props.api}
+                  link={hashFor(shown, "link") || undefined}
+                />
+              )}
+            </Show>
           </Match>
           <Match when={route().page === "setup"}>
             <SetupPage nav={props.nav} session={props.session} />
           </Match>
           <Match when={invite()}>
             {(r) => (
-              <InvitePage nav={props.nav} session={props.session} id={r().id} hash={props.hash} />
+              <Show when={link()} keyed>
+                {(shown) => (
+                  <InvitePage
+                    nav={props.nav}
+                    session={props.session}
+                    id={r().id}
+                    hash={hashFor(shown, "invite")}
+                  />
+                )}
+              </Show>
             )}
           </Match>
           <Match when={!props.session.opened()}>
