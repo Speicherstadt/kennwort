@@ -12,7 +12,7 @@ const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-d
 
 export const PolicySection = (props: { session: Session; api: PolicyDeps; canEdit: boolean }) => {
   const [policy, setPolicy] = createSignal<UnsignedPolicy>();
-  const [invalid, setInvalid] = createSignal(false);
+  const [problem, setProblem] = createSignal<string>();
   const [minutes, setMinutes] = createSignal("");
   const [status, setStatus] = createSignal<"saved" | "failed">();
   const [busy, setBusy] = createSignal(false);
@@ -20,7 +20,13 @@ export const PolicySection = (props: { session: Session; api: PolicyDeps; canEdi
     const opened = props.session.opened();
     if (!opened) return;
     const loaded = await loadPolicy(props.api, opened);
-    setInvalid(!loaded.ok);
+    setProblem(
+      loaded.ok
+        ? undefined
+        : loaded.error === "unreachable"
+          ? m.policy_unreachable()
+          : m.policy_invalid(),
+    );
     if (!loaded.ok) return;
     setPolicy(loaded.value);
     setMinutes(String(loaded.value.lockAfterMinutes));
@@ -41,9 +47,9 @@ export const PolicySection = (props: { session: Session; api: PolicyDeps; canEdi
       <h2 id="policy-title" class="text-xs font-medium">
         {m.policy_title()}
       </h2>
-      <Show when={invalid()}>
+      <Show when={problem()}>
         <p role="alert" class={alertClass}>
-          {m.policy_invalid()}
+          {problem()}
         </p>
       </Show>
       <Show when={policy()}>

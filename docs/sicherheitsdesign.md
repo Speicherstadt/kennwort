@@ -303,7 +303,7 @@ Was ein Client sich merkt, um den Server zu prüfen, liegt im **Kontozustand**: 
 Firmen-Wurzelschlüssels, bekannte Schlüsselbündel, der letzte Stand jedes Mitgliedschafts-Logs,
 die höchste Version jedes Eintrags, die Einladungen, die das Konto zertifiziert hat, mit dem Konto
 dazu, je Konto das Ausstellungsdatum des neuesten Zertifikats, das es gesehen hat, und die
-höchste Version der Firmen-Richtlinie. Er ist ein F-01-Geheimtext unter AK (Zweck `account-state`,
+höchste Version der Firmen-Richtlinie mit ihrer Sperrzeit. Er ist ein F-01-Geheimtext unter AK (Zweck `account-state`,
 Kontext Konto-ID und ein Zähler) auf dem Server; jedes Gerät lädt ihn beim Entsperren, führt ihn
 mit seinem eigenen Stand zusammen (der höhere Stand gewinnt; ein anderer Wurzelschlüssel, ein anderes
 Bündel für ein bekanntes Konto oder ein anderer Hash an derselben Stelle eines Logs ist ein Angriff) und schreibt ihn mit höherem Zähler zurück. So kennt jedes Gerät eines Kontos, auch eines,
@@ -550,7 +550,9 @@ Umgesetzt in `packages/core/src/membership/` (`verifyLog`, Zertifikate nach F-06
   mit `GET /api/company` heraus. Jeder Client prüft sie unter dem gemerkten Wurzelschlüssel, merkt
   sich die höchste Version im Kontozustand und nimmt keine ältere mehr, auch nicht „keine
   Richtlinie“, nachdem er eine gesehen hat. Dann gilt ihre Sperrzeit. Eine Richtlinie, die nicht
-  besteht, ändert nichts: Der Client bleibt bei der letzten gültigen und zeigt eine Warnung.
+  besteht, ändert nichts: Der Client bleibt bei der letzten gültigen und zeigt eine Warnung. Ihre
+  Sperrzeit steht dafür mit der Version im Kontozustand; auch nach einem Neuladen oder auf einem
+  anderen Gerät kann der Server sie nicht verlängern, indem er die Richtlinie weglässt.
   Den Schalter für Firmen-Recovery bringt K-307 mit dem Firmen-Recovery-Schlüssel; das Format trägt
   ihn schon.
 - Der gemerkte Fingerabdruck steht im Schlüsselblock unter AK

@@ -19,6 +19,7 @@ describe("account state", () => {
     invitations: { einladung1: "anna" },
     certificates: { anna: 5, max: 9 },
     policy: 3,
+    policyLock: 4,
   };
   const key = new Uint8Array(32).fill(9);
   const account = new Uint8Array(16).fill(4);
@@ -64,6 +65,7 @@ describe("account state", () => {
       invitations: { einladung2: "max" },
       certificates: { anna: 7, max: 3, sandra: 1 },
       policy: 2,
+      policyLock: 30,
     };
     expect(mergeStates(state, theirs)).toEqual({
       ok: true,
@@ -79,6 +81,7 @@ describe("account state", () => {
         invitations: { einladung1: "anna", einladung2: "max" },
         certificates: { anna: 7, max: 9, sandra: 1 },
         policy: 3,
+        policyLock: 4,
       },
     });
     expect(mergeStates(state, emptyState(root))).toEqual({ ok: true, value: state });
@@ -118,8 +121,13 @@ describe("account state", () => {
     expect(mergeStates(state, swapped)).toEqual({ ok: false, error: "other-bundle" });
   });
 
-  it("keeps the newer policy version from either side", () => {
-    const newer = { ...emptyState(root), policy: 7 };
+  it("keeps the newer policy version and its lock time from either side", () => {
+    const newer = { ...emptyState(root), policy: 7, policyLock: 2 };
+    for (const merged of [mergeStates(state, newer), mergeStates(newer, state)])
+      expect(merged.ok && [merged.value.policy, merged.value.policyLock]).toEqual([7, 2]);
+    const same = { ...emptyState(root), policy: 3, policyLock: 50 };
+    const mergedSame = mergeStates(state, same);
+    expect(mergedSame.ok && mergedSame.value.policyLock).toBe(4);
     expect(
       mergeStates(state, newer).ok &&
         (mergeStates(state, newer) as { value: AccountState }).value.policy,
@@ -138,7 +146,7 @@ describe("account state", () => {
   });
 
   it("reads a state written before invitations were remembered", () => {
-    const { invitations: _, certificates: __, policy: ___, ...older } = state;
+    const { invitations: _, certificates: __, policy: ___, policyLock: ____, ...older } = state;
     const place = { purpose: "account-state", context: [account, 2] };
     const json = JSON.stringify({
       ...older,
@@ -149,7 +157,7 @@ describe("account state", () => {
     const opened = openState(key, account, 2, seal(key, new TextEncoder().encode(json), place));
     expect(opened).toEqual({
       ok: true,
-      value: { ...state, invitations: {}, certificates: {}, policy: 0 },
+      value: { ...state, invitations: {}, certificates: {}, policy: 0, policyLock: 10 },
     });
   });
 });

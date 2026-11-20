@@ -158,9 +158,19 @@
   "members_root_adopt_failed": "The company key could not be taken over just now. Try again.",
   "policy_title": "Company policies",
   "policy_invalid": "The policies from the server are not validly signed. Kennwort keeps to the last valid ones.",
-  "policy_lock_after": "Kennwort locks after {minutes} minutes without use.",
+  "policy_lock_after": [
+    {
+      "declarations": ["input minutes", "local count = minutes: plural"],
+      "selectors": ["count"],
+      "match": {
+        "count=one": "Kennwort locks after 1 minute without use.",
+        "count=*": "Kennwort locks after {minutes} minutes without use."
+      }
+    }
+  ],
   "policy_lock_label": "Lock after (minutes)",
   "policy_save": "Save",
   "policy_saved": "Saved. The new time applies on all devices.",
-  "policy_failed": "The policies could not be saved."
+  "policy_failed": "The policies could not be saved.",
+  "policy_unreachable": "The policies could not be loaded. Kennwort keeps to the last valid ones."
 }

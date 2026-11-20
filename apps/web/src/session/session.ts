@@ -110,25 +110,34 @@ const invitedAccount = (
   };
 };
 
-/** The open account in memory and the automatic lock (P-03) */
+/**
+ * The open account in memory and the automatic lock (P-03). The lock keeps its own copy of what is
+ * open: a signal read right after its write still gives the old value until the next flush, and
+ * the timer must start the moment an account opens (review of K-304)
+ */
 const createLock = (deps: SessionDeps) => {
-  const [opened, setOpened] = createSignal<Opened>();
+  const [opened, setOpenedSignal] = createSignal<Opened>();
   const schedule = deps.schedule ?? ((run, ms) => setTimeout(run, ms));
   const cancel = deps.cancel ?? ((timer) => clearTimeout(timer as number));
   let timer: unknown;
+  let current: Opened | undefined;
   let lockAfter = deps.lockAfterMs ?? LOCK_AFTER_MS;
+  const setOpened = (value: Opened | undefined) => {
+    current = value;
+    setOpenedSignal(value);
+  };
   const lock = () => {
     cancel(timer);
-    opened()?.accountKey.fill(0);
+    current?.accountKey.fill(0);
     setOpened(undefined);
   };
   /** Any use of the app pushes the automatic lock back */
   const touch = () => {
-    if (!opened()) return;
+    if (!current) return;
     cancel(timer);
     timer = schedule(lock, lockAfter);
   };
-  /** The company policy's lock time (K-304); it counts from the next use on */
+  /** The company policy's lock time (K-304); it counts from now on */
   const setLockAfter = (ms: number) => {
     lockAfter = ms;
     touch();

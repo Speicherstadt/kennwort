@@ -157,7 +157,7 @@ test.describe("members", { tag: "@phone" }, () => {
       "Anna Heizung Bad Fliese",
     );
     await openMembers(anna);
-    await expect(anna.getByText("Kennwort sperrt sich nach 1 Minuten ohne Nutzung.")).toBeVisible();
+    await expect(anna.getByText("Kennwort sperrt sich nach 1 Minute ohne Nutzung.")).toBeVisible();
     await expect(anna.getByLabel("Sperren nach (Minuten)")).toHaveCount(0);
   });
 });

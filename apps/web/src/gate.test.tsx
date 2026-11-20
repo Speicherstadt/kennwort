@@ -1,3 +1,4 @@
+import { emptyState } from "@kennwort/core";
 import { setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { createSignal, flush } from "solid-js";
@@ -24,13 +25,15 @@ afterEach(() => {
 
 /** Only what the gate reads; the flows themselves are in session.test.ts and e2e/account.spec.ts */
 const fakeSession = (state: { opened?: boolean; device?: boolean }) => {
-  const [opened, setOpened] = createSignal(state.opened ? ({} as never) : undefined);
+  const account = { token: "t", state: emptyState(new Uint8Array(32)) } as never;
+  const [opened, setOpened] = createSignal(state.opened ? account : undefined);
   const touches: number[] = [];
   const session = {
     opened,
     device: () => (state.device ? { accountId: "x", secretKey: new Uint8Array(16) } : undefined),
     lock: () => setOpened(undefined),
     touch: () => touches.push(1),
+    setLockAfter: () => {},
   } as unknown as Session;
   return { session, touches };
 };

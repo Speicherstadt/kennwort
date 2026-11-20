@@ -87,19 +87,19 @@ describe("applyPolicy", () => {
     expect(j.scheduled.at(-1)).toBe(10 * 60_000);
   });
 
-  it("changes nothing for a policy that is older, unsigned or under another root", async () => {
+  it("stays with the last valid lock time for a policy that is older, unsigned or missing", async () => {
     const j = await jonas(7 * 60_000);
     const s = companyServer(j, signed(j.root, 3, 5));
     await applyPolicy(s.api, j.session);
     flush();
-    const before = j.scheduled.length;
+    expect(j.session.opened()?.state.policyLock).toBe(5);
     s.serve(signed(j.root, 2, 60));
     expect(await applyPolicy(s.api, j.session)).toEqual({ ok: false, error: "older" });
     s.serve(signed(ed25519KeyPair().secretKey, 9, 60));
     expect(await applyPolicy(s.api, j.session)).toEqual({ ok: false, error: "not-signed" });
     s.serve(null);
     expect(await applyPolicy(s.api, j.session)).toEqual({ ok: false, error: "older" });
-    expect(j.scheduled.length).toBe(before);
+    expect(j.scheduled.at(-1)).toBe(5 * 60_000);
   });
 
   it("says when the server is not there or its root key is not the pinned one", async () => {

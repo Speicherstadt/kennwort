@@ -33,17 +33,21 @@ export const loadPolicy = async (
 
 const MINUTE = 60_000;
 
-/** The policy in force: the lock time from it, and its version remembered for every device */
+/**
+ * The policy in force: the lock time from a valid policy, its version and lock time remembered for
+ * every device; when the check fails or the server is away, the last valid one stays (P-07)
+ */
 export const applyPolicy = async (api: PolicyDeps, session: Session) => {
   const opened = session.opened();
   if (!opened) return { ok: false as const, error: "unreachable" as const };
   const loaded = await loadPolicy(api, opened);
+  const minutes = loaded.ok ? loaded.value.lockAfterMinutes : opened.state.policyLock;
+  session.setLockAfter(minutes * MINUTE);
   if (!loaded.ok) return loaded;
-  const policy = loaded.value;
-  session.setLockAfter(policy.lockAfterMinutes * MINUTE);
-  if (policy.version > opened.state.policy)
+  const { version } = loaded.value;
+  if (version > opened.state.policy)
     await session.updateState(api, (state) =>
-      policy.version > state.policy ? { ...state, policy: policy.version } : undefined,
+      version > state.policy ? { ...state, policy: version, policyLock: minutes } : undefined,
     );
   return loaded;
 };
