@@ -112,4 +112,15 @@ export const wireContract = (target: () => Promise<Target>) =>
         [404, { error: "not-found" }],
       ]);
     });
+    it("a GET with a body is refused by fetch whatever the token", async () => {
+      const c = (await target()).connect("nobody");
+      const outcome = await c
+        .fetch(`${c.baseUrl}/api/vaults/${vault}/records`, {
+          headers: { authorization: `Bearer ${c.token}` },
+          body: "{}",
+        })
+        .then((r) => ["answered", r.status])
+        .catch((e: Error) => ["rejects", e.name]);
+      expect(outcome).toEqual(["rejects", "TypeError"]);
+    });
   });

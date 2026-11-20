@@ -118,14 +118,14 @@ export const standIn = (sessions: Readonly<Record<string, StandInSession>>) => {
     // Like fetch: an aborted signal rejects at once, methods are upper case, any body type reads
     // as text (review of K-207)
     init.signal?.throwIfAborted();
+    const method = (init.method ?? "GET").toUpperCase();
+    if ((method === "GET" || method === "HEAD") && init.body != null)
+      throw new TypeError("Request with GET/HEAD method cannot have body"); // i18n-ignore: as fetch says it
     const url = new URL(input);
     const token = new Headers(init.headers).get("authorization")?.replace(/^Bearer /, "") ?? "";
     // Own sessions only: "constructor" and the like are keys of every object, not tokens
     const session = Object.hasOwn(sessions, token) ? sessions[token] : undefined;
     if (!session) return json({ error: "unauthenticated" }, 401);
-    const method = (init.method ?? "GET").toUpperCase();
-    if ((method === "GET" || method === "HEAD") && init.body != null)
-      throw new TypeError("Request with GET/HEAD method cannot have body"); // i18n-ignore: as fetch says it
     const body = init.body == null ? "" : await new Response(init.body).text();
     if (`${method} ${url.pathname}` === "POST /api/vaults") return createVault(session, body);
     return inVault(session, method, url.pathname, body, init.signal);
