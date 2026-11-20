@@ -303,5 +303,12 @@
   "kind_totp": "Einmalcode (TOTP)",
   "totp_remaining": "noch {seconds} s",
   "totp_invalid": "Kein gültiger Schlüssel für Einmalcodes",
-  "totp_hint": "Der Schlüssel oder der otpauth-Link von der Einrichtungsseite des Dienstes"
+  "totp_hint": "Der Schlüssel oder der otpauth-Link von der Einrichtungsseite des Dienstes",
+  "qr_scan": "QR-Code scannen",
+  "qr_scan_intro": "Halte den QR-Code von der Einrichtungsseite des Dienstes vor die Kamera, oder wähle einen Screenshot davon.",
+  "qr_camera": "Kamera verwenden",
+  "qr_image": "Bild wählen",
+  "qr_not_found": "In diesem Bild ist kein QR-Code zu finden.",
+  "qr_not_totp": "Dieser QR-Code enthält keinen Schlüssel für Einmalcodes.",
+  "qr_no_camera": "Kennwort darf die Kamera nicht verwenden. Wähle stattdessen einen Screenshot."
 }

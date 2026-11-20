@@ -56,6 +56,7 @@ später).
 | Rolle einer Freigabe | Eine Freigabe trägt ihre Rolle im signierten Format, vorerst nur „lesen“ | Wer einen einzelnen Eintrag bekommt, hat kein Log, in dem eine Schreibberechtigung stünde; „bearbeiten“ kann später kommen, ohne das Format zu ändern |
 | Persönlicher Tresor | Jedes Konto bekommt beim ersten Öffnen einen Tresor „Persönlich“, dessen ID aus dem AK abgeleitet ist | Ein Ort für eigene Zugänge ohne Zutun; dieselbe ID auf allen Geräten verhindert doppelte Tresore |
 | Generator | Passwörter aus Klein- und Großbuchstaben, nach Wahl Ziffern und Sonderzeichen, je mindestens eines; Passphrasen aus der englischen EFF-Wortliste (7776 Wörter, 12,9 Bit je Wort); Stärke in Bit: unter 60 schwach, unter 80 gut, ab 80 stark | Eine gute deutsche Wortliste mit klarer Lizenz fehlt; die EFF-Liste ist geprüft, frei (CC BY 3.0 US) und meidet verwechselbare Wörter. Die Bits zählen, was ein Angreifer schafft, der die Einstellungen kennt; die Grenzen folgen dem, was Offline-Raten gegen einen Server mit Secret Key heute nicht erreicht |
+| QR-Scan für Einmalcodes | `jsqr` in der Web-App, erst beim Scannen geladen; Kamera über `getUserMedia`, sonst ein Bild oder Screenshot | `BarcodeDetector` fehlt am Desktop unter Linux und Windows; jsQR ist reines JavaScript ohne Abhängigkeiten, und das Bild verlässt das Gerät nicht |
 
 ## Stack
 

@@ -1,12 +1,14 @@
 /**
  * One field in the entry dialog (K-306 part 2), by its kind: a secret as a password field (with
- * the generator for passwords and passphrases), long text in a text area; the owner's own fields
+ * the generator for passwords and passphrases), a TOTP key with a QR scan, long text in a text
+ * area; the owner's own fields
  * also with their name and kind, and a way to remove them
  */
 import { parseTotp } from "@kennwort/core";
 import { Icon, IconButton, Input, m, TextArea } from "@kennwort/ui";
-import { Trash2, WandSparkles } from "@kennwort/ui/icons";
-import { Show } from "solid-js";
+import { ScanQrCode, Trash2, WandSparkles } from "@kennwort/ui/icons";
+import { createSignal, Show } from "solid-js";
+import { QrScanDialog } from "../qr/qr-scan-dialog.tsx";
 import { Choice } from "./choice.tsx";
 import type { InputField } from "./entry-input.ts";
 import { CUSTOM_KINDS, type FieldKindChoice, kindLabel } from "./entry-types.ts";
@@ -18,6 +20,27 @@ const totpHint = (value: string) =>
   value.trim() === "" || parseTotp(value).ok ? m.totp_hint() : m.totp_invalid();
 // A TOTP key is as secret as a password; the detail shows its codes, never the key
 const inputType = { secret: "password", totp: "password", url: "url", email: "email" } as const;
+
+/** Fills a TOTP field from the service's setup QR code (K-306 part 4b) */
+const ScanButton = (props: { onValue: (value: string) => void }) => {
+  const [open, setOpen] = createSignal(false);
+  return (
+    <>
+      <IconButton type="button" label={m.qr_scan()} onClick={() => setOpen(true)}>
+        <Icon icon={ScanQrCode} />
+      </IconButton>
+      <Show when={open()}>
+        <QrScanDialog
+          onFound={(link) => {
+            props.onValue(link);
+            setOpen(false);
+          }}
+          onClose={() => setOpen(false)}
+        />
+      </Show>
+    </>
+  );
+};
 
 export const FieldValue = (props: {
   field: InputField;
@@ -48,6 +71,9 @@ export const FieldValue = (props: {
           hint={props.field.kind === "totp" ? totpHint(props.field.value) : undefined}
         />
       </div>
+      <Show when={props.field.kind === "totp"}>
+        <ScanButton onValue={props.onValue} />
+      </Show>
       <Show when={props.field.kind === "secret" && GENERATED.has(props.field.id)}>
         <IconButton
           type="button"
