@@ -4,7 +4,7 @@
  * Another language renders everything anew instead of reloading the page, which would lock it.
  */
 import { getLocale, type Locale, m, setLocale } from "@kennwort/ui";
-import { createMemo, createSignal, Match, onCleanup, Show, Switch } from "solid-js";
+import { createMemo, createSignal, Match, onSettled, Show, Switch, untrack } from "solid-js";
 import { AddDevicePage } from "./account/add-device-page.tsx";
 import { InvitePage } from "./account/invite-page.tsx";
 import { type PairDeps, PairPage } from "./account/pair-page.tsx";
@@ -52,7 +52,9 @@ const OpenedFrame = (props: {
     void entries.load(loaded.vaults, loaded.trust);
     void sharing.load(loaded);
   });
-  void store.reload();
+  // Loaded once the frame is on screen: an effect's compute would load anew on every change of the
+  // account state, and the frame lives only as long as the account is open
+  onSettled(() => void store.reload());
   /** A new entry needs a vault this account may write in, loaded */
   const canWrite = () => {
     const shown = store.shown();
@@ -142,21 +144,28 @@ export const App = (props: { nav: Navigation; session: Session; api: AppApi; has
     setShownLocale(next);
   };
   const route = () => props.nav.route();
+  // Deliberately read once: the page the app was opened on decides whether the address carries a
+  // link's fragment, and the fragment is dropped right away, so a later navigation must not read it
+  // again. The path is a plain signal, never async.
+  const startPage = untrack(() => route().page);
   // The kit's link carries the Secret Key in its fragment: read it once, then drop it from the
   // address and the history entry at once, whether or not unlocking follows (P-12)
   const deviceLink =
-    route().page === "unlock" ? readDeviceLink(props.hash ?? location.hash) : undefined;
+    startPage === "unlock" ? readDeviceLink(props.hash ?? location.hash) : undefined;
   if (deviceLink) props.nav.dropFragment();
   // The pairing link carries the pairing secret: read once, dropped at once too (P-04)
-  const pairingText = route().page === "link" ? (props.hash ?? location.hash) : "";
+  const pairingText = startPage === "link" ? (props.hash ?? location.hash) : "";
   if (pairingText) props.nav.dropFragment();
-  // Every key press or click pushes the automatic lock back (P-03)
-  const touch = () => props.session.touch();
-  document.addEventListener("pointerdown", touch);
-  document.addEventListener("keydown", touch);
-  onCleanup(() => {
-    document.removeEventListener("pointerdown", touch);
-    document.removeEventListener("keydown", touch);
+  // Every key press or click pushes the automatic lock back (P-03); added once the app is on
+  // screen and removed with it
+  onSettled(() => {
+    const touch = () => props.session.touch();
+    document.addEventListener("pointerdown", touch);
+    document.addEventListener("keydown", touch);
+    return () => {
+      document.removeEventListener("pointerdown", touch);
+      document.removeEventListener("keydown", touch);
+    };
   });
   const invite = () => {
     const r = route();

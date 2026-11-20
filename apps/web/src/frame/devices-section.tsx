@@ -4,7 +4,7 @@
  */
 import type { DeviceEntry } from "@kennwort/core";
 import { Button, m } from "@kennwort/ui";
-import { createSignal, For, Show } from "solid-js";
+import { createEffect, createSignal, For, Show } from "solid-js";
 import type { DevicesApi } from "../session/devices-api.ts";
 
 type Load = { state: "loading" } | { state: "failed" } | { state: "ready"; devices: DeviceEntry[] };
@@ -45,11 +45,15 @@ export const DevicesSection = (props: {
   const [load, setLoad] = createSignal<Load>({ state: "loading" });
   const [busy, setBusy] = createSignal(false);
   const [failed, setFailed] = createSignal(false);
-  const refresh = async () => {
-    const devices = await props.api.devices(props.token);
+  const refresh = async (token: string) => {
+    const devices = await props.api.devices(token);
     setLoad(devices ? { state: "ready", devices } : { state: "failed" });
   };
-  void refresh();
+  // The list belongs to the token it was loaded with: another sign-in loads it anew
+  createEffect(
+    () => props.token,
+    (token) => void refresh(token),
+  );
   const remove = async (device: DeviceEntry) => {
     setBusy(true);
     setFailed(false);
@@ -57,7 +61,7 @@ export const DevicesSection = (props: {
     setBusy(false);
     if (!removed) return setFailed(true);
     if (device.current) return props.onSignedOut();
-    await refresh();
+    await refresh(props.token);
   };
   const ready = () => {
     const value = load();

@@ -6,7 +6,7 @@
 import { totpCode } from "@kennwort/core";
 import { Icon, IconButton, m, type Toasts } from "@kennwort/ui";
 import { Copy } from "@kennwort/ui/icons";
-import { createSignal, onCleanup, Show } from "solid-js";
+import { createSignal, onSettled, Show } from "solid-js";
 import { copyText } from "./secret-field.tsx";
 
 /** "287082" as "287 082", "94287082" as "9428 7082" */
@@ -30,8 +30,10 @@ export const TotpField = (props: {
     setTime(now());
     timer = setTimeout(tick, 1000 - (now() % 1000));
   };
-  timer = setTimeout(tick, 1000 - (now() % 1000));
-  onCleanup(() => clearTimeout(timer));
+  onSettled(() => {
+    timer = setTimeout(tick, 1000 - (now() % 1000));
+    return () => clearTimeout(timer);
+  });
   const current = () => totpCode(props.value, time());
   return (
     <div class="flex items-center gap-2 px-3.5 py-2.5">

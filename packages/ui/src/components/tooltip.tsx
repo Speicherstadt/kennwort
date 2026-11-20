@@ -3,7 +3,7 @@
  * blur; the trigger points to it with aria-describedby. A manual popover, so it never steals focus.
  */
 import type { JSX } from "@solidjs/web";
-import { createUniqueId, onCleanup } from "solid-js";
+import { createUniqueId, onSettled } from "solid-js";
 import { anchoredBelow, anchorName } from "./anchor.ts";
 
 export type TriggerAttributes = {
@@ -45,7 +45,8 @@ export const Tooltip = (props: TooltipProps) => {
   const leave = () => {
     leaving = setTimeout(hide, 150);
   };
-  onCleanup(hide);
+  // Leaving the page while shown drops the Esc listener and the timer with it
+  onSettled(() => hide);
   return (
     <>
       {props.children({
@@ -63,9 +64,9 @@ export const Tooltip = (props: TooltipProps) => {
         id={id}
         ref={(el) => {
           tip = el;
-          el.addEventListener("pointerenter", show);
-          el.addEventListener("pointerleave", leave);
         }}
+        onPointerEnter={show}
+        onPointerLeave={leave}
         popover="manual"
         role="tooltip"
         class="rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground shadow-md"

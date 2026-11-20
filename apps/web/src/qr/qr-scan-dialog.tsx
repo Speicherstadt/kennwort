@@ -5,7 +5,7 @@
 import { parseTotp } from "@kennwort/core";
 import { Button, buttonClass, Dialog, Icon, m } from "@kennwort/ui";
 import { Camera, ImageUp } from "@kennwort/ui/icons";
-import { createSignal, onCleanup, Show } from "solid-js";
+import { createSignal, onSettled, Show } from "solid-js";
 import { readQr } from "./qr.ts";
 import { hasCamera, openCamera, pixelsOfImage, pixelsOfVideo } from "./qr-source.ts";
 
@@ -19,6 +19,8 @@ const SCAN_EVERY_MS = 250;
 export const QrScanDialog = (props: { onFound: (link: string) => void; onClose: () => void }) => {
   const [problem, setProblem] = createSignal<Problem>();
   const [stream, setStream] = createSignal<MediaStream>();
+  // What stop() turns off: the signal gives the old value until the next flush (Solid 2 batching)
+  let media: MediaStream | undefined;
   let video: HTMLVideoElement | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
   // Once the dialog is gone, nothing that was still on its way may act: a camera that opens late
@@ -29,7 +31,7 @@ export const QrScanDialog = (props: { onFound: (link: string) => void; onClose: 
   };
   const stop = () => {
     clearTimeout(timer);
-    stopTracks(stream());
+    stopTracks(media);
   };
   /** True when the text is a TOTP link and was handed on; anything else says why not */
   const take = (text: string | undefined) => {
@@ -63,6 +65,7 @@ export const QrScanDialog = (props: { onFound: (link: string) => void; onClose: 
     if (disposed) return stopTracks(opened);
     if (!opened) return setProblem("no-camera");
     setProblem(undefined);
+    media = opened;
     setStream(opened);
     if (video) {
       video.srcObject = opened;
@@ -83,11 +86,13 @@ export const QrScanDialog = (props: { onFound: (link: string) => void; onClose: 
     if (image) void fromImage(image);
   };
   // On the whole page while the dialog is open: right after it opens, the focus is on its header
-  document.addEventListener("paste", onPaste);
-  onCleanup(() => {
-    disposed = true;
-    stop();
-    document.removeEventListener("paste", onPaste);
+  onSettled(() => {
+    document.addEventListener("paste", onPaste);
+    return () => {
+      disposed = true;
+      stop();
+      document.removeEventListener("paste", onPaste);
+    };
   });
   return (
     <Dialog open onClose={props.onClose} title={m.qr_scan()}>

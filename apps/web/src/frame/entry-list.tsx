@@ -54,6 +54,21 @@ export const EntryList = (props: {
   const [search, setSearch] = createSignal("");
   const all = () => props.entries ?? demoEntries;
   const shown = createMemo(() => shownEntries(all(), props.filter, search()));
+  const items = createMemo(() =>
+    shown().map((entry) => ({
+      id: entry.id,
+      label: entry.title,
+      description: entry.subtitle,
+      leading: () => (
+        <span class="grid size-10 shrink-0 place-items-center rounded-lg border border-border md:size-8">
+          <Icon icon={entryIcon[entry.type]} />
+        </span>
+      ),
+      trailing: toChange(entry)
+        ? () => <Badge tone="warning">{m.badge_change()}</Badge>
+        : undefined,
+    })),
+  );
   return (
     <section
       aria-labelledby="list-title"
@@ -112,19 +127,7 @@ export const EntryList = (props: {
             onSelect={(id) =>
               props.nav.go(routePath({ page: "entries", filter: props.filter, entry: id }))
             }
-            items={shown().map((entry) => ({
-              id: entry.id,
-              label: entry.title,
-              description: entry.subtitle,
-              leading: (
-                <span class="grid size-10 shrink-0 place-items-center rounded-lg border border-border md:size-8">
-                  <Icon icon={entryIcon[entry.type]} />
-                </span>
-              ),
-              trailing: toChange(entry) ? (
-                <Badge tone="warning">{m.badge_change()}</Badge>
-              ) : undefined,
-            }))}
+            items={items()}
           />
         </Show>
       </div>

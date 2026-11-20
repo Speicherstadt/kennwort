@@ -5,7 +5,7 @@
  * pairing; after the confirmation it stops polling, as the server then forgets the pairing.
  */
 import { Button, m } from "@kennwort/ui";
-import { createSignal, onCleanup, Show } from "solid-js";
+import { createSignal, onSettled, Show } from "solid-js";
 import type { Navigation } from "../navigation.ts";
 import { pairingLink } from "../pairing/link.ts";
 import {
@@ -37,6 +37,8 @@ export const PairPage = (props: {
   const [agreed, setAgreed] = createSignal<string>();
   const [error, setError] = createSignal<string>();
   let finished = false;
+  // What the cleanup cancels: the signal gives the old value until the next flush (Solid 2 batching)
+  let announced: NewDevicePairing | undefined;
 
   // The agreed code is passed in from the click: a signal read right after its write still sees
   // the old value until the next flush
@@ -60,14 +62,18 @@ export const PairPage = (props: {
     setState(now);
     await finish(now);
   };
-  void announce(props.api).then((made) =>
-    made ? setPairing(made) : setError(m.error_unexpected()),
-  );
-  const timer = setInterval(check, props.pollMs ?? POLL_MS);
-  onCleanup(() => {
-    clearInterval(timer);
-    const current = pairing();
-    if (current && !finished) void props.api.cancelPairing(current.id, current.pollToken);
+  // Announced and polled once the page is on screen; leaving it cancels a pairing not finished
+  onSettled(() => {
+    void announce(props.api).then((made) => {
+      announced = made;
+      if (made) setPairing(made);
+      else setError(m.error_unexpected());
+    });
+    const timer = setInterval(check, props.pollMs ?? POLL_MS);
+    return () => {
+      clearInterval(timer);
+      if (announced && !finished) void props.api.cancelPairing(announced.id, announced.pollToken);
+    };
   });
   const code = () => {
     const now = state();

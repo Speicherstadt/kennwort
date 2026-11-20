@@ -8,12 +8,16 @@ import { ariaBoolean } from "../lib/aria.ts";
 import { cn } from "../lib/cn.ts";
 import { nextIndex } from "../lib/keys.ts";
 
+/**
+ * What an option shows before and after its text is rendered by a function: `items` is read again
+ * by the handlers, and elements made there would have no owner and be made anew on every read
+ */
 export type ListItem = {
   id: string;
   label: string;
   description?: string;
-  leading?: JSX.Element;
-  trailing?: JSX.Element;
+  leading?: () => JSX.Element;
+  trailing?: (() => JSX.Element) | undefined;
 };
 export type ListProps = {
   label: string;
@@ -67,7 +71,7 @@ export const List = (props: ListProps) => {
               item.id === props.selected ? "bg-accent" : "hover:bg-accent/60",
             )}
           >
-            {item.leading}
+            {item.leading?.()}
             <div class="grid min-w-0 flex-1">
               <span class="truncate text-[13px] font-medium">{item.label}</span>
               {item.description && (
@@ -82,7 +86,7 @@ export const List = (props: ListProps) => {
                 </span>
               )}
             </div>
-            {item.trailing}
+            {item.trailing?.()}
           </div>
         )}
       </For>

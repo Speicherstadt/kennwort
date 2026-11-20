@@ -18,13 +18,15 @@ export type TabsProps = {
 
 export const Tabs = (props: TabsProps) => {
   const base = createUniqueId();
-  const [current, setCurrent] = createSignal(props.initial ?? props.tabs[0]?.id ?? "");
-  const buttons: HTMLButtonElement[] = [];
+  // Seeded from the props and set by the user; a new initial tab from the parent starts over
+  const [current, setCurrent] = createSignal(() => props.initial ?? props.tabs[0]?.id ?? "");
+  // By the tab's ID, which a ref can read without tracking; the row's index is an accessor
+  const buttons = new Map<string, HTMLButtonElement>();
   const choose = (index: number) => {
     const tab = props.tabs[index];
     if (!tab) return;
     setCurrent(tab.id);
-    buttons[index]?.focus();
+    buttons.get(tab.id)?.focus();
     props.onChange?.(tab.id);
   };
   const onKeyDown = (event: KeyboardEvent, index: number) => {
@@ -44,7 +46,7 @@ export const Tabs = (props: TabsProps) => {
           {(tab, index) => (
             <button
               ref={(el) => {
-                buttons[index()] = el;
+                buttons.set(tab.id, el);
               }}
               type="button"
               role="tab"

@@ -7,7 +7,7 @@ import type { MemberView } from "@kennwort/core";
 import { encodeBytes } from "@kennwort/core";
 import { Badge, Button, Icon, Input, m } from "@kennwort/ui";
 import { Copy, ShieldCheck } from "@kennwort/ui/icons";
-import { createSignal, For, Match, Show, Switch } from "solid-js";
+import { createSignal, For, Match, onSettled, Show, Switch } from "solid-js";
 import { PolicySection } from "../policy/policy-section.tsx";
 import type { Session } from "../session/session.ts";
 import {
@@ -208,18 +208,19 @@ export const MembersPage = (props: { session: Session; api: MembersDeps; origin:
   const [busy, setBusy] = createSignal(false);
   const [problem, setProblem] = createSignal<string>();
   const opened = () => props.session.opened();
+  /** Loads the members and hands them back: `load()` gives the old value until the next flush */
   const refresh = async () => {
     const current = opened();
-    if (!current) return;
+    if (!current) return undefined;
     const loaded = await loadMembers(props.api, current);
     setLoad(
       loaded.ok ? { state: "ready", ...loaded.value } : { state: "failed", error: loaded.error },
     );
+    return loaded.ok ? loaded.value : undefined;
   };
   const loadAndAdopt = async () => {
-    await refresh();
+    const list = await refresh();
     const current = opened();
-    const list = ready();
     if (!current || !list || !needsRoot(current, list.me)) return;
     const adopted = await adoptRoot(props.api, props.session, list.me);
     if (adopted.ok || adopted.error === "none") return;
@@ -227,7 +228,8 @@ export const MembersPage = (props: { session: Session; api: MembersDeps; origin:
       adopted.error === "failed" ? m.members_root_adopt_failed() : m.members_root_grant_invalid(),
     );
   };
-  void loadAndAdopt();
+  // Once on screen; the page lives only while the account is open
+  onSettled(() => void loadAndAdopt());
   const ready = () => {
     const value = load();
     return value.state === "ready" ? value : undefined;

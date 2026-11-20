@@ -130,10 +130,11 @@ const PhraseOptionsForm = (props: OptionsProps) => {
 };
 
 export const GeneratorPanel = (props: { toasts: Toasts }) => {
-  const [settings, setSettings] = createSignal(readSettings(storage()));
+  const remembered = readSettings(storage());
+  const [settings, setSettings] = createSignal(remembered);
   // A plain mirror: Solid 2 hands back the old value until the next flush, and two quick changes
   // must build on each other
-  let latest = settings();
+  let latest = remembered;
   const [value, setValue] = createSignal("");
   /** Only the newest one shows: a passphrase may still wait for the word list */
   let made = 0;
@@ -150,7 +151,7 @@ export const GeneratorPanel = (props: { toasts: Toasts }) => {
   };
   const kindLabel = () =>
     settings().kind === "password" ? m.generator_password() : m.generator_passphrase();
-  void show(settings());
+  void show(remembered);
   return (
     <div class="grid max-w-xl gap-4">
       <div class="flex items-center gap-2 rounded-xl border border-border px-3.5 py-3">
@@ -176,7 +177,7 @@ export const GeneratorPanel = (props: { toasts: Toasts }) => {
       </p>
       <Tabs
         label={m.generator_kind()}
-        initial={settings().kind}
+        initial={remembered.kind}
         onChange={(kind) => change((now) => ({ ...now, kind: kind as GeneratorKind }))}
         tabs={[
           {

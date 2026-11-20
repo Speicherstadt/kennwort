@@ -2,7 +2,7 @@
 
 import type { JSX } from "@solidjs/web";
 import { Search } from "lucide";
-import { createUniqueId, omit, onCleanup, Show } from "solid-js";
+import { createUniqueId, omit, onSettled, Show } from "solid-js";
 import { m } from "../paraglide/messages.js";
 import { Icon } from "./icon.tsx";
 
@@ -69,8 +69,11 @@ export const SearchInput = (props: Omit<InputProps, "hint" | "type"> & { shortcu
     event.preventDefault();
     input?.focus();
   };
-  document.addEventListener("keydown", onKey);
-  onCleanup(() => document.removeEventListener("keydown", onKey));
+  // On the whole page while the field is on screen, and gone with it
+  onSettled(() => {
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  });
   return (
     <div class="relative">
       <label for={id} class="sr-only">
