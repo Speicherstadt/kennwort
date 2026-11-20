@@ -4,8 +4,8 @@
     "outDir": "../../node_modules/.tsbuild/extension",
     "jsx": "preserve",
     "jsxImportSource": "@solidjs/web",
-    "types": ["vite/client"]
+    "types": ["vite/client", "bun"]
   },
-  "include": ["src", "src/**/*.json", "vite.config.ts"],
+  "include": ["src", "src/**/*.json", "build", "vite.config.ts"],
   "references": [{ "path": "../../packages/ui" }]
 }

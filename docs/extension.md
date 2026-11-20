@@ -36,8 +36,9 @@ Entsperrte Schlüssel liegen nur in `chrome.storage.session`: im Arbeitsspeicher
 sobald der Browser schließt, und für Skripte auf Websites nicht erreichbar. Die Extension legt
 nichts in einem Speicher ab, der auf die Festplatte geht – weder `chrome.storage.local` noch
 `chrome.storage.sync`, `localStorage` oder IndexedDB. Ein Test schlägt fehl, sobald ihr Code einen
-davon benutzt. Hell oder dunkel folgt darum der Einstellung des Systems; eine eigene Wahl merkt
-sich die Extension nicht.
+davon benutzt, und jeder Build prüft das fertige Bundle samt der Pakete, die es einbindet. Sprache
+sowie Hell und Dunkel folgen darum Browser und System; eine eigene Wahl merkt sich die Extension
+nicht.
 
 ## Entpackt laden
 
@@ -59,5 +60,6 @@ Nach einer Änderung baust du neu und lädst die Extension im Browser neu.
 
 Name, Beschreibung und der Text des Knopfs in der Symbolleiste stehen in
 `apps/extension/public/_locales`, weil Browser und Stores sie selbst lesen. Alle anderen Texte
-kommen wie in der Web-App aus `messages/de.json` und `messages/en.json`; die Sprache folgt dem
-Browser.
+kommen wie in der Web-App aus `messages/de.json` und `messages/en.json`, übersetzt von einer
+eigenen Paraglide-Laufzeit ohne `localStorage` (`apps/extension/paraglide`, erzeugt von
+`bun run i18n`, das `bun install` schon aufruft); die Sprache folgt dem Browser.
