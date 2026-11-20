@@ -264,6 +264,13 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   ein Test scheitert, sobald der Code der Extension `chrome.storage.local`, `chrome.storage.sync`,
   `localStorage` oder IndexedDB benutzt.
 - [ ] **K-402 Popup** – entsperren, Treffer für die Seite, Suche, Favoriten, Generator.
+  Fertig, wenn: Playwright mit der geladenen Extension in einem echten Chromium gegen den e2e-Server
+  ein Konto verbindet und entsperrt, für den Host einer Testseite den passenden Eintrag zeigt und
+  für einen anderen Host keinen (exakter Host, ohne Subdomains), Benutzername und Passwort kopiert,
+  sucht (nie in geheimen Werten), Favoriten filtert, ein Passwort erzeugt und sperrt – auf Deutsch
+  und Englisch, und axe nichts findet; entsperrte Schlüssel und das Sitzungs-Token nur in
+  `chrome.storage.session` liegen und beim Sperren und nach Ablauf der Sperrzeit daraus verschwinden
+  (Test); die Extension nichts ausfüllt.
 - [ ] **K-403 Inline-Menü und Ausfüllen** – Extension-iFrame im geschlossenen Shadow DOM, Ausfüllen
   nur nach Klick oder Enter, exakter Host per `tldts`, nie in fremden Frames.
   Fertig, wenn: Playwright mit geladener Extension Phishing-Domain, fremdes iFrame und überdecktes
