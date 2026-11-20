@@ -298,5 +298,10 @@
   "entry_editor_field_kind": "Field kind",
   "entry_editor_remove_field": "Remove {name}",
   "entry_editor_generate_for": "Generate {field}",
-  "entry_editor_remove_unnamed": "Remove field"
+  "entry_editor_remove_unnamed": "Remove field",
+  "field_totp": "One-time code",
+  "kind_totp": "One-time code (TOTP)",
+  "totp_remaining": "{seconds} s left",
+  "totp_invalid": "Not a valid key for one-time codes",
+  "totp_hint": "The key or the otpauth link from the service's setup page"
 }

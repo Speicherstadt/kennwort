@@ -18,7 +18,7 @@ Jede Art bringt ihre Felder mit:
 
 | Art | Felder |
 | --- | --- |
-| Login | Benutzername, Passwort, Website |
+| Login | Benutzername, Passwort, Website, Einmalcode |
 | Notiz | Notiz (mehrzeilig) |
 | WLAN | Netzwerkname, Passwort, Sicherheit |
 | Karte | Karteninhaber, Kartennummer, Gültig bis, Prüfnummer, PIN |
@@ -31,9 +31,26 @@ bis du sie aufdeckst. In der Liste steht unter dem Titel das erste ausgefüllte 
 geheim ist, etwa der Benutzername oder der Netzwerkname.
 
 **Eigene Felder:** Mit **Feld hinzufügen** bekommt ein Eintrag weitere Felder mit eigenem Namen
-und einer Art: Text, Geheim, Adresse (URL), E-Mail oder mehrzeiliger Text. Ein eigenes Feld
+und einer Art: Text, Geheim, Adresse (URL), E-Mail, mehrzeiliger Text oder Einmalcode (TOTP). Ein eigenes Feld
 entfernst du mit dem Papierkorb daneben; ein neues Feld, dem du keinen Namen gibst, speichert
 Kennwort nicht.
+
+## Einmalcodes (TOTP)
+
+Viele Dienste verlangen beim Anmelden einen zweiten Faktor: einen sechsstelligen Code, der alle
+30 Sekunden wechselt. Kennwort erzeugt diese Codes selbst. Beim Einrichten zeigt der Dienst einen
+QR-Code und meist auch einen Schlüssel zum Abtippen; den Schlüssel oder den `otpauth://`-Link
+trägst du im Feld **Einmalcode** des Logins ein. Passt er nicht, sagt Kennwort das sofort.
+
+Im Eintrag steht dann statt des Schlüssels der aktuelle Code und wie viele Sekunden er noch gilt.
+**Einmalcode kopieren** legt den Code in die Zwischenablage, nie den Schlüssel. Der Schlüssel ist
+ein Feld des Eintrags wie das Passwort: auf deinem Gerät verschlüsselt, für den Server unlesbar.
+Die Codes rechnet dein Gerät aus (RFC 6238, mit SHA-1, SHA-256 oder SHA-512, sechs bis acht
+Stellen); es braucht dafür nur eine richtig gehende Uhr.
+
+Wer einen Eintrag lesen darf, sieht auch seine Codes. Liegen Passwort und Einmalcode im selben
+Eintrag, schützt der zweite Faktor nicht mehr vor dem, der Kennwort öffnet, wohl aber vor jedem,
+der nur das Passwort kennt.
 
 ## Einen Eintrag anlegen
 

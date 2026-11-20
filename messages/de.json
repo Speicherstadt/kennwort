@@ -298,5 +298,10 @@
   "entry_editor_field_kind": "Art des Felds",
   "entry_editor_remove_field": "{name} entfernen",
   "entry_editor_generate_for": "{field} erzeugen",
-  "entry_editor_remove_unnamed": "Feld entfernen"
+  "entry_editor_remove_unnamed": "Feld entfernen",
+  "field_totp": "Einmalcode",
+  "kind_totp": "Einmalcode (TOTP)",
+  "totp_remaining": "noch {seconds} s",
+  "totp_invalid": "Kein gültiger Schlüssel für Einmalcodes",
+  "totp_hint": "Der Schlüssel oder der otpauth-Link von der Einrichtungsseite des Dienstes"
 }

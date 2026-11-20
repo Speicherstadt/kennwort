@@ -10,6 +10,7 @@ import { type ListFilter, routePath } from "../routes.ts";
 import { entryIcon } from "./entry-icon.ts";
 import { Link } from "./link.tsx";
 import { Field } from "./secret-field.tsx";
+import { TotpField } from "./totp-field.tsx";
 
 const date = (time: number) =>
   new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }).format(time);
@@ -59,16 +60,20 @@ const Detail = (props: {
       </div>
       <Card title={m.detail_fields()}>
         <For each={props.entry.fields.filter((f) => f.value !== "")}>
-          {(f) => (
-            <Field
-              label={f.label}
-              value={f.value}
-              secret={f.kind === "secret" || f.kind === "totp"}
-              mono={f.kind === "url" || f.kind === "totp"}
-              multiline={f.kind === "note"}
-              toasts={props.toasts}
-            />
-          )}
+          {(f) =>
+            f.kind === "totp" ? (
+              <TotpField label={f.label} value={f.value} toasts={props.toasts} />
+            ) : (
+              <Field
+                label={f.label}
+                value={f.value}
+                secret={f.kind === "secret"}
+                mono={f.kind === "url"}
+                multiline={f.kind === "note"}
+                toasts={props.toasts}
+              />
+            )
+          }
         </For>
       </Card>
     </div>
