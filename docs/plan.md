@@ -218,10 +218,10 @@ Prüfungen läuft in CI.
 | Art | Was geprüft wird | Werkzeug |
 | --- | --- | --- |
 | Unit-Tests | reine Logik neben dem Code | Vitest |
-| E2E | was ein Benutzer tut, Desktop und `@phone` | Playwright |
+| E2E | was ein Benutzer tut, Desktop und `@phone`; in CI in drei parallelen Teilen | Playwright |
 | Krypto-Testvektoren | feste Ein- und Ausgaben je Baustein, Abgleich mit libsodium | Vitest, libsodium nur dev |
 | Property-Tests | z. B. Entschlüsseln ergibt immer das Original, falsche AAD schlägt immer fehl | fast-check |
-| Mutation-Tests | erkennen die Tests eine absichtliche Abweichung in `packages/crypto`? | Stryker |
+| Mutation-Tests | erkennen die Tests eine absichtliche Abweichung in `packages/crypto` und `packages/core`? In CI in drei parallelen Teilen; in einem Pull Request läuft ein Teil nur, wenn sich sein Paket, `packages/crypto` darunter oder die Abhängigkeiten geändert haben, auf `main` immer | Stryker |
 | Bösartiger Server | manipulierter Testserver mit den Angriffen der ETH-Studie; der Client erkennt jeden | Vitest, Playwright |
 | Extension im echten Browser | Inline-Menü und Ausfüllen auf Testseiten, auch Phishing-Domain, fremdes iFrame, überdecktes Menü | Playwright mit geladener Extension, `web-ext` für Firefox |
 | Kompatibilität der Clients | was Web-App, Extension, App und CLI verschlüsseln, lesen alle anderen | gemeinsame Testvektoren |
