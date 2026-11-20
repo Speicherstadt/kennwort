@@ -92,7 +92,7 @@ test.describe("an account", { tag: "@phone" }, () => {
     expect(new URL(other.url()).pathname).toBe("/entries");
   });
 
-  test("a forgotten passphrase is replaced with the Recovery Key, and the old key is spent", async ({
+  test("a forgotten passphrase is replaced with the Recovery Key, and the old key no longer signs in", async ({
     page,
     browser,
   }) => {
