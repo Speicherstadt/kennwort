@@ -7,5 +7,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795131421960,
     "breakpoints": true,
     "sql": "CREATE TABLE `instance` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`created_at` integer NOT NULL\n);\n"
+  },
+  {
+    "tag": "0001_tenants",
+    "when": 1795132207949,
+    "breakpoints": true,
+    "sql": "CREATE TABLE `accounts` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`company_id` text NOT NULL,\n\t`created_at` integer NOT NULL,\n\tFOREIGN KEY (`company_id`) REFERENCES `companies`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE INDEX `accounts_company` ON `accounts` (`company_id`);--> statement-breakpoint\nCREATE TABLE `companies` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`created_at` integer NOT NULL\n);\n"
   }
 ];
