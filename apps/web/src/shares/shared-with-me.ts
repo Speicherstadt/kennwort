@@ -5,6 +5,9 @@
  * seen of each shared entry goes into the account state, so a server that later serves an older
  * one is refused (E-13).
  */
+
+import type { ShareApi } from "@kennwort/client/session/shares-api.ts";
+import type { StateDeps } from "@kennwort/client/session/state-sync.ts";
 import {
   type AccountState,
   certificateFingerprint,
@@ -18,8 +21,6 @@ import {
 } from "@kennwort/core";
 import { createSignal } from "solid-js";
 import type { Opened, Session } from "../session/session.ts";
-import type { ShareApi } from "../session/shares-api.ts";
-import type { StateDeps } from "../session/state-sync.ts";
 import { personName } from "./shares.ts";
 
 export type SharedEntry = {

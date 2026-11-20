@@ -2,12 +2,13 @@
  * One entry: header with title, vault, last change, star and buttons, the tags, why it is
  * „Zum Ändern“, the field card, the earlier passwords, access and history (DESIGN.md, Aufbau)
  */
+
+import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
+import { typeLabel } from "@kennwort/client/entries/entry-types.ts";
 import { Button, cn, getLocale, Icon, m, type Toasts } from "@kennwort/ui";
 import { ArrowLeft, Pencil, Share2 } from "@kennwort/ui/icons";
 import { For, Show } from "solid-js";
 import { entries as demoEntries, vaultName as demoVaultName } from "../demo.ts";
-import type { ShownEntry } from "../entries/entries.ts";
-import { typeLabel } from "../entries/entry-types.ts";
 import type { Navigation } from "../navigation.ts";
 import { type ListFilter, routePath } from "../routes.ts";
 import {

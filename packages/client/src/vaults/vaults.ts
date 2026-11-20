@@ -26,7 +26,7 @@ import {
 } from "@kennwort/core";
 import { kdf } from "@kennwort/crypto";
 import type { MembersApi } from "../session/members-api.ts";
-import type { Opened, Session } from "../session/session.ts";
+import type { OpenAccount, Opened } from "../session/open-account.ts";
 import type { StateDeps } from "../session/state-sync.ts";
 import type { Appended, ListedVault, VaultApi } from "../session/vaults-api.ts";
 
@@ -120,7 +120,7 @@ const rememberLogs = (vaults: Vault[]) => (state: AccountState) => {
 
 export const loadVaults = async (
   api: VaultDeps,
-  session: Session,
+  session: OpenAccount,
 ): Promise<{ ok: true; value: Loaded } | { ok: false; error: "unreachable" | "untrusted" }> => {
   const opened = session.opened();
   if (!opened) return { ok: false, error: "unreachable" };
@@ -158,7 +158,7 @@ const appendedError = (appended: Exclude<Appended, "ok">): CreateError =>
  */
 export const newVault = async (
   api: VaultDeps,
-  session: Session,
+  session: OpenAccount,
   name: string,
   personal = false,
 ): Promise<{ ok: true; value: string } | { ok: false; error: CreateError }> => {

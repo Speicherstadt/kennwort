@@ -2,11 +2,12 @@
  * The list of entries: title of the list, search ("/"), on the phone the filter chips; choosing an
  * entry opens it in the URL, so the phone shows it on its own screen (DESIGN.md, Aufbau)
  */
+
+import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { Badge, Button, cn, Icon, List, m, SearchInput } from "@kennwort/ui";
 import { Plus } from "@kennwort/ui/icons";
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { entries as demoEntries, vaultName } from "../demo.ts";
-import type { ShownEntry } from "../entries/entries.ts";
 import { toChange } from "../entries/to-change.ts";
 import { shownEntries, toChangeCount } from "../filter.ts";
 import type { Navigation } from "../navigation.ts";

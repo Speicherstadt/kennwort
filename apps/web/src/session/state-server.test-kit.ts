@@ -1,7 +1,7 @@
 /** A server's account state in memory for the tests: the next counter only, else stale */
+import type { StateWrite } from "@kennwort/client/session/members-api.ts";
+import type { StateDeps } from "@kennwort/client/session/state-sync.ts";
 import { type Stored, sealState } from "@kennwort/core";
-import type { StateWrite } from "./members-api.ts";
-import type { StateDeps } from "./state-sync.ts";
 
 export const stateServer = (upload: Stored) => {
   let stored: Stored = { ...upload };

@@ -2,14 +2,15 @@
  * What the members dialog of a vault keeps while it is open (K-305): the open requests, the
  * company's groups and the vault's links, reloaded after every change, and whether a change runs
  */
+
+import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
+import type { Vault, VaultDeps } from "@kennwort/client/vaults/vaults.ts";
 import type { MemberView } from "@kennwort/core";
 import { createSignal, onSettled } from "solid-js";
 import { type Group, type Link, loadGroups, loadLinks } from "../groups/groups.ts";
-import type { GroupApi } from "../session/groups-api.ts";
 import type { Session } from "../session/session.ts";
 import { type ChangeError, loadRequests, type Request } from "./vault-members.ts";
 import type { VaultStore } from "./vault-store.ts";
-import type { Vault, VaultDeps } from "./vaults.ts";
 
 export type DialogApi = VaultDeps & GroupApi;
 type Outcome = { ok: true } | { ok: false; error: ChangeError };

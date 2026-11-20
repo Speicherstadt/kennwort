@@ -1,8 +1,8 @@
+import { loadVaults, newVault } from "@kennwort/client/vaults/vaults.ts";
 import { openState } from "@kennwort/core";
 import { ed25519KeyPair } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
 import { jonasWithVaults } from "./vaults.test-kit.ts";
-import { loadVaults, newVault } from "./vaults.ts";
 
 // K-305 part 2: Jonas creates the vault "Büro" and his client checks what the server hands back
 describe("newVault and loadVaults", () => {

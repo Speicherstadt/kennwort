@@ -1,6 +1,11 @@
 // Sharing for the web tests (K-305 part 6b): Jonas keeps the Sparkasse login in Büro; Anna and Max
 // work at Weber Haustechnik but are no members of Büro. A share server in memory stores what it is
 // given, as the real one does, and can be told to serve an older record, as a server that means harm
+
+import { createEntryStore, type ServerFor } from "@kennwort/client/entries/entry-store.ts";
+import type { ShareApi } from "@kennwort/client/session/shares-api.ts";
+import type { StateDeps } from "@kennwort/client/session/state-sync.ts";
+import { loadVaults, newVault } from "@kennwort/client/vaults/vaults.ts";
 import {
   type AccountState,
   type EntryRecord,
@@ -11,13 +16,9 @@ import {
   type SyncServer,
 } from "@kennwort/core";
 import { loginContent } from "../entries/entries.test-kit.ts";
-import { createEntryStore, type ServerFor } from "../entries/entry-store.ts";
 import { annaRow, type jonasCompany, ownerRow } from "../members/members.test-kit.ts";
 import type { Session } from "../session/session.ts";
-import type { ShareApi } from "../session/shares-api.ts";
-import type { StateDeps } from "../session/state-sync.ts";
 import { certifiedRow, jonasWithVaults } from "../vaults/vaults.test-kit.ts";
-import { loadVaults, newVault } from "../vaults/vaults.ts";
 import data from "./shares.test-data.json";
 
 type Company = Awaited<ReturnType<typeof jonasCompany>>;

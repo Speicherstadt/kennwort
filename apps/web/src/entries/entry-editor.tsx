@@ -3,6 +3,9 @@
  * (only vaults this account may edit in) and the type; the title, the type's fields and the
  * owner's own, which can be added, renamed and removed, and the tags
  */
+
+import type { SaveError } from "@kennwort/client/entries/entry-store.ts";
+import { ENTRY_TYPES, type EntryType, typeLabel } from "@kennwort/client/entries/entry-types.ts";
 import { encodeBytes } from "@kennwort/core";
 import { randomBytes } from "@kennwort/crypto";
 import { Button, Dialog, Icon, Input, m } from "@kennwort/ui";
@@ -13,9 +16,7 @@ import { readSettings } from "../generator/settings.ts";
 import { Choice } from "./choice.tsx";
 import { FieldValue, OwnField } from "./entry-fields.tsx";
 import { type EntryInput, type InputField, withType } from "./entry-input.ts";
-import type { SaveError } from "./entry-store.ts";
 import { TagsInput } from "./entry-tags.tsx";
-import { ENTRY_TYPES, type EntryType, typeLabel } from "./entry-types.ts";
 
 export type EditorVault = { idText: string; name: string };
 type Saved = { ok: true; value: string } | { ok: false; error: SaveError };

@@ -2,10 +2,11 @@
  * The app frame (DESIGN.md, Aufbau): rail and, from lg, the sidebar on the desktop; list and
  * detail side by side from md; on a phone one screen at a time with the tab bar at the bottom
  */
+
+import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { createToasts, type Locale, Toaster } from "@kennwort/ui";
 import type { JSX } from "@solidjs/web";
 import { Match, Show, Switch } from "solid-js";
-import type { ShownEntry } from "../entries/entries.ts";
 import type { Navigation } from "../navigation.ts";
 import { EntryDetail } from "./entry-detail.tsx";
 import type { Saved } from "./entry-detail-parts.tsx";

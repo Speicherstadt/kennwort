@@ -4,15 +4,20 @@
  * account may edit in, or changes one; after saving, the app shows the entry. A star in the detail
  * marks an entry as a favorite.
  */
+
+import { type ShownEntry, shown } from "@kennwort/client/entries/entries.ts";
+import {
+  createEntryStore,
+  type EntryCopy,
+  type ServerFor,
+} from "@kennwort/client/entries/entry-store.ts";
 import { m } from "@kennwort/ui";
 import { createSignal, Show } from "solid-js";
 import type { Navigation } from "../navigation.ts";
 import type { Session } from "../session/session.ts";
 import type { VaultStore } from "../vaults/vault-store.ts";
-import { type ShownEntry, shown } from "./entries.ts";
 import { EntryEditor } from "./entry-editor.tsx";
 import { contentOf, type EntryInput, inputOf, newInput } from "./entry-input.ts";
-import { createEntryStore, type EntryCopy, type ServerFor } from "./entry-store.ts";
 
 /** What the editor opened with: the form starts from it, a sync while editing leaves it be */
 type Editing =

@@ -4,6 +4,11 @@
  * entry anew under a new entry key, makes the remaining shares again with it and then deletes the
  * share, so the removed person cannot read a later version with the key they had.
  */
+
+import type { SaveError } from "@kennwort/client/entries/entry-store.ts";
+import type { Rekeyed } from "@kennwort/client/entries/entry-writes.ts";
+import type { ShareApi } from "@kennwort/client/session/shares-api.ts";
+import type { Vault } from "@kennwort/client/vaults/vaults.ts";
 import {
   bytes,
   type Certificate,
@@ -16,12 +21,8 @@ import {
   type Share,
   type Trust,
 } from "@kennwort/core";
-import type { SaveError } from "../entries/entry-store.ts";
-import type { Rekeyed } from "../entries/entry-writes.ts";
 import type { Session } from "../session/session.ts";
-import type { ShareApi } from "../session/shares-api.ts";
 import { hasExpired } from "../vaults/vault-members.ts";
-import type { Vault } from "../vaults/vaults.ts";
 
 export type ShareError =
   | "locked"

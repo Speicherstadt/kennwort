@@ -2,13 +2,19 @@
  * The company policy on the members page (K-304): everyone sees the lock time the company set;
  * owners change it. The value shown is the one the client checked under the pinned root.
  */
+
+import {
+  applyPolicy,
+  loadPolicy,
+  type PolicyDeps,
+  saveLockTime,
+} from "@kennwort/client/policy/policy.ts";
 import { LOCK_MINUTES, type UnsignedPolicy } from "@kennwort/core";
 import { Button, Input, m } from "@kennwort/ui";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createMemo, createSignal, Loading, onSettled, Show } from "solid-js";
 import { queryKeys } from "../queries.ts";
 import type { Session } from "../session/session.ts";
-import { applyPolicy, loadPolicy, type PolicyDeps, saveLockTime } from "./policy.ts";
 
 const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
 

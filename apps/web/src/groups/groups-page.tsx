@@ -3,13 +3,14 @@
  * delete groups and change their members; joining a group asks the managers of its vaults, it
  * gives no access by itself (DESIGN.md: show trust, don't claim it).
  */
+
+import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
 import { idKey, type MemberView } from "@kennwort/core";
 import { Button, Icon, Input, m } from "@kennwort/ui";
 import { Users } from "@kennwort/ui/icons";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, For, Loading, Show } from "solid-js";
 import { queryKeys } from "../queries.ts";
-import type { GroupApi } from "../session/groups-api.ts";
 import type { Session } from "../session/session.ts";
 import { selectClass } from "../vaults/role-select.tsx";
 import {

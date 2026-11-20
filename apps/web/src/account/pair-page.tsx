@@ -4,6 +4,9 @@
  * device confirmed. A package it cannot open, or one whose code is not the one shown, ends the
  * pairing; after the confirmation it stops polling, as the server then forgets the pairing.
  */
+
+import type { AccountApi } from "@kennwort/client/session/api.ts";
+import type { PairingApi } from "@kennwort/client/session/pairing-api.ts";
 import { Button, m } from "@kennwort/ui";
 import { createSignal, onSettled, Show } from "solid-js";
 import type { Navigation } from "../navigation.ts";
@@ -16,8 +19,6 @@ import {
   poll,
 } from "../pairing/pairing.ts";
 import { QrCode } from "../pairing/qr-code.tsx";
-import type { AccountApi } from "../session/api.ts";
-import type { PairingApi } from "../session/pairing-api.ts";
 import type { Session } from "../session/session.ts";
 import { Card } from "./form.tsx";
 

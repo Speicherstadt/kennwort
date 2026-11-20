@@ -1,4 +1,6 @@
 /** The sidebar from lg: company, the lists, vaults and groups, the note on encryption at the bottom */
+
+import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { Badge, cn, Icon, m } from "@kennwort/ui";
 import type { IconNode } from "@kennwort/ui/icons";
 import {
@@ -12,7 +14,6 @@ import {
 import type { JSX } from "@solidjs/web";
 import { For, Show } from "solid-js";
 import { company, entries as demoEntries, groups, vaults } from "../demo.ts";
-import type { ShownEntry } from "../entries/entries.ts";
 import { toChangeCount } from "../filter.ts";
 import type { Navigation } from "../navigation.ts";
 import type { ListFilter } from "../routes.ts";

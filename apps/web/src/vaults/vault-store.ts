@@ -2,11 +2,18 @@
  * The vaults the app shows, loaded once the account is open and again after a change. An account
  * that is certified but has no vault yet gets its personal vault on the first load (K-305).
  */
+
+import {
+  type CreateError,
+  type Loaded,
+  loadVaults,
+  newVault,
+  type VaultDeps,
+} from "@kennwort/client/vaults/vaults.ts";
 import { m } from "@kennwort/ui";
 import { createSignal } from "solid-js";
 import type { Session } from "../session/session.ts";
 import type { ChangeError } from "./vault-members.ts";
-import { type CreateError, type Loaded, loadVaults, newVault, type VaultDeps } from "./vaults.ts";
 
 export type VaultsShown =
   | { state: "loading" }

@@ -3,9 +3,10 @@
  * own first in its order, then the owner's) and the tags. Read from stored content and written
  * back into it; the favorite rides along, and a replaced secret goes into the history.
  */
+
+import { type EntryType, TEMPLATES, templateField } from "@kennwort/client/entries/entry-types.ts";
 import type { EntryContent } from "@kennwort/core";
 import { historyAfter } from "./entry-history.ts";
-import { type EntryType, TEMPLATES, templateField } from "./entry-types.ts";
 
 type StoredField = EntryContent["fields"][number];
 /**

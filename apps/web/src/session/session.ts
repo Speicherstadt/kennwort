@@ -3,8 +3,15 @@
  * dropped on lock and after a while without use. Locking overwrites the account key's bytes, so
  * nothing usable lingers once the references are gone.
  */
+import type { AccountApi } from "@kennwort/client/session/api.ts";
+import { type Opened, stateUpdater } from "@kennwort/client/session/open-account.ts";
 import {
-  type AccountState,
+  LOCK_AFTER_MS,
+  type Outcome,
+  type SessionError,
+  signInAndUnlock as signInAndUnlockOnline,
+} from "@kennwort/client/session/unlock.ts";
+import {
   bytes,
   createAccount,
   createCompany,
@@ -13,11 +20,8 @@ import {
   encodeBytes,
   invitationMac,
   type Stored,
-  type Unlocked,
-  unlockWithPassphrase,
 } from "@kennwort/core";
 import { createSignal } from "solid-js";
-import type { AccountApi } from "./api.ts";
 import { type DeviceAccount, forgetDevice, readDevice, rememberDevice } from "./device.ts";
 import {
   type AccountCopy,
@@ -28,26 +32,14 @@ import {
   withServedState,
 } from "./offline-unlock.ts";
 import { recoverAccount } from "./recover.ts";
-import { type StateDeps, saveState } from "./state-sync.ts";
 
-export const LOCK_AFTER_MS = 10 * 60 * 1000;
+export { signInError } from "@kennwort/client/session/unlock.ts";
+// Shared with the extension (packages/client); named here as well for the app's own modules
+export type { Opened, Outcome, SessionError };
+export { LOCK_AFTER_MS };
 
-/**
- * An open account. Opened from the offline copy (K-308 part b) it has no token yet but the sign-in
- * key, in memory like AK, to sign in once the server answers again; locking overwrites both.
- */
-export type Opened = Unlocked & { accountId: Uint8Array; token: string; loginKey?: Uint8Array };
 /** What the recovery kit shows: the account ID is needed to unlock on a device that does not know it */
 export type NewKeys = { accountId: Uint8Array; secretKey: Uint8Array; recoveryKey: Uint8Array };
-export type SessionError =
-  | "wrong-code"
-  | "invalid-invitation"
-  | "too-many-requests"
-  | "wrong-passphrase"
-  | "wrong-recovery-key"
-  | "unreachable"
-  | "unexpected";
-export type Outcome<T> = { ok: true; value: T } | { ok: false; error: SessionError };
 
 export type SessionDeps = {
   api: AccountApi;
@@ -63,13 +55,6 @@ export type SessionDeps = {
   copy?: AccountCopy;
 };
 
-export const signInError = (error: string): SessionError =>
-  error === "denied"
-    ? "wrong-passphrase"
-    : error === "too-many-requests" || error === "locked"
-      ? "too-many-requests"
-      : "unexpected";
-
 type Unlock = { opened: Opened; stored?: Stored };
 
 /**
@@ -83,19 +68,17 @@ const signInAndUnlock = async (
   secretKey: Uint8Array,
 ): Promise<Outcome<Unlock>> => {
   const { api, copy, derive } = deps;
-  const signedIn = await api.signIn(accountId, passphrase, secretKey, derive);
-  if (!signedIn.ok && signedIn.error === "unreachable" && copy) {
+  // The same sign-in and unlock as the extension's (packages/client/src/session/unlock.ts)
+  const online = await signInAndUnlockOnline(api, accountId, passphrase, secretKey, derive);
+  if (!online.ok && online.error === "unreachable") {
+    if (!copy) return { ok: false, error: "unexpected" };
     const opened = await unlockFromCopy(copy, accountId, passphrase, secretKey, derive);
     return opened.ok ? { ok: true, value: { opened: opened.value } } : opened;
   }
-  if (!signedIn.ok) return { ok: false, error: signInError(signedIn.error) };
-  const stored = await api.keys(signedIn.token);
-  if (!stored) return { ok: false, error: "unexpected" };
-  const unlocked = unlockWithPassphrase(stored, passphrase, secretKey, derive);
-  if (!unlocked.ok)
-    return { ok: false, error: unlocked.error === "wrong-key" ? "wrong-passphrase" : "unexpected" };
-  const value = await withKeptState(copy, accountId, unlocked.value);
-  return { ok: true, value: { opened: { ...value, accountId, token: signedIn.token }, stored } };
+  if (!online.ok) return online;
+  const { opened, stored } = online.value;
+  const value = await withKeptState(copy, accountId, opened);
+  return { ok: true, value: { opened: { ...opened, ...value }, stored } };
 };
 
 /** After setup or invitation: the keys uploaded, the device remembered, the account open */
@@ -177,22 +160,6 @@ const createLock = (deps: SessionDeps) => {
   };
   return { opened, setOpened, lock, touch, open, setLockAfter };
 };
-
-/**
- * The account state changed and written back; the open account sees the new one (state-sync.ts),
- * and the offline copy keeps it as written
- */
-const stateUpdater =
-  (opened: () => Opened | undefined, setOpened: (value: Opened) => void, copy?: AccountCopy) =>
-  async (api: StateDeps, change: (state: AccountState) => AccountState | undefined) => {
-    const current = opened();
-    if (!current) return { ok: false as const, error: "unreachable" as const };
-    const saved = await saveState(api, current, change);
-    if (!saved.ok) return saved;
-    if (opened() === current) setOpened({ ...current, state: saved.value });
-    await copy?.keepState(encodeBytes(current.accountId), saved.kept);
-    return { ok: true as const, value: saved.value };
-  };
 
 const reconnect = async (
   deps: SessionDeps,

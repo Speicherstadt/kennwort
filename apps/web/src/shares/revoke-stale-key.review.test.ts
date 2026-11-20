@@ -1,5 +1,5 @@
+import { createEntryStore } from "@kennwort/client/entries/entry-store.ts";
 import { expect, it } from "vitest";
-import { createEntryStore } from "../entries/entry-store.ts";
 import { loadSharedWithMe } from "./shared-with-me.ts";
 import { type Colleague, sessionOf, sparkasseInBuero } from "./shares.test-kit.ts";
 import { revokeShare, shareWith } from "./shares.ts";

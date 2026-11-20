@@ -3,10 +3,11 @@
  * their members, the groups linked to a vault, and what a vault's members have to do with them.
  * A group is a label the server keeps; it gives no access, it only files requests.
  */
+
+import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
+import type { Vault } from "@kennwort/client/vaults/vaults.ts";
 import { idKey, type MemberView, type VaultRole } from "@kennwort/core";
-import type { GroupApi } from "../session/groups-api.ts";
 import type { Session } from "../session/session.ts";
-import type { Vault } from "../vaults/vaults.ts";
 
 export type Group = { id: string; name: string; members: Uint8Array[] };
 export type Link = { groupId: string; role: VaultRole };

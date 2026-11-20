@@ -1,10 +1,10 @@
+import { personalVaultId } from "@kennwort/client/vaults/vaults.ts";
 import { encodeBytes } from "@kennwort/core";
 import { m } from "@kennwort/ui";
 import { flush } from "solid-js";
 import { describe, expect, it } from "vitest";
 import { createVaultStore } from "./vault-store.ts";
 import { jonasWithVaults } from "./vaults.test-kit.ts";
-import { personalVaultId } from "./vaults.ts";
 
 // K-305 part 2: the personal vault comes by itself, once
 describe("createVaultStore", () => {

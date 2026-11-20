@@ -1,6 +1,6 @@
+import { createApi } from "@kennwort/client/session/api.ts";
 import { passphraseKeysWith } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
-import { createApi } from "./api.ts";
 import { createSession } from "./session.ts";
 
 // Review of K-303: a server that cannot be reached must come back as an error value

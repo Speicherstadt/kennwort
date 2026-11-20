@@ -4,6 +4,9 @@
  * role and removing. The server takes an entry only as the next link of the chain; when another
  * device wrote first it answers stale, and the page loads the vault again before trying anew.
  */
+
+import type { Appended } from "@kennwort/client/session/vaults-api.ts";
+import type { Vault, VaultDeps } from "@kennwort/client/vaults/vaults.ts";
 import {
   addMember,
   bytes,
@@ -15,8 +18,6 @@ import {
   type VaultRole,
 } from "@kennwort/core";
 import type { Session } from "../session/session.ts";
-import type { Appended } from "../session/vaults-api.ts";
-import type { Vault, VaultDeps } from "./vaults.ts";
 
 export type VaultMember = {
   accountId: Uint8Array;

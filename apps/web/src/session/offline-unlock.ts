@@ -5,6 +5,8 @@
  * the device is merged into whatever the server serves, so a server that serves an older one later
  * cannot roll back what this device has checked (E-07, E-13).
  */
+
+import type { AccountApi } from "@kennwort/client/session/api.ts";
 import {
   type AccountState,
   encodeBytes,
@@ -17,7 +19,6 @@ import {
 } from "@kennwort/core";
 import { ed25519KeyPair, passphraseKeys } from "@kennwort/crypto";
 import type { LocalCopy } from "../offline/local-copy.ts";
-import type { AccountApi } from "./api.ts";
 import type { Opened, Outcome } from "./session.ts";
 
 /** What the session uses of the copy */

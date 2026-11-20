@@ -3,14 +3,15 @@
  * load with the vaults and show read-only under "Mit mir geteilt"; "Teilen" on an entry of a vault
  * this account may edit opens the share dialog.
  */
+
+import { type ShownEntry, shown } from "@kennwort/client/entries/entries.ts";
+import type { ShareApi } from "@kennwort/client/session/shares-api.ts";
+import type { StateDeps } from "@kennwort/client/session/state-sync.ts";
+import type { Loaded } from "@kennwort/client/vaults/vaults.ts";
 import { m } from "@kennwort/ui";
 import { createSignal, Show } from "solid-js";
-import { type ShownEntry, shown } from "../entries/entries.ts";
 import type { Session } from "../session/session.ts";
-import type { ShareApi } from "../session/shares-api.ts";
-import type { StateDeps } from "../session/state-sync.ts";
 import type { VaultStore } from "../vaults/vault-store.ts";
-import type { Loaded } from "../vaults/vaults.ts";
 import { ShareDialog } from "./share-dialog.tsx";
 import { createSharedWithMe, type SharedEntry } from "./shared-with-me.ts";
 import { type EntryKeys, mayShare } from "./shares.ts";

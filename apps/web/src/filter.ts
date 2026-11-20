@@ -1,8 +1,9 @@
 /** Which entries a list shows: by route filter and search text, sorted by title */
+
+import { matchesSearch } from "@kennwort/client/search.ts";
 import type { DemoEntry } from "./demo.ts";
 import { toChange } from "./entries/to-change.ts";
 import type { ListFilter } from "./routes.ts";
-import { matchesSearch } from "./search.ts";
 
 /** Entries shared with this account show under "Mit mir geteilt" only, apart from the vaults' own */
 const inFilter = (entry: DemoEntry, filter: ListFilter) =>

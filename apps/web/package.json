@@ -9,6 +9,7 @@
     "preview": "vite preview --port 5176 --strictPort"
   },
   "dependencies": {
+    "@kennwort/client": "workspace:*",
     "@kennwort/core": "workspace:*",
     "@kennwort/crypto": "workspace:*",
     "@kennwort/ui": "workspace:*",

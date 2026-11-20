@@ -1,7 +1,7 @@
+import { loginOf, shown } from "@kennwort/client/entries/entries.ts";
 import { setLocale } from "@kennwort/ui";
 import { describe, expect, it } from "vitest";
 import { FIELD, loginContent } from "./entries.test-kit.ts";
-import { loginOf, shown } from "./entries.ts";
 
 const names = { username: "Benutzername", password: "Passwort", website: "Website" };
 

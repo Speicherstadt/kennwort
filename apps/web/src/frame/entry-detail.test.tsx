@@ -1,8 +1,8 @@
+import { type ShownEntry, shown } from "@kennwort/client/entries/entries.ts";
 import { createToasts, setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { flush } from "solid-js";
 import { afterEach, describe, expect, it } from "vitest";
-import { type ShownEntry, shown } from "../entries/entries.ts";
 import { EntryDetail } from "./entry-detail.tsx";
 
 // K-305 part 6b (P-10): "Teilen" works for who may edit the entry's vault, never for a reader or

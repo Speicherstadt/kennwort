@@ -1,10 +1,11 @@
 // Review of PR #41 (K-305 part 2): what a lying server makes the vault client do
+
+import { loadVaults, newVault } from "@kennwort/client/vaults/vaults.ts";
 import { changeAccess } from "@kennwort/core";
 import { flush } from "solid-js";
 import { describe, expect, it, vi } from "vitest";
 import { createVaultStore } from "./vault-store.ts";
 import { jonasWithVaults } from "./vaults.test-kit.ts";
-import { loadVaults, newVault } from "./vaults.ts";
 
 describe("vaults against a lying server (review of K-305 part 2)", () => {
   it("refuses a vault with a malformed wrapped key instead of throwing", async () => {

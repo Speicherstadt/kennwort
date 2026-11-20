@@ -1,8 +1,8 @@
+import { type ShownEntry, shown } from "@kennwort/client/entries/entries.ts";
 import { createToasts, setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { flush } from "solid-js";
 import { afterEach, describe, expect, it } from "vitest";
-import { type ShownEntry, shown } from "../entries/entries.ts";
 import { EntryDetail } from "./entry-detail.tsx";
 import type { Saved } from "./entry-detail-parts.tsx";
 

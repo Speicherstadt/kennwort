@@ -1,0 +1,15 @@
+{
+  "name": "@kennwort/client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*"
+  },
+  "dependencies": {
+    "@kennwort/core": "workspace:*",
+    "@kennwort/crypto": "workspace:*",
+    "@kennwort/ui": "workspace:*",
+    "solid-js": "2.0.3"
+  }
+}

@@ -1,10 +1,11 @@
 // Review of K-305 part 3: the members dialog against a lying server, role changes and time limits
+
+import { loadVaults, newVault, type Vault } from "@kennwort/client/vaults/vaults.ts";
 import { changeAccess, idKey } from "@kennwort/core";
 import { describe, expect, it } from "vitest";
 import { ownerRow } from "../members/members.test-kit.ts";
 import { addToVault, candidates, changeVaultRole, vaultMembers } from "./vault-members.ts";
 import { certifiedAnna, jonasWithVaults } from "./vaults.test-kit.ts";
-import { loadVaults, newVault, type Vault } from "./vaults.ts";
 
 const bueroWithAnna = async () => {
   const w = await jonasWithVaults((c) => [ownerRow(c), certifiedAnna(c)]);

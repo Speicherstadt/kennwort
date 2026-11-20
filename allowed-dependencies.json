@@ -3,7 +3,7 @@
   "packages": {
     "solid-js": {
       "reason": "Solid 2, the reactive UI of the web app, the extension and the mobile app (docs/plan.md, Stack); small and auditable instead of React",
-      "workspaces": ["packages/ui", "apps/web", "apps/extension"]
+      "workspaces": ["packages/ui", "packages/client", "apps/web", "apps/extension"]
     },
     "@solidjs/web": {
       "reason": "Solid 2's DOM renderer, split out of solid-js in 2.0; the same project and release as solid-js",

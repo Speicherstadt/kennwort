@@ -1,8 +1,8 @@
+import { saveState } from "@kennwort/client/session/state-sync.ts";
 import { createCompany, emptyState, openState } from "@kennwort/core";
 import { describe, expect, it } from "vitest";
 import { derive } from "./session.test-kit.ts";
 import { stateServer } from "./state-server.test-kit.ts";
-import { saveState } from "./state-sync.ts";
 
 // K-304: the account state written back, merged with what other devices wrote
 const company = createCompany("Heizung Wasser Licht Kupfer", { derive });

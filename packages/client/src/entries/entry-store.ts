@@ -23,8 +23,7 @@ import {
   type Trust,
 } from "@kennwort/core";
 import { createSignal } from "solid-js";
-import type { LocalCopy } from "../offline/local-copy.ts";
-import type { Session } from "../session/session.ts";
+import type { OpenAccount } from "../session/open-account.ts";
 import type { Vault } from "../vaults/vaults.ts";
 import { withPulled, withSynced } from "./device-merge.ts";
 import type { StoredEntry } from "./entries.ts";
@@ -49,8 +48,21 @@ export type SyncChange = (
   change: (device: Device) => Device,
 ) => Promise<{ ok: true; value: Device } | { ok: false; error: SaveError }>;
 
-/** What the store uses of the offline copy */
-export type EntryCopy = Pick<LocalCopy, "records" | "keepRecords">;
+/**
+ * What the store uses of an offline copy: the web app's (apps/web/src/offline/local-copy.ts) keeps
+ * it in IndexedDB; the extension, which may keep nothing on the disk, passes none
+ */
+export type EntryCopy = {
+  records: (vaultIdText: string) => Promise<EntryRecord[]>;
+  keepRecords: (
+    vaultIdText: string,
+    records: EntryRecord[],
+    check: (record: EntryRecord) => boolean,
+  ) => Promise<unknown>;
+};
+
+/** What the store needs of the open account */
+type Session = Pick<OpenAccount, "opened">;
 
 /** The copy as a server to pull from: the same checks as for the real one, and no writes */
 const copyServer = (copy: EntryCopy, vaultIdText: string): SyncServer => ({

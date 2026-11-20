@@ -6,8 +6,13 @@
  * the merged state and may refuse it (undefined): then nothing is written.
  */
 import { type AccountState, mergeStates, openState, type Stored, sealState } from "@kennwort/core";
-import type { KeptState } from "../offline/local-copy.ts";
 import type { StateWrite } from "./members-api.ts";
+
+/**
+ * The account state as written: sealed under AK with the counter in its AAD. The web app keeps it
+ * in its offline copy (K-308 part b, apps/web/src/offline/local-copy.ts)
+ */
+export type KeptState = { counter: number; sealed: Uint8Array };
 
 export type StateDeps = {
   keys: (token: string) => Promise<Stored | undefined>;

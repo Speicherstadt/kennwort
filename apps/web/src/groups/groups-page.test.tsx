@@ -1,10 +1,10 @@
+import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
 import { setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { flush } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { withQueries } from "../queries.test-kit.tsx";
 import { createQueryClient, queryKeys } from "../queries.ts";
-import type { GroupApi } from "../session/groups-api.ts";
 import type { Session } from "../session/session.ts";
 import { GroupsPage } from "./groups-page.tsx";
 

@@ -356,7 +356,8 @@ die Geheimtexte einmal an und den Kontozustand danach nur mit dem nächsten Zäh
 
 Umgesetzt in `packages/core/src/account/` (anlegen, Kontozustand mit Zusammenführen, entsperren mit
 Passphrase und Recovery Key), `apps/server/src/account/`, `apps/server/src/auth/setup.ts` und in der
-Web-App in `apps/web/src/session/` und `apps/web/src/account/`.
+Web-App in `apps/web/src/session/` und `apps/web/src/account/`; Anmelden und Entsperren mit der
+Passphrase und die Aufrufe des Servers teilen Web-App und Extension in `packages/client/src/session/`.
 
 **Wehrt ab:** E-10, E-18, E-24.
 
@@ -523,8 +524,8 @@ name = F-01(VKₑ, Name in UTF-8 NFC, 1 bis 100 Zeichen, zweck = "vault-name", k
 Ein Name, den der Server aus einem anderen Tresor oder einer anderen Epoche herüberschiebt, lässt
 sich nicht öffnen; der Client zeigt dann „Tresor ohne Namen“ (`sealVaultName`, `openVaultName` in
 `packages/core/src/membership/vault-name.ts`). Restrisiko: Der Server kann einen früheren Namen
-derselben Epoche zurückspielen. Die Web-App lädt jeden Tresor über `loadVaults`
-(`apps/web/src/vaults/vaults.ts`): Log mit `verifyLog` gegen den gemerkten Stand prüfen, VKₑ nur
+derselben Epoche zurückspielen. Web-App und Extension laden jeden Tresor über `loadVaults`
+(`packages/client/src/vaults/vaults.ts`): Log mit `verifyLog` gegen den gemerkten Stand prüfen, VKₑ nur
 mit passender Bindung annehmen, nur öffnen, solange das Konto nach dem Log und der eigenen Uhr
 Mitglied ist, den neuen Stand im Kontozustand merken.
 
@@ -715,7 +716,7 @@ Umgesetzt in `packages/crypto/src/invite.ts` (MAC), `packages/core/src/membershi
 prüfen), `packages/core/src/membership/root-grant.ts` (Rollen, Wurzelschlüssel verpacken und
 annehmen), `packages/core/src/membership/policy.ts` (Firmen-Richtlinie),
 `apps/server/src/account/members.ts`, `apps/server/src/account/policy.ts` und in der Web-App in
-`apps/web/src/members/` und `apps/web/src/policy/`.
+`apps/web/src/members/` und `packages/client/src/policy/` (mit der Extension geteilt).
 
 **Wehrt ab:** E-01, E-02, E-05, E-10.
 
@@ -750,9 +751,9 @@ signatur  = F-03(autor, "entry", tresor-ID, eintrags-ID, version, epoche, SHA-51
 Restrisiko: Einen neuen Eintrag, den ein Client nie gesehen hat, kann der Server diesem Client
 vorenthalten.
 
-In der Web-App lädt `apps/web/src/entries/entry-store.ts` die Einträge jedes geöffneten Tresors
-mit `pull` und `sync` aus `packages/core` und prüft jeden Datensatz gegen das geprüfte Log des
-Tresors; entsperrte Inhalte liegen nur im Speicher.
+In Web-App und Extension lädt `packages/client/src/entries/entry-store.ts` die Einträge jedes
+geöffneten Tresors mit `pull` und `sync` aus `packages/core` und prüft jeden Datensatz gegen das
+geprüfte Log des Tresors; entsperrte Inhalte liegen nur im Speicher.
 
 **Wehrt ab:** E-11, E-12, E-13, E-14, E-15, E-16, E-17.
 

@@ -1,7 +1,8 @@
 // Logins for the entry tests (K-306): the content of a login from its four values, as the dialog
 // writes it, so the store's tests read like what a person does
+
+import type { LoginInput } from "@kennwort/client/entries/entries.ts";
 import type { EntryContent } from "@kennwort/core";
-import type { LoginInput } from "./entries.ts";
 
 export type FieldNames = { username: string; password: string; website: string };
 

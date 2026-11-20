@@ -1,4 +1,6 @@
 import "@kennwort/ui/styles.css";
+import { createApi } from "@kennwort/client/session/api.ts";
+import { deviceIdentity } from "@kennwort/client/session/device-identity.ts";
 import { getLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { createSignal } from "solid-js";
@@ -6,8 +8,6 @@ import { App } from "./app.tsx";
 import { createNavigation, takeStartFragment } from "./navigation.ts";
 import { indexedDbKeyValue } from "./offline/idb.ts";
 import { createLocalCopy } from "./offline/local-copy.ts";
-import { createApi } from "./session/api.ts";
-import { deviceIdentity } from "./session/device-identity.ts";
 import { createSession } from "./session/session.ts";
 import { watchForUpdates } from "./sw/register.ts";
 import { UpdateNotice } from "./sw/update-notice.tsx";
