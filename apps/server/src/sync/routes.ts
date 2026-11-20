@@ -37,7 +37,8 @@ export const syncRoutes = ({ db, hub, now, keepAliveMs = 20_000 }: SyncDeps) =>
       if (!parsed.success) return c.json({ error: "invalid" }, 400);
       const id = encodeBytes(parsed.data.id);
       const at = now();
-      if (c.var.scope.createVault(id, at) !== "created") return c.json({ error: "taken" }, 409);
+      if (c.var.scope.createVault(id, at, c.var.session.accountId) !== "created")
+        return c.json({ error: "taken" }, 409);
       c.var.scope.audit({
         time: at,
         actor: c.var.session.accountId,

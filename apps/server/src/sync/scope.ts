@@ -60,9 +60,9 @@ export const syncScope = (db: Db, companyId: string) => {
   return {
     vault,
     /** A new vault; an ID that exists anywhere on the server is taken */
-    createVault: (vaultId: string, createdAt: number) => {
+    createVault: (vaultId: string, createdAt: number, createdBy: string) => {
       if (db.select().from(vaults).where(eq(vaults.id, vaultId)).get()) return "taken" as const;
-      db.insert(vaults).values({ id: vaultId, companyId, createdAt }).run();
+      db.insert(vaults).values({ id: vaultId, companyId, createdAt, createdBy }).run();
       return "created" as const;
     },
     /** The newest version of every entry in the vault, or undefined for a vault not in the company */

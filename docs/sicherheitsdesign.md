@@ -561,7 +561,9 @@ Umgesetzt in `packages/core/src/membership/` (`verifyLog`, Zertifikate nach F-06
 `packages/crypto` mit Mutation-Tests bei einer Schwelle von 100 %.
 
 Der Server hält die Kette nur ganz, damit ein ehrlicher Server nichts speichert, was ein Client
-verwirft: Er nimmt einen Eintrag nur vom angemeldeten Konto, mit der nächsten `seq` und dem Hash
+verwirft: Den Genesis-Eintrag nimmt er nur von dem Konto, das den Tresor mit `POST /api/vaults`
+angelegt hat, damit kein Kollege einen neuen Tresor vor dessen Anlegendem besetzt. Er nimmt einen
+Eintrag nur vom angemeldeten Konto, mit der nächsten `seq` und dem Hash
 des letzten (sonst `409`), und nur, wenn `verifyLog` die gespeicherte Kette mit dem neuen Eintrag
 annimmt – mit dem Wurzelschlüssel der Firma und den Zertifikaten, die er hält. Damit gelten auf dem
 Server dieselben Regeln wie im Client: gültige Signatur, Verwalter zur signierten Zeit, `aufnehmen`
@@ -931,7 +933,8 @@ Client verwirft, die nächste echte Änderung blockieren. Ein offener Live-Strom
 Mitgliedschaft vor jeder Meldung und jedem Ping erneut und endet, sobald jemand entfernt wurde oder
 seine Zeit abgelaufen ist. Der Stand-in (`packages/core/src/standin/`) prüft dasselbe und nimmt
 Log-Einträge wie der Server: Er läuft `verifyLog` mit dem Wurzelschlüssel, den Zertifikaten und der
-Uhr der Firma, die man ihm gibt, will nach der Genesis einen Verwalter nach seiner Uhr und nimmt
+Uhr der Firma, die man ihm gibt, nimmt die Genesis nur von dem Konto, das den Tresor angelegt hat,
+will danach einen Verwalter nach seiner Uhr und nimmt
 keinen Schlüsselwechsel vor K-307; der gemeinsame Vertrag (`sync/test/contract.ts`) hält beide
 gleich.
 

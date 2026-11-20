@@ -8,7 +8,7 @@ import { encodeBytes } from "../bytes.ts";
 import { watchVault } from "../http.ts";
 import { recordToWire, sealRecord } from "../record.ts";
 import { toWire } from "../wire.ts";
-import { openBuero } from "./buero.ts";
+import { openBuero, postLogEntry } from "./buero.ts";
 import type { Target } from "./contract.ts";
 import {
   anna,
@@ -114,4 +114,22 @@ export const removedMemberHearsNothing = async (t: Target) => {
   // let go by the server itself, before the client stops listening
   expect([outcome, heard, t.listening(vault)]).toEqual(["ended", ["ready"], 0]);
   stop.abort();
+};
+
+/** Jonas creates a vault; Anna, quicker, posts a genesis of her own for it: it stays his */
+export const noOneTakesANewVault = async (t: Target) => {
+  await openBuero(t, 0);
+  const own = { ...logEntries[0] } as (typeof logEntries)[number];
+  const byAnna = signEntry(anna.ed.secretKey, {
+    ...own,
+    accountId: anna.id,
+    signerId: anna.id,
+    fingerprint: certificateFingerprint(certificate(anna)),
+  });
+  const taken = await call(t, "t-anna", "POST", `/api/vaults/${vault}/log`, {
+    entry: toWire(byAnna),
+    wrappedKey: encodeBytes(new Uint8Array(1194)),
+  });
+  expect(taken.status).toBe(403);
+  await postLogEntry(t, 0);
 };
