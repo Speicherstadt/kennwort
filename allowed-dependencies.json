@@ -44,6 +44,18 @@
     "@better-auth/passkey": {
       "reason": "Better Auth's WebAuthn plugin (SimpleWebAuthn) for signing in with a passkey",
       "workspaces": ["apps/server"]
+    },
+    "lucide": {
+      "reason": "the icon data of lucide (DESIGN.md: lucide icons), framework-free arrays without dependencies; lucide-solid needs Solid 1 (splitProps, solid-js/web), so packages/ui renders the arrays itself (docs/plan.md, Entscheidungen)",
+      "workspaces": ["packages/ui"]
+    },
+    "@fontsource-variable/geist": {
+      "reason": "Geist as a variable font file with its @font-face CSS, shipped with the app instead of loaded from Google Fonts (DESIGN.md, Schrift); no code, only the font and CSS",
+      "workspaces": ["packages/ui"]
+    },
+    "@fontsource-variable/geist-mono": {
+      "reason": "Geist Mono for passwords, one-time codes and hosts, shipped like Geist (DESIGN.md, Schrift); no code, only the font and CSS",
+      "workspaces": ["packages/ui"]
     }
   }
 }

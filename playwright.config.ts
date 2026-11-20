@@ -18,7 +18,8 @@ export default defineConfig({
     { name: "phone", grep: /@phone/, use: { ...devices["Pixel 7"], launchOptions } },
   ],
   webServer: {
-    command: "bun run --cwd apps/web build && bun run --cwd apps/web preview",
+    // The showcase of packages/ui is built for these tests only (apps/web/vite.config.ts)
+    command: "KENNWORT_SHOWCASE=1 bun run --cwd apps/web build && bun run --cwd apps/web preview",
     port,
     reuseExistingServer: false,
   },
