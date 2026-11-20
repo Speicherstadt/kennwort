@@ -4,11 +4,13 @@
  * Another language renders everything anew instead of reloading the page, which would lock it.
  */
 
+import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { httpServerFor } from "@kennwort/client/entries/entry-store.ts";
 import type { DevicesApi } from "@kennwort/client/session/devices-api.ts";
 import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
 import type { ShareApi } from "@kennwort/client/session/shares-api.ts";
 import type { VaultApi } from "@kennwort/client/session/vaults-api.ts";
+import { encodeBytes, exitReport, type MemberView } from "@kennwort/core";
 import { getLocale, type Locale, m, setLocale } from "@kennwort/ui";
 import { QueryClientProvider } from "@tanstack/solid-query";
 import { createMemo, createSignal, Match, onSettled, Show, Switch, untrack } from "solid-js";
@@ -23,6 +25,7 @@ import { markToChange } from "./entries/to-change.ts";
 import { DevicesSection } from "./frame/devices-section.tsx";
 import { Frame } from "./frame/frame.tsx";
 import { GroupsPage } from "./groups/groups-page.tsx";
+import type { MemberExits } from "./members/member-exit.tsx";
 import type { MembersDeps } from "./members/members.ts";
 import { MembersPage } from "./members/members-page.tsx";
 import type { Navigation, TakenFragment } from "./navigation.ts";
@@ -33,7 +36,9 @@ import { ApplyPolicy } from "./policy/policy-section.tsx";
 import { createAccountQueries } from "./queries.ts";
 import type { Session } from "./session/session.ts";
 import { createSharing } from "./shares/shares-wiring.tsx";
+import { createExits } from "./vaults/exit.ts";
 import { NoAccess } from "./vaults/no-access.tsx";
+import { RotationNotice } from "./vaults/rotation-notice.tsx";
 import { requestAccess, vaultIdOf } from "./vaults/vault-members.ts";
 import { createVaultStore, type VaultStore } from "./vaults/vault-store.ts";
 import { VaultsPage } from "./vaults/vaults-page.tsx";
@@ -45,34 +50,20 @@ export type AppApi = PairDeps &
   GroupApi &
   ShareApi & { syncFetch: typeof fetch };
 
-/**
- * The vaults while the account is open: loaded when it opens, gone when it locks. So is the cache
- * of what the pages loaded from the server (queries.ts): it lives with the frame, never longer.
- * Without the server the app reads from the offline copy (K-308 part b): it says so, offers no
- * change, and loads anew once the server answers.
- */
-const OpenedFrame = (props: {
-  nav: Navigation;
-  session: Session;
-  api: AppApi;
-  copy: LocalCopy | undefined;
-  onLocale: (next: Locale) => void;
-}) => {
-  const queries = createAccountQueries();
-  const entries = createEntries(httpServerFor(props.api.syncFetch), props.session, props.copy);
-  const sharing = createSharing(props.api, props.session, entries.keys);
-  const store: VaultStore = createVaultStore(props.api, props.session, (loaded) => {
-    void entries.load(loaded.vaults, loaded.trust);
-    void sharing.load(loaded);
-  });
-  // Loaded once the frame is on screen: an effect's compute would load anew on every change of the
-  // account state, and the frame lives only as long as the account is open
-  onSettled(() => void store.reload());
-  const { offline, online } = createOfflineView(() => props.copy, props.session, store.reload);
-  /** A new entry needs a vault this account may write in, loaded */
+/** The company's people as the vaults' load checked them; none before it */
+const peopleOf = (store: VaultStore) => {
+  const shown = store.shown();
+  return shown.state === "ready" ? shown.people : [];
+};
+
+/** What the frame shows of the vaults: their names, and whether a new entry has a vault to go to */
+const vaultViews = (store: VaultStore) => {
+  /** A new entry needs a vault this account may write in, loaded, with no rotation due (P-11) */
   const canWrite = () => {
     const shown = store.shown();
-    return shown.state === "ready" && shown.vaults.some((v) => v.role !== "read");
+    return (
+      shown.state === "ready" && shown.vaults.some((v) => v.role !== "read" && !v.log.rotationDue)
+    );
   };
   const vaultName = (id: string) => {
     const shown = store.shown();
@@ -83,8 +74,74 @@ const OpenedFrame = (props: {
     const shown = store.shown();
     return shown.state === "ready" ? shown.vaults : undefined;
   };
+  return { canWrite, vaultName, shownVaults };
+};
+
+/** The names of whom the change marks name, from the company's members list (K-307) */
+const namedMarks = (entries: ShownEntry[], people: MemberView[]) =>
+  entries.map((entry) =>
+    entry.marks?.length
+      ? {
+          ...entry,
+          marks: entry.marks.map((mark) => ({
+            ...mark,
+            name: people.find((p) => encodeBytes(p.accountId) === mark.account)?.name ?? null,
+          })),
+        }
+      : entry,
+  );
+
+/**
+ * The stores of an open account: the vaults, their entries, the shares and the exits. Every load
+ * of the vaults loads their entries and shares; then a manager's client catches up on what its
+ * vaults owe since someone left (K-307, P-11), without holding up the load.
+ */
+const createStores = (props: { session: Session; api: AppApi; copy: LocalCopy | undefined }) => {
+  const entries = createEntries(httpServerFor(props.api.syncFetch), props.session, props.copy);
+  const sharing = createSharing(props.api, props.session, entries.keys);
+  const exits = createExits(
+    { api: props.api, session: props.session },
+    { reload: () => store.reload(), rotate: entries.rotate, behind: entries.behind },
+  );
+  const store: VaultStore = createVaultStore(props.api, props.session, async (loaded) => {
+    await Promise.all([entries.load(loaded.vaults, loaded.trust), sharing.load(loaded)]);
+    // Not awaited: the catch-up reloads itself, and waits for an exit that runs (createExits)
+    void exits.catchUp(loaded);
+  });
+  return { entries, sharing, exits, store };
+};
+
+/**
+ * The vaults while the account is open: loaded when it opens, gone when it locks. So is the cache
+ * of what the pages loaded from the server (queries.ts): it lives with the frame, never longer.
+ * Without the server the app reads from the offline copy (K-308 part b): it says so, offers no
+ * change, and loads anew once the server answers. After every load a manager's client catches up
+ * on what its vaults owe since someone left (K-307, P-11).
+ */
+const OpenedFrame = (props: {
+  nav: Navigation;
+  session: Session;
+  api: AppApi;
+  copy: LocalCopy | undefined;
+  onLocale: (next: Locale) => void;
+}) => {
+  const queries = createAccountQueries();
+  const { entries, sharing, exits, store } = createStores(props);
+  // Loaded once the frame is on screen: an effect's compute would load anew on every change of the
+  // account state, and the frame lives only as long as the account is open
+  onSettled(() => void store.reload());
+  const reload = () => store.reload().then(() => undefined);
+  const { offline, online } = createOfflineView(() => props.copy, props.session, reload);
+  const { canWrite, vaultName, shownVaults } = vaultViews(store);
   /** Every entry this account sees, marked „Zum Ändern“ against all of them (K-306 part 5) */
-  const allEntries = createMemo(() => markToChange([...entries.entries(), ...sharing.entries()]));
+  const allEntries = createMemo(() =>
+    markToChange(namedMarks([...entries.entries(), ...sharing.entries()], peopleOf(store))),
+  );
+  const memberExits: MemberExits = {
+    onLeft: reload,
+    report: (accountId) => exitReport(accountId, entries.seen()),
+    vaultName,
+  };
   const Editor = entries.editor;
   const ShareDialog = sharing.dialog;
   return (
@@ -95,7 +152,12 @@ const OpenedFrame = (props: {
         onLocale={props.onLocale}
         onAddDevice={() => props.nav.go("/link")}
         members={() => (
-          <MembersPage session={props.session} api={props.api} origin={location.origin} />
+          <MembersPage
+            session={props.session}
+            api={props.api}
+            origin={location.origin}
+            exits={memberExits}
+          />
         )}
         vaults={shownVaults}
         entries={allEntries}
@@ -126,7 +188,13 @@ const OpenedFrame = (props: {
           />
         )}
         vaultsPage={() => (
-          <VaultsPage nav={props.nav} store={store} api={props.api} session={props.session} />
+          <VaultsPage
+            nav={props.nav}
+            store={store}
+            api={props.api}
+            session={props.session}
+            onRemove={exits.remove}
+          />
         )}
         devices={() => (
           <Show when={props.session.opened()?.token}>
@@ -146,6 +214,7 @@ const OpenedFrame = (props: {
       <Editor nav={props.nav} vaults={store} />
       <ShareDialog vaults={store} />
       <OfflineNotice offline={offline()} syncedAt={props.copy?.syncedAt()} />
+      <RotationNotice vaults={shownVaults()} />
     </QueryClientProvider>
   );
 };

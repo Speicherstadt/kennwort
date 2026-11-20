@@ -61,4 +61,11 @@ describe("Zum Ändern", () => {
     expect(toChange({ ...base, weak: true })).toBe(true);
     expect(toChange({ ...base, reused: 2 })).toBe(true);
   });
+
+  it("puts an entry there when someone who left could read it (K-307)", () => {
+    const base = entry("x", "login", []);
+    expect(toChange({ ...base, marks: [] })).toBe(false);
+    const mark = { account: "bWF4", at: 1_800_000_000, fields: ["Passwort"] };
+    expect(toChange({ ...base, marks: [mark] })).toBe(true);
+  });
 });

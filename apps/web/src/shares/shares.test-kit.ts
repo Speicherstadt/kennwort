@@ -134,6 +134,8 @@ export const sparkasseInBuero = async () => {
   if (!vault) throw new Error("no vault");
   return {
     ...w,
+    /** The vault server in memory: logs and wrapped keys as stored */
+    vaultServer: w.store,
     loaded: loaded.value,
     vault,
     store,

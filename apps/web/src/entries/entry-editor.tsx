@@ -28,7 +28,11 @@ const generated = () =>
   );
 
 const errorText = (error: SaveError) =>
-  error === "read-only" ? m.entry_editor_read_only() : m.entry_editor_failed();
+  error === "read-only"
+    ? m.entry_editor_read_only()
+    : error === "rotation-due"
+      ? m.entry_editor_rotation_due()
+      : m.entry_editor_failed();
 
 const newOwnField = (): InputField => ({
   id: `c-${encodeBytes(randomBytes(9))}`,

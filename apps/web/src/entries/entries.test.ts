@@ -137,6 +137,45 @@ describe("shown types", () => {
 });
 
 // K-306 part 5: the earlier passwords and the tags an entry shows
+describe("shown change marks (K-307)", () => {
+  it("names who left, when, and the labels of the fields still marked", () => {
+    setLocale("de", { reload: false });
+    const content = {
+      type: "login" as const,
+      title: "Sparkasse",
+      fields: [
+        { id: "username", name: "User", value: "jonas", kind: "text" as const },
+        { id: "password", name: "Password", value: "Rohr-2026", kind: "secret" as const },
+      ],
+      tags: [],
+      favorite: false,
+      history: [],
+      toChange: [{ account: "bWF4", at: 1_800_000_300, fields: ["password", "gone"] }],
+    };
+    const entry = shown({ idText: "e", vaultIdText: "v", role: "edit", version: 2, content });
+    expect(entry.marks).toEqual([{ account: "bWF4", at: 1_800_000_300, fields: ["Passwort"] }]);
+    const { toChange: _, ...unmarked } = content;
+    expect(
+      shown({ idText: "e", vaultIdText: "v", role: "edit", version: 2, content: unmarked }).marks,
+    ).toEqual([]);
+  });
+
+  it("shows no entry as editable while the vault's rotation is due", () => {
+    const content = {
+      type: "note" as const,
+      title: "N",
+      fields: [],
+      tags: [],
+      favorite: false,
+      history: [],
+    };
+    const base = { idText: "e", vaultIdText: "v", role: "edit" as const, version: 1, content };
+    expect(shown(base).editable).toBe(true);
+    expect(shown({ ...base, rotationDue: false }).editable).toBe(true);
+    expect(shown({ ...base, rotationDue: true }).editable).toBe(false);
+  });
+});
+
 describe("shown history and tags", () => {
   it("shows the earlier values of the secret fields there are now, newest first", () => {
     setLocale("de", { reload: false });

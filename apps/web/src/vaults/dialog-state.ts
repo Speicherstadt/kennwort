@@ -9,11 +9,13 @@ import type { MemberView } from "@kennwort/core";
 import { createSignal, onSettled } from "solid-js";
 import { type Group, type Link, loadGroups, loadLinks } from "../groups/groups.ts";
 import type { Session } from "../session/session.ts";
-import { type ChangeError, loadRequests, type Request } from "./vault-members.ts";
+import type { ExitError } from "./exit.ts";
+import { loadRequests, type Request } from "./vault-members.ts";
 import type { VaultStore } from "./vault-store.ts";
 
 export type DialogApi = VaultDeps & GroupApi;
-type Outcome = { ok: true } | { ok: false; error: ChangeError };
+/** A change to the log; removing someone also rotates the key, which can fail in more ways */
+export type Outcome = { ok: true } | { ok: false; error: ExitError };
 
 export const createDialogState = (props: {
   vault: Vault;
@@ -23,7 +25,7 @@ export const createDialogState = (props: {
   store: VaultStore;
 }) => {
   const [busy, setBusy] = createSignal(false);
-  const [error, setError] = createSignal<ChangeError>();
+  const [error, setError] = createSignal<ExitError>();
   const [requests, setRequests] = createSignal<Request[]>([]);
   const [groups, setGroups] = createSignal<Group[]>([]);
   const [links, setLinks] = createSignal<Link[]>([]);

@@ -1,17 +1,20 @@
 /**
  * Members (K-304): everyone in the company with role and what the client could check. Owners and
  * admins invite here and confirm whom they invited. "Bestätigt" shows only for a certificate the
- * pinned root key confirms (DESIGN.md: show trust, don't claim it).
+ * pinned root key confirms (DESIGN.md: show trust, don't claim it). Owners and admins remove
+ * someone from the company here, and read the exit report of someone who left (K-307).
  */
 import type { MemberView } from "@kennwort/core";
 import { encodeBytes } from "@kennwort/core";
-import { Badge, Button, Icon, Input, m } from "@kennwort/ui";
-import { Copy, ShieldCheck } from "@kennwort/ui/icons";
+import { Badge, Button, Icon, m } from "@kennwort/ui";
+import { ShieldCheck } from "@kennwort/ui/icons";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, For, Loading, Match, onSettled, resolve, Show, Switch } from "solid-js";
 import { PolicySection } from "../policy/policy-section.tsx";
 import { queryKeys } from "../queries.ts";
-import type { Session } from "../session/session.ts";
+import type { Opened, Session } from "../session/session.ts";
+import { InviteForm } from "./invite-form.tsx";
+import { createLeaving, ExitDialogs, type MemberExits } from "./member-exit.tsx";
 import {
   adoptRoot,
   type ConfirmError,
@@ -23,6 +26,7 @@ import {
   mayChangeRoles,
   mayConfirm,
   mayInvite,
+  mayRemove,
   needsRoot,
   setRole,
 } from "./members.ts";
@@ -40,74 +44,6 @@ const confirmText = (error: ConfirmError) =>
         : m.members_confirm_failed();
 
 const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
-
-const InviteForm = (props: { onInvite: (label: string) => Promise<string | undefined> }) => {
-  const [label, setLabel] = createSignal("");
-  const [link, setLink] = createSignal<string>();
-  const [failed, setFailed] = createSignal(false);
-  const [busy, setBusy] = createSignal(false);
-  const [copied, setCopied] = createSignal(false);
-  const submit = async (event: SubmitEvent) => {
-    event.preventDefault();
-    if (!label().trim()) return;
-    setBusy(true);
-    const made = await props.onInvite(label().trim());
-    setBusy(false);
-    setFailed(!made);
-    setLink(made);
-    setCopied(false);
-  };
-  const copy = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-    } catch {
-      // No clipboard: the link stays in the field to copy by hand
-    }
-  };
-  return (
-    <section aria-labelledby="invite-title" class="grid gap-3">
-      <h2 id="invite-title" class="text-xs font-medium">
-        {m.members_invite_title()}
-      </h2>
-      <form class="flex flex-wrap items-end gap-2" onSubmit={submit}>
-        <div class="min-w-48 flex-1">
-          <Input
-            label={m.members_invite_name()}
-            value={label()}
-            maxlength={64}
-            required
-            onInput={(event) => setLabel(event.currentTarget.value)}
-          />
-        </div>
-        <Button type="submit" variant="primary" class="h-11 md:h-8" disabled={busy()}>
-          {busy() ? m.working() : m.members_invite_submit()}
-        </Button>
-      </form>
-      <Show when={failed()}>
-        <p role="alert" class={alertClass}>
-          {m.members_invite_failed()}
-        </p>
-      </Show>
-      <Show when={link()}>
-        {(made) => (
-          <div class="grid gap-2">
-            <Input
-              label={m.members_invite_link()}
-              value={made()}
-              readonly
-              hint={m.members_invite_hint()}
-              data-testid="invitation-link"
-            />
-            <Button class="h-11 w-fit md:h-8" onClick={() => copy(made())}>
-              <Icon icon={Copy} /> {copied() ? m.copied() : m.copy()}
-            </Button>
-          </div>
-        )}
-      </Show>
-    </section>
-  );
-};
 
 const Status = (props: {
   view: MemberView;
@@ -172,9 +108,14 @@ const MemberRow = (props: {
   isMe: boolean;
   canConfirm: boolean;
   canChangeRole: boolean;
+  canRemove: boolean;
+  /** Whether this device can show an exit report (it has the vaults) */
+  reportable: boolean;
   busy: boolean;
   onConfirm: () => void;
   onRole: (role: MemberView["role"]) => void;
+  onRemove: () => void;
+  onReport: () => void;
 }) => {
   const name = () => props.view.name ?? (props.isMe ? m.members_you() : m.members_unnamed());
   return (
@@ -194,16 +135,68 @@ const MemberRow = (props: {
           onRole={props.onRole}
         />
       </div>
-      <Status {...props} />
+      <Show when={props.view.leftAt != null} fallback={<Status {...props} />}>
+        <Badge>{m.members_left()}</Badge>
+        <Show when={props.reportable}>
+          <Button
+            size="sm"
+            class="h-11 md:h-7"
+            aria-label={m.members_report_of({ name: name() })}
+            onClick={() => props.onReport()}
+          >
+            {m.members_report()}
+          </Button>
+        </Show>
+      </Show>
+      <Show when={props.canRemove}>
+        <Button
+          size="sm"
+          class="h-11 md:h-7"
+          aria-label={m.members_leave_of({ name: name() })}
+          disabled={props.busy}
+          onClick={() => props.onRemove()}
+        >
+          {m.members_leave()}
+        </Button>
+      </Show>
     </li>
   );
 };
 
-export const MembersPage = (props: { session: Session; api: MembersDeps; origin: string }) => {
+type Load = Awaited<ReturnType<typeof loadMembers>> | null | undefined;
+
+/** After the first load, an owner or admin without the root key takes one an owner wrapped to it */
+const adoptAfter = async (
+  firstLoad: Promise<Load>,
+  props: { session: Session; api: MembersDeps },
+  setProblem: (problem: string) => void,
+) => {
+  const loaded = await firstLoad;
+  const current = props.session.opened();
+  if (!current || !loaded?.ok || !needsRoot(current, loaded.value.me)) return;
+  const adopted = await adoptRoot(props.api, props.session, loaded.value.me);
+  if (adopted.ok || adopted.error === "none") return;
+  setProblem(
+    adopted.error === "failed" ? m.members_root_adopt_failed() : m.members_root_grant_invalid(),
+  );
+};
+
+export const MembersPage = (props: {
+  session: Session;
+  api: MembersDeps;
+  origin: string;
+  /** Catching up the vaults after someone left, and the exit report; without, neither */
+  exits?: MemberExits;
+}) => {
   const client = useQueryClient();
   const [busy, setBusy] = createSignal(false);
   const [problem, setProblem] = createSignal<string>();
   const opened = () => props.session.opened();
+  /** A right that needs the open account, such as confirming or giving roles */
+  const may = (right: (o: Opened, me: MemberView | undefined) => boolean, me?: MemberView) => {
+    const current = opened();
+    return current !== undefined && right(current, me);
+  };
   // The list as the client checked it, errors as values; null while the account is locked. The
   // account is read with the options, so a load uses the state the page shows
   const members = useQuery(() => {
@@ -214,20 +207,21 @@ export const MembersPage = (props: { session: Session; api: MembersDeps; origin:
     };
   });
   const refresh = () => client.invalidateQueries({ queryKey: queryKeys.members });
+  const leaving = createLeaving({
+    exits: () => props.exits,
+    leave: async (accountId) => {
+      const current = opened();
+      return current !== undefined && props.api.leave(current.token, accountId);
+    },
+    busy,
+    setBusy,
+    setProblem,
+    refresh,
+  });
   // The first load, taken here: resolve() is a computation of its own, which onSettled may not start
   const firstLoad = resolve(() => members.data);
-  const loadAndAdopt = async () => {
-    const loaded = await firstLoad;
-    const current = opened();
-    if (!current || !loaded?.ok || !needsRoot(current, loaded.value.me)) return;
-    const adopted = await adoptRoot(props.api, props.session, loaded.value.me);
-    if (adopted.ok || adopted.error === "none") return;
-    setProblem(
-      adopted.error === "failed" ? m.members_root_adopt_failed() : m.members_root_grant_invalid(),
-    );
-  };
   // Once on screen; the page lives only while the account is open
-  onSettled(() => void loadAndAdopt());
+  onSettled(() => void adoptAfter(firstLoad, props, setProblem));
   const ready = () => {
     const loaded = members.data;
     return loaded?.ok ? loaded.value : undefined;
@@ -236,24 +230,24 @@ export const MembersPage = (props: { session: Session; api: MembersDeps; origin:
     const loaded = members.data;
     return loaded && !loaded.ok ? loaded.error : undefined;
   };
-  const doConfirm = async (view: MemberView, me: MemberView | undefined) => {
+  /** A change to the list: busy while it runs, its problem shown, then the list anew */
+  const act = async (work: () => Promise<string | undefined>) => {
     setBusy(true);
     setProblem(undefined);
-    const done = await confirm(props.api, props.session, view, me);
+    const failed = await work();
     setBusy(false);
-    if (!done.ok) setProblem(confirmText(done.error));
+    if (failed) setProblem(failed);
     await refresh();
   };
-  const doRole = async (view: MemberView, role: MemberView["role"]) => {
-    const current = opened();
-    if (!current) return;
-    setBusy(true);
-    setProblem(undefined);
-    const changed = await setRole(props.api, props.session, view, role);
-    setBusy(false);
-    if (!changed) setProblem(m.members_role_failed());
-    await refresh();
-  };
+  const doConfirm = (view: MemberView, me: MemberView | undefined) =>
+    act(async () => {
+      const done = await confirm(props.api, props.session, view, me);
+      return done.ok ? undefined : confirmText(done.error);
+    });
+  const doRole = (view: MemberView, role: MemberView["role"]) =>
+    act(async () =>
+      (await setRole(props.api, props.session, view, role)) ? undefined : m.members_role_failed(),
+    );
   const doInvite = (label: string) => {
     const current = opened();
     return current ? invite(props.api, current, label, props.origin) : Promise.resolve(undefined);
@@ -295,28 +289,24 @@ export const MembersPage = (props: { session: Session; api: MembersDeps; origin:
                           encodeBytes(view.accountId) ===
                           encodeBytes(opened()?.accountId ?? new Uint8Array())
                         }
-                        canConfirm={(() => {
-                          const current = opened();
-                          return current !== undefined && mayConfirm(current, list().me);
-                        })()}
-                        canChangeRole={(() => {
-                          const current = opened();
-                          return current !== undefined && mayChangeRoles(current, list().me);
-                        })()}
+                        canConfirm={may(mayConfirm, list().me)}
+                        canChangeRole={may(mayChangeRoles, list().me)}
+                        canRemove={mayRemove(list().me, view)}
+                        reportable={props.exits !== undefined}
                         busy={busy()}
                         onConfirm={() => doConfirm(view, list().me)}
                         onRole={(role) => doRole(view, role)}
+                        onRemove={() => leaving.ask(view)}
+                        onReport={() => leaving.show(view)}
                       />
                     )}
                   </For>
                 </ul>
+                <ExitDialogs leaving={leaving} />
                 <PolicySection
                   session={props.session}
                   api={props.api}
-                  canEdit={(() => {
-                    const current = opened();
-                    return current !== undefined && mayChangeRoles(current, list().me);
-                  })()}
+                  canEdit={may(mayChangeRoles, list().me)}
                 />
               </>
             )}

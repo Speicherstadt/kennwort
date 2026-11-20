@@ -34,7 +34,8 @@ export const createEntries = (serverFor: ServerFor, session: Session, copy?: Ent
       const s = props.vaults.shown();
       return s.state === "ready"
         ? s.vaults
-            .filter((v) => v.role !== "read")
+            // Nobody writes while a rotation is due (P-11)
+            .filter((v) => v.role !== "read" && !v.log.rotationDue)
             .map((v) => ({ idText: v.idText, name: v.name ?? m.vaults_unnamed() }))
         : [];
     };
@@ -69,6 +70,11 @@ export const createEntries = (serverFor: ServerFor, session: Session, copy?: Ent
     entries,
     /** The entry keys, for sharing an entry and revoking a share (P-10) */
     keys: { keyOf: store.keyOf, refresh: store.refresh, rekey: store.rekey },
+    /** After someone left: every entry written anew under the vault's new key (P-11) */
+    rotate: store.rotate,
+    behind: store.behind,
+    /** The vaults and entries as this device knows them, for the exit report */
+    seen: store.seen,
     editor,
     startNew: () => setEditing({ kind: "new", initial: newInput("login") }),
     /** The entry as stored when "Ändern" was pressed is what the form starts from */

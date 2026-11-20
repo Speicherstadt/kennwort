@@ -14,6 +14,12 @@ export type ShownField = {
   kind: EntryContent["fields"][number]["kind"];
 };
 
+/**
+ * A change mark (K-307, P-11): someone who left could read these secret fields until `at` (Unix
+ * seconds); account is theirs in base64url, name what the members list calls them, if anyone
+ */
+export type ShownMark = { account: string; name?: string | null; at: number; fields: string[] };
+
 /** An earlier value of a secret field (K-306 part 5), as the detail shows it */
 export type ShownHistory = { fieldId: string; label: string; value: string; replacedAt: number };
 
@@ -36,6 +42,8 @@ export type ShownEntry = {
   /** „Zum Ändern“ (to-change.ts): a weak password, and how many entries share it (0: none) */
   weak: boolean;
   reused: number;
+  /** „Zum Ändern“ after someone left who could read the entry's secrets; the demo has none */
+  marks?: ShownMark[];
   changedAt: number;
   changedBy: string;
   access: string[];
@@ -60,6 +68,8 @@ export type StoredEntry = {
   idText: string;
   vaultIdText: string;
   role: VaultRole;
+  /** Someone left and the vault key is not rotated yet: nobody writes (P-11) */
+  rotationDue?: boolean;
   version: number;
   content: EntryContent;
 };
@@ -85,6 +95,16 @@ const historyOf = (content: EntryContent): ShownHistory[] =>
     })
     .sort((a, b) => b.replacedAt - a.replacedAt);
 
+/** The marks with the labels of the fields they name, as far as the entry still has them */
+const marksOf = (content: EntryContent): ShownMark[] =>
+  (content.toChange ?? []).map((mark) => ({
+    account: mark.account,
+    at: mark.at,
+    fields: content.fields
+      .filter((f) => mark.fields.includes(f.id))
+      .map((f) => labelOf(content, f)),
+  }));
+
 export const subtitleOf = (fields: readonly ShownField[]) =>
   fields.find(
     (f) => f.value !== "" && (f.kind === "text" || f.kind === "url" || f.kind === "email"),
@@ -103,8 +123,9 @@ export const shown = (entry: StoredEntry): ShownEntry => ({
   history: historyOf(entry.content),
   weak: false,
   reused: 0,
+  marks: marksOf(entry.content),
   changedAt: 0,
   changedBy: "",
   access: [],
-  editable: entry.role !== "read",
+  editable: entry.role !== "read" && !entry.rotationDue,
 });

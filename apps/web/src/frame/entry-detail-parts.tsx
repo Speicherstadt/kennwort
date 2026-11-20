@@ -66,7 +66,10 @@ export const TagList = (props: { tags: string[] }) => (
   </Show>
 );
 
-/** Why the entry is „Zum Ändern“: a weak password, one used in other entries too, or both */
+/**
+ * Why the entry is „Zum Ändern“: a weak password, one used in other entries too, or someone who
+ * left and could read its secrets until then (K-307)
+ */
 export const ToChangeNote = (props: { entry: ShownEntry }) => (
   <Show when={toChange(props.entry)}>
     <div
@@ -83,6 +86,17 @@ export const ToChangeNote = (props: { entry: ShownEntry }) => (
       <Show when={props.entry.reused > 1}>
         <p>{m.detail_reused({ count: props.entry.reused })}</p>
       </Show>
+      <For each={props.entry.marks ?? []}>
+        {(mark) => (
+          <p>
+            {m.detail_mark({
+              name: mark.name ?? m.detail_mark_unnamed(),
+              date: date(mark.at * 1000),
+              fields: mark.fields.join(", "),
+            })}
+          </p>
+        )}
+      </For>
     </div>
   </Show>
 );

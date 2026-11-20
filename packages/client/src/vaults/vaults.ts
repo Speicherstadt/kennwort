@@ -2,7 +2,8 @@
  * The vaults of this account (K-305, P-05, P-06), without any interface: load each vault's log,
  * check it with verifyLog under the pinned root and the certificates it confirms, open the vault
  * key only as the log binds it, read the name sealed with it, and remember how far each log
- * reached in the account state, so a shorter or rewritten log later is an attack (E-07).
+ * reached in the account state, so a shorter or rewritten log later is an attack (E-07). The keys
+ * of earlier epochs open only to read what a rotation has not re-encrypted yet (P-11).
  */
 import {
   type AccountState,
@@ -13,9 +14,10 @@ import {
   idKey,
   isMember,
   type Keyring,
+  type LogEntry,
   type LogState,
   type MemberView,
-  openVaultKey,
+  openRings,
   openVaultName,
   remember,
   sealVaultName,
@@ -37,8 +39,13 @@ export type Vault = {
   /** undefined until a manager named it under the current key */
   name: string | undefined;
   role: VaultRole;
+  /** The key of the log's current epoch: every version is written under it */
   ring: Keyring;
+  /** Keys of earlier epochs, to read versions a rotation has not re-encrypted yet (P-11) */
+  older: Keyring[];
   log: LogState;
+  /** The checked log itself: who left and when, for the change marks and the exit report */
+  entries: LogEntry[];
 };
 /** A vault this client does not trust: shown as such, never opened */
 export type Refused = { idText: string; error: string };
@@ -49,6 +56,11 @@ export type Loaded = {
   people: MemberView[];
   /** The pinned root and the certificates it confirmed: what entries are checked against (P-09) */
   trust: Trust;
+  /**
+   * Accounts that left the company, hex as the log keys them, by the server's word: a manager's
+   * client removes them from its vaults and rotates the keys (dueExits, P-11)
+   */
+  left: ReadonlySet<string>;
 };
 
 const seconds = () => Math.floor(Date.now() / 1000);
@@ -92,16 +104,19 @@ const openOne = async (
   if (!wrapped || !member) return { idText, error: "no-key" };
   // A server that still lists the vault after this account's access ran out gets no opening
   if (!isMember(log, opened.accountId, seconds())) return { idText, error: "expired" };
-  const ring = openVaultKey(opened.keyBlock, opened.accountId, log, listed.id, log.epoch, wrapped);
-  if (!ring.ok) return { idText, error: ring.error };
+  const rings = openRings(opened.keyBlock, opened.accountId, log, listed.id, keys);
+  if (!rings.ok) return { idText, error: rings.error };
+  const ring = rings.value.current;
   const name =
-    listed.name && listed.nameEpoch === log.epoch ? openVaultName(ring.value, listed.name) : null;
+    listed.name && listed.nameEpoch === log.epoch ? openVaultName(ring, listed.name) : null;
   return {
     idText,
     name: name?.ok ? name.value : undefined,
     role: member.role,
-    ring: ring.value,
+    ring,
+    older: rings.value.older,
     log,
+    entries,
   };
 };
 
@@ -133,7 +148,8 @@ export const loadVaults = async (
   const refused = results.filter((r): r is Refused => !("ring" in r));
   if (vaults.some((v) => (opened.state.logs[v.idText]?.seq ?? -1) < v.log.seq))
     await session.updateState(api, rememberLogs(vaults));
-  return { ok: true, value: { vaults, refused, people, trust } };
+  const left = new Set(people.filter((p) => p.leftAt != null).map((p) => idKey(p.accountId)));
+  return { ok: true, value: { vaults, refused, people, trust, left } };
 };
 
 export type CreateError = "uncertified" | "unreachable" | "refused" | "exists";

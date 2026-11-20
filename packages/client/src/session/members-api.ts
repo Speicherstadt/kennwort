@@ -63,6 +63,13 @@ export const memberCalls = (call: Call) => ({
         token,
       )
     ).status === 200,
+  /**
+   * The account leaves the company (K-307, P-11): the server shuts it out at once; its vaults then
+   * owe a removal and a key rotation, which a manager's client signs
+   */
+  leave: async (token: string, accountId: Uint8Array) =>
+    (await call("DELETE", `/api/members/${encodeBytes(accountId)}`, undefined, token)).status ===
+    200,
   /** The sealed account state under the next counter; stale when another device wrote first */
   writeState: async (token: string, sealed: Uint8Array, counter: number): Promise<StateWrite> => {
     const answer = await call(

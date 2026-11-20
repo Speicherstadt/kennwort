@@ -1,8 +1,9 @@
 /**
  * The members of one vault (K-305 part 3, P-05): who is in it by its checked log, whom a manager
- * can add (only accounts the pinned root certified), and the signed entries for adding, changing a
- * role and removing. The server takes an entry only as the next link of the chain; when another
- * device wrote first it answers stale, and the page loads the vault again before trying anew.
+ * can add (only accounts the pinned root certified), and the signed entries for adding and changing
+ * a role; removing comes with a key rotation (exit.ts). The server takes an entry only as the next
+ * link of the chain; when another device wrote first it answers stale, and the page loads the vault
+ * again before trying anew.
  */
 
 import type { Appended } from "@kennwort/client/session/vaults-api.ts";
@@ -14,7 +15,6 @@ import {
   changeAccess,
   idKey,
   type MemberView,
-  removeMember,
   type VaultRole,
 } from "@kennwort/core";
 import type { Session } from "../session/session.ts";
@@ -31,7 +31,7 @@ export type ChangeError = Exclude<Appended, "ok"> | "locked" | "past";
 type Changed = { ok: true } | { ok: false; error: ChangeError };
 
 /** The account ID back from the log's key (idKey: hex) */
-const fromIdKey = (key: string) =>
+export const fromIdKey = (key: string) =>
   Uint8Array.from(key.match(/../g) ?? [], (pair) => Number.parseInt(pair, 16));
 
 /**
@@ -116,18 +116,6 @@ export const changeVaultRole = (
 ): Promise<Changed> => {
   const validUntil = vault.log.members.get(idKey(accountId))?.validUntil ?? 0;
   return changeAccessOf(api, session, vault, accountId, { role, validUntil });
-};
-
-export const removeFromVault = async (
-  api: VaultDeps,
-  session: Session,
-  vault: Vault,
-  accountId: Uint8Array,
-): Promise<Changed> => {
-  const me = signerOf(session);
-  if (!me) return { ok: false, error: "locked" };
-  const entry = removeMember(me.signer, vault.log, vault.ring.vaultId, accountId, timeFor(vault));
-  return outcome(await api.appendLog(me.token, entry));
 };
 
 /** Whether a member's time has run out, by this device's clock */
