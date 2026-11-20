@@ -1,8 +1,8 @@
 /**
  * Sharing a single entry from its vault (K-305 part 6b, P-10), without any interface: a member who
- * may edit wraps the entry's key to a certified colleague outside the vault; revoking deletes the
- * share, writes the entry anew under a new entry key and makes the remaining shares again with it,
- * so the removed person cannot read a later version with the key they had.
+ * may edit wraps the entry's key to a certified colleague outside the vault; revoking writes the
+ * entry anew under a new entry key, makes the remaining shares again with it and then deletes the
+ * share, so the removed person cannot read a later version with the key they had.
  */
 import {
   bytes,
@@ -17,21 +17,35 @@ import {
   type Trust,
 } from "@kennwort/core";
 import type { SaveError } from "../entries/entry-store.ts";
+import type { Rekeyed } from "../entries/entry-writes.ts";
 import type { Session } from "../session/session.ts";
 import type { ShareApi } from "../session/shares-api.ts";
 import { hasExpired } from "../vaults/vault-members.ts";
 import type { Vault } from "../vaults/vaults.ts";
 
-export type ShareError = "locked" | "no-key" | "past" | "unreachable" | "not-renewed";
+export type ShareError =
+  | "locked"
+  | "no-key"
+  | "past"
+  | "unreachable"
+  | "not-current"
+  | "not-renewed";
 type Done = { ok: true } | { ok: false; error: ShareError };
 
-/** What sharing needs of the entry store: the entry's key and writing it under a new one */
+/**
+ * What sharing needs of the entry store: the entry's key, the entry's newest version pulled anew,
+ * and writing it under a new key
+ */
 export type EntryKeys = {
   keyOf: (vaultIdText: string, entryIdText: string) => EntryKey | undefined;
+  refresh: (
+    vaultIdText: string,
+    entryId: Uint8Array,
+  ) => Promise<{ version: number; key?: EntryKey | undefined } | undefined>;
   rekey: (
     vaultIdText: string,
     entryIdText: string,
-  ) => Promise<{ ok: true; value: EntryKey } | { ok: false; error: SaveError }>;
+  ) => Promise<{ ok: true; value: Rekeyed } | { ok: false; error: SaveError }>;
 };
 
 const seconds = () => Math.floor(Date.now() / 1000);
@@ -97,8 +111,11 @@ export const shareWith = async (
 };
 
 /**
- * Revokes a share (P-10): the server stops serving it, the entry is written anew under a new entry
- * key, and every other genuine share is made again with that key, or it would no longer open
+ * Revokes a share (P-10), from the newest version only: the device pulls first, and the remaining
+ * shares are those genuine under the key of the very version the new one replaces, without the
+ * revoked person. Then the entry is written under a new entry key, the remaining shares are made
+ * again with it, and only then the server deletes the share: until the new version is stored the
+ * share stays listed, and the revoke can be asked again (review of K-305 part 6b).
  */
 export const revokeShare = async (
   api: ShareApi,
@@ -112,21 +129,27 @@ export const revokeShare = async (
   const me = authorOf(session);
   if (!me) return { ok: false, error: "locked" };
   const place = placeOf(vault, entryIdText);
-  const old = keys.keyOf(vault.idText, entryIdText);
-  if (!place || !old) return { ok: false, error: "no-key" };
-  if (!(await api.deleteShare(me.token, place.vaultId, place.entryId, recipient)))
-    return { ok: false, error: "unreachable" };
-  const renewed = await keys.rekey(vault.idText, entryIdText);
-  if (!renewed.ok) return { ok: false, error: "not-renewed" };
+  if (!place) return { ok: false, error: "no-key" };
+  const newest = await keys.refresh(vault.idText, place.entryId);
+  if (!newest?.key) return { ok: false, error: "unreachable" };
   const listed = await api.entryShares(me.token, place.vaultId, place.entryId);
   if (!listed) return { ok: false, error: "unreachable" };
   const now = { ...trust, now: seconds() };
-  const remaining = genuineShares(listed, old.entryKey, place, vault.log, now).filter(
+  const remaining = genuineShares(listed, newest.key.entryKey, place, vault.log, now).filter(
     (share) => idKey(share.recipient) !== idKey(recipient),
   );
-  const again = reshare(me.author, renewed.value.entryKey, remaining, now, now.now);
+  const renewed = await keys.rekey(vault.idText, entryIdText);
+  if (!renewed.ok) return { ok: false, error: "not-renewed" };
+  // Someone wrote in between: the replaced version's key is not the one checked, so no share is
+  // made again rather than one that was revoked meanwhile; their recipients are asked anew
+  const replaced = renewed.value.version === newest.version + 1;
+  const again = replaced
+    ? reshare(me.author, renewed.value.key.entryKey, remaining, now, now.now)
+    : [];
   const stored = await Promise.all(again.map((share) => api.putShare(me.token, share)));
-  return stored.every(Boolean) ? { ok: true } : { ok: false, error: "unreachable" };
+  const deleted = await api.deleteShare(me.token, place.vaultId, place.entryId, recipient);
+  if (!replaced) return { ok: false, error: "not-current" };
+  return stored.every(Boolean) && deleted ? { ok: true } : { ok: false, error: "unreachable" };
 };
 
 /** The name the company's member list gives an account, if any */

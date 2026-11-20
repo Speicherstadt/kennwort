@@ -323,6 +323,7 @@
   "share_until_hint": "Nach diesem Tag öffnet kein Gerät den Eintrag mehr für diese Person.",
   "share_no_candidates": "Es gibt niemanden mehr, mit dem du teilen kannst: Alle bestätigten Personen der Firma sind im Tresor oder haben den Eintrag schon.",
   "share_failed": "Das hat nicht geklappt. Versuch es noch einmal.",
-  "share_not_renewed": "Die Freigabe ist entfernt, aber der Eintrag ist noch nicht neu verschlüsselt. Ändere und speichere ihn, sobald du wieder verbunden bist.",
-  "share_unnamed": "Jemand aus der Firma"
+  "share_not_renewed": "Der Eintrag konnte nicht neu verschlüsselt werden; die Freigabe besteht weiter. Versuch es noch einmal, sobald du wieder verbunden bist.",
+  "share_unnamed": "Jemand aus der Firma",
+  "share_not_current": "Jemand hat den Eintrag gerade gleichzeitig geändert. Die Freigabe ist entfernt und der Eintrag neu verschlüsselt; teile ihn mit den übrigen Personen bitte neu."
 }

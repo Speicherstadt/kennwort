@@ -29,7 +29,9 @@ const errorText = (error: ShareError) =>
     ? m.vault_members_past()
     : error === "not-renewed"
       ? m.share_not_renewed()
-      : m.share_failed();
+      : error === "not-current"
+        ? m.share_not_current()
+        : m.share_failed();
 
 const ShareRow = (props: { name: string; share: Share; busy: boolean; onRemove: () => void }) => (
   <li class="flex flex-wrap items-center gap-2 px-3 py-2">

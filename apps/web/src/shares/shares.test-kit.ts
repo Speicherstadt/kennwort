@@ -18,17 +18,13 @@ import type { ShareApi } from "../session/shares-api.ts";
 import type { StateDeps } from "../session/state-sync.ts";
 import { certifiedRow, jonasWithVaults } from "../vaults/vaults.test-kit.ts";
 import { loadVaults, newVault } from "../vaults/vaults.ts";
+import data from "./shares.test-data.json";
 
 type Company = Awaited<ReturnType<typeof jonasCompany>>;
 
-const sparkasse = {
-  title: "Sparkasse",
-  username: "jonas@weber-haustechnik.de",
-  password: "Rohr-Ventil-2026!",
-  website: "https://sparkasse.de",
-};
-export const names = { username: "Benutzername", password: "Passwort", website: "Website" };
-export const sparkasseLogin = loginContent(sparkasse, names);
+// Data, not texts: the company's own words live in shares.test-data.json, as the demo's do
+export const sparkasseLogin = loginContent(data.login, data.names);
+const [jonasName, annaName, maxName] = data.colleagues;
 
 /** A colleague outside Büro: a certified row of the members list and the account's keys */
 const colleague = (c: Company, name: string) => {
@@ -108,12 +104,12 @@ export const sparkasseInBuero = async () => {
   let anna: Colleague | undefined;
   let max: Colleague | undefined;
   const w = await jonasWithVaults((c) => {
-    anna = colleague(c, "Anna");
-    max = colleague(c, "Max");
-    return [{ ...ownerRow(c), name: "Jonas" }, anna.row, max.row];
+    anna = colleague(c, annaName ?? "");
+    max = colleague(c, maxName ?? "");
+    return [{ ...ownerRow(c), name: jonasName ?? null }, anna.row, max.row];
   });
   if (!anna || !max) throw new Error("no colleagues");
-  const made = await newVault(w.api, w.c.session, "Büro");
+  const made = await newVault(w.api, w.c.session, data.vault);
   if (!made.ok) throw new Error(made.error);
   const loaded = await loadVaults(w.api, w.c.session);
   if (!loaded.ok) throw new Error(loaded.error);
@@ -134,7 +130,7 @@ export const sparkasseInBuero = async () => {
   ]);
   const shares = shareServer(syncOf, accounts);
   const vault = loaded.value.vaults.find((v) => v.idText === made.value);
-  if (!vault) throw new Error("no Büro");
+  if (!vault) throw new Error("no vault");
   return {
     ...w,
     loaded: loaded.value,

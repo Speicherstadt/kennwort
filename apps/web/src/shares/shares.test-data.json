@@ -1,0 +1,11 @@
+{
+  "vault": "Büro",
+  "login": {
+    "title": "Sparkasse",
+    "username": "jonas@weber-haustechnik.de",
+    "password": "Rohr-Ventil-2026!",
+    "website": "https://sparkasse.de"
+  },
+  "names": { "username": "Benutzername", "password": "Passwort", "website": "Website" },
+  "colleagues": ["Jonas", "Anna", "Max"]
+}

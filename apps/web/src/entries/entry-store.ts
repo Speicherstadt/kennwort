@@ -130,6 +130,27 @@ export const createEntryStore = (serverFor: ServerFor, session: Session) => {
     return stillQueued ? { ok: false, error: "not-saved" } : { ok: true, value: synced.device };
   };
 
+  /**
+   * Pulls one vault anew and gives what the device then knows of the entry: a revoke starts from
+   * the newest version, not from a key an older pull left (review of K-305 part 6b). Nothing when
+   * the server does not answer or the device refused the entry (rolled back, missing).
+   */
+  const refresh = async (vaultIdText: string, entryId: Uint8Array) => {
+    const state = current(vaultIdText);
+    const ctx = state && trust && contextOf(session, state.vault, trust);
+    const server = state && serverOf(state.vault);
+    if (!state || !ctx || !server) return undefined;
+    const pulled = await pull(state.device, server, ctx).catch(() => undefined);
+    if (!pulled) return undefined;
+    update(vaultIdText, (s) => ({
+      ...s,
+      device: withPulled(s.device, pulled.device),
+      refused: pulled.refused,
+    }));
+    if (pulled.refused.some((r) => idKey(r.entryId) === idKey(entryId))) return undefined;
+    return current(vaultIdText)?.device.known.get(idKey(entryId));
+  };
+
   const entries = (): StoredEntry[] =>
     states().flatMap((state) =>
       [...state.device.known.values()].map((known) => ({
@@ -141,7 +162,7 @@ export const createEntryStore = (serverFor: ServerFor, session: Session) => {
       })),
     );
   const refused = () => states().flatMap((s) => s.refused);
-  return { load, ...entryWrites(syncChange, current), entries, refused };
+  return { load, refresh, ...entryWrites(syncChange, current, update), entries, refused };
 };
 
 export type EntryStore = ReturnType<typeof createEntryStore>;

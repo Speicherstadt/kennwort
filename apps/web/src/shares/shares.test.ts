@@ -156,6 +156,32 @@ describe("revoking a share (P-10)", () => {
     expect(await readsAs(w, reader(w, w.anna, "t-anna"))).toEqual([]);
   });
 
+  it("makes no share again when someone wrote between its check and the new version", async () => {
+    const w = await sparkasseInBuero();
+    await share(w, w.anna);
+    await share(w, w.max);
+    const maxShare = w.shares.shares[1];
+    // The device saw one version less than the new one replaced: another device wrote in between
+    const keys = {
+      ...w.store,
+      refresh: async (vaultIdText: string, entryId: Uint8Array) => {
+        const newest = await w.store.refresh(vaultIdText, entryId);
+        return newest && { ...newest, version: newest.version - 1 };
+      },
+    };
+    const revoked = await revokeShare(
+      w.shares.api,
+      w.c.session,
+      keys,
+      w.vault,
+      w.entryIdText,
+      w.anna.account.accountId,
+      w.loaded.trust,
+    );
+    expect(revoked).toEqual({ ok: false, error: "not-current" });
+    expect(w.shares.shares).toEqual([maxShare]);
+  });
+
   it("does not show an older version than the reader has seen (E-13)", async () => {
     const w = await sparkasseInBuero();
     await share(w, w.anna);

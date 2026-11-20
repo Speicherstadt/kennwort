@@ -323,6 +323,7 @@
   "share_until_hint": "After this day no device opens the entry for this person.",
   "share_no_candidates": "There is nobody left to share with: every confirmed person of the company is in the vault or has the entry already.",
   "share_failed": "That did not work. Try again.",
-  "share_not_renewed": "The share is removed, but the entry is not encrypted anew yet. Change and save it once you are connected again.",
-  "share_unnamed": "Someone from the company"
+  "share_not_renewed": "The entry could not be encrypted anew; the share is still in place. Try again once you are connected.",
+  "share_unnamed": "Someone from the company",
+  "share_not_current": "Someone changed the entry at the same moment. The share is removed and the entry encrypted anew; please share it with the others again."
 }

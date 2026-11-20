@@ -91,8 +91,10 @@ Tresor sieht sie nichts, auch nicht seinen Namen.
 **Entfernen** nimmt die Freigabe zurück. Kennwort verschlüsselt den Eintrag dabei mit einem neuen
 Schlüssel neu und speichert ihn als neue Version; mit dem Schlüssel, den die Person hatte, öffnet
 sich keine spätere Version mehr. Wer den Eintrag sonst noch geteilt bekommen hat, bekommt den
-neuen Schlüssel automatisch. Was die Person vorher lesen konnte, kennt sie weiter: Ändere das
-Passwort, wenn das nicht so bleiben soll.
+neuen Schlüssel automatisch. Erst danach verschwindet die Freigabe; klappt das Neuverschlüsseln
+nicht, etwa weil der Server nicht erreichbar ist, bleibt sie stehen, und du entfernst sie einfach
+noch einmal. Was die Person vorher lesen konnte, kennt sie weiter: Ändere das Passwort, wenn das
+nicht so bleiben soll.
 
 ### Mit mir geteilt
 
