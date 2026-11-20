@@ -75,17 +75,16 @@ describe("GeneratorPanel", () => {
   it("makes a passphrase of five words from the list on its tab", async () => {
     const { root } = await show();
     tab(root, "Passphrase").click();
-    await settle();
-    expect(result(root).split("-").length).toBeGreaterThanOrEqual(5);
+    // The word list loads on first use: wait for it, not for a number of ticks
+    await vi.waitFor(() => expect(result(root).split("-").length).toBeGreaterThanOrEqual(5));
     expect(strength(root)).toBe("Gut · 64 Bit");
     expect(root.textContent).toContain("Wörter: 5");
     const separator = root.querySelector("select") as HTMLSelectElement;
     separator.value = " ";
     separator.dispatchEvent(new Event("change", { bubbles: true }));
     checkbox(root, "Wörter groß beginnen").click();
-    await settle();
+    await vi.waitFor(() => expect(result(root).split(" ")).toHaveLength(5));
     const words = result(root).split(" ");
-    expect(words).toHaveLength(5);
     for (const word of words) expect(word).toMatch(/^[A-Z]/);
     expect(JSON.parse(localStorage.getItem("kennwort-generator") ?? "{}").kind).toBe("passphrase");
   });
@@ -96,6 +95,7 @@ describe("GeneratorPanel", () => {
       JSON.stringify({ kind: "passphrase", passphrase: { words: 7, separator: ".", digit: true } }),
     );
     const { root } = await show();
+    await vi.waitFor(() => expect(result(root).split(".")).toHaveLength(7));
     expect(result(root)).toMatch(/\d/);
     expect(root.textContent).toContain("Wörter: 7");
     expect(strength(root)).toBe("Stark · 93 Bit");

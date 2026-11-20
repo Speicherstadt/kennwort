@@ -44,8 +44,11 @@ export type PassphraseOptions = {
   digit: boolean;
 };
 
-const within = (value: number, { min, max }: { min: number; max: number }) =>
-  Math.min(max, Math.max(min, Math.floor(value)));
+/** Clamped to the range; a value that is no number is the usual one */
+const within = (
+  value: number,
+  { min, max, initial }: { min: number; max: number; initial: number },
+) => (Number.isNaN(value) ? initial : Math.min(max, Math.max(min, Math.floor(value))));
 
 const kindsOf = (options: PasswordOptions) => [
   LOWER,
@@ -56,29 +59,46 @@ const kindsOf = (options: PasswordOptions) => [
 
 const pickFrom = (chars: string, below: RandomBelow) => chars[below(chars.length)] as string;
 
-/** Fisher–Yates with uniform picks: every order is equally likely */
-const shuffled = (items: string[], below: RandomBelow) => {
-  const result = [...items];
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = below(i + 1);
-    [result[i], result[j]] = [result[j] as string, result[i] as string];
-  }
-  return result;
-};
-
-/** One character of every chosen kind, the rest from all of them, then shuffled */
+/**
+ * Whole passwords drawn uniformly from all chosen characters, drawn again until one holds every
+ * kind: so each valid password is equally likely and passwordBits is exact (review of K-306 part 3)
+ */
 export const password = (options: PasswordOptions, below: RandomBelow): string => {
   const length = within(options.length, PASSWORD_LENGTH);
   const kinds = kindsOf(options);
   const all = kinds.join("");
-  const required = kinds.map((kind) => pickFrom(kind, below));
-  const rest = Array.from({ length: length - required.length }, () => pickFrom(all, below));
-  return shuffled([...required, ...rest], below).join("");
+  for (;;) {
+    const made = Array.from({ length }, () => pickFrom(all, below)).join("");
+    if (kinds.every((kind) => [...made].some((c) => kind.includes(c)))) return made;
+  }
 };
 
-/** What a guesser who knows the options faces, rounded down */
+/**
+ * How many passwords hold every chosen kind, by inclusion–exclusion: all strings, less those
+ * without one kind, plus those without two, and so on; exact, in BigInt
+ */
+const validCount = (length: number, sizes: number[]) =>
+  sizes
+    // Every kind is either in (its characters count) or out (the sign turns), as the formula has it
+    .reduce<[number, bigint][]>(
+      (terms, size) =>
+        terms.flatMap(([sum, sign]) => [
+          [sum + size, sign],
+          [sum, -sign],
+        ]),
+      [[0, 1n]],
+    )
+    .reduce((count, [sum, sign]) => count + sign * BigInt(sum) ** BigInt(length), 0n);
+
+/**
+ * What a guesser who knows the options faces: log2 of the number of equally likely passwords,
+ * rounded down, which for a whole number is its bit length less one
+ */
 export const passwordBits = (options: PasswordOptions): number =>
-  Math.floor(within(options.length, PASSWORD_LENGTH) * Math.log2(kindsOf(options).join("").length));
+  validCount(
+    within(options.length, PASSWORD_LENGTH),
+    kindsOf(options).map((kind) => kind.length),
+  ).toString(2).length - 1;
 
 const capitalized = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
 

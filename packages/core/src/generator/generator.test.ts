@@ -104,10 +104,27 @@ describe("password", () => {
     expect(SYMBOLS).toBe("!#$%&*+-=?@^_");
   });
 
-  it("picks one of each kind, then the rest, then shuffles them with the numbers it is given", () => {
-    // Lower 3 (d), upper 25 (Z), six of all letters, then Fisher–Yates for i = 7 … 1
-    const given = randomBelow(numbers(3, 25, 0, 51, 26, 10, 40, 7, 5, 0, 6, 2, 1, 0, 1));
-    expect(password({ length: 8, digits: false, symbols: false }, given)).toBe("AZhZaOdk");
+  it("draws whole passwords from all chosen characters until one holds every kind", () => {
+    // First a-h (no capital: drawn again), then a A b B c C d D
+    const given = randomBelow(numbers(0, 1, 2, 3, 4, 5, 6, 7, 0, 26, 1, 27, 2, 28, 3, 29));
+    expect(password({ length: 8, digits: false, symbols: false }, given)).toBe("aAbBcCdD");
+  });
+
+  it("is uniform over all passwords that hold every kind (review of K-306 part 3)", () => {
+    // Letters only, 8 long: 8 · 26^8 of the 52^8 − 2 · 26^8 valid ones hold one lowercase letter
+    const runs = 40_000;
+    let oneLower = 0;
+    for (let i = 0; i < runs; i++) {
+      const made = password({ length: 8, digits: false, symbols: false }, below);
+      if ([...made].filter((c) => LOWER.includes(c)).length === 1) oneLower++;
+    }
+    expect(Math.abs(oneLower / runs - 8 / 254)).toBeLessThan(0.004);
+  });
+
+  it("takes a length that is no number as the usual one (review of K-306 part 3)", () => {
+    expect(password({ ...allOn, length: Number.NaN }, below)).toHaveLength(PASSWORD_LENGTH.initial);
+    expect(password({ ...allOn, length: Number.POSITIVE_INFINITY }, below)).toHaveLength(64);
+    expect(passwordBits({ ...allOn, length: Number.NaN })).toBe(124);
   });
 
   it("is the same for the same random numbers", () => {
@@ -117,18 +134,17 @@ describe("password", () => {
 });
 
 describe("passwordBits", () => {
-  it("counts length times the bits of one character of all chosen kinds, rounded down", () => {
-    expect(passwordBits(allOn)).toBe(Math.floor(20 * Math.log2(75)));
-    expect(passwordBits({ length: 8, digits: false, symbols: false })).toBe(
-      Math.floor(8 * Math.log2(52)),
-    );
-    expect(passwordBits({ length: 10, digits: true, symbols: false })).toBe(
-      Math.floor(10 * Math.log2(62)),
-    );
-    expect(passwordBits({ length: 10, digits: false, symbols: true })).toBe(
-      Math.floor(10 * Math.log2(65)),
-    );
-    expect(passwordBits({ ...allOn, length: 200 })).toBe(Math.floor(64 * Math.log2(75)));
+  // Expected: floor(log2) of the number of valid passwords by inclusion–exclusion, worked out
+  // independently with Python's integers
+  it("counts the bits of all passwords that hold every chosen kind, rounded down", () => {
+    expect(passwordBits(allOn)).toBe(124);
+    expect(passwordBits({ length: 8, digits: false, symbols: false })).toBe(45);
+    expect(passwordBits({ length: 8, digits: true, symbols: true })).toBe(48);
+    expect(passwordBits({ length: 10, digits: true, symbols: false })).toBe(59);
+    expect(passwordBits({ length: 10, digits: false, symbols: true })).toBe(60);
+    expect(passwordBits({ length: 13, digits: true, symbols: true })).toBe(80);
+    expect(passwordBits({ length: 32, digits: false, symbols: false })).toBe(182);
+    expect(passwordBits({ ...allOn, length: 200 })).toBe(398);
   });
 });
 
@@ -144,6 +160,12 @@ describe("passphrase", () => {
       passphrase({ ...words, separator: " ", words: 40 }, effLargeWords, below).split(" "),
     ).toHaveLength(PASSPHRASE_WORDS.max);
     expect(PASSPHRASE_WORDS).toEqual({ min: 3, max: 10, initial: 5 });
+  });
+
+  it("takes a word count that is no number as the usual one (review of K-306 part 3)", () => {
+    const made = passphrase({ ...words, words: Number.NaN, separator: " " }, effLargeWords, below);
+    expect(made.split(" ")).toHaveLength(PASSPHRASE_WORDS.initial);
+    expect(passphraseBits({ ...words, words: Number.NaN }, 7776)).toBe(64);
   });
 
   it("takes words by the random numbers and puts the separator between them", () => {
