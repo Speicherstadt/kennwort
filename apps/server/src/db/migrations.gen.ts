@@ -61,5 +61,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795166819071,
     "breakpoints": true,
     "sql": "ALTER TABLE `account_keys` ADD `invite_mac` blob;--> statement-breakpoint\nALTER TABLE `invitations` ADD `sealed_secret` blob;"
+  },
+  {
+    "tag": "0010_root_and_labels",
+    "when": 1795168332195,
+    "breakpoints": true,
+    "sql": "ALTER TABLE `companies` ADD `root_public_key` text;--> statement-breakpoint\nALTER TABLE `invitations` ADD `label` text;"
   }
 ];

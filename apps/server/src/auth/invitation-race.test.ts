@@ -13,7 +13,7 @@ describe("invitation race", () => {
         await setup.request("/api/invitations", {
           method: "POST",
           token: jonas.token,
-          body: invitationBody(),
+          body: invitationBody("Anna"),
         })
       ).json()) as { id: string; token: string };
     const a = await mk();

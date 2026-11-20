@@ -48,6 +48,7 @@ const membersOf = (db: Db, companyId: string, me: string) => {
     return {
       id: row.id,
       role: row.role,
+      name: invited.get(row.id)?.label ?? null,
       xwingPublicKey: key ? encodeBytes(key.xwingPublicKey) : null,
       edPublicKey: key ? encodeBytes(key.edPublicKey) : null,
       certificate: key?.certificate ? JSON.parse(key.certificate) : null,

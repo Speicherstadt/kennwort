@@ -23,6 +23,7 @@ const SetupRequest = z.object({
   accountId: id,
   loginPublicKey: bytes(32),
   accountSalt: bytes(16),
+  rootPublicKey: bytes(32).transform((key) => encodeBytes(key)),
 });
 
 export type SetupDeps = {
@@ -49,11 +50,11 @@ export const setupRoute = ({ db, auth, now, setupCode, allow, address }: SetupDe
     if (!parsed.success) return c.json({ error: "invalid" }, 400);
     if (!sameCode(parsed.data.code, setupCode)) return c.json({ error: "wrong-code" }, 401);
     const at = now();
-    const { companyId, ...account } = parsed.data;
+    const { companyId, rootPublicKey, ...account } = parsed.data;
     // The company ID is the device's; one that exists already is not taken over
     const claimed = db
       .insert(companies)
-      .values({ id: companyId, createdAt: at })
+      .values({ id: companyId, createdAt: at, rootPublicKey })
       .onConflictDoNothing()
       .returning()
       .get();

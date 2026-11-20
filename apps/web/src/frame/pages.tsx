@@ -2,7 +2,7 @@
 import { Button, getLocale, Icon, type Locale, locales, m } from "@kennwort/ui";
 import { Lock, Users } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
-import { createSignal, For } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 import { groups } from "../demo.ts";
 import type { Navigation } from "../navigation.ts";
 import { applyTheme, readTheme, type Theme } from "../theme.ts";
@@ -72,6 +72,7 @@ export const SettingsPage = (props: {
   onLock: () => void;
   onLocale: (locale: Locale) => void;
   onAddDevice: () => void;
+  onMembers?: (() => void) | undefined;
   devices?: (() => JSX.Element) | undefined;
 }) => {
   const [theme, setTheme] = createSignal<Theme>(readTheme(globalThis.localStorage));
@@ -101,6 +102,13 @@ export const SettingsPage = (props: {
           onChange={(locale) => props.onLocale(locale)}
           options={locales.map((locale) => ({ value: locale, label: languages[locale] }))}
         />
+        <Show when={props.onMembers}>
+          {(open) => (
+            <Button class="w-fit" onClick={() => open()()}>
+              <Icon icon={Users} /> {m.settings_members()}
+            </Button>
+          )}
+        </Show>
         {props.devices?.()}
         <Button class="w-fit" onClick={() => props.onAddDevice()}>
           {m.settings_add_device()}

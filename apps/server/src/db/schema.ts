@@ -12,6 +12,8 @@ export const instance = sqliteTable("instance", {
 export const companies = sqliteTable("companies", {
   id: text("id").primaryKey(),
   createdAt: integer("created_at").notNull(),
+  /** The root key's public half (P-07); clients take it only if it matches their pinned fingerprint */
+  rootPublicKey: text("root_public_key"),
 });
 
 /** An account belongs to exactly one company; its keys and ciphertexts follow in later items */

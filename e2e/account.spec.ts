@@ -187,7 +187,7 @@ test.describe("an account", { tag: "@phone" }, () => {
     const id = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString("base64url");
     const made = await request.post("/api/invitations", {
       headers: { authorization: `Bearer ${owner.token}` },
-      data: { id, sealedSecret: "A".repeat(98) },
+      data: { id, sealedSecret: "A".repeat(98), label: "Anna" },
     });
     expect(made.status()).toBe(201);
     const { token } = (await made.json()) as { token: string };

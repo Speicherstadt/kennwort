@@ -48,6 +48,7 @@ später).
 | Merge | Der Agenten-Loop merged alles selbst, wenn CI grün ist und das unabhängige Review keine Befunde mehr hat; er wartet nie auf einen Menschen | der Loop soll ohne Warten durchlaufen |
 | Geräte und Sitzungen | Jedes Gerät schickt eine zufällige Geräte-ID und einen Namen aus dem Browser mit; der Server hält pro Gerät und Konto genau eine Sitzung, die Geräteliste zeigt diese Sitzungen | Better Auth kennt nur Sitzungen; ohne Geräte-ID würde jede Anmeldung eine neue Zeile in der Liste, und „Gerät abmelden“ träfe nur eine von mehreren Sitzungen desselben Geräts |
 | Einladungsgeheimnis | Der Client des Einladenden hinterlegt das Einladungsgeheimnis versiegelt unter seinem eigenen AK auf dem Server; eine Einladung macht immer einen Mitarbeiter, eine höhere Rolle vergibt ein Inhaber eigens | So prüft der Einladende die Antwort auch Tage später und auf jedem seiner Geräte, ohne dass der Server das Geheimnis kennt; und kein Server kann einen Eingeladenen als Inhaber zertifizieren lassen |
+| Namen der Mitglieder | Der Einladende tippt einen Namen ein; der Server speichert ihn an der Einladung und zeigt ihn in der Mitgliederliste | Konten haben sonst keine Namen, bis OIDC oder SCIM sie liefern; der Name ist nur eine Beschriftung, Vertrauen kommt allein aus dem Zertifikat |
 
 ## Stack
 

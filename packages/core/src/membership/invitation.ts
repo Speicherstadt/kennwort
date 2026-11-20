@@ -15,6 +15,7 @@ import {
   verifyInviteMac,
 } from "@kennwort/crypto";
 import { err, ok, type Result } from "../result.ts";
+import { encodeBytes } from "../sync/bytes.ts";
 import { type Certificate, type CompanyRole, certify } from "./certificate.ts";
 
 const place = (creatorId: Uint8Array, invitationId: Uint8Array) => ({
@@ -53,9 +54,11 @@ export type Certifier = {
   companyId: Uint8Array;
   /** Only who holds the root key certifies (P-07) */
   rootSecretKey: Uint8Array | undefined;
+  /** Invitations certified before, from the account state: invitation ID to account ID */
+  certified: Readonly<Record<string, string>>;
 };
 
-export type CertifyError = "no-root" | "not-mine" | "mac-mismatch";
+export type CertifyError = "no-root" | "not-mine" | "mac-mismatch" | "used";
 
 /**
  * The admin's side (P-08 step 4): the secret opens only under this admin's AK for this invitation,
@@ -68,6 +71,10 @@ export const certifyInvited = (
 ): Result<Certificate, CertifyError> => {
   if (!me.rootSecretKey) return err("no-root");
   const { invitation, ...bundle } = member;
+  // One invitation, one member: a server that shows a second account with the same invitation
+  // (with someone who knows the link's secret) gets nothing (review of K-304)
+  const before = me.certified[encodeBytes(invitation.id)];
+  if (before !== undefined && before !== encodeBytes(bundle.accountId)) return err("used");
   const secret = open(me.accountKey, invitation.sealedSecret, place(me.accountId, invitation.id));
   if (!secret.ok) return err("not-mine");
   if (!verifyInviteMac(secret.value, invitation.id, bundle, invitation.mac))

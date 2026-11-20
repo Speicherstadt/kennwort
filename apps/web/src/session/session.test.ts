@@ -1,4 +1,5 @@
 import { encodeBytes, invitationMac } from "@kennwort/core";
+import { rootFingerprint } from "@kennwort/crypto";
 import { flush } from "solid-js";
 import { describe, expect, it } from "vitest";
 import type { AccountApi as Api } from "./api.ts";
@@ -35,6 +36,23 @@ describe("session", () => {
     expect(readDevice(storage)?.accountId).toBe(session.accountIdText());
     if (result.ok) expect(readDevice(storage)?.secretKey).toEqual(result.value.secretKey);
     if (result.ok) expect(readDevice(storage)?.accountId).toBe(encodeBytes(result.value.accountId));
+  });
+
+  it("sends the root key's public half at setup, the one whose fingerprint the account pins", async () => {
+    const sent: Uint8Array[] = [];
+    const base = fakeApi();
+    const api = fakeApi({
+      setup: async (code, companyId, upload, rootPublicKey) => {
+        sent.push(rootPublicKey);
+        return base.setup(code, companyId, upload, rootPublicKey);
+      },
+    });
+    const session = createSession({ api, storage: memory(), derive });
+    await session.setUp("richtiger-code", PASSPHRASE);
+    expect(sent).toHaveLength(1);
+    expect(rootFingerprint(sent[0] ?? new Uint8Array())).toEqual(
+      session.opened()?.state.rootFingerprint,
+    );
   });
 
   it("locks, overwrites the account key and unlocks again with the passphrase", async () => {

@@ -1,4 +1,5 @@
 import { setLocale } from "@kennwort/ui";
+import type { JSX } from "@solidjs/web";
 import { render } from "@solidjs/web";
 import { flush } from "solid-js";
 import { afterEach, describe, expect, it } from "vitest";
@@ -14,7 +15,7 @@ afterEach(() => {
   delete document.documentElement.dataset.theme;
 });
 
-const open = (path: string, locale: "de" | "en" = "de") => {
+const open = (path: string, locale: "de" | "en" = "de", members?: () => JSX.Element) => {
   setLocale(locale, { reload: false });
   window.history.replaceState(null, "", path);
   const root = document.createElement("div");
@@ -22,7 +23,15 @@ const open = (path: string, locale: "de" | "en" = "de") => {
   const navigation = createNavigation(window);
   nav = navigation;
   dispose = render(
-    () => <Frame nav={navigation} onLock={() => {}} onLocale={() => {}} onAddDevice={() => {}} />,
+    () => (
+      <Frame
+        nav={navigation}
+        onLock={() => {}}
+        onLocale={() => {}}
+        onAddDevice={() => {}}
+        members={members}
+      />
+    ),
     root,
   );
   flush();
@@ -82,6 +91,23 @@ describe("App frame", () => {
     expect(heading(open("/nope"))).toBe("Diese Seite gibt es nicht");
     dispose();
     expect(open("/entries/unknown").textContent).toContain("Diesen Eintrag gibt es hier nicht.");
+  });
+
+  it("opens the members page from the settings, only where the app gives one", () => {
+    const root = open("/settings", "de", () => <h1>Mitglieder-Seite</h1>);
+    const toMembers = [...root.querySelectorAll("button")].find((b) =>
+      b.textContent?.includes("Mitglieder"),
+    );
+    click(toMembers);
+    expect(window.location.pathname).toBe("/members");
+    expect(heading(root)).toBe("Mitglieder-Seite");
+    dispose();
+    const without = open("/settings");
+    expect(
+      [...without.querySelectorAll("button")].some((b) => b.textContent?.includes("Mitglieder")),
+    ).toBe(false);
+    dispose();
+    expect(heading(open("/members"))).toBeUndefined();
   });
 
   it("switches to dark and back to the system setting in the settings", () => {

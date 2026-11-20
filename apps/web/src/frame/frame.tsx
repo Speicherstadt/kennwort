@@ -20,6 +20,8 @@ export const Frame = (props: {
   onAddDevice: () => void;
   /** The device list in the settings (K-303); the app passes it with the session's token */
   devices?: (() => JSX.Element) | undefined;
+  /** The members page (K-304); the app passes it with session and API */
+  members?: (() => JSX.Element) | undefined;
 }) => {
   const toasts = createToasts();
   const route = () => props.nav.route();
@@ -64,9 +66,13 @@ export const Frame = (props: {
               onLock={props.onLock}
               onLocale={props.onLocale}
               onAddDevice={props.onAddDevice}
+              onMembers={props.members ? () => props.nav.go("/members") : undefined}
               devices={props.devices}
             />
           </main>
+        </Match>
+        <Match when={route().page === "members" && props.members}>
+          <main class="flex min-h-0 flex-1">{props.members?.()}</main>
         </Match>
         <Match when={route().page === "not-found"}>
           <main class="flex min-h-0 flex-1">

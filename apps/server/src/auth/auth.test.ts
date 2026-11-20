@@ -36,7 +36,7 @@ const invitedAnna = async (
   const created = await setup.request("/api/invitations", {
     method: "POST",
     token: jonas.token,
-    body: invitationBody(),
+    body: invitationBody("Anna"),
   });
   const invite = (await created.json()) as { id: string; token: string };
   const id = crypto.getRandomValues(new Uint8Array(16));
@@ -75,7 +75,7 @@ describe("invitations (P-08)", () => {
       await setup.request("/api/invitations", {
         method: "POST",
         token: jonas.token,
-        body: invitationBody(),
+        body: invitationBody("Anna"),
       })
     ).json()) as {
       id: string;
@@ -104,7 +104,7 @@ describe("invitations (P-08)", () => {
         await setup.request("/api/invitations", {
           method: "POST",
           token: max.token,
-          body: invitationBody(),
+          body: invitationBody("Anna"),
         })
       ).status,
     ).toBe(403);
@@ -118,7 +118,7 @@ describe("invitations (P-08)", () => {
     const created = await setup.request("/api/invitations", {
       method: "POST",
       token: admin.token,
-      body: invitationBody(),
+      body: invitationBody("Anna"),
     });
     const second = (await created.json()) as { id: string; token: string };
     const again = { ...body, token: second.token };

@@ -145,14 +145,18 @@ app.db.insert(vaults).values({ id: muellerVault, companyId: "mueller", createdAt
  */
 const cases: Record<string, () => Promise<void>> = {
   "GET /api/company": async () => {
-    expect(await (await asJonas("/api/company")).json()).toEqual({ id: "weber", createdAt: 1 });
+    expect(await (await asJonas("/api/company")).json()).toEqual({
+      id: "weber",
+      createdAt: 1,
+      rootPublicKey: null,
+    });
   },
   "GET /api/accounts": async () => {
     const list = (await (await asJonas("/api/accounts")).json()) as { id: string }[];
     expect(list.map((account) => account.id).sort()).toEqual(["anna", "jonas"]);
   },
   "POST /api/invitations": async () => {
-    const response = await jonasSends("POST", "/api/invitations", invitationBody());
+    const response = await jonasSends("POST", "/api/invitations", invitationBody("Anna"));
     const { id } = (await response.json()) as { id: string };
     expect(
       app.db

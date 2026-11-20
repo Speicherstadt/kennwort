@@ -37,3 +37,9 @@ export const DevicesWire = z.object({
   ),
 });
 export type DeviceEntry = z.infer<typeof DevicesWire>["devices"][number];
+
+/** An invitation made (K-304): the one-time token for the link; the server keeps only its hash */
+export const InvitedWire = z.object({ token: z.string().min(1), expiresAt: z.number() });
+
+/** Another device wrote the account state first: its counter, to merge and try again */
+export const StaleWire = z.object({ error: z.literal("stale"), stateCounter: z.number().int() });

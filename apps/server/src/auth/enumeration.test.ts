@@ -11,7 +11,7 @@ describe("account enumeration", () => {
     const created = await setup.request("/api/invitations", {
       method: "POST",
       token: jonas.token,
-      body: invitationBody(),
+      body: invitationBody("Anna"),
     });
     const invite = (await created.json()) as { id: string; token: string };
     const annaId = encodeBytes(new Uint8Array(16).fill(1));

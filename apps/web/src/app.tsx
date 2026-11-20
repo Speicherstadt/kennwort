@@ -13,11 +13,13 @@ import { SetupPage } from "./account/setup-page.tsx";
 import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
 import { DevicesSection } from "./frame/devices-section.tsx";
 import { Frame } from "./frame/frame.tsx";
+import type { MembersDeps } from "./members/members.ts";
+import { MembersPage } from "./members/members-page.tsx";
 import type { Navigation } from "./navigation.ts";
 import type { DevicesApi } from "./session/devices-api.ts";
 import type { Session } from "./session/session.ts";
 
-export type AppApi = PairDeps & DevicesApi;
+export type AppApi = PairDeps & DevicesApi & MembersDeps;
 
 export const App = (props: { nav: Navigation; session: Session; api: AppApi; hash?: string }) => {
   const [otherAccount, setOtherAccount] = createSignal(false);
@@ -101,6 +103,9 @@ export const App = (props: { nav: Navigation; session: Session; api: AppApi; has
               onLock={() => props.session.lock()}
               onLocale={changeLocale}
               onAddDevice={() => props.nav.go("/link")}
+              members={() => (
+                <MembersPage session={props.session} api={props.api} origin={location.origin} />
+              )}
               devices={() => (
                 <Show when={props.session.opened()?.token}>
                   {(token) => (
