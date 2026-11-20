@@ -23,14 +23,21 @@ export const AuditAction = z.enum([...SERVER_ACTIONS, ...CLIENT_ACTIONS]);
 export type AuditAction = z.infer<typeof AuditAction>;
 export type ClientAction = (typeof CLIENT_ACTIONS)[number];
 
+/**
+ * Text as encode signs and hashes it: well-formed and already in NFC, so the same words have one
+ * form only and two lines cannot differ in bytes but not in meaning (review of K-205)
+ */
+export const isCanonical = (text: string) => text.isWellFormed() && text === text.normalize("NFC");
+export const AuditText = z.string().refine(isCanonical);
+
 export const AuditEvent = z.object({
-  companyId: z.string(),
+  companyId: AuditText,
   seq: z.number().int().nonnegative(),
   time: z.number().int().nonnegative(),
-  actor: z.string(),
+  actor: AuditText,
   action: AuditAction,
   /** What the event is about: an invitation, a vault, or an ID the signing client chose */
-  subject: z.string(),
+  subject: AuditText,
   /** Empty for events the server records; the actor's signature for client actions */
   signature: bytes(),
   prevHash: bytes(DIGEST_LENGTH),
@@ -84,6 +91,7 @@ export const isClientAction = (action: AuditAction): action is ClientAction =>
 /** Where the chain stood: the number of events and the hash of the last one */
 export type AuditHead = { length: number; hash: Uint8Array };
 export type AuditProblem =
+  | "malformed"
   | "wrong-company"
   | "gap"
   | "broken-chain"
@@ -105,6 +113,7 @@ const checkEvent = (
   prevHash: Uint8Array,
   check: AuditCheck,
 ): AuditProblem | undefined => {
+  if (![event.companyId, event.actor, event.subject].every(isCanonical)) return "malformed";
   if (event.companyId !== check.companyId) return "wrong-company";
   if (event.seq !== index) return "gap";
   if (!constantTimeEqual(event.prevHash, prevHash)) return "broken-chain";

@@ -638,6 +638,10 @@ Anmeldung (jede neue Sitzung), Einladung erstellt und angenommen, Tresor angeleg
 signiert `sign("audit", firma, wer, was, worum)` mit seinem Ed25519-Schlüssel; `worum` ist eine ID,
 die er einmal wählt, dieselbe Handlung mit derselben ID zweimal gilt als wiederholt.
 
+Text steht in jeder Zeile wohlgeformt und schon in NFC, sonst gilt die Zeile als fehlerhaft: So haben
+dieselben Worte nur eine Form, und eine wiederholte Handlung lässt sich nicht hinter einer anderen
+Schreibweise verstecken.
+
 Die Prüfung (`verifyAudit`) meldet die erste Zeile, an der etwas nicht stimmt: andere Firma, Lücke in
 den Nummern, falscher Vorgänger, geänderter Inhalt, fehlende oder falsche Signatur, wiederholte
 Handlung. Weil der Server kein Geheimnis kennt, könnte er die ganze Kette neu berechnen; dagegen

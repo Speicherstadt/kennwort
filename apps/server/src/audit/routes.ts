@@ -3,14 +3,14 @@
  * client actions a client signs itself. The server checks who may read and that a signed action
  * names the session as actor; the signature is checked by whoever verifies the chain.
  */
-import { bytes, CLIENT_ACTIONS, toWire } from "@kennwort/core";
+import { AuditText, bytes, CLIENT_ACTIONS, toWire } from "@kennwort/core";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { TenantEnv } from "../tenancy/routes.ts";
 
 const ClientEventRequest = z.object({
   action: z.enum(CLIENT_ACTIONS),
-  subject: z.string().min(1).max(200),
+  subject: AuditText.pipe(z.string().min(1).max(200)),
   signature: bytes(65),
 });
 
