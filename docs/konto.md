@@ -2,7 +2,8 @@
 title: Konto und Entsperren
 description: >-
   Wie man in Kennwort eine Firma anlegt, eine Einladung annimmt, das Recovery-Kit sichert, auf
-  einem neuen Gerät entsperrt, wann Kennwort sich selbst sperrt und wie man es als App installiert.
+  einem neuen Gerät entsperrt, wann Kennwort sich selbst sperrt, wie man es als App installiert und
+  was ohne Verbindung geht.
 ---
 
 # Konto und Entsperren
@@ -161,3 +162,24 @@ genau der signierten entspricht. Liefert dein Server etwas anderes aus, bleibt d
 aktiv. Ist eine geprüfte neue Version bereit, zeigt Kennwort **Neue Version bereit** mit
 **Neu laden**; bis dahin läuft die bisherige weiter. Was das schützt und was nicht, steht im
 [Sicherheitsdesign](sicherheitsdesign.md#signierte-releases-der-pwa).
+
+## Ohne Verbindung
+
+Kennwort hält auf jedem Gerät, auf dem du entsperrt hast, eine verschlüsselte Kopie deines Kontos
+und deiner Tresore. Ist der Server nicht erreichbar – im Keller ohne Netz, im Flugzeug, bei einer
+Störung –, entsperrst du trotzdem mit deiner Passphrase und liest deine Einträge. Kennwort zeigt
+dann unten **Offline – nur lesen** mit der Zeit des letzten Abgleichs. Anlegen, Bearbeiten,
+Favoriten und Teilen gehen erst wieder mit Verbindung; sobald der Server antwortet, gleicht
+Kennwort von selbst ab und der Hinweis verschwindet.
+
+- Die Kopie enthält nur Verschlüsseltes, nie deine Passphrase oder einen Eintrag im Klartext.
+  Wer dein Gerät hat, braucht weiter die Passphrase.
+- Sie zeigt den Stand des letzten Abgleichs: Was jemand seitdem geändert hat, siehst du erst wieder
+  mit Verbindung.
+- **Sperren** lässt die Kopie liegen, damit du ohne Verbindung entsperren kannst. **Dieses Gerät
+  abmelden** unter **Einstellungen → Angemeldete Geräte** löscht sie.
+- Auf einem Gerät, auf dem du noch nie mit Verbindung entsperrt hast, gibt es keine Kopie; dort
+  sagt Kennwort, dass der Server nicht erreichbar ist.
+
+Wie die Kopie gegen einen Server schützt, der dir einen alten Stand unterschieben will, steht im
+[Sicherheitsdesign](sicherheitsdesign.md#p-22-offline-kopie).

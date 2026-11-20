@@ -2,15 +2,19 @@
  * The entries of every vault this account opened (K-306, P-09, P-21): each vault has its device
  * state in memory; loading pulls and checks every record against the vault's checked log, a change
  * goes into the device's queue and is synced as the next version. Unlocked content lives only in
- * memory; nothing here is written to storage.
+ * memory. With the offline copy (K-308 part b) every record that passed the checks is kept there as
+ * the server sent it, still sealed; a vault opened anew first pulls from the copy, so offline the
+ * entries are there, and online the server is checked against what this device saw (E-13, E-15).
  */
 import {
   type Connection,
   type Device,
+  type EntryRecord,
   emptyDevice,
   encodeBytes,
   httpServer,
   idKey,
+  openRecordWithKey,
   pull,
   type Refused,
   type SyncContext,
@@ -19,6 +23,7 @@ import {
   type Trust,
 } from "@kennwort/core";
 import { createSignal } from "solid-js";
+import type { LocalCopy } from "../offline/local-copy.ts";
 import type { Session } from "../session/session.ts";
 import type { Vault } from "../vaults/vaults.ts";
 import { withPulled, withSynced } from "./device-merge.ts";
@@ -44,6 +49,47 @@ export type SyncChange = (
   change: (device: Device) => Device,
 ) => Promise<{ ok: true; value: Device } | { ok: false; error: SaveError }>;
 
+/** What the store uses of the offline copy */
+export type EntryCopy = Pick<LocalCopy, "records" | "keepRecords">;
+
+/** The copy as a server to pull from: the same checks as for the real one, and no writes */
+const copyServer = (copy: EntryCopy, vaultIdText: string): SyncServer => ({
+  pull: () => copy.records(vaultIdText),
+  push: async () => {
+    throw new Error("the offline copy takes no writes"); // i18n-ignore: never shown
+  },
+});
+
+/**
+ * The server with the copy behind it: every record it pulls and every record it took is offered to
+ * the copy, which keeps it only if it opens under the vault's checked log (P-09)
+ */
+const keeping = (server: SyncServer, keep: (records: EntryRecord[]) => void): SyncServer => ({
+  pull: async () => {
+    const records = await server.pull();
+    keep(records);
+    return records;
+  },
+  push: async (record) => {
+    const result = await server.push(record);
+    if (result.ok) keep([record]);
+    return result;
+  },
+});
+
+/** The vault's server for one operation under ctx; offline the token is empty and it fails */
+const serversOf =
+  (serverFor: ServerFor, session: Session, copy: EntryCopy | undefined) =>
+  (vault: Vault, ctx: SyncContext) => {
+    const opened = session.opened();
+    if (!opened) return undefined;
+    const server = serverFor(opened.token, vault.ring.vaultId);
+    if (!copy) return server;
+    const check = (record: EntryRecord) =>
+      openRecordWithKey(record, ctx.ring, ctx.log, ctx.trust, 0).ok;
+    return keeping(server, (records) => void copy.keepRecords(vault.idText, records, check));
+  };
+
 const contextOf = (session: Session, vault: Vault, trust: Trust): SyncContext | undefined => {
   const opened = session.opened();
   if (!opened) return undefined;
@@ -58,15 +104,12 @@ const contextOf = (session: Session, vault: Vault, trust: Trust): SyncContext | 
   };
 };
 
-export const createEntryStore = (serverFor: ServerFor, session: Session) => {
+export const createEntryStore = (serverFor: ServerFor, session: Session, copy?: EntryCopy) => {
   const [states, setStates] = createSignal<VaultState[]>([]);
   let trust: Trust | undefined;
   /** Only the newest load writes: an older one that ends later would bring back old vaults */
   let generation = 0;
-  const serverOf = (vault: Vault) => {
-    const token = session.opened()?.token;
-    return token ? serverFor(token, vault.ring.vaultId) : undefined;
-  };
+  const serverOf = serversOf(serverFor, session, copy);
   /** Changes one vault's state as it is now, never a copy read before an await */
   // A plain mirror of the signal: Solid 2 hands back the old value until the next flush, and a
   // save or a pull must build on the state as it is right now
@@ -92,12 +135,24 @@ export const createEntryStore = (serverFor: ServerFor, session: Session) => {
         refused: before.get(vault.idText)?.refused ?? [],
       })),
     );
-    await Promise.all(vaults.map((vault) => pullOne(vault, checkedBy, mine)));
+    await Promise.all(
+      vaults.map(async (vault) => {
+        if (copy && !before.has(vault.idText))
+          await pullFrom(vault, checkedBy, mine, () => copyServer(copy, vault.idText));
+        await pullFrom(vault, checkedBy, mine, (ctx) => serverOf(vault, ctx));
+      }),
+    );
   };
 
-  const pullOne = async (vault: Vault, checkedBy: Trust, mine: number) => {
+  /** One pull of a vault; what refuses is what this pull refused, from the copy or the server */
+  const pullFrom = async (
+    vault: Vault,
+    checkedBy: Trust,
+    mine: number,
+    source: (ctx: SyncContext) => SyncServer | undefined,
+  ) => {
     const ctx = contextOf(session, vault, checkedBy);
-    const server = serverOf(vault);
+    const server = ctx && source(ctx);
     const start = current(vault.idText)?.device;
     if (!ctx || !server || !start) return;
     const pulled = await pull(start, server, ctx).catch(() => undefined);
@@ -115,7 +170,7 @@ export const createEntryStore = (serverFor: ServerFor, session: Session) => {
     if (!state || !trust) return { ok: false, error: "unreachable" };
     if (state.vault.role === "read") return { ok: false, error: "read-only" };
     const ctx = contextOf(session, state.vault, trust);
-    const server = serverOf(state.vault);
+    const server = ctx && serverOf(state.vault, ctx);
     if (!ctx || !server) return { ok: false, error: "locked" };
     const queued = change(state.device);
     // The very device that is sent: withSynced knows the ops it took by their identity
@@ -138,7 +193,7 @@ export const createEntryStore = (serverFor: ServerFor, session: Session) => {
   const refresh = async (vaultIdText: string, entryId: Uint8Array) => {
     const state = current(vaultIdText);
     const ctx = state && trust && contextOf(session, state.vault, trust);
-    const server = state && serverOf(state.vault);
+    const server = state && ctx && serverOf(state.vault, ctx);
     if (!state || !ctx || !server) return undefined;
     const pulled = await pull(state.device, server, ctx).catch(() => undefined);
     if (!pulled) return undefined;

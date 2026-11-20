@@ -79,6 +79,7 @@ export {
   type Post,
   recoveryLoginKeyPair,
   type SignInResult,
+  signInWithLoginKey,
   signInWithPassphrase,
   signInWithRecoveryKey,
 } from "./auth/sign-in.ts";

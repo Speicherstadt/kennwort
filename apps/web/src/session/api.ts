@@ -13,6 +13,7 @@ import {
   SessionWire,
   type Stored,
   StoredWire,
+  signInWithLoginKey,
   signInWithPassphrase,
   signInWithRecoveryKey,
   toWire,
@@ -156,6 +157,9 @@ export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity)
     },
     signIn: (accountId: Uint8Array, passphrase: string, secretKey: Uint8Array, derive?: Derive) =>
       signInWithPassphrase(post, accountId, passphrase, secretKey, derive),
+    /** Signing in with the sign-in key kept after unlocking offline (K-308 part b) */
+    signInWithLoginKey: (accountId: Uint8Array, loginKey: Uint8Array) =>
+      signInWithLoginKey(post, accountId, loginKey),
     /** Signing in with the Recovery Key alone (P-12) */
     signInWithRecovery: (accountId: Uint8Array, recoveryKey: Uint8Array) =>
       signInWithRecoveryKey(post, accountId, recoveryKey),

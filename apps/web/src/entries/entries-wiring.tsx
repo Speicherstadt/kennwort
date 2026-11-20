@@ -12,15 +12,15 @@ import type { VaultStore } from "../vaults/vault-store.ts";
 import { type ShownEntry, shown } from "./entries.ts";
 import { EntryEditor } from "./entry-editor.tsx";
 import { contentOf, type EntryInput, inputOf, newInput } from "./entry-input.ts";
-import { createEntryStore, type ServerFor } from "./entry-store.ts";
+import { createEntryStore, type EntryCopy, type ServerFor } from "./entry-store.ts";
 
 /** What the editor opened with: the form starts from it, a sync while editing leaves it be */
 type Editing =
   | { kind: "new"; initial: EntryInput }
   | { kind: "change"; entry: ShownEntry; initial: EntryInput };
 
-export const createEntries = (serverFor: ServerFor, session: Session) => {
-  const store = createEntryStore(serverFor, session);
+export const createEntries = (serverFor: ServerFor, session: Session, copy?: EntryCopy) => {
+  const store = createEntryStore(serverFor, session, copy);
   const [editing, setEditing] = createSignal<Editing>();
   const entries = () => store.entries().map(shown);
   const storedOf = (id: string) => store.entries().find((e) => e.idText === id);

@@ -126,12 +126,12 @@ nennt seinen Angriff, und der Client muss ihn ablehnen und sagen, warum.
 | E-02 eigenes Konto über eine Einladung eingeschrieben | `adversary/eth.test.ts`, `membership/invitation.test.ts` | MAC passt nicht |
 | E-05 fremder Schlüssel unter einem Mitglied | `adversary/eth.test.ts` | nicht zertifizierter Autor |
 | E-06 Mitglied eingeschmuggelt | `adversary/eth.test.ts`, `membership/verify-log.test.ts` | kein Verwalter, falsche Signatur |
-| E-07 Log gekürzt, umsortiert, zurückgespielt | `adversary/eth.test.ts`, `membership/verify-log.test.ts` | Lücke, Rückfall |
+| E-07 Log gekürzt, umsortiert, zurückgespielt | `adversary/eth.test.ts`, `membership/verify-log.test.ts`; älterer Kontozustand nach der Offline-Kopie: `apps/web/src/session/offline-unlock.test.ts` | Lücke, Rückfall |
 | E-08 Gabelung | `membership/verify-log.test.ts` | Gabelung |
 | E-10 anderer Wurzelschlüssel | `adversary/eth.test.ts` | nicht zertifizierter Unterzeichner |
 | E-12 Geheimtexte vertauscht oder verschoben | `adversary/eth.test.ts`, `apps/server/src/adversary/` | falsche Signatur, anderer Tresor |
-| E-13 alte Version | `adversary/eth.test.ts`, `apps/server/src/adversary/` | Rückfall |
-| E-15 Eintrag verborgen | `adversary/eth.test.ts`, `apps/server/src/adversary/` | fehlt |
+| E-13 alte Version | `adversary/eth.test.ts`, `apps/server/src/adversary/`, gegen die Offline-Kopie `apps/web/src/entries/entry-store-offline.test.ts` | Rückfall |
+| E-15 Eintrag verborgen | `adversary/eth.test.ts`, `apps/server/src/adversary/`, gegen die Offline-Kopie `apps/web/src/entries/entry-store-offline.test.ts` | fehlt |
 | E-16 untergeschobener Eintrags-Schlüssel | `adversary/eth.test.ts` | falsche Signatur |
 | E-17, E-19 altes Format, alte Signatur | `adversary/eth.test.ts` | falsche Signatur |
 | E-23 Audit-Log gefälscht oder gekürzt | `audit/chain.test.ts`, `apps/server/src/audit/` | siehe [P-20](#p-20-audit-log) |
@@ -320,7 +320,8 @@ Passkey, Passphrase, Recovery-Kit, neues Gerät oder Firmen-Recovery –, hat da
 Wurzelschlüssel.
 
 Entsperrte Schlüssel liegen nur im Speicher (in der Extension in `chrome.storage.session`), nie in
-`localStorage`, IndexedDB oder auf dem Server.
+`localStorage`, IndexedDB oder auf dem Server. In IndexedDB hält die Web-App nur ihre Offline-Kopie
+aus Geheimtexten ([P-22](#p-22-offline-kopie)).
 
 ## Protokolle
 
@@ -404,9 +405,10 @@ und löscht alle Schlüssel aus dem Speicher; die Web-App nach zehn Minuten ohne
 Klick, und beim Sperren überschreibt sie AK.
 
 Das Gerät merkt sich Konto-ID und Secret Key (in der Web-App im `localStorage`), nie die Passphrase
-und nie AK. Der Secret Key ist der zweite Faktor gegen einen Server, der Passphrasen errät: Wer nur
-die Daten des Servers hat, muss 128 Bit Secret Key mitraten. Wer das Gerät hat, braucht weiter die
-Passphrase.
+und nie AK. Antwortet der Server nicht, entsperrt die Web-App aus ihrer Offline-Kopie
+([P-22](#p-22-offline-kopie)). Der Secret Key ist der zweite Faktor gegen einen Server, der
+Passphrasen errät: Wer nur die Daten des Servers hat, muss 128 Bit Secret Key mitraten. Wer das
+Gerät hat, braucht weiter die Passphrase.
 
 **Wehrt ab:** E-01, E-03, E-18.
 
@@ -1181,3 +1183,84 @@ und gegen den echten Server, mit Status und Antwort jeder Anfrage; weicht einer 
 fehl. Seitdem antwortet der Server auch auf unbekannte Routen mit JSON.
 
 **Wehrt ab:** E-13, E-15.
+
+### P-22 Offline-Kopie
+
+Die Web-App entsperrt und liest auch ohne Server (K-308 Teil b). Dafür hält jedes Gerät eine Kopie
+in IndexedDB (Datenbank `kennwort-offline`), und zwar nur, was ohnehin verschlüsselt ist oder der
+Server sowieso hat:
+
+| Schlüssel in der Kopie | Inhalt | Geschrieben |
+| --- | --- | --- |
+| `account` | Konto-ID, zu der die Kopie gehört | beim Öffnen eines Kontos |
+| `keys` | Konto-Salt, AK verpackt unter Passphrase und Recovery Key, Schlüsselblock, Kontozustand (alles F-01 unter AK bzw. den Entsperr-Schlüsseln) | nach jedem Entsperren mit Server, wenn der Kontozustand mit diesem AK aufgeht |
+| `state` | der Kontozustand, wie dieses Gerät ihn zuletzt kannte (F-01 unter AK, Zweck `account-state`, mit Zähler) | nach dem Entsperren und nach jedem Schreiben des Kontozustands |
+| `read:<pfad>` | die Antworten des Servers auf Tresorliste, Log und verpackte Tresor-Schlüssel je Tresor, Firma, Mitglieder (ohne Namen) und Freigaben | bei jeder Antwort 200 auf diese Abrufe |
+| `records:<tresor>` | je Eintrag der Datensatz mit der höchsten Version, die die Prüfung nach P-09 bestanden hat, so verschlüsselt, wie der Server ihn schickt | nach jedem Abruf und Schreiben |
+| `synced` | wann die Tresorliste zuletzt vom Server kam | mit der Tresorliste |
+
+Nie in der Kopie: Passphrase, Secret Key (der liegt wie bisher im `localStorage`, Projektplan,
+Entscheidungen), AK, private Schlüssel, Tresor- oder Eintrags-Schlüssel, Klartext eines Eintrags
+und die Namen der Mitglieder. Ein Playwright-Test durchsucht die Kopie nach Titel, Benutzername,
+Passwort und Website eines Eintrags, dem Tresor-Namen, Passphrase, Secret Key und Recovery Key.
+
+Ablauf:
+
+1. **Entsperren mit Server**: wie in [P-03](#p-03-entsperren). Danach legt das Gerät den Kontozustand
+   des Servers mit dem eigenen aus `state` zusammen (`mergeStates`, der höhere Stand gewinnt) und
+   speichert `keys` und `state`. Widersprechen sich beide (anderer Wurzelschlüssel, anderes Bündel,
+   anderer Hash an derselben Stelle eines Logs), behält das Gerät seinen eigenen Stand; was dann nicht
+   zu ihm passt, lehnen die Prüfungen der Tresore ab.
+2. **Entsperren ohne Server**: Bekommt die Anmeldung gar keine Antwort (nicht: eine Ablehnung), leitet
+   das Gerät aus Passphrase und Secret Key wie in F-05 ab, öffnet AK aus `keys`, den Schlüsselblock
+   und den Kontozustand aus `state`. Eine falsche Passphrase scheitert wie online an der AAD.
+   Aus derselben Ableitung behält es den Anmelde-Schlüssel ([P-02](#p-02-anmelden)) im Speicher, nie
+   die Passphrase; beim Sperren überschreibt es ihn wie AK. Ein Token gibt es bis dahin nicht.
+3. **Lesen ohne Server**: Die Tresore lädt die App aus `read:<pfad>` und prüft sie genau wie die
+   Antworten des Servers (`verifyLog` gegen den Kontozustand, Bindung des Tresor-Schlüssels,
+   Zertifikate gegen den gepinnten Wurzelschlüssel). Die Einträge holt sie aus `records:<tresor>`
+   und prüft jeden Datensatz nach P-09. Die Kopie ist für den Client nur ein weiterer Server, dem er
+   nicht vertraut.
+4. **Nur lesen**: Solange der Server nicht antwortet, zeigt die App „Offline – nur lesen“ mit der
+   Zeit des letzten Abgleichs und bietet weder Anlegen, Bearbeiten, Favorit noch Teilen an. Eine
+   Warteschlange für Änderungen ohne Server baut die Web-App nicht.
+5. **Wieder online**: Sobald der Browser eine Verbindung meldet und sonst alle 30 Sekunden versucht
+   die App den Server. Wurde ohne Server entsperrt, meldet sie sich mit dem Anmelde-Schlüssel an
+   (`signInWithLoginKey`), legt den Kontozustand des Servers mit dem eigenen zusammen und überschreibt
+   den Anmelde-Schlüssel. Dann lädt sie alle Tresore neu, mit allen Prüfungen.
+
+**Zurückspielen**: Eine alte Kopie hilft einem bösartigen Server nicht, das Gerät zurückzuwerfen.
+Der Kontozustand in `state` ist unter AK versiegelt, der Server kann ihn weder lesen noch fälschen,
+und er geht in jeden Kontozustand ein, den der Server liefert: Ein kürzeres Log oder ein anderer Hash
+an bekannter Stelle bleibt ein Angriff (E-07), auch wenn der Server einen älteren Kontozustand
+ausliefert. Ein Tresor, den das Gerät neu öffnet, zieht seine Einträge zuerst aus `records:<tresor>`
+und dann vom Server: Eine ältere Version als die gespeicherte meldet es als zurückgespielt (E-13),
+einen fehlenden Eintrag als verborgen (E-15). In `records:<tresor>` kommt nur, was die Prüfung nach
+P-09 besteht, und je Eintrag nur eine höhere Version; ein gefälschter Datensatz kann also nicht
+ersetzen, wogegen das Gerät prüft.
+
+**Sperren und Abmelden**: Sperren lässt die Kopie liegen – sie ist verschlüsselt und genau das, was
+das Entsperren ohne Server braucht. „Dieses Gerät abmelden“ löscht sie ganz, ebenso das Öffnen eines
+anderen Kontos auf dem Gerät. Ohne IndexedDB (manche private Fenster) hält das Gerät keine Kopie und
+braucht den Server wie zuvor.
+
+Restrisiko:
+
+- Wer das Gerät hat, hat die Kopie und den Secret Key; er muss weiter die Passphrase raten, und das
+  offline, ohne die Sperre des Servers nach fünf Fehlversuchen. Argon2id (F-05) bremst ihn. Das ist
+  dasselbe wie bei 1Password und Bitwarden, die ihre Daten ebenso verschlüsselt auf dem Gerät halten.
+- Was die Kopie zeigt, ist der Stand des letzten Abgleichs: Ein Eintrag, den jemand seitdem geändert
+  hat, oder ein Zugriff, den ein Verwalter seitdem entzogen hat, ist auf diesem Gerät bis zum
+  nächsten Abgleich noch in der alten Fassung lesbar. Entziehen schützt ohnehin erst mit einem
+  Schlüsselwechsel vor dem, was jemand schon hatte (P-11).
+- Wird dieses Gerät von einem anderen abgemeldet, löscht das die Kopie erst, wenn dieses Gerät selbst
+  abgemeldet wird; sie bleibt verschlüsselt.
+- Hat sich die Passphrase auf einem anderen Gerät geändert, passt der Anmelde-Schlüssel aus der
+  alten Kopie nicht mehr: Die App bleibt offline, bis man sperrt und mit der neuen Passphrase
+  entsperrt.
+
+Umgesetzt in `apps/web/src/offline/` (Kopie in IndexedDB, `fetch` mit der Kopie dahinter, Hinweis,
+erneuter Versuch), `apps/web/src/session/offline-unlock.ts`, `apps/web/src/entries/entry-store.ts`
+und `packages/core/src/auth/sign-in.ts` (`signInWithLoginKey`, „unreachable“ für keine Antwort).
+
+**Wehrt ab:** E-07, E-13, E-15.
