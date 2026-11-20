@@ -551,7 +551,9 @@ nur der Verwalter, der die Einladung erstellt hat, solange das Konto kein Zertif
 öffnet `s`, prüft den MAC und lädt das Zertifikat mit `PUT /api/members/:id/certificate` hoch. Der
 Server nimmt es nur von Inhabern und Admins, nur für dieses Konto, diese Firma, die hochgeladenen
 Schlüssel und die Rolle, die das Konto hat, und nur einmal; er schreibt dazu `member-certified` ins
-Audit-Log. Eine Einladung macht immer einen Mitarbeiter: Der Client zertifiziert die Rolle `member`,
+Audit-Log. Mit den eigenen Schlüsseln (`PUT /api/account/keys`) nimmt er ein Zertifikat nur vom ersten
+Inhaber, der die Firma mit dem Einrichtungs-Code angelegt hat, und nur mit der Rolle `owner`; ein
+Eingeladener kann sich so kein eigenes Zertifikat ablegen. Eine Einladung macht immer einen Mitarbeiter: Der Client zertifiziert die Rolle `member`,
 gleich was der Server behauptet. Eine höhere Rolle vergibt nur ein Inhaber in einem eigenen Schritt.
 Zertifizieren kann nur, wer den Wurzelschlüssel hat.
 
