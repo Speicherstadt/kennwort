@@ -20,7 +20,7 @@
     "@kennwort/core": "workspace:*"
   },
   "devDependencies": {
-    "@simplewebauthn/server": "13.3.3",
+    "@simplewebauthn/server": "14.1.0",
     "drizzle-kit": "0.31.11"
   }
 }
