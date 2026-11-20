@@ -48,8 +48,16 @@ export const QrScanDialog = (props: { onFound: (link: string) => void; onClose: 
     if (disposed || take(text)) return;
     timer = setTimeout(() => void scanFrame(), SCAN_EVERY_MS);
   };
+  // One camera at a time: a second click while the browser still asks would open another that
+  // nothing stops (review of K-306 part 4b); a plain flag, as Solid 2 reads signals late
+  let opening = false;
+  const [waiting, setWaiting] = createSignal(false);
   const startCamera = async () => {
+    if (opening) return;
+    opening = true;
+    setWaiting(true);
     const opened = await openCamera();
+    setWaiting(false);
     if (disposed) return stopTracks(opened);
     if (!opened) return setProblem("no-camera");
     setProblem(undefined);
@@ -93,7 +101,7 @@ export const QrScanDialog = (props: { onFound: (link: string) => void; onClose: 
         />
         <div class="flex flex-wrap gap-2">
           <Show when={hasCamera() && !stream()}>
-            <Button type="button" onClick={() => void startCamera()}>
+            <Button type="button" disabled={waiting()} onClick={() => void startCamera()}>
               <Icon icon={Camera} /> {m.qr_camera()}
             </Button>
           </Show>
