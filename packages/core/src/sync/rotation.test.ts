@@ -138,6 +138,19 @@ describe("rotateEntries (P-11)", () => {
     });
   });
 
+  it("leaves a secret unmarked that a queued change gives a new value: Max never saw it", async () => {
+    const { server, device } = await before();
+    const pin = { id: "pin", name: "PIN", value: "4711", kind: "secret" as const };
+    const changed = withField(bank, "password", "Neu-2027!");
+    const content = { ...changed, fields: [...changed.fields, pin] };
+    const rotated = await sync(
+      rotateEntries(edit(device, e1, content), exposure),
+      server,
+      after(jonas),
+    );
+    expect(contentOf(rotated.device, e1)).toEqual(content);
+  });
+
   it("marks what someone else wrote meanwhile in the old epoch: Max could read that too", async () => {
     const { server, device } = await before();
     await sync(

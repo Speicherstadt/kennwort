@@ -886,8 +886,9 @@ geschrieben wird, und die Änderungs-Markierung dafür, dass das, was er lesen k
    neuem EK unter VKₑ₊₁ (EK wechselt mit der Epoche, P-09). Das ausgetretene Mitglied kennt die
    alten EK; mit ihnen liest es keine spätere Version, auch nicht das geänderte Passwort.
 4. **Änderungs-Markierung**: Ersetzt die neue Version eine, die in einer Epoche lag, deren Schlüssel
-   die Person hatte, markiert der Client jedes geheime Feld (Art `secret` oder `totp` mit Wert) „Zum
-   Ändern“. Die Markierung steht im Inhalt des Eintrags (P-09), also verschlüsselt, mit jeder
+   die Person hatte, markiert der Client jedes geheime Feld (Art `secret` oder `totp` mit Wert), das
+   noch den Wert jener Version hat, „Zum Ändern“; ein Passwort, das eine wartende Änderung neu
+   setzt, hat die Person nie gesehen. Die Markierung steht im Inhalt des Eintrags (P-09), also verschlüsselt, mit jeder
    Version signiert und für alle Mitglieder sichtbar; der Server kann sie nicht unbemerkt
    entfernen:
 
@@ -926,9 +927,10 @@ lehnt jeder Client ab: Sie ist laut Log kein Mitglied mehr (`not-editor`).
 
 **Austritt aus der Firma.** `DELETE /api/members/:id` (Inhaber für alle anderen, Admins nur für
 Mitarbeiter, nie sich selbst) markiert das Konto als ausgetreten (`accounts.left_at`), löscht
-sofort alle seine Sitzungen, Zugriffsanfragen, Gruppenmitgliedschaften, Freigaben an es und einen
-verpackten Wurzelschlüssel und schreibt `member-left` ins Audit-Log. Danach kommt es mit keiner
-Sitzung mehr unter `/api`. Schlüssel und Zertifikat bleiben, denn die Logs, die es signiert hat,
+sofort alle seine Sitzungen, Zugriffsanfragen, Gruppenmitgliedschaften, Freigaben an es, einen
+verpackten Wurzelschlüssel und die offenen Einladungen, die es erstellt hat (es kennt Token und
+Geheimnis), und schreibt `member-left` ins Audit-Log. Danach kommt es mit keiner Sitzung mehr unter
+`/api`, und ein Live-Stream, den es noch offen hat, endet vor der nächsten Meldung. Schlüssel und Zertifikat bleiben, denn die Logs, die es signiert hat,
 müssen weiter prüfbar sein; `GET /api/members` nennt die Zeit des Austritts (`leftAt`). Aus den
 Tresoren entfernen und den Schlüssel wechseln kann nur der Client eines Verwalters; was er noch
 schuldet, sagt `dueExits` aus dem geprüften Log und den Ausgetretenen.

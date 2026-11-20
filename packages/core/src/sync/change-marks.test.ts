@@ -35,6 +35,18 @@ describe("markForChange (P-11)", () => {
     ]);
   });
 
+  it("marks only the secrets that still hold the value of the version the person read", () => {
+    const changed = withField(withPin, "pin", "0815");
+    expect(markForChange(changed, max, 1_800_000_500, withPin).toChange).toEqual([
+      markOf(["password", "otp"]),
+    ]);
+    const added = { ...bank, fields: [...bank.fields, pin] };
+    expect(markForChange(added, max, 1_800_000_500, bank).toChange).toEqual([markOf(["password"])]);
+    expect(markForChange(withField(bank, "password", "x"), max, 1, bank)).not.toHaveProperty(
+      "toChange",
+    );
+  });
+
   it("leaves an entry without secrets as it is, without an empty list", () => {
     const note = { ...bank, fields: bank.fields.filter((f) => f.kind !== "secret") };
     expect(markForChange(note, max, 1)).toEqual(note);

@@ -187,12 +187,15 @@ const mergedFor = (op: Pending, current: Known | undefined, now: number) =>
     ? mergeContent(op.base.content, op.content, current.content, now)
     : op.content;
 
-/** As merged, and marked "to change" if it replaces a version the person who left could read */
+/**
+ * As merged, and marked "to change" if it replaces a version the person who left could read: the
+ * secrets that still hold the value of that version
+ */
 const contentFor = (op: Pending, current: Known | undefined, now: number) => {
   const content = mergedFor(op, current, now);
   const exposed = op.exposedTo;
   return exposed && current?.key && exposed.epochs.includes(current.key.epoch)
-    ? markForChange(content, exposed.account, exposed.at)
+    ? markForChange(content, exposed.account, exposed.at, current.content)
     : content;
 };
 

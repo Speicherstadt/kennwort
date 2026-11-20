@@ -39,9 +39,22 @@ export const withMarks = (content: EntryContent, marks: readonly ChangeMark[]): 
   return marks.length > 0 ? { ...rest, toChange: [...marks] } : rest;
 };
 
-/** Marks every secret of the entry for the account that left; its own mark grows, keeping its time */
-export const markForChange = (content: EntryContent, account: string, at: number): EntryContent => {
-  const fields = secretFieldIds(content);
+const valueIn = (fields: readonly Field[], id: string) => fields.find((f) => f.id === id)?.value;
+
+/**
+ * Marks every secret of the entry the account that left could read, that is with the value it had
+ * in the version read (by default the content itself): a secret a change gives a new value was
+ * never seen. Its own mark grows, keeping its time.
+ */
+export const markForChange = (
+  content: EntryContent,
+  account: string,
+  at: number,
+  read: EntryContent = content,
+): EntryContent => {
+  const fields = secretFieldIds(content).filter(
+    (id) => valueIn(read.fields, id) === valueIn(content.fields, id),
+  );
   if (fields.length === 0) return content;
   const marks = marksOf(content);
   const own = marks.find((mark) => mark.account === account);
@@ -52,8 +65,6 @@ export const markForChange = (content: EntryContent, account: string, at: number
       : [...marks, { account, at, fields }],
   );
 };
-
-const valueIn = (fields: readonly Field[], id: string) => fields.find((f) => f.id === id)?.value;
 
 /** The marks that still hold after a change: a field whose value changed or vanished leaves them */
 export const settleMarks = (
