@@ -8,6 +8,7 @@ import { encodeBytes } from "../bytes.ts";
 import { edit, emptyDevice, pull, sync } from "../device.ts";
 import { type Connection, httpServer, type LiveEvent, watchVault } from "../http.ts";
 import { EntryRecord, recordToWire, sealRecord } from "../record.ts";
+import { wireContract } from "./contract-wire.ts";
 import { anna, bank, contextFor, id, jonas, withField } from "./fixtures.ts";
 
 export type Target = {
@@ -197,6 +198,7 @@ export const syncContract = (name: string, target: () => Promise<Target>) =>
       onlyOwnSignedRecords(await target()));
     it("tells a listener when it is ready and about each new version, and lets it go", async () =>
       listenersHearChanges(await target()));
+    wireContract(target);
   });
 
 const encodeHex = (bytes: Uint8Array) =>

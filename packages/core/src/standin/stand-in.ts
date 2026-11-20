@@ -17,8 +17,10 @@ type Vault = {
 };
 
 /** A request body as the schema reads it; a body that is no JSON fails like a wrong one */
-const parsedBody = <T extends z.ZodType>(schema: T, init: RequestInit) =>
-  z.object({ ok: z.literal(true), value: schema }).safeParse(parseJson(String(init.body)));
+const parsedBody = <T extends z.ZodType>(schema: T, body: string) =>
+  z.object({ ok: z.literal(true), value: schema }).safeParse(parseJson(body));
+/** As the server's body limit on records (apps/server/src/sync/routes.ts) */
+const MAX_RECORD_BYTES = 1024 * 1024;
 const VaultRequest = z.object({ id: bytes(16) });
 const json = (body: unknown, status = 200) => Response.json(body, { status });
 const notFound = () => json({ error: "not-found" }, 404);
@@ -58,8 +60,8 @@ const events = (vault: Vault, signal: AbortSignal | null | undefined) => {
 export const standIn = (sessions: Readonly<Record<string, StandInSession>>) => {
   const vaults = new Map<string, Vault>();
 
-  const createVault = (session: StandInSession, init: RequestInit) => {
-    const parsed = parsedBody(VaultRequest, init);
+  const createVault = (session: StandInSession, body: string) => {
+    const parsed = parsedBody(VaultRequest, body);
     if (!parsed.success) return json({ error: "invalid" }, 400);
     const id = encodeBytes(parsed.data.value.id);
     if (vaults.has(id)) return json({ error: "taken" }, 409);
@@ -67,13 +69,8 @@ export const standIn = (sessions: Readonly<Record<string, StandInSession>>) => {
     return json({ id }, 201);
   };
 
-  const pushRecord = (
-    session: StandInSession,
-    vaultId: string,
-    vault: Vault,
-    init: RequestInit,
-  ) => {
-    const parsed = parsedBody(EntryRecord, init);
+  const pushRecord = (session: StandInSession, vaultId: string, vault: Vault, body: string) => {
+    const parsed = parsedBody(EntryRecord, body);
     if (!parsed.success || encodeBytes(parsed.data.value.vaultId) !== vaultId)
       return json({ error: "invalid" }, 400);
     const record = parsed.data.value;
@@ -88,7 +85,13 @@ export const standIn = (sessions: Readonly<Record<string, StandInSession>>) => {
     return json({ stored: true });
   };
 
-  const inVault = (session: StandInSession, method: string, path: string, init: RequestInit) => {
+  const inVault = (
+    session: StandInSession,
+    method: string,
+    path: string,
+    body: string,
+    signal: AbortSignal | null | undefined,
+  ) => {
     const match = path.match(/^\/api\/vaults\/([^/]+)(\/.+)/);
     if (!match) return notFound();
     const [, vaultId, rest] = match as unknown as [string, string, string];
@@ -99,20 +102,28 @@ export const standIn = (sessions: Readonly<Record<string, StandInSession>>) => {
     if (call === "GET /records") return json(newest(vault));
     if (call === "GET /versions")
       return json((vault.entries.get(versions?.[1] as string) ?? []).map(recordToWire));
-    if (call === "PUT /records") return pushRecord(session, vaultId, vault, init);
-    if (call === "GET /events") return events(vault, init.signal);
+    if (call === "PUT /records")
+      return new TextEncoder().encode(body).length > MAX_RECORD_BYTES
+        ? json({ error: "too-large" }, 413)
+        : pushRecord(session, vaultId, vault, body);
+    if (call === "GET /events") return events(vault, signal);
     return notFound();
   };
 
   /** Called the way the client calls fetch: a URL and the request's options */
   const fetch = (async (input: string | URL, init: RequestInit = {}) => {
+    // Like fetch: an aborted signal rejects at once, methods are upper case, any body type reads
+    // as text (review of K-207)
+    init.signal?.throwIfAborted();
     const url = new URL(input);
-    const token = new Headers(init.headers).get("authorization")?.replace(/^Bearer /, "");
-    const session = sessions[token ?? ""];
+    const token = new Headers(init.headers).get("authorization")?.replace(/^Bearer /, "") ?? "";
+    // Own sessions only: "constructor" and the like are keys of every object, not tokens
+    const session = Object.hasOwn(sessions, token) ? sessions[token] : undefined;
     if (!session) return json({ error: "unauthenticated" }, 401);
-    const method = init.method ?? "GET";
-    if (`${method} ${url.pathname}` === "POST /api/vaults") return createVault(session, init);
-    return inVault(session, method, url.pathname, init);
+    const method = (init.method ?? "GET").toUpperCase();
+    const body = init.body == null ? "" : await new Response(init.body).text();
+    if (`${method} ${url.pathname}` === "POST /api/vaults") return createVault(session, body);
+    return inVault(session, method, url.pathname, body, init.signal);
   }) as typeof globalThis.fetch;
 
   return { fetch, listening: (vaultId: string) => vaults.get(vaultId)?.listeners.size ?? 0 };

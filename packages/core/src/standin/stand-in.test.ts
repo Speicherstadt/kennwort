@@ -20,6 +20,18 @@ syncContract("stand-in", async () => {
 });
 
 describe("stand-in", () => {
+  it("knows only its own sessions, not keys every object has (review of K-207)", async () => {
+    const server = standIn(sessions);
+    for (const token of ["constructor", "toString", "__proto__"]) {
+      const response = await server
+        .fetch(`https://demo.kennwort.test/api/vaults/${encodeBytes(new Uint8Array(16))}/records`, {
+          headers: { authorization: `Bearer ${token}` },
+        })
+        .catch((e: Error) => ({ status: `threw ${e.message}` }));
+      expect([token, response.status]).toEqual([token, 401]);
+    }
+  });
+
   it("writes the live stream as SSE and lets a reader go that cancels without a signal", async () => {
     const server = standIn(sessions);
     const vault = encodeBytes(new Uint8Array(16).fill(7));
