@@ -7,8 +7,10 @@ import type { MemberView } from "@kennwort/core";
 import { encodeBytes } from "@kennwort/core";
 import { Badge, Button, Icon, Input, m } from "@kennwort/ui";
 import { Copy, ShieldCheck } from "@kennwort/ui/icons";
-import { createSignal, For, Match, onSettled, Show, Switch } from "solid-js";
+import { useQuery, useQueryClient } from "@tanstack/solid-query";
+import { createSignal, For, Loading, Match, onSettled, resolve, Show, Switch } from "solid-js";
 import { PolicySection } from "../policy/policy-section.tsx";
+import { queryKeys } from "../queries.ts";
 import type { Session } from "../session/session.ts";
 import {
   adoptRoot,
@@ -16,7 +18,6 @@ import {
   confirm,
   invite,
   type LoadError,
-  type Loaded,
   loadMembers,
   type MembersDeps,
   mayChangeRoles,
@@ -25,11 +26,6 @@ import {
   needsRoot,
   setRole,
 } from "./members.ts";
-
-type Load =
-  | { state: "loading" }
-  | { state: "failed"; error: LoadError }
-  | ({ state: "ready" } & Loaded);
 
 const roleText = (role: MemberView["role"]) =>
   ({ owner: m.role_owner(), admin: m.role_admin(), member: m.role_member() })[role];
@@ -204,25 +200,27 @@ const MemberRow = (props: {
 };
 
 export const MembersPage = (props: { session: Session; api: MembersDeps; origin: string }) => {
-  const [load, setLoad] = createSignal<Load>({ state: "loading" });
+  const client = useQueryClient();
   const [busy, setBusy] = createSignal(false);
   const [problem, setProblem] = createSignal<string>();
   const opened = () => props.session.opened();
-  /** Loads the members and hands them back: `load()` gives the old value until the next flush */
-  const refresh = async () => {
+  // The list as the client checked it, errors as values; null while the account is locked. The
+  // account is read with the options, so a load uses the state the page shows
+  const members = useQuery(() => {
     const current = opened();
-    if (!current) return undefined;
-    const loaded = await loadMembers(props.api, current);
-    setLoad(
-      loaded.ok ? { state: "ready", ...loaded.value } : { state: "failed", error: loaded.error },
-    );
-    return loaded.ok ? loaded.value : undefined;
-  };
+    return {
+      queryKey: queryKeys.members,
+      queryFn: async () => (current ? loadMembers(props.api, current) : null),
+    };
+  });
+  const refresh = () => client.invalidateQueries({ queryKey: queryKeys.members });
+  // The first load, taken here: resolve() is a computation of its own, which onSettled may not start
+  const firstLoad = resolve(() => members.data);
   const loadAndAdopt = async () => {
-    const list = await refresh();
+    const loaded = await firstLoad;
     const current = opened();
-    if (!current || !list || !needsRoot(current, list.me)) return;
-    const adopted = await adoptRoot(props.api, props.session, list.me);
+    if (!current || !loaded?.ok || !needsRoot(current, loaded.value.me)) return;
+    const adopted = await adoptRoot(props.api, props.session, loaded.value.me);
     if (adopted.ok || adopted.error === "none") return;
     setProblem(
       adopted.error === "failed" ? m.members_root_adopt_failed() : m.members_root_grant_invalid(),
@@ -231,8 +229,12 @@ export const MembersPage = (props: { session: Session; api: MembersDeps; origin:
   // Once on screen; the page lives only while the account is open
   onSettled(() => void loadAndAdopt());
   const ready = () => {
-    const value = load();
-    return value.state === "ready" ? value : undefined;
+    const loaded = members.data;
+    return loaded?.ok ? loaded.value : undefined;
+  };
+  const loadError = (): LoadError | undefined => {
+    const loaded = members.data;
+    return loaded && !loaded.ok ? loaded.error : undefined;
   };
   const doConfirm = async (view: MemberView, me: MemberView | undefined) => {
     setBusy(true);
@@ -262,62 +264,64 @@ export const MembersPage = (props: { session: Session; api: MembersDeps; origin:
         {m.members_title()}
       </h1>
       <div class="grid max-w-xl gap-6">
-        <Show when={load().state === "failed"}>
-          <p role="alert" class={alertClass}>
-            {(load() as { error: LoadError }).error === "root-mismatch"
-              ? m.members_root_mismatch()
-              : m.members_load_failed()}
-          </p>
-        </Show>
-        <Show when={ready()}>
-          {(list) => (
-            <>
-              <Show when={mayInvite(list().me)}>
-                <InviteForm onInvite={doInvite} />
-              </Show>
-              <Show when={problem()}>
-                <p role="alert" class={alertClass}>
-                  {problem()}
-                </p>
-              </Show>
-              <ul
-                class="divide-y divide-border rounded-xl border border-border"
-                aria-label={m.members_title()}
-              >
-                <For each={list().views}>
-                  {(view) => (
-                    <MemberRow
-                      view={view}
-                      isMe={
-                        encodeBytes(view.accountId) ===
-                        encodeBytes(opened()?.accountId ?? new Uint8Array())
-                      }
-                      canConfirm={(() => {
-                        const current = opened();
-                        return current !== undefined && mayConfirm(current, list().me);
-                      })()}
-                      canChangeRole={(() => {
-                        const current = opened();
-                        return current !== undefined && mayChangeRoles(current, list().me);
-                      })()}
-                      busy={busy()}
-                      onConfirm={() => doConfirm(view, list().me)}
-                      onRole={(role) => doRole(view, role)}
-                    />
-                  )}
-                </For>
-              </ul>
-              <PolicySection
-                session={props.session}
-                api={props.api}
-                canEdit={(() => {
-                  const current = opened();
-                  return current !== undefined && mayChangeRoles(current, list().me);
-                })()}
-              />
-            </>
-          )}
-        </Show>
+        <Loading>
+          <Show when={loadError()}>
+            {(error) => (
+              <p role="alert" class={alertClass}>
+                {error() === "root-mismatch" ? m.members_root_mismatch() : m.members_load_failed()}
+              </p>
+            )}
+          </Show>
+          <Show when={ready()}>
+            {(list) => (
+              <>
+                <Show when={mayInvite(list().me)}>
+                  <InviteForm onInvite={doInvite} />
+                </Show>
+                <Show when={problem()}>
+                  <p role="alert" class={alertClass}>
+                    {problem()}
+                  </p>
+                </Show>
+                <ul
+                  class="divide-y divide-border rounded-xl border border-border"
+                  aria-label={m.members_title()}
+                >
+                  <For each={list().views}>
+                    {(view) => (
+                      <MemberRow
+                        view={view}
+                        isMe={
+                          encodeBytes(view.accountId) ===
+                          encodeBytes(opened()?.accountId ?? new Uint8Array())
+                        }
+                        canConfirm={(() => {
+                          const current = opened();
+                          return current !== undefined && mayConfirm(current, list().me);
+                        })()}
+                        canChangeRole={(() => {
+                          const current = opened();
+                          return current !== undefined && mayChangeRoles(current, list().me);
+                        })()}
+                        busy={busy()}
+                        onConfirm={() => doConfirm(view, list().me)}
+                        onRole={(role) => doRole(view, role)}
+                      />
+                    )}
+                  </For>
+                </ul>
+                <PolicySection
+                  session={props.session}
+                  api={props.api}
+                  canEdit={(() => {
+                    const current = opened();
+                    return current !== undefined && mayChangeRoles(current, list().me);
+                  })()}
+                />
+              </>
+            )}
+          </Show>
+        </Loading>
       </div>
     </section>
   );

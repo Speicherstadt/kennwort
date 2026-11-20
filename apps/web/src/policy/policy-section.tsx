@@ -4,35 +4,38 @@
  */
 import { LOCK_MINUTES, type UnsignedPolicy } from "@kennwort/core";
 import { Button, Input, m } from "@kennwort/ui";
-import { createSignal, onSettled, Show } from "solid-js";
+import { useQuery, useQueryClient } from "@tanstack/solid-query";
+import { createMemo, createSignal, Loading, onSettled, Show } from "solid-js";
+import { queryKeys } from "../queries.ts";
 import type { Session } from "../session/session.ts";
 import { applyPolicy, loadPolicy, type PolicyDeps, saveLockTime } from "./policy.ts";
 
 const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
 
 export const PolicySection = (props: { session: Session; api: PolicyDeps; canEdit: boolean }) => {
-  const [policy, setPolicy] = createSignal<UnsignedPolicy>();
-  const [problem, setProblem] = createSignal<string>();
-  const [minutes, setMinutes] = createSignal("");
+  const client = useQueryClient();
+  // Checked under the pinned root, errors as values; null while the account is locked
+  const loaded = useQuery(() => {
+    const opened = props.session.opened();
+    return {
+      queryKey: queryKeys.policy,
+      queryFn: async () => (opened ? loadPolicy(props.api, opened) : null),
+    };
+  });
+  // A load that fails keeps the last valid policy on screen, next to the problem
+  const policy = createMemo<UnsignedPolicy | undefined>((last) => {
+    const value = loaded.data;
+    return value?.ok ? value.value : last;
+  });
+  const problem = () => {
+    const value = loaded.data;
+    if (!value || value.ok) return undefined;
+    return value.error === "unreachable" ? m.policy_unreachable() : m.policy_invalid();
+  };
+  // What the owner types, set back to the policy in force whenever it loads
+  const [minutes, setMinutes] = createSignal(() => String(policy()?.lockAfterMinutes ?? ""));
   const [status, setStatus] = createSignal<"saved" | "failed">();
   const [busy, setBusy] = createSignal(false);
-  const refresh = async () => {
-    const opened = props.session.opened();
-    if (!opened) return;
-    const loaded = await loadPolicy(props.api, opened);
-    setProblem(
-      loaded.ok
-        ? undefined
-        : loaded.error === "unreachable"
-          ? m.policy_unreachable()
-          : m.policy_invalid(),
-    );
-    if (!loaded.ok) return;
-    setPolicy(loaded.value);
-    setMinutes(String(loaded.value.lockAfterMinutes));
-  };
-  // Once on screen, then after each save; the section lives only while the account is open
-  onSettled(() => void refresh());
   const save = async (event: SubmitEvent) => {
     event.preventDefault();
     const value = Number(minutes());
@@ -41,43 +44,45 @@ export const PolicySection = (props: { session: Session; api: PolicyDeps; canEdi
     const saved = await saveLockTime(props.api, props.session, value);
     setBusy(false);
     setStatus(saved ? "saved" : "failed");
-    await refresh();
+    await client.invalidateQueries({ queryKey: queryKeys.policy });
   };
   return (
     <section aria-labelledby="policy-title" class="grid gap-3">
       <h2 id="policy-title" class="text-xs font-medium">
         {m.policy_title()}
       </h2>
-      <Show when={problem()}>
-        <p role="alert" class={alertClass}>
-          {problem()}
-        </p>
-      </Show>
-      <Show when={policy()}>
-        {(current) => (
-          <Show
-            when={props.canEdit}
-            fallback={<p>{m.policy_lock_after({ minutes: current().lockAfterMinutes })}</p>}
-          >
-            <form class="flex flex-wrap items-end gap-2" onSubmit={save}>
-              <div class="w-40">
-                <Input
-                  label={m.policy_lock_label()}
-                  type="number"
-                  min={LOCK_MINUTES.min}
-                  max={LOCK_MINUTES.max}
-                  value={minutes()}
-                  required
-                  onInput={(event) => setMinutes(event.currentTarget.value)}
-                />
-              </div>
-              <Button type="submit" class="h-11 md:h-8" disabled={busy()}>
-                {busy() ? m.working() : m.policy_save()}
-              </Button>
-            </form>
-          </Show>
-        )}
-      </Show>
+      <Loading>
+        <Show when={problem()}>
+          <p role="alert" class={alertClass}>
+            {problem()}
+          </p>
+        </Show>
+        <Show when={policy()}>
+          {(current) => (
+            <Show
+              when={props.canEdit}
+              fallback={<p>{m.policy_lock_after({ minutes: current().lockAfterMinutes })}</p>}
+            >
+              <form class="flex flex-wrap items-end gap-2" onSubmit={save}>
+                <div class="w-40">
+                  <Input
+                    label={m.policy_lock_label()}
+                    type="number"
+                    min={LOCK_MINUTES.min}
+                    max={LOCK_MINUTES.max}
+                    value={minutes()}
+                    required
+                    onInput={(event) => setMinutes(event.currentTarget.value)}
+                  />
+                </div>
+                <Button type="submit" class="h-11 md:h-8" disabled={busy()}>
+                  {busy() ? m.working() : m.policy_save()}
+                </Button>
+              </form>
+            </Show>
+          )}
+        </Show>
+      </Loading>
       <Show when={status() === "saved"}>
         <p role="status" class="text-[13px] text-success">
           {m.policy_saved()}

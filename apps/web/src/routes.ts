@@ -1,6 +1,7 @@
 /**
- * The pages of the web app, read from and written to the URL (DESIGN.md, Aufbau: on a phone one
- * screen at a time, chosen by the URL). Pure functions; navigation.ts keeps the address in sync.
+ * The pages of the web app and the address each one has (DESIGN.md, Aufbau: on a phone one screen
+ * at a time, chosen by the URL). router.ts reads them from the address with TanStack Router; this
+ * writes the address of a page for links.
  */
 export type ListFilter =
   | { kind: "all" }
@@ -24,13 +25,6 @@ export type Route =
   | { page: "invite"; id: string }
   | { page: "not-found" };
 
-const lists: Record<string, ListFilter> = {
-  entries: { kind: "all" },
-  favorites: { kind: "favorites" },
-  "to-change": { kind: "to-change" },
-  shared: { kind: "shared" },
-};
-
 const filterPath = (filter: ListFilter) =>
   filter.kind === "all"
     ? "/entries"
@@ -43,51 +37,4 @@ export const routePath = (route: Route): string => {
   if (route.page !== "entries") return route.page === "not-found" ? "/" : `/${route.page}`;
   const base = filterPath(route.filter);
   return route.entry ? `${base}/${encodeURIComponent(route.entry)}` : base;
-};
-
-const decoded = (part: string | undefined) => {
-  try {
-    return part === undefined ? undefined : decodeURIComponent(part);
-  } catch {
-    return undefined;
-  }
-};
-
-const entriesRoute = (filter: ListFilter, entry: string | undefined, extra: number): Route => {
-  if (extra > 0) return { page: "not-found" };
-  if (entry === undefined) return { page: "entries", filter };
-  const id = decoded(entry);
-  return id ? { page: "entries", filter, entry: id } : { page: "not-found" };
-};
-
-export const parseRoute = (path: string): Route => {
-  const parts = path.split("/").filter(Boolean);
-  const [first = "entries", ...rest] = parts;
-  if (first === "vaults") {
-    if (rest.length === 0) return { page: "vaults" };
-    const id = decoded(rest[0]);
-    return id
-      ? entriesRoute({ kind: "vault", id }, rest[1], rest.length - 2)
-      : { page: "not-found" };
-  }
-  const filter = lists[first];
-  if (filter) return entriesRoute(filter, rest[0], rest.length - 1);
-  if (first === "invite" && rest.length === 1) {
-    const id = decoded(rest[0]);
-    return id ? { page: "invite", id } : { page: "not-found" };
-  }
-  if (
-    rest.length === 0 &&
-    (first === "generator" ||
-      first === "groups" ||
-      first === "settings" ||
-      first === "members" ||
-      first === "setup" ||
-      first === "unlock" ||
-      first === "recover" ||
-      first === "pair" ||
-      first === "link")
-  )
-    return { page: first };
-  return { page: "not-found" };
 };

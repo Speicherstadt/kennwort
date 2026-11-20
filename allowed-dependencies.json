@@ -9,6 +9,14 @@
       "reason": "Solid 2's DOM renderer, split out of solid-js in 2.0; the same project and release as solid-js",
       "workspaces": ["packages/ui", "apps/web", "apps/extension"]
     },
+    "@tanstack/solid-router": {
+      "reason": "TanStack Router for the web app's addresses and history, code-based routes without codegen (docs/plan.md, Entscheidungen; adopted as a release candidate at the user's request, the first line with Solid 2 support). Its router-core, history, cookie-es and seroval come along; its declared @solidjs/meta, @solid-primitives/refs, @solid-devtools/logger (Solid 1 packages) and isbot are imported by none of the code the web app uses or only by its server rendering, so none of them reaches the shipped bundle (checked with the bundle's source map)",
+      "workspaces": ["apps/web"]
+    },
+    "@tanstack/solid-query": {
+      "reason": "TanStack Query for the server data the pages load (devices, groups, members, policy): one in-memory cache per opened account, no persister, keys without secrets (docs/plan.md, Entscheidungen; release candidate with Solid 2 support, adopted at the user's request). Its only dependency is @tanstack/query-core",
+      "workspaces": ["apps/web"]
+    },
     "@noble/ciphers": {
       "reason": "XChaCha20-Poly1305 (and later ChaCha20/AES for KDBX): audited, pure TypeScript, no dependencies of its own; the only cipher library packages/crypto may use (docs/plan.md, Kryptografie)",
       "workspaces": ["packages/crypto"]

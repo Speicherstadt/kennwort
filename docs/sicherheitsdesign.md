@@ -453,12 +453,19 @@ der Passphrase neu anmelden. Den Zugang ganz entziehen erst Austritt und Schlüs
 „Dieses Gerät abmelden“ löscht dazu Konto-ID und Secret Key vom Gerät.
 Umgesetzt in `apps/server/src/auth/devices.ts` und `apps/web/src/frame/devices-section.tsx`.
 
+Was die Seiten der Web-App vom Server laden (Geräte, Gruppen, Mitglieder, Richtlinie), hält
+TanStack Query (`apps/web/src/queries.ts`): ein Cache je geöffnetem Konto, nur im Speicher, ohne
+Persister, beim Sperren geleert. Die Schlüssel der Abfragen nennen nur die Daten, nie ein Token,
+einen Schlüssel oder ein Geheimnis; das Token kommt beim Laden aus der Sitzung.
+
 Umgesetzt in `packages/crypto/src/device.ts` (Fingerabdruck, Vergleichscode),
 `packages/core/src/account/pairing.ts` (Paket, erste Entsperrung),
 `apps/server/src/auth/pairings.ts` und in der Web-App in `apps/web/src/pairing/`. Der QR-Code ist ein
 Link auf `/link` des Servers mit ID, Fingerabdruck und `r` im Fragment: Die Kamera-App des
-entsperrten Geräts öffnet ihn, die App liest das Fragment einmal und entfernt es sofort aus Adresse und
-Verlauf; der Link lässt sich auch einfügen. Das neue Gerät fragt alle vier Sekunden nach.
+entsperrten Geräts öffnet ihn, die App liest das Fragment einmal vor dem ersten Rendern und entfernt
+es sofort aus Adresse, Verlauf und dem Zustand des Routers (`takeStartFragment` in
+`apps/web/src/navigation.ts`), ebenso beim Link des Notfall-Kits auf `/unlock`; der Link lässt sich
+auch einfügen. Das neue Gerät fragt alle vier Sekunden nach.
 
 **Wehrt ab:** E-09, E-10, E-25.
 

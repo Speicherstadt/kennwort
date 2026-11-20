@@ -3,7 +3,7 @@ import { getLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { createSignal } from "solid-js";
 import { App } from "./app.tsx";
-import { createNavigation } from "./navigation.ts";
+import { createNavigation, takeStartFragment } from "./navigation.ts";
 import { createApi } from "./session/api.ts";
 import { deviceIdentity } from "./session/device-identity.ts";
 import { createSession } from "./session/session.ts";
@@ -17,13 +17,15 @@ if (root) {
   applyTheme(readTheme(globalThis.localStorage), document.documentElement, globalThis.localStorage);
   // Created once, outside JSX: a prop expression is a getter and would run on every read
   const nav = createNavigation();
+  // Before anything renders: a link's secret leaves the address at once (P-04, P-12)
+  const hash = takeStartFragment(nav);
   const api = createApi(fetch, deviceIdentity(globalThis.localStorage, navigator.userAgent));
   const session = createSession({ api, storage: globalThis.localStorage });
   const [updateReady, setUpdateReady] = createSignal(false);
   render(
     () => (
       <>
-        <App nav={nav} session={session} api={api} />
+        <App nav={nav} session={session} api={api} hash={hash} />
         <UpdateNotice ready={updateReady()} onReload={() => location.reload()} />
       </>
     ),

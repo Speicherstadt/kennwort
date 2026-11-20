@@ -4,6 +4,7 @@
  * Another language renders everything anew instead of reloading the page, which would lock it.
  */
 import { getLocale, type Locale, m, setLocale } from "@kennwort/ui";
+import { QueryClientProvider } from "@tanstack/solid-query";
 import { createMemo, createSignal, Match, onSettled, Show, Switch, untrack } from "solid-js";
 import { AddDevicePage } from "./account/add-device-page.tsx";
 import { InvitePage } from "./account/invite-page.tsx";
@@ -21,6 +22,7 @@ import type { MembersDeps } from "./members/members.ts";
 import { MembersPage } from "./members/members-page.tsx";
 import type { Navigation } from "./navigation.ts";
 import { ApplyPolicy } from "./policy/policy-section.tsx";
+import { createAccountQueries } from "./queries.ts";
 import type { DevicesApi } from "./session/devices-api.ts";
 import type { GroupApi } from "./session/groups-api.ts";
 import type { Session } from "./session/session.ts";
@@ -39,13 +41,17 @@ export type AppApi = PairDeps &
   GroupApi &
   ShareApi & { syncFetch: typeof fetch };
 
-/** The vaults while the account is open: loaded when it opens, gone when it locks */
+/**
+ * The vaults while the account is open: loaded when it opens, gone when it locks. So is the cache
+ * of what the pages loaded from the server (queries.ts): it lives with the frame, never longer.
+ */
 const OpenedFrame = (props: {
   nav: Navigation;
   session: Session;
   api: AppApi;
   onLocale: (next: Locale) => void;
 }) => {
+  const queries = createAccountQueries();
   const entries = createEntries(httpServerFor(props.api.syncFetch), props.session);
   const sharing = createSharing(props.api, props.session, entries.keys);
   const store: VaultStore = createVaultStore(props.api, props.session, (loaded) => {
@@ -74,7 +80,7 @@ const OpenedFrame = (props: {
   const Editor = entries.editor;
   const ShareDialog = sharing.dialog;
   return (
-    <>
+    <QueryClientProvider client={queries}>
       <Frame
         nav={props.nav}
         onLock={() => props.session.lock()}
@@ -131,11 +137,17 @@ const OpenedFrame = (props: {
       />
       <Editor nav={props.nav} vaults={store} />
       <ShareDialog vaults={store} />
-    </>
+    </QueryClientProvider>
   );
 };
 
-export const App = (props: { nav: Navigation; session: Session; api: AppApi; hash?: string }) => {
+export const App = (props: {
+  nav: Navigation;
+  session: Session;
+  api: AppApi;
+  /** The fragment the app was opened with (takeStartFragment) */
+  hash: string;
+}) => {
   const [otherAccount, setOtherAccount] = createSignal(false);
   const [locale, setShownLocale] = createSignal(getLocale());
   const changeLocale = (next: Locale) => {
@@ -144,18 +156,14 @@ export const App = (props: { nav: Navigation; session: Session; api: AppApi; has
     setShownLocale(next);
   };
   const route = () => props.nav.route();
-  // Deliberately read once: the page the app was opened on decides whether the address carries a
-  // link's fragment, and the fragment is dropped right away, so a later navigation must not read it
-  // again. The path is a plain signal, never async.
+  // Deliberately read once: the page the app was opened on decides what the fragment it was opened
+  // with is (takeStartFragment has already dropped a secret one from the address), so a later
+  // navigation must not read it again. The path is a plain signal, never async.
   const startPage = untrack(() => route().page);
-  // The kit's link carries the Secret Key in its fragment: read it once, then drop it from the
-  // address and the history entry at once, whether or not unlocking follows (P-12)
-  const deviceLink =
-    startPage === "unlock" ? readDeviceLink(props.hash ?? location.hash) : undefined;
-  if (deviceLink) props.nav.dropFragment();
-  // The pairing link carries the pairing secret: read once, dropped at once too (P-04)
-  const pairingText = startPage === "link" ? (props.hash ?? location.hash) : "";
-  if (pairingText) props.nav.dropFragment();
+  // The kit's link carries the Secret Key in its fragment (P-12), the pairing link the pairing
+  // secret (P-04)
+  const deviceLink = startPage === "unlock" ? readDeviceLink(props.hash) : undefined;
+  const pairingText = startPage === "link" ? props.hash : "";
   // Every key press or click pushes the automatic lock back (P-03); added once the app is on
   // screen and removed with it
   onSettled(() => {
@@ -202,12 +210,7 @@ export const App = (props: { nav: Navigation; session: Session; api: AppApi; has
           </Match>
           <Match when={invite()}>
             {(r) => (
-              <InvitePage
-                nav={props.nav}
-                session={props.session}
-                id={r().id}
-                hash={props.hash ?? location.hash}
-              />
+              <InvitePage nav={props.nav} session={props.session} id={r().id} hash={props.hash} />
             )}
           </Match>
           <Match when={!props.session.opened()}>

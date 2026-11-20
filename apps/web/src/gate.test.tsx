@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { readInvitation } from "./account/invite-page.tsx";
 import { readDeviceLink } from "./account/unlock-page.tsx";
 import { App } from "./app.tsx";
-import { createNavigation, type Navigation } from "./navigation.ts";
+import { createNavigation, type Navigation, takeStartFragment } from "./navigation.ts";
 import { createApi } from "./session/api.ts";
 import type { Session } from "./session/session.ts";
 
@@ -38,15 +38,17 @@ const fakeSession = (state: { opened?: boolean; device?: boolean }) => {
   return { session, touches };
 };
 
-const open = (path: string, session: Session, hash = "") => {
+/** Opens the app on a path as main.tsx does; `hash` stands in for a fragment the path has none of */
+const open = (path: string, session: Session, hash?: string) => {
   setLocale("de", { reload: false });
   window.history.replaceState(null, "", path);
   const root = document.createElement("div");
   document.body.append(root);
   const navigation = createNavigation(window);
   nav = navigation;
+  const start = takeStartFragment(navigation, window);
   dispose = render(
-    () => <App nav={navigation} session={session} api={unreachable} hash={hash} />,
+    () => <App nav={navigation} session={session} api={unreachable} hash={hash ?? start} />,
     root,
   );
   flush();
@@ -116,7 +118,7 @@ describe("the gate", () => {
 
   it("fills account ID and Secret Key from the kit's link, even on a device that knows an account", () => {
     const link = "#account=abc&secret=K1-XYZ";
-    const root = open(`/unlock${link}`, fakeSession({ device: true }).session, link);
+    const root = open(`/unlock${link}`, fakeSession({ device: true }).session);
     // Dropped from the address before anyone types: the Secret Key does not stay in the history
     expect(window.location.hash).toBe("");
     expect(window.location.pathname).toBe("/unlock");
