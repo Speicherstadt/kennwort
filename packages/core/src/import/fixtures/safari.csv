@@ -1,0 +1,4 @@
+Title,URL,Username,Password,Notes,OTPAuth
+elster.example (jonas.weber),https://www.elster.example/,jonas.weber,Elst3r-Weber!,"Zertifikatsdatei liegt im Tresor
+Ablauf 2027",otpauth://totp/ELSTER:jonas.weber?secret=JBSWY3DPEHPK3PXP&issuer=ELSTER
+fahrzeugtracker.example (max),https://fahrzeugtracker.example,max,Tr@cker-Max,,

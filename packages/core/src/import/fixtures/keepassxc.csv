@@ -1,0 +1,5 @@
+"Group","Title","Username","Password","URL","Notes","TOTP","Icon","Last Modified","Created"
+"Weber Haustechnik","Lohnbuchhaltung","sandra","L0hn-Sandra!","https://lohn.example","","","0","2026-03-02T09:14:00Z","2025-01-10T08:00:00Z"
+"Weber Haustechnik/Baustellen/Musterstraße 5","Schlüsseltresor Baustelle","","4711","","Code für den Schlüsselkasten am Eingang
+Gültig bis Bauende","","0","2026-05-11T07:30:00Z","2026-05-11T07:30:00Z"
+"Weber Haustechnik/Recycle Bin","Alter Zugang","max","alt123","https://alt.example","","","0","2024-01-01T00:00:00Z","2024-01-01T00:00:00Z"

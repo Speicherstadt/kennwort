@@ -1,0 +1,161 @@
+{
+  "encrypted": false,
+  "folders": [
+    {
+      "id": "5c3b8f1e-0a2d-4e6f-9b1c-7d8e9f0a1b2c",
+      "name": "Büro"
+    },
+    {
+      "id": "6d4c9a2f-1b3e-4f70-8c2d-8e9f0a1b2c3d",
+      "name": "Technik/Fernwartung"
+    }
+  ],
+  "items": [
+    {
+      "passwordHistory": [
+        {
+          "lastUsedDate": "2025-11-03T08:15:00.000Z",
+          "password": "Sp@rkasse-2025!"
+        }
+      ],
+      "revisionDate": "2026-02-01T10:00:00.000Z",
+      "creationDate": "2024-05-12T09:30:00.000Z",
+      "deletedDate": null,
+      "id": "0f9a8b7c-6d5e-4f3a-2b1c-0d9e8f7a6b5c",
+      "organizationId": null,
+      "folderId": "5c3b8f1e-0a2d-4e6f-9b1c-7d8e9f0a1b2c",
+      "type": 1,
+      "reprompt": 0,
+      "name": "Online-Banking Sparkasse",
+      "notes": "TAN per App\nKontakt: Filiale Mitte",
+      "favorite": true,
+      "fields": [
+        {
+          "name": "Kundennummer",
+          "value": "7788-1",
+          "type": 0,
+          "linkedId": null
+        },
+        {
+          "name": "Online-PIN",
+          "value": "90210",
+          "type": 1,
+          "linkedId": null
+        },
+        {
+          "name": "Push-TAN aktiv",
+          "value": "true",
+          "type": 2,
+          "linkedId": null
+        },
+        {
+          "name": "Username",
+          "value": null,
+          "type": 3,
+          "linkedId": 100
+        }
+      ],
+      "login": {
+        "fido2Credentials": [],
+        "uris": [
+          {
+            "match": null,
+            "uri": "https://banking.sparkasse.example"
+          },
+          {
+            "match": 0,
+            "uri": "https://app.sparkasse.example"
+          }
+        ],
+        "username": "jonas.weber",
+        "password": "Sp@rkasse-2026!",
+        "totp": "otpauth://totp/Sparkasse:jonas.weber?secret=JBSWY3DPEHPK3PXP"
+      },
+      "collectionIds": null
+    },
+    {
+      "passwordHistory": null,
+      "id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+      "organizationId": null,
+      "folderId": null,
+      "type": 2,
+      "reprompt": 0,
+      "name": "Alarmanlage Lager",
+      "notes": "Code 2580\nÄndern nach Personalwechsel",
+      "favorite": false,
+      "secureNote": {
+        "type": 0
+      },
+      "collectionIds": null
+    },
+    {
+      "passwordHistory": null,
+      "id": "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+      "organizationId": null,
+      "folderId": "5c3b8f1e-0a2d-4e6f-9b1c-7d8e9f0a1b2c",
+      "type": 3,
+      "reprompt": 0,
+      "name": "Firmenkreditkarte",
+      "notes": null,
+      "favorite": false,
+      "card": {
+        "cardholderName": "Jonas Weber",
+        "brand": "Visa",
+        "number": "4111111111111111",
+        "expMonth": "8",
+        "expYear": "2028",
+        "code": "123"
+      },
+      "collectionIds": null
+    },
+    {
+      "passwordHistory": null,
+      "id": "3c4d5e6f-7a8b-4c9d-0e1f-2a3b4c5d6e7f",
+      "organizationId": null,
+      "folderId": null,
+      "type": 4,
+      "reprompt": 0,
+      "name": "Anna Schmidt",
+      "notes": null,
+      "favorite": false,
+      "identity": {
+        "title": "Frau",
+        "firstName": "Anna",
+        "middleName": null,
+        "lastName": "Schmidt",
+        "address1": "Industriestraße 12",
+        "address2": null,
+        "address3": null,
+        "city": "Bremen",
+        "state": null,
+        "postalCode": "28199",
+        "country": "DE",
+        "company": "Weber Haustechnik",
+        "email": "anna@weber-haustechnik.example",
+        "phone": "+49 421 123456",
+        "ssn": null,
+        "username": "anna",
+        "passportNumber": null,
+        "licenseNumber": "B072RRE2I55"
+      },
+      "collectionIds": null
+    },
+    {
+      "passwordHistory": null,
+      "id": "4d5e6f7a-8b9c-4d0e-1f2a-3b4c5d6e7f8a",
+      "organizationId": null,
+      "folderId": "6d4c9a2f-1b3e-4f70-8c2d-8e9f0a1b2c3d",
+      "type": 5,
+      "reprompt": 0,
+      "name": "Server Fernwartung",
+      "notes": "Nur Max",
+      "favorite": false,
+      "sshKey": {
+        "privateKey": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAA\n-----END OPENSSH PRIVATE KEY-----",
+        "publicKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExample max@weber",
+        "keyFingerprint": "SHA256:k3Yx0Example"
+      },
+      "collectionIds": null
+    }
+  ]
+}

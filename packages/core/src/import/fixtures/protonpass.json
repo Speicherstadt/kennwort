@@ -1,0 +1,299 @@
+{
+  "version": "1.31.0",
+  "userId": "anonymisiert==",
+  "encrypted": false,
+  "vaults": {
+    "share1": {
+      "name": "Weber Haustechnik",
+      "description": "Geteilter Tresor",
+      "display": {
+        "color": 0,
+        "icon": 0
+      },
+      "items": [
+        {
+          "itemId": "a1",
+          "shareId": "share1",
+          "data": {
+            "metadata": {
+              "name": "Großhändler-Portal",
+              "note": "Kundennummer 40711\nLieferung ins Lager",
+              "itemUuid": "u1"
+            },
+            "extraFields": [
+              {
+                "fieldName": "Kundennummer",
+                "type": "text",
+                "data": {
+                  "content": "40711"
+                }
+              },
+              {
+                "fieldName": "Lager-PIN",
+                "type": "hidden",
+                "data": {
+                  "content": "2468"
+                }
+              },
+              {
+                "fieldName": "Zweiter Code",
+                "type": "totp",
+                "data": {
+                  "totpUri": "otpauth://totp/Zwei?secret=GEZDGNBVGY3TQOJQ"
+                }
+              },
+              {
+                "fieldName": "Vertragsbeginn",
+                "type": "timestamp",
+                "data": {
+                  "timestamp": "2024-03-01"
+                }
+              }
+            ],
+            "type": "login",
+            "content": {
+              "itemEmail": "jonas@weber-haustechnik.example",
+              "password": "Gr0ssh@ndel!",
+              "urls": ["https://portal.grosshandel.example", "https://app.grosshandel.example"],
+              "totpUri": "otpauth://totp/Portal:jonas?secret=JBSWY3DPEHPK3PXP",
+              "passkeys": [],
+              "itemUsername": "jonas.weber"
+            }
+          },
+          "state": 1,
+          "aliasEmail": null,
+          "contentFormatVersion": 6,
+          "createTime": 1730801234,
+          "modifyTime": 1763551234,
+          "pinned": true
+        },
+        {
+          "itemId": "a2",
+          "shareId": "share1",
+          "data": {
+            "metadata": {
+              "name": "Webmail Sandra",
+              "note": "",
+              "itemUuid": "u2"
+            },
+            "extraFields": [],
+            "type": "login",
+            "content": {
+              "itemEmail": "sandra@weber-haustechnik.example",
+              "password": "Ma1l-Sandra",
+              "urls": [],
+              "totpUri": "",
+              "passkeys": [],
+              "itemUsername": ""
+            }
+          },
+          "state": 1,
+          "aliasEmail": null,
+          "contentFormatVersion": 6,
+          "createTime": 1,
+          "modifyTime": 1,
+          "pinned": false
+        },
+        {
+          "itemId": "a3",
+          "shareId": "share1",
+          "data": {
+            "metadata": {
+              "name": "Firmenkarte",
+              "note": "Tankstellen",
+              "itemUuid": "u3"
+            },
+            "extraFields": [],
+            "type": "creditCard",
+            "content": {
+              "cardholderName": "Jonas Weber",
+              "cardType": 0,
+              "number": "4111111111111111",
+              "verificationNumber": "123",
+              "expirationDate": "2028-08",
+              "pin": "1234"
+            }
+          },
+          "state": 1,
+          "aliasEmail": null,
+          "contentFormatVersion": 6,
+          "createTime": 1,
+          "modifyTime": 1,
+          "pinned": false
+        },
+        {
+          "itemId": "a4",
+          "shareId": "share1",
+          "data": {
+            "metadata": {
+              "name": "WLAN Büro",
+              "note": "",
+              "itemUuid": "u4"
+            },
+            "extraFields": [],
+            "type": "wifi",
+            "content": {
+              "ssid": "Weber-Buero",
+              "password": "Heizung&Sanitaer2026",
+              "security": 2,
+              "sections": []
+            }
+          },
+          "state": 1,
+          "aliasEmail": null,
+          "contentFormatVersion": 6,
+          "createTime": 1,
+          "modifyTime": 1,
+          "pinned": false
+        },
+        {
+          "itemId": "a5",
+          "shareId": "share1",
+          "data": {
+            "metadata": {
+              "name": "Alter Zugang",
+              "note": "",
+              "itemUuid": "u5"
+            },
+            "extraFields": [],
+            "type": "login",
+            "content": {
+              "itemEmail": "",
+              "password": "alt",
+              "urls": [],
+              "totpUri": "",
+              "passkeys": [],
+              "itemUsername": "alt"
+            }
+          },
+          "state": 2,
+          "aliasEmail": null,
+          "contentFormatVersion": 6,
+          "createTime": 1,
+          "modifyTime": 1,
+          "pinned": false
+        }
+      ]
+    },
+    "share2": {
+      "name": "Persönlich",
+      "description": "",
+      "display": {
+        "color": 1,
+        "icon": 1
+      },
+      "items": [
+        {
+          "itemId": "b1",
+          "shareId": "share2",
+          "data": {
+            "metadata": {
+              "name": "Max Mustermann",
+              "note": "",
+              "itemUuid": "u6"
+            },
+            "extraFields": [],
+            "type": "identity",
+            "content": {
+              "fullName": "Max Mustermann",
+              "email": "max@weber-haustechnik.example",
+              "phoneNumber": "+49 170 1234567",
+              "organization": "Weber Haustechnik",
+              "streetAddress": "Industriestraße 12",
+              "zipOrPostalCode": "28199",
+              "city": "Bremen",
+              "stateOrProvince": "",
+              "countryOrRegion": "Deutschland",
+              "extraPersonalDetails": [],
+              "extraAddressDetails": []
+            }
+          },
+          "state": 1,
+          "aliasEmail": null,
+          "contentFormatVersion": 6,
+          "createTime": 1,
+          "modifyTime": 1,
+          "pinned": false
+        },
+        {
+          "itemId": "b2",
+          "shareId": "share2",
+          "data": {
+            "metadata": {
+              "name": "Server Fernwartung",
+              "note": "",
+              "itemUuid": "u7"
+            },
+            "extraFields": [],
+            "type": "sshKey",
+            "content": {
+              "privateKey": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjE=\n-----END OPENSSH PRIVATE KEY-----",
+              "publicKey": "ssh-ed25519 AAAAC3Example max@weber",
+              "fingerprint": "SHA256:k3Yx0Example",
+              "sections": [
+                {
+                  "sectionName": "Server",
+                  "sectionFields": [
+                    {
+                      "fieldName": "Host",
+                      "type": "text",
+                      "data": {
+                        "content": "fernwartung.weber-haustechnik.example"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "state": 1,
+          "aliasEmail": null,
+          "contentFormatVersion": 6,
+          "createTime": 1,
+          "modifyTime": 1,
+          "pinned": false
+        },
+        {
+          "itemId": "b3",
+          "shareId": "share2",
+          "data": {
+            "metadata": {
+              "name": "Notiz Werkzeug",
+              "note": "Akkuschrauber im Transporter 2",
+              "itemUuid": "u8"
+            },
+            "extraFields": [],
+            "type": "note",
+            "content": {}
+          },
+          "state": 1,
+          "aliasEmail": null,
+          "contentFormatVersion": 6,
+          "createTime": 1,
+          "modifyTime": 1,
+          "pinned": false
+        },
+        {
+          "itemId": "b4",
+          "shareId": "share2",
+          "data": {
+            "metadata": {
+              "name": "Newsletter-Alias",
+              "note": "",
+              "itemUuid": "u9"
+            },
+            "extraFields": [],
+            "type": "alias",
+            "content": {}
+          },
+          "state": 1,
+          "aliasEmail": "weber.newsletter@passmail.example",
+          "contentFormatVersion": 6,
+          "createTime": 1,
+          "modifyTime": 1,
+          "pinned": false
+        }
+      ]
+    }
+  }
+}

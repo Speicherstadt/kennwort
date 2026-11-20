@@ -120,7 +120,7 @@ jobs:
       - run: bun run e2e --shard=${{ matrix.shard }}/3
 
   # The stricter gate of packages/crypto and packages/core: every mutant of the code must be killed by a test.
-  # Three parts side by side; core's two `mutate` lists together are exactly the `mutate` of
+  # Four parts side by side; core's three `mutate` lists together are exactly the `mutate` of
   # packages/core/stryker.config.json. In a pull request a part runs only when its area changed (job changes);
   # on main, in a release and on a manual run every part runs.
   mutation:
@@ -139,10 +139,16 @@ jobs:
             area: core
             package: packages/core
             mutate: "src/sync/**/*.ts,!src/**/*.test.ts,!src/**/test/**"
+          - part: core-import
+            area: core
+            package: packages/core
+            mutate: "src/import/**/*.ts,!src/**/*.test.ts,!src/**/test/**"
+            # Only the parsers' own tests use them (vitest.stryker.config.ts)
+            tests: "src/import/**/*.test.ts"
           - part: core-rest
             area: core
             package: packages/core
-            mutate: "src/**/*.ts,!src/sync/**,!src/**/*.test.ts,!src/**/test/**"
+            mutate: "src/**/*.ts,!src/sync/**,!src/import/**,!src/**/*.test.ts,!src/**/test/**"
     name: mutation (${{ matrix.part }})
     steps:
       - if: needs.changes.outputs[matrix.area] == 'false'
@@ -159,6 +165,7 @@ jobs:
         working-directory: ${{ matrix.package }}
         env:
           MUTATE: ${{ matrix.mutate }}
+          STRYKER_TESTS: ${{ matrix.tests || 'src/**/*.test.ts' }}
         run: |
           if [ -n "$MUTATE" ]; then bunx stryker run --mutate "$MUTATE"; else bunx stryker run; fi
 

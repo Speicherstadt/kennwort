@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!-- Anonymised export of KeePass 2.57 (File → Export → KeePass XML (2.x)) -->
+<KeePassFile>
+	<Meta>
+		<Generator>KeePass</Generator>
+		<DatabaseName>Weber Haustechnik</DatabaseName>
+		<RecycleBinEnabled>True</RecycleBinEnabled>
+		<RecycleBinUUID>3ZgCtNplQUaFzE9yHg4WLw==</RecycleBinUUID>
+	</Meta>
+	<Root>
+		<Group>
+			<UUID>s9G0rjXyOEyH6LBDqE9X2g==</UUID>
+			<Name>Weber Haustechnik</Name>
+			<Entry>
+				<UUID>QXvW7mY1Rk6r0lKqfK0x9w==</UUID>
+				<IconID>0</IconID>
+				<Tags>Bank;Büro</Tags>
+				<Times>
+					<LastModificationTime>2026-02-01T10:00:00Z</LastModificationTime>
+				</Times>
+				<String>
+					<Key>Notes</Key>
+					<Value>TAN per App
+Kontakt: Filiale &quot;Mitte&quot; &amp; Online</Value>
+				</String>
+				<String>
+					<Key>Password</Key>
+					<Value ProtectInMemory="True">Sp@rkasse&lt;2026&gt;!</Value>
+				</String>
+				<String>
+					<Key>Title</Key>
+					<Value>Online-Banking Sparkasse</Value>
+				</String>
+				<String>
+					<Key>URL</Key>
+					<Value>https://banking.sparkasse.example</Value>
+				</String>
+				<String>
+					<Key>UserName</Key>
+					<Value>jonas.weber</Value>
+				</String>
+				<String>
+					<Key>KP2A_URL_1</Key>
+					<Value>https://app.sparkasse.example</Value>
+				</String>
+				<String>
+					<Key>otp</Key>
+					<Value ProtectInMemory="True">otpauth://totp/Sparkasse:jonas.weber?secret=JBSWY3DPEHPK3PXP</Value>
+				</String>
+				<String>
+					<Key>Kundennummer</Key>
+					<Value>7788-1</Value>
+				</String>
+				<String>
+					<Key>Online-PIN</Key>
+					<Value ProtectInMemory="1">90210</Value>
+				</String>
+				<String>
+					<Key>Leer</Key>
+					<Value />
+				</String>
+				<History>
+					<Entry>
+						<UUID>QXvW7mY1Rk6r0lKqfK0x9w==</UUID>
+						<Times>
+							<LastModificationTime>2025-11-03T08:15:00Z</LastModificationTime>
+						</Times>
+						<String>
+							<Key>Password</Key>
+							<Value ProtectInMemory="True">Sp@rkasse-2025!</Value>
+						</String>
+					</Entry>
+					<Entry>
+						<Times>
+							<LastModificationTime>kaputt</LastModificationTime>
+						</Times>
+						<String>
+							<Key>Password</Key>
+							<Value>Sp@rkasse-2024!</Value>
+						</String>
+					</Entry>
+					<Entry>
+						<String>
+							<Key>Password</Key>
+							<Value ProtectInMemory="True">Sp@rkasse&lt;2026&gt;!</Value>
+						</String>
+					</Entry>
+				</History>
+			</Entry>
+			<Group>
+				<UUID>e1N6eHdQSkqv1JbbGgYsVQ==</UUID>
+				<Name>Baustellen</Name>
+				<Group>
+					<UUID>9yqZ2wq9n0mQ3H8Hk1E5aA==</UUID>
+					<Name>Musterstraße 5</Name>
+					<Entry>
+						<UUID>Zm9vYmFyZm9vYmFyZm9vYg==</UUID>
+						<Tags>Baustelle, Schlüssel</Tags>
+						<String>
+							<Key>Title</Key>
+							<Value>Schlüsseltresor Baustelle</Value>
+						</String>
+						<String>
+							<Key>Password</Key>
+							<Value ProtectInMemory="True">4711</Value>
+						</String>
+						<String>
+							<Key>Notes</Key>
+							<Value><![CDATA[Code für den <Schlüsselkasten>
+Gültig bis Bauende]]></Value>
+						</String>
+						<String>
+							<Key>TimeOtp-Secret-Base32</Key>
+							<Value ProtectInMemory="True">KRSXG5CTMVRXEZLU</Value>
+						</String>
+					</Entry>
+				</Group>
+			</Group>
+			<Group>
+				<UUID>cGFwaWVya29yYnBhcGllcg==</UUID>
+				<Name>Technik</Name>
+				<Entry>
+					<String>
+						<Key>Title</Key>
+						<Value>Wärmepumpen-Portal &#x1F525; &#252;</Value>
+					</String>
+					<String>
+						<Key>UserName</Key>
+						<Value>max@weber-haustechnik.example</Value>
+					</String>
+				</Entry>
+			</Group>
+			<Group>
+				<UUID>3ZgCtNplQUaFzE9yHg4WLw==</UUID>
+				<Name>Papierkorb</Name>
+				<Entry>
+					<String>
+						<Key>Title</Key>
+						<Value>Gelöschter Zugang</Value>
+					</String>
+				</Entry>
+			</Group>
+		</Group>
+	</Root>
+</KeePassFile>

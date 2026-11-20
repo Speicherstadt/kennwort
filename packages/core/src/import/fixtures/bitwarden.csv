@@ -1,0 +1,6 @@
+folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp
+Büro,1,login,Online-Banking Sparkasse,"TAN per App
+Kontakt: Filiale Mitte","Kundennummer: 7788-1
+PIN-Hinweis: steht im Safe",0,"https://banking.sparkasse.example,https://app.sparkasse.example",jonas.weber,Sp@rkasse-2026!,JBSWY3DPEHPK3PXP
+,,note,Alarmanlage Lager,"Code 2580, Ändern nach Personalwechsel",,0,,,,
+Technik,0,login,Wärmepumpen-Portal,,,0,https://wp-portal.example,max@weber-haustechnik.example,W@ermepumpe1,

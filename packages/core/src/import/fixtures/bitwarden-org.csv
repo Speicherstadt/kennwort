@@ -1,0 +1,3 @@
+collections,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp
+"Alle Mitarbeiter,Technik",login,Hersteller-Schulungsportal,,,0,https://schulung.hersteller.example,team@weber-haustechnik.example,Schulung#2026,
+Buchhaltung,login,DATEV Unternehmen online,Nur Anna und Jonas,"Beraternummer: 123456",0,https://duo.datev.example,anna@weber-haustechnik.example,D@tev-Anna,

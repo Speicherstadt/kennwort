@@ -1,0 +1,8 @@
+name,url,additional_urls,username,password,note,cardholdername,cardnumber,cvc,expirydate,zipcode,folder,full_name,phone_number,email,address1,address2,city,country,state,type,custom_fields
+Kunden,,,,,,,,,,,,,,,,,,,,,
+Heizungsportal Kunde Meyer,https://heizung.kunde.example,"[""https://app.heizung.kunde.example""]",service@weber-haustechnik.example,Me7er-Heizung,"Anlage im Keller
+Zugang über Garage",,,,,,Kunden,,,,,,,,,password,"[{""label"":""Anlagennummer"",""type"":""text"",""value"":""WP-2291""},{""label"":""Wartungscode"",""type"":""hidden"",""value"":""8812""}]"
+Tankkarte,,,,,,Sandra Becker,4000056655665556,321,09 / 27,,,,,,,,,,,credit_card,
+Sandra Becker,,,,,Personalakte,,,,,28199,,Sandra Becker,+49 421 654321,sandra@weber-haustechnik.example,Industriestraße 12,Halle 2,Bremen,DE,,identity,
+Notfallnummern,,,,,"Heizungsnotdienst: 0421 999
+Wasserwerk: 0421 888",,,,,,,,,,,,,,,note,not json

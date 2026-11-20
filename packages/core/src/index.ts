@@ -102,6 +102,9 @@ export {
   strengthOf,
   UPPER,
 } from "./generator/generator.ts";
+export { IMPORT_FORMATS, type ImportFormat } from "./import/formats.ts";
+export { type Columns, csvColumns, parseTableCsv } from "./import/table.ts";
+export type { ImportError, ImportedEntry, ImportResult, Parser } from "./import/types.ts";
 export {
   type Certificate,
   type CompanyRole,

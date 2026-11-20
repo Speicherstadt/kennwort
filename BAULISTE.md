@@ -288,6 +288,30 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   Markierung schwacher Passwörter, Hinweis zum Löschen der Datei.
 - [ ] **K-502 Parser** – je Format aus dem Projektplan eine reine Funktion in `packages/core`.
   Fertig, wenn: je Anbieter echte, anonymisierte Fixtures bestehen und Fuzzing ohne Absturz läuft.
+  In Teilen, je ein Pull Request; abgehakt wird K-502, wenn alle stehen:
+  - [x] Teil 1: Textformate – Bitwarden JSON und CSV, LastPass CSV, 1Password CSV, KeePass-2-XML,
+    KeePassXC- und KeePass-CSV, Passbolt CSV, Dashlane CSV, Proton Pass JSON, Keeper CSV,
+    NordPass CSV, Enpass JSON, Chrome/Edge, Firefox und Safari CSV, beliebige Tabelle mit
+    Spaltenzuordnung (`packages/core/src/import/`). Fertig, wenn: je Format Fixtures mit der
+    echten Struktur (Weber Haustechnik; Anführungszeichen, Zeilenumbrüche in Notizen, BOM, CRLF,
+    leere Felder, Unicode) bestehen, Fuzzing mit fast-check (Zufallstext, Zufallsbytes, kaputte
+    Fixtures, tiefe Verschachtelung) ohne Absturz und Hänger läuft und die Mutation-Tests der
+    neuen Dateien bei 100 % stehen.
+  - [ ] Teil 2: ZIP-Container – 1Password 1PUX, Dashlane- und Proton-Pass-ZIP, entpackt mit
+    `DecompressionStream` (asynchron) und eigenem ZIP-Verzeichnis. Fertig, wenn: je Anbieter ein
+    ZIP-Fixture besteht, auch mit gespeicherten und komprimierten Dateien, und kaputte ZIPs
+    (falsche Längen, Zip-Bomben über eine Größengrenze) als Fehler enden.
+  - [ ] Teil 3: KDBX 4 – Header, HMAC-Blöcke, Argon2d/id, AES-256 und ChaCha20 aus `@noble` in
+    `packages/crypto`, Rahmung und Gzip (`DecompressionStream`) in `packages/core`, innerer Strom
+    (ChaCha20) für geschützte Werte, dann der KeePass-XML-Parser; auch Passbolts KDBX. Fertig,
+    wenn: Fixtures aus KeePassXC und KeePass 2 (Passwort, Schlüsseldatei) bestehen, falsches
+    Passwort und geänderte Bytes als Fehler enden, Testvektoren für die Bausteine bestehen.
+  - [ ] Teil 4: Verschlüsselte Fremdexporte – Bitwardens verschlüsseltes und passwortgeschütztes
+    JSON (PBKDF2/Argon2id, AES-CBC mit HMAC). Fertig, wenn: Fixtures mit Testvektoren aus
+    Bitwardens Exporten bestehen und ein falsches Passwort als Fehler endet.
+  - [ ] Teil 5: Team Password Manager CSV (Projekte als Tresore) nach dessen Export-Doku und
+    FIDO Credential Exchange (CXF), sobald der Standard stabil ist. Fertig, wenn: je Format
+    Fixtures mit der echten Struktur bestehen und das Fuzzing sie einschließt.
 - [ ] **K-503 Authenticator-Import** – otpauth-migration-QR, Aegis, 2FAS, Microsoft.
 - [ ] **K-504 Export** – verschlüsseltes JSON, CSV, KDBX; nur Verwalter, im Audit-Log.
 
