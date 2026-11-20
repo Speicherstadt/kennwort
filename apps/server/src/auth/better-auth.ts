@@ -8,13 +8,28 @@ import { passkey } from "@better-auth/passkey";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { bearer } from "better-auth/plugins/bearer";
+import { eq } from "drizzle-orm";
+import { recordAudit } from "../audit/store.ts";
 import type { Db } from "../db/database.ts";
-import { authAccount, authPasskey, authSession, authUser, authVerification } from "../db/schema.ts";
+import {
+  accounts,
+  authAccount,
+  authPasskey,
+  authSession,
+  authUser,
+  authVerification,
+} from "../db/schema.ts";
 
 /** Set by app.ts from the socket (or proxy) address before a request reaches Better Auth */
 export const CLIENT_HEADER = "x-kennwort-client";
 
-export type AuthOptions = { secret: string; baseURL: string; rpID: string; origin: string };
+export type AuthOptions = {
+  secret: string;
+  baseURL: string;
+  rpID: string;
+  origin: string;
+  now?: () => number;
+};
 
 /**
  * What the server uses of Better Auth. The full inferred type drags in SimpleWebAuthn's types,
@@ -41,6 +56,19 @@ export type Auth = {
   }>;
 };
 
+const recordSignIn = (db: Db, accountId: string, time: number) => {
+  const account = db.select().from(accounts).where(eq(accounts.id, accountId)).get();
+  if (account)
+    recordAudit(db, {
+      companyId: account.companyId,
+      time,
+      actor: accountId,
+      action: "signed-in",
+      subject: "session",
+      signature: new Uint8Array(),
+    });
+};
+
 export const createAuth = (db: Db, options: AuthOptions): Auth =>
   betterAuth({
     secret: options.secret,
@@ -63,6 +91,16 @@ export const createAuth = (db: Db, options: AuthOptions): Auth =>
     // Its rate limit counts only the address app.ts puts here, never what a client sends
     advanced: { ipAddress: { ipAddressHeaders: [CLIENT_HEADER] } },
     telemetry: { enabled: false },
+    // Every new session, by passkey, sign-in key or invitation, is a line in the audit log
+    databaseHooks: {
+      session: {
+        create: {
+          after: async (session: { userId: string }) => {
+            recordSignIn(db, session.userId, (options.now ?? Date.now)());
+          },
+        },
+      },
+    },
     trustedOrigins: [options.origin],
     plugins: [
       bearer(),

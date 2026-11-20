@@ -1,6 +1,25 @@
 // Schemas, sync, the membership log and the import parsers, shared by every client and the server.
 
 export {
+  AUDIT_GENESIS,
+  AuditAction,
+  AuditEvent,
+  AuditExport,
+  type AuditFailure,
+  type AuditFields,
+  type AuditHead,
+  type AuditProblem,
+  AuditText,
+  auditHash,
+  CLIENT_ACTIONS,
+  type ClientAction,
+  chainAudit,
+  isCanonical,
+  isClientAction,
+  signAudit,
+  verifyAudit,
+} from "./audit/chain.ts";
+export {
   answerChallenge,
   type Derive,
   loginKeyPair,

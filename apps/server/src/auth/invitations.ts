@@ -9,6 +9,7 @@ import { bytes, encodeBytes } from "@kennwort/core";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
+import { recordAudit } from "../audit/store.ts";
 import type { Db } from "../db/database.ts";
 import { accounts, invitations, loginKeys } from "../db/schema.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
@@ -56,6 +57,13 @@ export const createInvitationRoute = ({ db, now, random }: InvitationDeps) =>
         expiresAt,
       })
       .run();
+    c.var.scope.audit({
+      time: now(),
+      actor: me.id,
+      action: "invitation-created",
+      subject: id,
+      signature: new Uint8Array(),
+    });
     return c.json({ id, token, expiresAt }, 201);
   });
 
@@ -115,6 +123,14 @@ export const acceptInvitationRoute = ({ db, auth, now, allow, address }: AcceptD
         .set({ acceptedAt: at, accountId: user.id })
         .where(eq(invitations.id, open.id))
         .run();
+    });
+    recordAudit(db, {
+      companyId: open.companyId,
+      time: at,
+      actor: user.id,
+      action: "invitation-accepted",
+      subject: open.id,
+      signature: new Uint8Array(),
     });
     const session = await context.internalAdapter.createSession(user.id);
     return session

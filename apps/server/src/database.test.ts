@@ -18,6 +18,7 @@ describe("database", () => {
     expect(tables(db)).toEqual([
       "__drizzle_migrations",
       "accounts",
+      "audit_events",
       "auth_account",
       "auth_passkey",
       "auth_session",

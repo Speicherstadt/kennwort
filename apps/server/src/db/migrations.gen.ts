@@ -25,5 +25,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795136658290,
     "breakpoints": true,
     "sql": "CREATE TABLE `entry_records` (\n\t`vault_id` text NOT NULL,\n\t`entry_id` text NOT NULL,\n\t`version` integer NOT NULL,\n\t`epoch` integer NOT NULL,\n\t`entry_key` blob NOT NULL,\n\t`content` blob NOT NULL,\n\t`author` text NOT NULL,\n\t`last_seen` blob NOT NULL,\n\t`signature` blob NOT NULL,\n\t`stored_at` integer NOT NULL,\n\tPRIMARY KEY(`vault_id`, `entry_id`, `version`),\n\tFOREIGN KEY (`vault_id`) REFERENCES `vaults`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE TABLE `vaults` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`company_id` text NOT NULL,\n\t`created_at` integer NOT NULL,\n\tFOREIGN KEY (`company_id`) REFERENCES `companies`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE INDEX `vaults_company` ON `vaults` (`company_id`);"
+  },
+  {
+    "tag": "0004_audit",
+    "when": 1795138291921,
+    "breakpoints": true,
+    "sql": "CREATE TABLE `audit_events` (\n\t`company_id` text NOT NULL,\n\t`seq` integer NOT NULL,\n\t`time` integer NOT NULL,\n\t`actor` text NOT NULL,\n\t`action` text NOT NULL,\n\t`subject` text NOT NULL,\n\t`signature` blob NOT NULL,\n\t`prev_hash` blob NOT NULL,\n\t`hash` blob NOT NULL,\n\tPRIMARY KEY(`company_id`, `seq`),\n\tFOREIGN KEY (`company_id`) REFERENCES `companies`(`id`) ON UPDATE no action ON DELETE no action\n);\n"
   }
 ];

@@ -26,9 +26,16 @@ export const syncRoutes = ({ hub, now, keepAliveMs = 20_000 }: SyncDeps) =>
       const parsed = VaultRequest.safeParse(await c.req.json().catch(() => undefined));
       if (!parsed.success) return c.json({ error: "invalid" }, 400);
       const id = encodeBytes(parsed.data.id);
-      return c.var.scope.createVault(id, now()) === "created"
-        ? c.json({ id }, 201)
-        : c.json({ error: "taken" }, 409);
+      const at = now();
+      if (c.var.scope.createVault(id, at) !== "created") return c.json({ error: "taken" }, 409);
+      c.var.scope.audit({
+        time: at,
+        actor: c.var.session.accountId,
+        action: "vault-created",
+        subject: id,
+        signature: new Uint8Array(),
+      });
+      return c.json({ id }, 201);
     })
     .get("/vaults/:vaultId/records", (c) => {
       const records = c.var.scope.latest(c.req.param("vaultId"));
