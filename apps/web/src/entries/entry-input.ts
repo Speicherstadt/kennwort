@@ -1,9 +1,10 @@
 /**
- * What the entry dialog edits (K-306 part 2): the type, the title and the fields, the type's own
- * first in its order, then the owner's. Read from stored content and written back into it; tags,
- * favorite and history ride along untouched.
+ * What the entry dialog edits (K-306 parts 2 and 5): the type, the title, the fields (the type's
+ * own first in its order, then the owner's) and the tags. Read from stored content and written
+ * back into it; the favorite rides along, and a replaced secret goes into the history.
  */
 import type { EntryContent } from "@kennwort/core";
+import { historyAfter } from "./entry-history.ts";
 import { type EntryType, TEMPLATES, templateField } from "./entry-types.ts";
 
 type StoredField = EntryContent["fields"][number];
@@ -12,7 +13,7 @@ type StoredField = EntryContent["fields"][number];
  * were added in this dialog, so one left without a name is dropped (a stored one is kept as it is)
  */
 export type InputField = StoredField & { own: boolean; added?: boolean };
-export type EntryInput = { type: EntryType; title: string; fields: InputField[] };
+export type EntryInput = { type: EntryType; title: string; fields: InputField[]; tags: string[] };
 
 /** The type's fields; a stored field keeps the kind it was stored with (review of K-306 part 2) */
 const fromTemplate = (type: EntryType, stored: (id: string) => StoredField | undefined) =>
@@ -30,6 +31,7 @@ export const newInput = (type: EntryType): EntryInput => ({
   type,
   title: "",
   fields: fromTemplate(type, () => undefined),
+  tags: [],
 });
 
 export const inputOf = (content: EntryContent): EntryInput => {
@@ -41,6 +43,7 @@ export const inputOf = (content: EntryContent): EntryInput => {
     type: content.type,
     title: content.title,
     fields: [...fromTemplate(content.type, stored), ...own],
+    tags: content.tags,
   };
 };
 
@@ -56,6 +59,7 @@ export const withType = (input: EntryInput, type: EntryType): EntryInput => {
     type,
     title: input.title,
     fields: [...fromTemplate(type, field), ...kept.map((f) => ({ ...f, own: true }))],
+    tags: input.tags,
   };
 };
 
@@ -66,12 +70,32 @@ const trimmed = (field: InputField): StoredField => ({
   kind: field.kind,
 });
 
-/** The content to save; a field added in the dialog and left without a name is left out */
-export const contentOf = (input: EntryInput, base?: EntryContent): EntryContent => ({
-  type: input.type,
-  title: input.title.trim(),
-  fields: input.fields.filter((f) => !f.added || f.name.trim() !== "").map(trimmed),
-  tags: base?.tags ?? [],
-  favorite: base?.favorite ?? false,
-  history: base?.history ?? [],
-});
+/** Folded for comparing tags: "Büro" and "büro" are the same tag */
+const tagKey = (tag: string) => tag.trim().toLocaleLowerCase();
+
+/** The tags with one more, trimmed and sorted; an empty one or one already there changes nothing */
+export const withTag = (tags: readonly string[], tag: string): string[] => {
+  const key = tagKey(tag);
+  if (key === "" || tags.some((t) => tagKey(t) === key)) return [...tags];
+  return [...tags, tag.trim()].sort((a, b) => a.localeCompare(b));
+};
+
+/**
+ * The content to save; a field added in the dialog and left without a name is left out. `now`
+ * (seconds, as the merge's) dates the secrets the change replaced.
+ */
+export const contentOf = (
+  input: EntryInput,
+  base?: EntryContent,
+  now = Math.floor(Date.now() / 1000),
+): EntryContent => {
+  const fields = input.fields.filter((f) => !f.added || f.name.trim() !== "").map(trimmed);
+  return {
+    type: input.type,
+    title: input.title.trim(),
+    fields,
+    tags: input.tags.reduce<string[]>(withTag, []),
+    favorite: base?.favorite ?? false,
+    history: historyAfter(base, fields, now),
+  };
+};

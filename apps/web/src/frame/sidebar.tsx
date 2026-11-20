@@ -13,6 +13,7 @@ import type { JSX } from "@solidjs/web";
 import { For, Show } from "solid-js";
 import { company, entries as demoEntries, groups, vaults } from "../demo.ts";
 import type { ShownEntry } from "../entries/entries.ts";
+import { toChangeCount } from "../filter.ts";
 import type { Navigation } from "../navigation.ts";
 import type { ListFilter } from "../routes.ts";
 import type { ShownVault } from "./entry-list.tsx";
@@ -91,11 +92,7 @@ export const Sidebar = (props: {
         filter={{ kind: "to-change" }}
         icon={TriangleExclamationPoint}
         label={m.nav_to_change()}
-        trailing={
-          <Badge tone="warning">
-            {(props.entries ?? demoEntries).filter((entry) => entry.weak && !entry.sharedBy).length}
-          </Badge>
-        }
+        trailing={<Badge tone="warning">{toChangeCount(props.entries ?? demoEntries)}</Badge>}
       />
       <Show when={props.entries?.some((entry) => entry.sharedBy !== undefined)}>
         <Item

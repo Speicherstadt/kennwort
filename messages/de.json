@@ -40,8 +40,8 @@
   "field_website": "Website",
   "field_copy": "{field} kopieren",
   "field_copied": "{field} kopiert",
-  "field_reveal": "Passwort aufdecken",
-  "field_hide": "Passwort verdecken",
+  "field_reveal": "{field} aufdecken",
+  "field_hide": "{field} verdecken",
   "generator_intro": "Erzeugt starke Passwörter und Passphrasen.",
   "generator_password": "Passwort",
   "generator_passphrase": "Passphrase",
@@ -328,5 +328,16 @@
   "share_failed": "Das hat nicht geklappt. Versuch es noch einmal.",
   "share_not_renewed": "Der Eintrag konnte nicht neu verschlüsselt werden; die Freigabe besteht weiter. Versuch es noch einmal, sobald du wieder verbunden bist.",
   "share_unnamed": "Jemand aus der Firma",
-  "share_not_current": "Jemand hat den Eintrag gerade gleichzeitig geändert. Die Freigabe ist entfernt und der Eintrag neu verschlüsselt; teile ihn mit den übrigen Personen bitte neu."
+  "share_not_current": "Jemand hat den Eintrag gerade gleichzeitig geändert. Die Freigabe ist entfernt und der Eintrag neu verschlüsselt; teile ihn mit den übrigen Personen bitte neu.",
+  "detail_favorite": "Favorit",
+  "detail_favorite_failed": "Der Favorit wurde nicht gespeichert. Versuch es noch einmal.",
+  "detail_tags": "Tags",
+  "detail_weak": "Das Passwort ist schwach und leicht zu erraten.",
+  "detail_reused": "Dasselbe Passwort steht in {count} Einträgen.",
+  "detail_earlier": "Frühere Passwörter",
+  "detail_earlier_item": "{field} bis {date}",
+  "entry_editor_tags": "Tags",
+  "entry_editor_new_tag": "Neuer Tag",
+  "entry_editor_add_tag": "Tag hinzufügen",
+  "entry_editor_remove_tag": "Tag {tag} entfernen"
 }

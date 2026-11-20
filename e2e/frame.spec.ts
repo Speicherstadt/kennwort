@@ -84,7 +84,8 @@ test("a phone shows one screen at a time with the tab bar @phone", async ({ page
   await expect(page.getByRole("listbox", { name: "Alle Einträge" })).toBeHidden();
   await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
   await page.getByRole("link", { name: "Zurück" }).click();
-  await page.getByRole("link", { name: /Zum Ändern · 0/ }).click();
+  // The worker's account keeps the entries of other tests, so its count is theirs too (K-306 part 5)
+  await page.getByRole("link", { name: /^Zum Ändern · \d+$/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Zum Ändern" })).toBeVisible();
   const tabs = page.getByRole("navigation", { name: "Hauptnavigation" });
   await tabs.getByRole("link", { name: "Einstellungen" }).click();

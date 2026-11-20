@@ -1129,7 +1129,9 @@ geändert hat, gilt; haben beide dasselbe Feld unterschiedlich geändert, bleibt
 auf dem Server liegt, und der eigene kommt in die früheren Werte des Eintrags. Hat die eigene Seite
 dabei Name oder Art des Felds geändert, bleibt das eigene Feld als eigenes Feld daneben stehen;
 Titel und Typ der eigenen Seite kommen in die früheren Werte. Tags beider Seiten bleiben, entfernt
-wird, was eine Seite entfernt hat. So geht beim Abgleich nichts verloren.
+wird, was eine Seite entfernt hat. So geht beim Abgleich nichts verloren. Die früheren Werte
+kürzt erst eine spätere Änderung auf einem Gerät auf die zehn neuesten je Feld, der Abgleich selbst
+nie.
 
 Fehlt in einer Antwort des Servers ein Eintrag, den das Gerät kennt, meldet der Client das als
 verborgenen Eintrag (E-15), eine ältere Version als die bekannte als zurückgespielten Stand (E-13); Löschen geschieht nur über einen signierten Grabstein. Was der Client

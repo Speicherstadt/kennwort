@@ -39,7 +39,11 @@ export const Field = (props: FieldProps) => {
       </div>
       <Show when={props.secret}>
         <IconButton
-          label={revealed() ? m.field_hide() : m.field_reveal()}
+          label={
+            revealed()
+              ? m.field_hide({ field: props.label })
+              : m.field_reveal({ field: props.label })
+          }
           aria-pressed={revealed() ? "true" : "false"}
           onClick={() => setRevealed(!revealed())}
         >

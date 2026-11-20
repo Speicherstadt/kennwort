@@ -8,6 +8,7 @@ import { Match, Show, Switch } from "solid-js";
 import type { ShownEntry } from "../entries/entries.ts";
 import type { Navigation } from "../navigation.ts";
 import { EntryDetail } from "./entry-detail.tsx";
+import type { Saved } from "./entry-detail-parts.tsx";
 import { EntryList, type ShownVault } from "./entry-list.tsx";
 import { GeneratorPage, GroupsPage, NotFoundPage, SettingsPage } from "./pages.tsx";
 import { Rail } from "./rail.tsx";
@@ -34,6 +35,7 @@ export const Frame = (props: {
   onNewEntry?: (() => void) | undefined;
   onEditEntry?: ((entry: ShownEntry) => void) | undefined;
   onShareEntry?: ((entry: ShownEntry) => void) | undefined;
+  onFavoriteEntry?: ((entry: ShownEntry) => Promise<Saved>) | undefined;
   /** A vault link this account cannot open: what shows instead of its entries (K-305) */
   noAccess?: ((vaultId: string) => JSX.Element | undefined) | undefined;
 }) => {
@@ -72,6 +74,7 @@ export const Frame = (props: {
                       vaultName={props.vaultName}
                       onEdit={props.onEditEntry}
                       onShare={props.onShareEntry}
+                      onFavorite={props.onFavoriteEntry}
                       nav={props.nav}
                       filter={entries().filter}
                       selected={entries().entry}

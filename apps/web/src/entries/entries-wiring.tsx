@@ -1,7 +1,8 @@
 /**
- * What the opened app does with entries (K-306 parts 1 and 2): the store loads them from every
+ * What the opened app does with entries (K-306 parts 1, 2 and 5): the store loads them from every
  * vault the vault store opened, and the editor writes a new entry of any type into a vault this
- * account may edit in, or changes one; after saving, the app shows the entry.
+ * account may edit in, or changes one; after saving, the app shows the entry. A star in the detail
+ * marks an entry as a favorite.
  */
 import { m } from "@kennwort/ui";
 import { createSignal, Show } from "solid-js";
@@ -49,7 +50,7 @@ export const createEntries = (serverFor: ServerFor, session: Session) => {
               vaults={what.kind === "new" ? writable() : undefined}
               onSave={(input, vaultIdText) => {
                 const before = stored();
-                const content = contentOf(input, before?.content);
+                const content = contentOf(input, before?.content, Math.floor(Date.now() / 1000));
                 const vault = vaultIdText ?? before?.vaultIdText ?? "";
                 return store.save(vault, content, before?.idText);
               }}
@@ -68,5 +69,12 @@ export const createEntries = (serverFor: ServerFor, session: Session) => {
     editor,
     startNew: () => setEditing({ kind: "new" }),
     startChange: (entry: ShownEntry) => setEditing({ kind: "change", entry }),
+    /** Marks an entry as a favorite or no longer, saved and synced like any change */
+    toggleFavorite: (entry: ShownEntry) => {
+      const stored = store.entries().find((e) => e.idText === entry.id);
+      if (!stored) return Promise.resolve({ ok: false, error: "unreachable" } as const);
+      const content = { ...stored.content, favorite: !stored.content.favorite };
+      return store.save(stored.vaultIdText, content, stored.idText);
+    },
   };
 };

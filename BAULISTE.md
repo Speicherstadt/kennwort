@@ -170,7 +170,7 @@ und die Schritte für Menschen am Ende erledigt sind.
     der Empfänger nur diesen Eintrag entschlüsseln kann (Test gegen Server und Stand-in).
   - [x] Teil 6b: Teilen in der Web-App – Freigeben, „Mit mir geteilt“, Widerrufen mit neuem EK.
     Fertig, wenn: Teilen und Widerrufen als Playwright-Test desktop und `@phone` laufen.
-- [ ] **K-306 Einträge** – alle Typen, Generator, TOTP mit QR-Scan, eigene Felder, frühere
+- [x] **K-306 Einträge** – alle Typen, Generator, TOTP mit QR-Scan, eigene Felder, frühere
   Passwörter, Suche, Favoriten, Tags.
   In Teilen, je ein Pull Request; abgehakt wird K-306, wenn alle stehen:
   - [x] Teil 1: Einträge aus den Tresoren statt der Demo – anlegen und ändern (Login), Liste und
@@ -193,8 +193,11 @@ und die Schritte für Menschen am Ende erledigt sind.
   - [x] Teil 4b: QR-Scan mit der Kamera und aus einem Bild (Screenshot), auf dem Handy und am
     Desktop. Fertig, wenn: nur ein `otpauth://totp`-Link übernommen wird und Scannen aus einem Bild
     (desktop und `@phone`) sowie mit der Kamera als Playwright-Test laufen.
-  - [ ] Teil 5: Frühere Passwörter, Favoriten, Tags, Suche über alles, „Zum Ändern“ (schwache und
-    doppelte Passwörter).
+  - [x] Teil 5: Frühere Passwörter, Favoriten, Tags, Suche über alles, „Zum Ändern“ (schwache und
+    doppelte Passwörter). Fertig, wenn: ein geändertes Passwort unter „Frühere Passwörter“ steht
+    (je Feld die zehn neuesten), die Suche nie geheime Werte durchsucht, schwache und doppelte
+    Passwörter nur auf dem Gerät erkannt werden und Ändern, Favorit, Tag, Suche und „Zum Ändern“
+    als Playwright-Test desktop und `@phone` laufen.
 - [ ] **K-307 Austritt und Recovery** – Schlüsselwechsel, Änderungs-Markierung, Austritts-Bericht,
   Firmen-Recovery, Notfallzugriff mit Wartezeit, Wechsel des Account Key (AK), wenn ein
   Recovery-Kit in fremde Hände geraten ist (P-12).
