@@ -9,7 +9,9 @@
  * - the menu is still open, uncovered and opaque as the page shows it (menu-frame.ts);
  * - only into fields the page still shows (field-shown.ts).
  *
- * Events the page makes up itself (`isTrusted` false) open nothing.
+ * Events the page makes up itself (`isTrusted` false) open nothing. A script's `field.focus()`
+ * still counts as trusted and can open the menu; it cannot fill: that takes a real click or Enter
+ * in the menu once it has been visible for 500 ms (review of K-403).
  */
 import { type ContentMessage, contentMessage, newNonce } from "../fill/messages.ts";
 import { fillLogin } from "./fill-in.ts";
