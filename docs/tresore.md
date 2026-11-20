@@ -29,6 +29,22 @@ stehen alle Tresore, in denen du Mitglied bist, mit deiner Rolle darin:
 Unter **Neuer Tresor** gibst du einen Namen ein und wählst **Tresor anlegen**. Wer einen Tresor
 anlegt, verwaltet ihn.
 
+## Mitglieder eines Tresors
+
+Neben jedem Tresor öffnet **Mitglieder** die Liste der Mitglieder mit ihrer Rolle. Wer den Tresor
+verwaltet, kann dort:
+
+- unter **Mitglied aufnehmen** eine Person der Firma mit einer Rolle aufnehmen. Angeboten werden
+  nur Konten, deren Schlüssel bestätigt sind; dein Gerät verpackt den Tresor-Schlüssel an genau
+  diese Schlüssel.
+- die **Rolle** eines Mitglieds ändern.
+- ein Mitglied **entfernen**. Es sieht danach keine neuen Einträge im Protokoll mehr. Was es
+  vorher entschlüsselt hat, kann es behalten haben; den Tresor-Schlüssel zu wechseln, damit auch
+  künftige Einträge geschützt sind, kommt mit dem Austritt (K-307).
+
+Hat ein anderes Gerät den Tresor gerade geändert, lädt Kennwort den neuen Stand und bittet dich,
+die Änderung noch einmal zu machen.
+
 ## Was dein Gerät prüft
 
 Zu jedem Tresor gehört ein Protokoll: Wer ihn angelegt hat, wer aufgenommen, geändert oder

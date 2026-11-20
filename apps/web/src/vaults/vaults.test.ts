@@ -44,10 +44,10 @@ describe("newVault and loadVaults", () => {
     await loadVaults(api, c.session);
     const cut = { ...api, vaultLog: async () => [] };
     const loaded = await loadVaults(cut, c.session);
-    expect(loaded.ok && loaded.value).toEqual({
-      vaults: [],
-      refused: [{ idText: made.value, error: "empty" }],
-    });
+    expect(loaded.ok && [loaded.value.vaults, loaded.value.refused]).toEqual([
+      [],
+      [{ idText: made.value, error: "empty" }],
+    ]);
   });
 
   it("refuses a vault whose genesis no certified account signed", async () => {

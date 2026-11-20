@@ -14,6 +14,7 @@ import {
   isMember,
   type Keyring,
   type LogState,
+  type MemberView,
   openVaultKey,
   openVaultName,
   remember,
@@ -41,12 +42,15 @@ export type Vault = {
 };
 /** A vault this client does not trust: shown as such, never opened */
 export type Refused = { idText: string; error: string };
-export type Loaded = { vaults: Vault[]; refused: Refused[] };
+/** People of the company as the pinned root confirms them, for names and to add to a vault */
+export type Loaded = { vaults: Vault[]; refused: Refused[]; people: MemberView[] };
 
 const seconds = () => Math.floor(Date.now() / 1000);
 
+type Checked = { trust: Trust; people: MemberView[] };
+
 /** The pinned root and every certificate it confirms; nothing at all if the root does not match */
-export const trustOf = async (api: VaultDeps, opened: Opened): Promise<Trust | undefined> => {
+export const trustOf = async (api: VaultDeps, opened: Opened): Promise<Checked | undefined> => {
   const [company, members] = await Promise.all([
     api.company(opened.token),
     api.members(opened.token),
@@ -54,11 +58,12 @@ export const trustOf = async (api: VaultDeps, opened: Opened): Promise<Trust | u
   if (!company || !members) return undefined;
   const root = trustedRoot(opened.state.rootFingerprint, company.rootPublicKey);
   if (!root) return undefined;
+  const people = checkMembers(root, members, opened.state.certificates);
   const certificates = new Map<string, Certificate>();
-  for (const view of checkMembers(root, members, opened.state.certificates))
+  for (const view of people)
     if (view.status === "certified" && view.certificate)
       certificates.set(idKey(view.accountId), view.certificate);
-  return { rootPublicKey: root, certificates, now: seconds() };
+  return { trust: { rootPublicKey: root, certificates, now: seconds() }, people };
 };
 
 const openOne = async (
@@ -113,15 +118,16 @@ export const loadVaults = async (
 ): Promise<{ ok: true; value: Loaded } | { ok: false; error: "unreachable" | "untrusted" }> => {
   const opened = session.opened();
   if (!opened) return { ok: false, error: "unreachable" };
-  const [listed, trust] = await Promise.all([api.vaults(opened.token), trustOf(api, opened)]);
+  const [listed, checked] = await Promise.all([api.vaults(opened.token), trustOf(api, opened)]);
   if (!listed) return { ok: false, error: "unreachable" };
-  if (!trust) return { ok: false, error: "untrusted" };
+  if (!checked) return { ok: false, error: "untrusted" };
+  const { trust, people } = checked;
   const results = await Promise.all(listed.map((one) => openOne(api, opened, trust, one)));
   const vaults = results.filter((r): r is Vault => "ring" in r);
   const refused = results.filter((r): r is Refused => !("ring" in r));
   if (vaults.some((v) => (opened.state.logs[v.idText]?.seq ?? -1) < v.log.seq))
     await session.updateState(api, rememberLogs(vaults));
-  return { ok: true, value: { vaults, refused } };
+  return { ok: true, value: { vaults, refused, people } };
 };
 
 export type CreateError = "uncertified" | "unreachable" | "refused" | "exists";
@@ -153,7 +159,7 @@ export const newVault = async (
   const opened = session.opened();
   if (!opened) return { ok: false, error: "unreachable" };
   const checked = await trustOf(api, opened);
-  const me = checked?.certificates.get(idKey(opened.accountId));
+  const me = checked?.trust.certificates.get(idKey(opened.accountId));
   if (!me) return { ok: false, error: "uncertified" };
   const signer = { accountId: opened.accountId, edSecretKey: opened.keyBlock.ed.secretKey };
   const pick = personal ? () => personalVaultId(opened) : undefined;

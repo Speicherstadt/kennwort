@@ -189,5 +189,20 @@
   "vault_role_edit": "Edit",
   "vault_role_manage": "Manage",
   "settings_vaults": "Vaults",
-  "vaults_untrusted": "The vaults cannot be checked: the server's company key does not match your account."
+  "vaults_untrusted": "The vaults cannot be checked: the server's company key does not match your account.",
+  "vault_members_open": "Members",
+  "vault_members_of": "Members of {name}",
+  "vault_members_title": "Members of {name}",
+  "vault_members_list": "Members of the vault",
+  "vault_members_you": "(you)",
+  "vault_members_unnamed": "Unnamed account",
+  "vault_members_role_of": "Role of {name}",
+  "vault_members_remove": "Remove",
+  "vault_members_add_title": "Add a member",
+  "vault_members_person": "Person",
+  "vault_members_choose": "Choose a person …",
+  "vault_members_new_role": "Role",
+  "vault_members_add": "Add",
+  "vault_members_stale": "Another device just changed the vault. The new state is loaded – please try again.",
+  "vault_members_failed": "The change could not be saved."
 }

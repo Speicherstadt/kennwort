@@ -5,6 +5,7 @@
 import { m } from "@kennwort/ui";
 import { createSignal } from "solid-js";
 import type { Session } from "../session/session.ts";
+import type { ChangeError } from "./vault-members.ts";
 import { type CreateError, type Loaded, loadVaults, newVault, type VaultDeps } from "./vaults.ts";
 
 export type VaultsShown =
@@ -26,8 +27,9 @@ export const createVaultStore = (api: VaultDeps, session: Session) => {
       return;
     }
     if (needsPersonal(loaded.value) && !personalTried) {
-      personalTried = true;
       const made = await newVault(api, session, m.vaults_personal_name(), true);
+      // An account whose keys are not confirmed yet tries again on a later load
+      personalTried = made.ok || made.error !== "uncertified";
       if (made.ok || made.error === "exists") return reload();
     }
     setShown({ state: "ready", ...loaded.value });
@@ -46,7 +48,15 @@ export const createVaultStore = (api: VaultDeps, session: Session) => {
     await reload();
     return undefined;
   };
-  return { shown, reload, create };
+  /** A change to a vault's members, then the vault anew: also after "stale", to try again on it */
+  const change = async (
+    run: () => Promise<{ ok: true } | { ok: false; error: ChangeError }>,
+  ): Promise<ChangeError | undefined> => {
+    const done = await run();
+    await reload();
+    return done.ok ? undefined : done.error;
+  };
+  return { shown, reload, create, change };
 };
 
 export type VaultStore = ReturnType<typeof createVaultStore>;

@@ -189,5 +189,20 @@
   "vault_role_edit": "Bearbeiten",
   "vault_role_manage": "Verwalten",
   "settings_vaults": "Tresore",
-  "vaults_untrusted": "Die Tresore lassen sich nicht prüfen: Der Firmenschlüssel des Servers passt nicht zu deinem Konto."
+  "vaults_untrusted": "Die Tresore lassen sich nicht prüfen: Der Firmenschlüssel des Servers passt nicht zu deinem Konto.",
+  "vault_members_open": "Mitglieder",
+  "vault_members_of": "Mitglieder von {name}",
+  "vault_members_title": "Mitglieder von {name}",
+  "vault_members_list": "Mitglieder des Tresors",
+  "vault_members_you": "(du)",
+  "vault_members_unnamed": "Konto ohne Namen",
+  "vault_members_role_of": "Rolle von {name}",
+  "vault_members_remove": "Entfernen",
+  "vault_members_add_title": "Mitglied aufnehmen",
+  "vault_members_person": "Person",
+  "vault_members_choose": "Person wählen …",
+  "vault_members_new_role": "Rolle",
+  "vault_members_add": "Aufnehmen",
+  "vault_members_stale": "Ein anderes Gerät hat den Tresor gerade geändert. Der neue Stand ist geladen – bitte noch einmal.",
+  "vault_members_failed": "Die Änderung konnte nicht gespeichert werden."
 }

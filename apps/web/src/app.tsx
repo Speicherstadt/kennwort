@@ -48,7 +48,9 @@ const OpenedFrame = (props: {
         <MembersPage session={props.session} api={props.api} origin={location.origin} />
       )}
       vaults={shownVaults}
-      vaultsPage={() => <VaultsPage nav={props.nav} store={store} />}
+      vaultsPage={() => (
+        <VaultsPage nav={props.nav} store={store} api={props.api} session={props.session} />
+      )}
       devices={() => (
         <Show when={props.session.opened()?.token}>
           {(token) => (
