@@ -33,6 +33,7 @@ export {
   PASSPHRASE_V1,
   type PassphraseKeys,
   passphraseKeys,
+  passphraseKeysWith,
   SECRET_KEY_LENGTH,
 } from "./passphrase.ts";
 export type { Result } from "./result.ts";

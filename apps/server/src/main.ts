@@ -2,6 +2,9 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { createApp } from "./app.ts";
+import { authenticateWith, createAuth } from "./auth/better-auth.ts";
+import { clientAddress } from "./auth/client-address.ts";
+import { rateLimiter } from "./auth/limits.ts";
 import { readConfig } from "./config.ts";
 import { migrate, openDatabase } from "./db/database.ts";
 import { createLog } from "./log.ts";
@@ -13,13 +16,31 @@ if (!config.ok) {
   console.error(JSON.stringify(failure));
   process.exit(1);
 }
-const { port, database, logLevel } = config.value;
+const { port, database, logLevel, publicUrl, authSecret, behindProxy } = config.value;
 const log = createLog(logLevel, (line) => console.log(line));
 
 if (database !== ":memory:") mkdirSync(dirname(database), { recursive: true });
 const db = openDatabase(database);
 migrate(db);
-// Until K-203 brings sign-in, no request has a session: /api answers 401
-const authenticate = async () => undefined;
-const server = Bun.serve({ port, fetch: createApp({ db, log, authenticate }).fetch });
+const origin = new URL(publicUrl).origin;
+const auth = createAuth(db, {
+  secret: authSecret,
+  baseURL: origin,
+  rpID: new URL(publicUrl).hostname,
+  origin,
+});
+const signIn = {
+  auth,
+  secret: authSecret,
+  now: Date.now,
+  random: (length: number) => crypto.getRandomValues(new Uint8Array(length)),
+  allow: rateLimiter(20, 60_000),
+  address: clientAddress(behindProxy),
+};
+const app = createApp({ db, log, authenticate: authenticateWith(auth), signIn });
+// The peer address goes to the app as its environment; the rate limits count it
+const server = Bun.serve({
+  port,
+  fetch: (request, bun) => app.fetch(request, { address: bun.requestIP(request)?.address }),
+});
 log("info", "listening", { port: server.port });

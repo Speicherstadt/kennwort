@@ -10,7 +10,12 @@ export const startServer = async (command: string[], port: number, timeoutMs = 1
   const database = join(dir, "data", "kennwort.db");
   const child = spawn(command[0] ?? "bun", command.slice(1), {
     cwd: join(import.meta.dirname, "..", ".."),
-    env: { ...process.env, KENNWORT_PORT: String(port), KENNWORT_DATABASE: database },
+    env: {
+      ...process.env,
+      KENNWORT_PORT: String(port),
+      KENNWORT_DATABASE: database,
+      KENNWORT_AUTH_SECRET: "smoke-test-secret-of-at-least-32-chars",
+    },
     stdio: ["ignore", "pipe", "pipe"],
   });
   // Its own "listening" line proves this child serves the port, not some other process
