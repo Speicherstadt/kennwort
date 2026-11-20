@@ -12,6 +12,10 @@ const launchOptions = executablePath ? { executablePath } : {};
 export default defineConfig({
   testDir: "e2e",
   forbidOnly: Boolean(process.env.CI),
+  // Every test sets up its own company (e2e/account.ts), so tests of one file may run side by side;
+  // in CI four workers, as many cores as the runner has, elsewhere Playwright's default of half the cores
+  fullyParallel: true,
+  workers: process.env.CI ? 4 : "50%",
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "github" : "list",
   use: { baseURL: `http://localhost:${port}`, trace: "off" },
