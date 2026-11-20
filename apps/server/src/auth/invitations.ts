@@ -32,6 +32,13 @@ const AcceptRequest = z.object({
   accountSalt: bytes(16),
 });
 
+// The creating client picks the ID, so it can seal the invitation secret to it before asking (P-08)
+const InvitationRequest = z.object({
+  id: bytes(16).transform((id) => encodeBytes(id)),
+  // F-01 around the 32-byte secret: version, nonce, secret and tag
+  sealedSecret: bytes(1 + 24 + 32 + 16),
+});
+
 export type InvitationDeps = {
   db: Db;
   auth: Auth;
@@ -43,22 +50,29 @@ type AcceptDeps = InvitationDeps & { allow: (key: string) => boolean; address: C
 
 /** POST /api/invitations: for owners and admins of the session's company */
 export const createInvitationRoute = ({ db, now, random }: InvitationDeps) =>
-  new Hono<TenantEnv>().post("/invitations", (c) => {
+  new Hono<TenantEnv>().post("/invitations", async (c) => {
     const me = c.var.scope.account(c.var.session.accountId);
     if (!me || (me.role !== "owner" && me.role !== "admin"))
       return c.json({ error: "forbidden" }, 403);
-    const id = encodeBytes(random(16));
+    const parsed = InvitationRequest.safeParse(await c.req.json().catch(() => undefined));
+    if (!parsed.success) return c.json({ error: "invalid" }, 400);
+    const { id, sealedSecret } = parsed.data;
     const token = encodeBytes(random(32));
     const expiresAt = now() + INVITATION_MS;
-    db.insert(invitations)
+    const inserted = db
+      .insert(invitations)
       .values({
         id,
         companyId: c.var.session.companyId,
         createdBy: me.id,
         tokenHash: hashToken(token),
         expiresAt,
+        sealedSecret: Buffer.from(sealedSecret),
       })
-      .run();
+      .onConflictDoNothing()
+      .returning()
+      .get();
+    if (!inserted) return c.json({ error: "exists" }, 409);
     c.var.scope.audit({
       time: now(),
       actor: me.id,

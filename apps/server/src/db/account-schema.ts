@@ -18,5 +18,7 @@ export const accountKeys = sqliteTable("account_keys", {
   stateCounter: integer("state_counter").notNull(),
   /** The owner's certificate by the root key; members get theirs from an admin (K-304) */
   certificate: text("certificate"),
+  /** An invited member's MAC over its bundle (P-08), until an admin's client has certified it */
+  inviteMac: blob("invite_mac", { mode: "buffer" }),
   updatedAt: integer("updated_at").notNull(),
 });

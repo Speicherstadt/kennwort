@@ -25,7 +25,13 @@ describe("session replaced by another account", () => {
     const session = createSession({ api, storage: undefined, derive });
     await session.setUp("code", PASSPHRASE);
     const first = session.opened()?.accountKey as Uint8Array;
-    await session.accept("inv-1", "einladung", new Uint8Array(32).fill(7), PASSPHRASE);
+    await session.accept(
+      "BQUFBQUFBQUFBQUFBQUFBQ",
+      "einladung",
+      new Uint8Array(32).fill(7),
+      new Uint8Array(32).fill(8),
+      PASSPHRASE,
+    );
     expect(session.opened()?.accountKey).not.toBe(first);
     expect(first.every((byte) => byte === 0)).toBe(true);
   });

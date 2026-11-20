@@ -39,7 +39,7 @@ const enrolment = (upload: AccountUpload) => ({
   accountSalt: encodeBytes(upload.accountSalt),
 });
 
-const keysBody = (upload: AccountUpload, certificate?: Certificate) => ({
+const keysBody = (upload: AccountUpload, certificate?: Certificate, inviteMac?: Uint8Array) => ({
   xwingPublicKey: encodeBytes(upload.xwingPublicKey),
   edPublicKey: encodeBytes(upload.edPublicKey),
   keyBlock: encodeBytes(upload.keyBlock),
@@ -51,6 +51,7 @@ const keysBody = (upload: AccountUpload, certificate?: Certificate) => ({
   state: encodeBytes(upload.state),
   stateCounter: upload.stateCounter,
   ...(certificate ? { certificate: toWire(certificate) } : {}),
+  ...(inviteMac ? { inviteMac: encodeBytes(inviteMac) } : {}),
 });
 
 export type Call = (
@@ -109,8 +110,15 @@ export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity)
           ...enrolment(upload),
         }),
       ),
-    uploadKeys: async (token: string, upload: AccountUpload, certificate?: Certificate) =>
-      (await call("PUT", "/api/account/keys", keysBody(upload, certificate), token)).status === 201,
+    /** The owner's keys come with a certificate, an invitee's with the invitation MAC (P-08) */
+    uploadKeys: async (
+      token: string,
+      upload: AccountUpload,
+      certificate?: Certificate,
+      inviteMac?: Uint8Array,
+    ) =>
+      (await call("PUT", "/api/account/keys", keysBody(upload, certificate, inviteMac), token))
+        .status === 201,
     keys: async (token: string): Promise<Stored | undefined> => {
       const parsed = StoredWire.safeParse(
         (await call("GET", "/api/account/keys", undefined, token)).json,

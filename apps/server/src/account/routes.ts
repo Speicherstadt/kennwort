@@ -31,6 +31,8 @@ const KeysUpload = z.object({
   state: bytes(),
   stateCounter: z.literal(0),
   certificate: CertificateWire.optional(),
+  /** An invited member's MAC over its bundle (P-08), for the inviting admin's client to check */
+  inviteMac: bytes(64).optional(),
 });
 // A sealed AK: version, nonce, 32 bytes and the tag (F-01)
 const SEALED_ACCOUNT_KEY = 1 + 24 + 32 + 16;
@@ -73,6 +75,7 @@ const storeKeys = (db: Db, at: number, accountId: string, upload: z.infer<typeof
         state: Buffer.from(upload.state),
         stateCounter: 0,
         certificate: upload.certificate ? JSON.stringify(toWire(upload.certificate)) : null,
+        inviteMac: upload.inviteMac ? Buffer.from(upload.inviteMac) : null,
         updatedAt: at,
       })
       .onConflictDoNothing()

@@ -1,10 +1,13 @@
-import { encodeBytes } from "@kennwort/core";
+import { encodeBytes, invitationMac } from "@kennwort/core";
 import { flush } from "solid-js";
 import { describe, expect, it } from "vitest";
 import type { AccountApi as Api } from "./api.ts";
 import { readDevice } from "./device.ts";
 import { derive, fakeApi, memory, PASSPHRASE } from "./session.test-kit.ts";
 import { createSession } from "./session.ts";
+
+const INVITATION = "BQUFBQUFBQUFBQUFBQUFBQ";
+const SECRET = new Uint8Array(32).fill(8);
 
 const timers = () => {
   const pending: (() => void)[] = [];
@@ -104,20 +107,56 @@ describe("session", () => {
   it("accepts an invitation with the root fingerprint from the link", async () => {
     const session = createSession({ api: fakeApi(), storage: memory(), derive });
     const root = new Uint8Array(32).fill(7);
-    expect((await session.accept("inv-1", "einladung", root, PASSPHRASE)).ok).toBe(true);
+    expect((await session.accept(INVITATION, "einladung", root, SECRET, PASSPHRASE)).ok).toBe(true);
     expect(session.opened()?.state.rootFingerprint).toEqual(root);
     expect(session.opened()?.keyBlock.rootFingerprint).toEqual(root);
     expect(
       await createSession({ api: fakeApi(), storage: memory(), derive }).accept(
-        "inv-1",
+        INVITATION,
         "alt",
         root,
+        SECRET,
         PASSPHRASE,
       ),
     ).toEqual({
       ok: false,
       error: "invalid-invitation",
     });
+  });
+
+  it("uploads the keys with the MAC over the new bundle from the link's secret (P-08)", async () => {
+    const uploaded: (Uint8Array | undefined)[] = [];
+    const api = fakeApi({
+      uploadKeys: async (_token, _upload, _certificate, mac) => {
+        uploaded.push(mac);
+        return true;
+      },
+    });
+    const session = createSession({ api, storage: memory(), derive });
+    await session.accept(INVITATION, "einladung", new Uint8Array(32).fill(7), SECRET, PASSPHRASE);
+    const opened = session.opened();
+    if (!opened) throw new Error("not opened");
+    const bundle = {
+      accountId: opened.accountId,
+      xwingPublicKey: opened.keyBlock.xwing.publicKey,
+      edPublicKey: opened.keyBlock.ed.publicKey,
+    };
+    expect(uploaded).toEqual([invitationMac(SECRET, new Uint8Array(16).fill(5), bundle)]);
+  });
+
+  it("refuses an invitation ID that is not one, before asking the server", async () => {
+    let asked = false;
+    const api = fakeApi({
+      accept: async () => {
+        asked = true;
+        return { ok: true, value: "token-2" };
+      },
+    });
+    const session = createSession({ api, storage: memory(), derive });
+    expect(
+      await session.accept("inv-1", "einladung", new Uint8Array(32), SECRET, PASSPHRASE),
+    ).toEqual({ ok: false, error: "invalid-invitation" });
+    expect(asked).toBe(false);
   });
 
   it("names what went wrong", async () => {

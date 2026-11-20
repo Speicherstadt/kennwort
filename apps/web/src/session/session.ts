@@ -10,6 +10,7 @@ import {
   type Derive,
   emptyState,
   encodeBytes,
+  invitationMac,
   type Unlocked,
   unlockWithPassphrase,
 } from "@kennwort/core";
@@ -131,20 +132,31 @@ export const createSession = (deps: SessionDeps) => {
         deps.api.uploadKeys(t, company.owner.upload, company.certificate),
       );
     },
-    /** An invited member; the root fingerprint comes from the link's fragment, never from the server */
+    /**
+     * An invited member; root fingerprint and invitation secret come from the link's fragment,
+     * never from the server. The MAC binds the new bundle to the secret, so the inviting admin's
+     * client certifies this bundle and no other (P-08)
+     */
     accept: async (
       invitationId: string,
       inviteToken: string,
       rootFingerprint: Uint8Array,
+      secret: Uint8Array,
       passphrase: string,
     ) => {
+      const id = bytes(16).safeParse(invitationId);
+      if (!id.success) return { ok: false as const, error: "invalid-invitation" as const };
       const account = createAccount(
         passphrase,
         emptyState(rootFingerprint),
         deps.derive ? { derive: deps.derive } : {},
       );
+      const { accountId, xwingPublicKey, edPublicKey } = account.upload;
+      const mac = invitationMac(secret, id.data, { accountId, xwingPublicKey, edPublicKey });
       const token = await deps.api.accept(invitationId, inviteToken, account.upload);
-      return enrolled(account, token, (t) => deps.api.uploadKeys(t, account.upload));
+      return enrolled(account, token, (t) =>
+        deps.api.uploadKeys(t, account.upload, undefined, mac),
+      );
     },
     unlock: async (
       passphrase: string,

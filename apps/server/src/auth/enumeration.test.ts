@@ -2,13 +2,17 @@
 // invitation token, before the token is checked (invitations.ts: `taken` check precedes token check)
 import { encodeBytes } from "@kennwort/core";
 import { describe, expect, it } from "vitest";
-import { signInSetup } from "../testing/sign-in-setup.ts";
+import { invitationBody, signInSetup } from "../testing/sign-in-setup.ts";
 
 describe("account enumeration", () => {
   it("accepting a made-up invitation answers an existing and an unknown account ID alike", async () => {
     const setup = await signInSetup();
     const jonas = await setup.member("weber", "owner");
-    const created = await setup.request("/api/invitations", { method: "POST", token: jonas.token });
+    const created = await setup.request("/api/invitations", {
+      method: "POST",
+      token: jonas.token,
+      body: invitationBody(),
+    });
     const invite = (await created.json()) as { id: string; token: string };
     const annaId = encodeBytes(new Uint8Array(16).fill(1));
     const enrol = {

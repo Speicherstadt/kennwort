@@ -123,6 +123,7 @@ nennt seinen Angriff, und der Client muss ihn ablehnen und sagen, warum.
 
 | Angriff | Wo | Was der Client meldet |
 | --- | --- | --- |
+| E-02 eigenes Konto über eine Einladung eingeschrieben | `adversary/eth.test.ts`, `membership/invitation.test.ts` | MAC passt nicht |
 | E-05 fremder Schlüssel unter einem Mitglied | `adversary/eth.test.ts` | nicht zertifizierter Autor |
 | E-06 Mitglied eingeschmuggelt | `adversary/eth.test.ts`, `membership/verify-log.test.ts` | kein Verwalter, falsche Signatur |
 | E-07 Log gekürzt, umsortiert, zurückgespielt | `adversary/eth.test.ts`, `membership/verify-log.test.ts` | Lücke, Rückfall |
@@ -538,6 +539,24 @@ Wurzelschlüssel selbst.
 
 Ein Bündel, das der Server unterschiebt, hat keinen gültigen MAC; ein Wurzelschlüssel, den er
 unterschiebt, passt nicht zum Link. Die Einladung ist damit in beide Richtungen geprüft.
+
+So ist es gebaut: Der Client des Verwalters wählt die Einladungs-ID (16 zufällige Byte) und `s`
+selbst und hinterlegt `s` auf dem Server versiegelt unter seinem eigenen AK (F-01, Zweck
+`invite-secret`, Kontext Konto-ID des Verwalters und Einladungs-ID). So kann er die Antwort auch
+später und auf einem anderen seiner Geräte prüfen; der Server kann `s` nicht öffnen. Der Link
+lautet `/invite/<id>#token=…&s=…&root=…`. Der Eingeladene schickt den MAC mit seinen Schlüsseln
+(`PUT /api/account/keys`, Feld `inviteMac`). `GET /api/members` zeigt jedem Mitglied der Firma Rolle,
+öffentliche Schlüssel und Zertifikat jedes Kontos; die versiegelte Hinterlegung und den MAC bekommt
+nur der Verwalter, der die Einladung erstellt hat, solange das Konto kein Zertifikat hat. Sein Client
+öffnet `s`, prüft den MAC und lädt das Zertifikat mit `PUT /api/members/:id/certificate` hoch. Der
+Server nimmt es nur von Inhabern und Admins, nur für dieses Konto, diese Firma, die hochgeladenen
+Schlüssel und die Rolle, die das Konto hat, und nur einmal; er schreibt dazu `member-certified` ins
+Audit-Log. Eine Einladung macht immer einen Mitarbeiter: Der Client zertifiziert die Rolle `member`,
+gleich was der Server behauptet. Eine höhere Rolle vergibt nur ein Inhaber in einem eigenen Schritt.
+Zertifizieren kann nur, wer den Wurzelschlüssel hat.
+
+Umgesetzt in `packages/crypto/src/invite.ts` (MAC), `packages/core/src/membership/invitation.ts`
+(Einladung, Prüfen und Zertifizieren) und `apps/server/src/account/members.ts`.
 
 **Wehrt ab:** E-01, E-02, E-05, E-10.
 

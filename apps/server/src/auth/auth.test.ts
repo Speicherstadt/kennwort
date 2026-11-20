@@ -7,7 +7,7 @@ import {
 } from "@kennwort/core";
 import { passphraseKeys, passphraseKeysWith } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
-import { signInSetup } from "../testing/sign-in-setup.ts";
+import { invitationBody, signInSetup } from "../testing/sign-in-setup.ts";
 import { INVITATION_MS } from "./invitations.ts";
 import { LOCKOUT } from "./limits.ts";
 
@@ -33,7 +33,11 @@ const invitedAnna = async (
   derive: Derive = quick,
 ) => {
   const jonas = await setup.member("weber", "owner");
-  const created = await setup.request("/api/invitations", { method: "POST", token: jonas.token });
+  const created = await setup.request("/api/invitations", {
+    method: "POST",
+    token: jonas.token,
+    body: invitationBody(),
+  });
   const invite = (await created.json()) as { id: string; token: string };
   const id = crypto.getRandomValues(new Uint8Array(16));
   const accountId = encodeBytes(id);
@@ -68,7 +72,11 @@ describe("invitations (P-08)", () => {
 
     const jonas = await setup.member("weber", "admin");
     const fresh = (await (
-      await setup.request("/api/invitations", { method: "POST", token: jonas.token })
+      await setup.request("/api/invitations", {
+        method: "POST",
+        token: jonas.token,
+        body: invitationBody(),
+      })
     ).json()) as {
       id: string;
       token: string;
@@ -92,7 +100,13 @@ describe("invitations (P-08)", () => {
     const setup = await signInSetup();
     const max = await setup.member("weber", "member");
     expect(
-      (await setup.request("/api/invitations", { method: "POST", token: max.token })).status,
+      (
+        await setup.request("/api/invitations", {
+          method: "POST",
+          token: max.token,
+          body: invitationBody(),
+        })
+      ).status,
     ).toBe(403);
     expect((await setup.request("/api/invitations", { method: "POST" })).status).toBe(401);
   });
@@ -101,7 +115,11 @@ describe("invitations (P-08)", () => {
     const setup = await signInSetup();
     const { body } = await invitedAnna(setup);
     const admin = await setup.member("weber", "admin");
-    const created = await setup.request("/api/invitations", { method: "POST", token: admin.token });
+    const created = await setup.request("/api/invitations", {
+      method: "POST",
+      token: admin.token,
+      body: invitationBody(),
+    });
     const second = (await created.json()) as { id: string; token: string };
     const again = { ...body, token: second.token };
     expect(

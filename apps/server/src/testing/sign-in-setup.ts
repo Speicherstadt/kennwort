@@ -1,4 +1,5 @@
 // A server with sign-in for tests: Weber Haustechnik with Jonas as owner, a clock the test moves
+import { encodeBytes } from "@kennwort/core";
 import { createApp } from "../app.ts";
 import { authenticateWith, createAuth } from "../auth/better-auth.ts";
 import { clientAddress } from "../auth/client-address.ts";
@@ -8,6 +9,12 @@ import { accounts, companies } from "../db/schema.ts";
 import { createLog } from "../log.ts";
 
 export const SECRET = "test-secret-of-at-least-thirty-two-chars";
+
+/** What a client sends to invite: an ID it picked and its sealed secret, here random bytes (P-08) */
+export const invitationBody = () => ({
+  id: encodeBytes(crypto.getRandomValues(new Uint8Array(16))),
+  sealedSecret: encodeBytes(crypto.getRandomValues(new Uint8Array(73))),
+});
 
 export const signInSetup = async (
   options: { rateLimit?: number; behindProxy?: boolean; setupCode?: string; empty?: boolean } = {},

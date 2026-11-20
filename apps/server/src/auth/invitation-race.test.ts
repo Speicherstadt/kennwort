@@ -2,7 +2,7 @@
 // invitation is burned (invitations.ts: invitation claimed before createUser, outside a transaction)
 import { encodeBytes } from "@kennwort/core";
 import { describe, expect, it } from "vitest";
-import { signInSetup } from "../testing/sign-in-setup.ts";
+import { invitationBody, signInSetup } from "../testing/sign-in-setup.ts";
 
 describe("invitation race", () => {
   it("a lost race on the account ID leaves the second invitation usable", async () => {
@@ -10,7 +10,11 @@ describe("invitation race", () => {
     const jonas = await setup.member("weber", "owner");
     const mk = async () =>
       (await (
-        await setup.request("/api/invitations", { method: "POST", token: jonas.token })
+        await setup.request("/api/invitations", {
+          method: "POST",
+          token: jonas.token,
+          body: invitationBody(),
+        })
       ).json()) as { id: string; token: string };
     const a = await mk();
     const b = await mk();
