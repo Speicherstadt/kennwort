@@ -14,7 +14,7 @@ export const SECRET = "test-secret-of-at-least-thirty-two-chars";
 export const invitationBody = () => ({
   id: encodeBytes(crypto.getRandomValues(new Uint8Array(16))),
   sealedSecret: encodeBytes(crypto.getRandomValues(new Uint8Array(73))),
-  label: "Anna",
+  label: "invited-member",
 });
 
 export const signInSetup = async (
