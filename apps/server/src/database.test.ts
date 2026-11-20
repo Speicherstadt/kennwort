@@ -26,6 +26,7 @@ describe("database", () => {
       "auth_user",
       "auth_verification",
       "companies",
+      "device_sessions",
       "entry_records",
       "instance",
       "invitations",

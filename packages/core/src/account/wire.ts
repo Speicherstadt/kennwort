@@ -23,3 +23,17 @@ export const PollWire = z.discriminatedUnion("state", [
 export type PollAnswer = z.infer<typeof PollWire>;
 // An X-Wing public key (F-02)
 export const PairingKeyWire = z.object({ publicKey: bytes(1216) });
+
+/** The device list (K-303): sessions of the account, the one asking marked */
+export const DevicesWire = z.object({
+  devices: z.array(
+    z.object({
+      id: z.string().min(1),
+      name: z.string().nullable(),
+      signedInAt: z.number(),
+      lastSeenAt: z.number(),
+      current: z.boolean(),
+    }),
+  ),
+});
+export type DeviceEntry = z.infer<typeof DevicesWire>["devices"][number];

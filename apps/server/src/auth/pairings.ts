@@ -16,6 +16,7 @@ import { pairings } from "../db/schema.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 import type { Auth } from "./better-auth.ts";
 import type { ClientAddress, ClientEnv } from "./client-address.ts";
+import { startSession } from "./devices.ts";
 
 export const PAIRING_MS = 10 * 60 * 1000;
 
@@ -85,7 +86,7 @@ export const pairingPublicRoutes = ({ db, auth, now, random, allow, address }: P
       // Confirmed: one session, once; the pairing is gone with it
       const taken = db.delete(pairings).where(eq(pairings.id, row.id)).returning().get();
       if (!taken) return c.json({ error: "unknown-pairing" }, 404);
-      const session = await (await auth.$context).internalAdapter.createSession(row.accountId);
+      const session = await startSession(db, auth, row.accountId, c.req.raw);
       return session
         ? c.json({
             state: "confirmed",

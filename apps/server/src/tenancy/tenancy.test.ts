@@ -9,6 +9,8 @@ import {
   accountKeys,
   accounts,
   auditEvents,
+  authSession,
+  authUser,
   companies,
   invitations,
   loginKeys,
@@ -76,6 +78,36 @@ const maxAnsweredPairing = () =>
     })
     .onConflictDoNothing()
     .run();
+
+/** Max (Müller Elektro) signed in on a device: a Better Auth user, a session and its device */
+const maxSession = () => {
+  const now = new Date();
+  app.db
+    .insert(authUser)
+    .values({
+      id: "max",
+      name: "",
+      email: "max@x.invalid",
+      emailVerified: false,
+      companyId: "mueller",
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoNothing()
+    .run();
+  app.db
+    .insert(authSession)
+    .values({
+      id: "max-session",
+      token: "max-token",
+      userId: "max",
+      expiresAt: new Date(Date.now() + 60_000),
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoNothing()
+    .run();
+};
 
 const asJonas = (path: string) =>
   app.request(path, { headers: { "x-test-session": "token-jonas" } });
@@ -169,6 +201,19 @@ const cases: Record<string, () => Promise<void>> = {
     expect((await jonasSends("POST", "/api/pairings/max-pairing/confirm", {})).status).toBe(404);
     const row = app.db.select().from(pairings).where(eq(pairings.id, "max-pairing")).get();
     expect(row?.confirmed).toBe(false);
+  },
+  "GET /api/devices": async () => {
+    // Max's session is not among Jonas's devices
+    maxSession();
+    const answer = (await (await asJonas("/api/devices")).json()) as { devices: { id: string }[] };
+    expect(answer.devices.map((device) => device.id)).not.toContain("max-session");
+  },
+  "DELETE /api/devices/:id": async () => {
+    maxSession();
+    expect((await jonasSends("DELETE", "/api/devices/max-session", undefined)).status).toBe(404);
+    expect(
+      app.db.select().from(authSession).where(eq(authSession.id, "max-session")).get(),
+    ).toBeDefined();
   },
   "PUT /api/account/unlock": async () => {
     // Replaces only Jonas's own sign-in keys; Max's (Müller Elektro) stay as they are

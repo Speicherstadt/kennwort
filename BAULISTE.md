@@ -99,7 +99,7 @@ und die Schritte für Menschen am Ende erledigt sind.
 - [x] **K-302 App-Rahmen** – Rail, Seitenleiste, Liste und Detail wie im Mockup; Handy mit einem
   Screen und Tab-Leiste; hell und dunkel; de/en.
   Fertig, wenn: Playwright desktop und `@phone` alle Seiten öffnet und axe grün ist.
-- [ ] **K-303 Konto und Geräte** – Konto anlegen, Entsperren, Recovery-Kit als PDF, neues Gerät per
+- [x] **K-303 Konto und Geräte** – Konto anlegen, Entsperren, Recovery-Kit als PDF, neues Gerät per
   QR-Code, Geräteliste, Gerät abmelden, automatisches Sperren.
   In Teilen, je ein Pull Request; abgehakt wird K-303, wenn alle stehen:
   - [x] Teil 1: Konto anlegen (erster Inhaber mit Einrichtungs-Code, Eingeladene), Kontozustand,
@@ -113,7 +113,10 @@ und die Schritte für Menschen am Ende erledigt sind.
     `packages/core` und auf dem Server.
   - [x] Teil 5: Neues Gerät per QR-Code in der Web-App (QR-Code zeigen, scannen oder eingeben,
     Vergleichscode auf beiden Geräten).
-  - [ ] Teil 6: Geräteliste, Gerät abmelden.
+  - [x] Teil 6: Geräteliste, Gerät abmelden. Fertig, wenn: pro Gerät und Konto genau eine Sitzung
+    besteht (Geräte-ID), die Einstellungen alle angemeldeten Geräte mit Name und letzter Aktivität
+    zeigen, ein anderes Gerät abgemeldet danach keine Anfrage mehr durchbekommt und „Dieses Gerät
+    abmelden“ das Konto auf dem Gerät vergisst – als Playwright-Test desktop und `@phone`.
 - [ ] **K-304 Firma, Rollen, Einladungen** – Inhaber, Admin, Mitarbeiter; Wurzelschlüssel;
   Richtlinien.
 - [ ] **K-305 Tresore, Gruppen, Rechte** – persönlich und geteilt, lesen/bearbeiten/verwalten,

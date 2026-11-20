@@ -118,5 +118,13 @@
   "add_error_link": "This is not a link to connect.",
   "add_error_gone": "This connection no longer exists. Start it again on the new device.",
   "add_error_key": "The server delivered a different key than the code shows. The device was not added.",
-  "settings_add_device": "Add device"
+  "settings_add_device": "Add device",
+  "devices_title": "Signed-in devices",
+  "devices_this_device": "This device",
+  "devices_unnamed": "Unknown device",
+  "devices_last_seen": "Last active: {time}",
+  "devices_sign_out": "Sign out",
+  "devices_sign_out_this": "Sign out this device",
+  "devices_load_failed": "The devices could not be loaded.",
+  "devices_remove_failed": "The device could not be signed out."
 }

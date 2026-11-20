@@ -41,6 +41,8 @@ export {
 } from "./account/unlock.ts";
 export {
   AnnouncedWire,
+  type DeviceEntry,
+  DevicesWire,
   PairingKeyWire,
   type PollAnswer,
   PollWire,

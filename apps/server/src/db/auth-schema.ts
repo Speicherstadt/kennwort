@@ -142,3 +142,21 @@ export const pairings = sqliteTable("pairings", {
   confirmed: integer("confirmed", { mode: "boolean" }).notNull().default(false),
   expiresAt: integer("expires_at").notNull(),
 });
+
+/**
+ * Which device a session belongs to (K-303, device list): the device sends its random ID and a
+ * name at every sign-in; one session per device and account, a new one replaces the old.
+ */
+export const deviceSessions = sqliteTable(
+  "device_sessions",
+  {
+    sessionId: text("session_id")
+      .primaryKey()
+      .references(() => authSession.id, { onDelete: "cascade" }),
+    accountId: text("account_id").notNull(),
+    deviceId: text("device_id").notNull(),
+    name: text("name").notNull(),
+    createdAt: integer("created_at").notNull(),
+  },
+  (table) => [index("device_sessions_device").on(table.accountId, table.deviceId)],
+);

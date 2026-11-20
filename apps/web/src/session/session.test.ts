@@ -53,6 +53,19 @@ describe("session", () => {
     expect(session.opened()?.accountKey).toEqual(copy);
   });
 
+  it("forgets this device when it signs out: locked, overwritten, no account remembered", async () => {
+    const storage = memory();
+    const session = createSession({ api: fakeApi(), storage, derive });
+    await session.setUp("richtiger-code", PASSPHRASE);
+    const accountKey = session.opened()?.accountKey;
+    session.forget();
+    flush();
+    expect(session.opened()).toBeUndefined();
+    expect(accountKey?.every((byte) => byte === 0)).toBe(true);
+    expect(session.device()).toBeUndefined();
+    expect(readDevice(storage)).toBeUndefined();
+  });
+
   it("locks by itself after a while without use; any use pushes it back", async () => {
     const clock = timers();
     const session = createSession({

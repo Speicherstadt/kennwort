@@ -426,6 +426,17 @@ mit dem Kontozustand auch den geprüften Wurzelschlüssel und muss niemandem bei
 trauen. Die Geräteliste zeigt jedes
 Gerät, abmelden widerruft dessen Sitzung.
 
+Jedes Gerät schickt bei jeder Anfrage eine zufällige Geräte-ID (16 Byte, base64url, einmal erzeugt
+und im `localStorage` gehalten) in `x-kennwort-device` und einen Namen aus dem Browser in
+`x-kennwort-device-name`. Beides ist nicht geheim. Der Server hält pro Gerät und Konto genau eine
+Sitzung: Eine neue Anmeldung löscht die frühere desselben Geräts. `GET /api/devices` listet die
+gültigen Sitzungen des Kontos mit Name, Anmeldezeit, letzter Aktivität und der eigenen markiert;
+`DELETE /api/devices/:id` löscht eine Sitzung des eigenen Kontos, für fremde antwortet er 404.
+Abmelden widerruft nur die Sitzung: Das Gerät kennt Konto-ID und Secret Key weiter und kann sich mit
+der Passphrase neu anmelden. Den Zugang ganz entziehen erst Austritt und Schlüsselwechsel (K-307).
+„Dieses Gerät abmelden“ löscht dazu Konto-ID und Secret Key vom Gerät.
+Umgesetzt in `apps/server/src/auth/devices.ts` und `apps/web/src/frame/devices-section.tsx`.
+
 Umgesetzt in `packages/crypto/src/device.ts` (Fingerabdruck, Vergleichscode),
 `packages/core/src/account/pairing.ts` (Paket, erste Entsperrung),
 `apps/server/src/auth/pairings.ts` und in der Web-App in `apps/web/src/pairing/`. Der QR-Code ist ein

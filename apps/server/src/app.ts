@@ -5,6 +5,7 @@ import { accountRoutes } from "./account/routes.ts";
 import { auditRoutes } from "./audit/routes.ts";
 import { type Auth, CLIENT_HEADER } from "./auth/better-auth.ts";
 import type { ClientAddress, ClientEnv } from "./auth/client-address.ts";
+import { deviceRoutes } from "./auth/devices.ts";
 import { acceptInvitationRoute, createInvitationRoute } from "./auth/invitations.ts";
 import { loginKeyRoutes } from "./auth/login-key.ts";
 import { pairingApiRoutes, pairingPublicRoutes } from "./auth/pairings.ts";
@@ -91,6 +92,7 @@ export const createApp = ({
   api.route("/", companyRoutes());
   api.route("/", auditRoutes({ now }));
   api.route("/", accountRoutes({ db, now }));
+  api.route("/", deviceRoutes({ db, now }));
   api.route("/", syncRoutes({ hub, now, ...(keepAliveMs ? { keepAliveMs } : {}) }));
   if (signIn) {
     const deps = { db, ...signIn };

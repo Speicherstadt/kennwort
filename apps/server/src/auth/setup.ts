@@ -13,6 +13,7 @@ import type { Db } from "../db/database.ts";
 import { companies } from "../db/schema.ts";
 import type { Auth } from "./better-auth.ts";
 import type { ClientAddress, ClientEnv } from "./client-address.ts";
+import { startSession } from "./devices.ts";
 import { enrol } from "./enrol.ts";
 
 const id = bytes(16).transform((id) => encodeBytes(id));
@@ -62,7 +63,7 @@ export const setupRoute = ({ db, auth, now, setupCode, allow, address }: SetupDe
       db.delete(companies).where(eq(companies.id, companyId)).run();
       return c.json({ error: "account-exists" }, 409);
     }
-    const session = await owner.session();
+    const session = await startSession(db, auth, owner.id, c.req.raw);
     return session
       ? c.json({ accountId: owner.id, companyId, token: session.token }, 201)
       : c.json({ error: "internal" }, 500);
