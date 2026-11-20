@@ -1,6 +1,6 @@
 /** A vault server in memory for the vault tests: it stores what it is given, checks nothing */
-import { encodeBytes, type LogEntry } from "@kennwort/core";
-import { jonasCompany, ownerRow, type Row, server } from "../members/members.test-kit.ts";
+import { certify, encodeBytes, type LogEntry } from "@kennwort/core";
+import { annaRow, jonasCompany, ownerRow, type Row, server } from "../members/members.test-kit.ts";
 import type { VaultApi } from "../session/vaults-api.ts";
 import type { VaultDeps } from "./vaults.ts";
 
@@ -56,4 +56,20 @@ export const jonasWithVaults = async (
   const store = vaultServer();
   const api: VaultDeps = { ...members.api, ...store.api };
   return { c, api, store, members };
+};
+
+/** Anna, whose keys Jonas confirmed: a certified row of the members list */
+export const certifiedAnna = (c: Awaited<ReturnType<typeof jonasCompany>>): Row => {
+  const { row } = annaRow(c);
+  const root = c.opened.state.rootSecretKey;
+  if (!root || !row.xwingPublicKey || !row.edPublicKey) throw new Error("no root key or keys");
+  const certificate = certify(root, {
+    accountId: row.id,
+    xwingPublicKey: row.xwingPublicKey,
+    edPublicKey: row.edPublicKey,
+    companyId: c.certificate.companyId,
+    role: "member",
+    issuedAt: 1,
+  });
+  return { ...row, certificate, invitation: null };
 };

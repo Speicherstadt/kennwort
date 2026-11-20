@@ -154,7 +154,7 @@ und die Schritte für Menschen am Ende erledigt sind.
     Einstellungen. Fertig, wenn: ein Mitglied nur Tresore sieht, deren Log es geprüft hat, ein
     gekürztes oder verändertes Log den Tresor zu lässt und Anlegen als Playwright-Test desktop und
     `@phone` läuft.
-  - [ ] Teil 3: Mitglieder eines Tresors – aufnehmen mit Rolle, Rolle ändern, entfernen. Fertig,
+  - [x] Teil 3: Mitglieder eines Tresors – aufnehmen mit Rolle, Rolle ändern, entfernen. Fertig,
     wenn: nur bestätigte Konten aufgenommen werden und Aufnehmen, Rolle ändern und Entfernen als
     Playwright-Test desktop und `@phone` laufen.
   - [ ] Teil 4: Gruppen – ein Tresor für eine Gruppe von Mitgliedern; aufnehmen und entfernen über

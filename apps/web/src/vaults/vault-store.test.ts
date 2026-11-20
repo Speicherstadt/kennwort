@@ -36,7 +36,8 @@ describe("createVaultStore", () => {
     await vaults.reload();
     flush();
     expect(tries).toBe(1);
-    expect(vaults.shown()).toEqual({ state: "ready", vaults: [], refused: [] });
+    const shown = vaults.shown();
+    expect(shown.state === "ready" && [shown.vaults, shown.refused]).toEqual([[], []]);
   });
 
   it("adds a vault created on the page and says why one could not be created", async () => {
@@ -79,6 +80,23 @@ describe("the personal vault's ID", () => {
     expect(shown.state === "ready" && shown.vaults.map((v) => v.idText)).toEqual([
       encodeBytes(personalVaultId(opened)),
     ]);
+    expect(store.vaults.size).toBe(1);
+  });
+});
+
+describe("an account whose keys are not confirmed yet", () => {
+  it("gets its personal vault on the first load after the confirmation, in the same store", async () => {
+    let confirmed = false;
+    const { c, api, store } = await jonasWithVaults();
+    const rows = async () => {
+      const all = await api.members("token-1");
+      return confirmed ? all : all?.map((row) => ({ ...row, certificate: null }));
+    };
+    const vaults = createVaultStore({ ...api, members: rows }, c.session);
+    await vaults.reload();
+    expect(store.vaults.size).toBe(0);
+    confirmed = true;
+    await vaults.reload();
     expect(store.vaults.size).toBe(1);
   });
 });

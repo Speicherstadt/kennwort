@@ -499,6 +499,12 @@ derselben Epoche zurückspielen. Die Web-App lädt jeden Tresor über `loadVault
 mit passender Bindung annehmen, nur öffnen, solange das Konto nach dem Log und der eigenen Uhr
 Mitglied ist, den neuen Stand im Kontozustand merken.
 
+Aufnehmen, Rolle ändern und Entfernen signiert der Client des Verwalters in
+`apps/web/src/vaults/vault-members.ts`; aufnehmen lässt er nur Konten, deren Zertifikat der
+gemerkte Wurzelschlüssel bestätigt, und die signierte Zeit ist nie früher als die des letzten
+Eintrags. Antwortet der Server `409`, hat ein anderes Gerät zuerst geschrieben: Der Client lädt das
+Log neu, bevor er es noch einmal versucht.
+
 Den persönlichen Tresor legt die Web-App nur für ein Konto an, das noch nie einen Tresor gesehen
 hat (keine Logs im Kontozustand): Verschweigt der Server die Tresore eines Kontos, deckt kein neuer
 Tresor das zu. Seine ID ist `kdf(AK, leer, "kennwort/personal-vault/v1", konto-ID)`, gekürzt auf
