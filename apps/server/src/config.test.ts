@@ -14,6 +14,7 @@ describe("readConfig", () => {
         logLevel: "info",
         publicUrl: "http://localhost:8100",
         authSecret: SECRET,
+        behindProxy: false,
       },
     });
   });
@@ -25,6 +26,7 @@ describe("readConfig", () => {
       KENNWORT_DATABASE: ":memory:",
       KENNWORT_LOG_LEVEL: "warn",
       KENNWORT_PUBLIC_URL: "https://kennwort.weber-haustechnik.test",
+      KENNWORT_BEHIND_PROXY: "true",
     };
     expect(readConfig(env)).toEqual({
       ok: true,
@@ -34,7 +36,15 @@ describe("readConfig", () => {
         logLevel: "warn",
         publicUrl: "https://kennwort.weber-haustechnik.test",
         authSecret: SECRET,
+        behindProxy: true,
       },
+    });
+  });
+
+  it("takes only true or false for being behind a proxy", () => {
+    expect(readConfig({ ...base, KENNWORT_BEHIND_PROXY: "yes" })).toEqual({
+      ok: false,
+      error: ["KENNWORT_BEHIND_PROXY"],
     });
   });
 
@@ -61,6 +71,13 @@ describe("readConfig", () => {
     expect(readConfig({ ...base, KENNWORT_PORT: "70000", KENNWORT_LOG_LEVEL: "loud" })).toEqual({
       ok: false,
       error: ["KENNWORT_PORT", "KENNWORT_LOG_LEVEL"],
+    });
+  });
+
+  it("takes only true or false for being behind a proxy", () => {
+    expect(readConfig({ ...base, KENNWORT_BEHIND_PROXY: "yes" })).toEqual({
+      ok: false,
+      error: ["KENNWORT_BEHIND_PROXY"],
     });
   });
 

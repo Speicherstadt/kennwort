@@ -2,6 +2,7 @@
 import { sql } from "drizzle-orm";
 import { Hono, type MiddlewareHandler } from "hono";
 import type { Auth } from "./auth/better-auth.ts";
+import type { ClientAddress } from "./auth/client-address.ts";
 import { acceptInvitationRoute, createInvitationRoute } from "./auth/invitations.ts";
 import { loginKeyRoutes } from "./auth/login-key.ts";
 import type { Db } from "./db/database.ts";
@@ -17,6 +18,7 @@ export type SignIn = {
   now: () => number;
   random: (length: number) => Uint8Array;
   allow: (key: string) => boolean;
+  address: ClientAddress;
 };
 
 export type Deps = { db: Db; log: Log; authenticate: Authenticate; signIn?: SignIn };

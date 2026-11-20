@@ -310,9 +310,13 @@ Geheimtexten.
 - **Notweg Passphrase**: Aus `anmelden` (F-05) wird ein Ed25519-Schlüssel; der Server kennt nur
   dessen öffentlichen Teil und schickt eine Herausforderung. Die Passphrase und `p₁` verlassen nie
   das Gerät; was der Server speichert, lässt sich ohne den Secret Key nicht raten.
-- Rate-Limits je Adresse; nach fünf Fehlversuchen in 15 Minuten ist das Konto 15 Minuten
-  gesperrt, auch für den richtigen Schlüssel. Ein unbekanntes Konto bekommt eine Herausforderung
-  mit einem gleichbleibenden Schein-Salt, sodass sich Konten nicht erfragen lassen.
+- Rate-Limits je Adresse für Herausforderung, Antwort und das Annehmen einer Einladung. Die Adresse
+  ist die der Verbindung; hinter einem Reverse Proxy (`KENNWORT_BEHIND_PROXY=true`) die, die der
+  Proxy zuletzt an `X-Forwarded-For` anhängt – was ein Client davor schreibt, zählt nicht.
+- Nach fünf Fehlversuchen in 15 Minuten ist das Konto 15 Minuten gesperrt, auch für den richtigen
+  Schlüssel. Ein unbekanntes Konto bekommt eine Herausforderung mit einem gleichbleibenden
+  Schein-Salt, sodass sich Konten nicht erfragen lassen. Auch eine Einladung verrät nichts über
+  Konten: Erst das gültige Token, dann die Frage, ob die Konto-ID schon vergeben ist.
 
 Umgesetzt in `apps/server/src/auth/` (Better Auth mit Passkeys und Bearer-Sitzungen,
 Anmelde-Schlüssel, Einladungen) und `packages/core/src/auth/sign-in.ts` (die Seite des Geräts).

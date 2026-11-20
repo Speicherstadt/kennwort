@@ -13,6 +13,7 @@ import type { Db } from "../db/database.ts";
 import { accounts, invitations, loginKeys } from "../db/schema.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 import type { Auth } from "./better-auth.ts";
+import type { ClientAddress, ClientEnv } from "./client-address.ts";
 
 export const INVITATION_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -34,6 +35,8 @@ export type InvitationDeps = {
   now: () => number;
   random: (length: number) => Uint8Array;
 };
+
+type AcceptDeps = InvitationDeps & { allow: (key: string) => boolean; address: ClientAddress };
 
 /** POST /api/invitations: for owners and admins of the session's company */
 export const createInvitationRoute = ({ db, now, random }: InvitationDeps) =>
@@ -57,17 +60,20 @@ export const createInvitationRoute = ({ db, now, random }: InvitationDeps) =>
   });
 
 /** POST /auth/invitations/:id/accept: public, the token is the proof */
-export const acceptInvitationRoute = ({ db, auth, now }: InvitationDeps) =>
+export const acceptInvitationRoute = ({ db, auth, now, allow, address }: AcceptDeps) =>
   new Hono().post("/invitations/:id/accept", async (c) => {
+    if (!allow(`accept:${address(c.req.raw, c.env as ClientEnv)}`))
+      return c.json({ error: "too-many-requests" }, 429);
     const parsed = AcceptRequest.safeParse(await c.req.json().catch(() => undefined));
     if (!parsed.success) return c.json({ error: "invalid" }, 400);
     const at = now();
     const id = c.req.param("id");
+    // The token first: without it, nothing about accounts is answered (review of K-203)
     const found = db.select().from(invitations).where(eq(invitations.id, id)).get();
-    const taken = db.select().from(accounts).where(eq(accounts.id, parsed.data.accountId)).get();
-    if (taken) return c.json({ error: "account-exists" }, 409);
     if (!found || !sameHash(found.tokenHash, hashToken(parsed.data.token)))
       return c.json({ error: "invalid-invitation" }, 410);
+    if (db.select().from(accounts).where(eq(accounts.id, parsed.data.accountId)).get())
+      return c.json({ error: "account-exists" }, 409);
     // Claimed in one statement: of two requests with the same token, only one gets past this
     const open = db
       .update(invitations)
@@ -79,13 +85,20 @@ export const acceptInvitationRoute = ({ db, auth, now }: InvitationDeps) =>
       .get();
     if (!open) return c.json({ error: "invalid-invitation" }, 410);
     const context = await auth.$context;
-    const user = await context.internalAdapter.createUser({
-      id: parsed.data.accountId,
-      name: "",
-      email: `${parsed.data.accountId}@accounts.kennwort.invalid`,
-      emailVerified: false,
-      companyId: open.companyId,
-    });
+    const user = await context.internalAdapter
+      .createUser({
+        id: parsed.data.accountId,
+        name: "",
+        email: `${parsed.data.accountId}@accounts.kennwort.invalid`,
+        emailVerified: false,
+        companyId: open.companyId,
+      })
+      .catch(() => undefined);
+    // Lost a race for the same account ID: the invitation goes back, so it can be used again
+    if (!user) {
+      db.update(invitations).set({ acceptedAt: null }).where(eq(invitations.id, open.id)).run();
+      return c.json({ error: "account-exists" }, 409);
+    }
     db.transaction((tx) => {
       tx.insert(accounts)
         .values({ id: user.id, companyId: open.companyId, role: "member", createdAt: at })

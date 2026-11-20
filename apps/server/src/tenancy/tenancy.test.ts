@@ -43,6 +43,7 @@ const setup = () => {
     now: () => 1,
     random,
     allow: () => true,
+    address: () => "192.0.2.1",
   };
   return Object.assign(createApp({ db, log: createLog("error", () => {}), authenticate, signIn }), {
     db,

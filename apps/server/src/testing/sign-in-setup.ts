@@ -1,6 +1,7 @@
 // A server with sign-in for tests: Weber Haustechnik with Jonas as owner, a clock the test moves
 import { createApp } from "../app.ts";
 import { authenticateWith, createAuth } from "../auth/better-auth.ts";
+import { clientAddress } from "../auth/client-address.ts";
 import { rateLimiter } from "../auth/limits.ts";
 import { migrate, openDatabase } from "../db/database.ts";
 import { accounts, companies } from "../db/schema.ts";
@@ -8,7 +9,7 @@ import { createLog } from "../log.ts";
 
 export const SECRET = "test-secret-of-at-least-thirty-two-chars";
 
-export const signInSetup = async (options: { rateLimit?: number } = {}) => {
+export const signInSetup = async (options: { rateLimit?: number; behindProxy?: boolean } = {}) => {
   const db = openDatabase(":memory:");
   migrate(db);
   let time = 1_800_000_000_000;
@@ -21,6 +22,7 @@ export const signInSetup = async (options: { rateLimit?: number } = {}) => {
     now: clock.now,
     random: (length: number) => crypto.getRandomValues(new Uint8Array(length)),
     allow: rateLimiter(options.rateLimit ?? 1000, 60_000, clock.now),
+    address: clientAddress(options.behindProxy ?? false),
   };
   const app = createApp({
     db,
@@ -50,16 +52,27 @@ export const signInSetup = async (options: { rateLimit?: number } = {}) => {
   };
   const request = (
     path: string,
-    init: { method?: string; token?: string; body?: unknown; ip?: string } = {},
+    init: {
+      method?: string;
+      token?: string;
+      body?: unknown;
+      ip?: string;
+      headers?: Record<string, string>;
+    } = {},
   ) =>
-    app.request(path, {
-      method: init.method ?? (init.body === undefined ? "GET" : "POST"),
-      headers: {
-        "content-type": "application/json",
-        ...(init.token ? { authorization: `Bearer ${init.token}` } : {}),
-        ...(init.ip ? { "x-forwarded-for": init.ip } : {}),
+    app.request(
+      path,
+      {
+        method: init.method ?? (init.body === undefined ? "GET" : "POST"),
+        headers: {
+          "content-type": "application/json",
+          ...(init.token ? { authorization: `Bearer ${init.token}` } : {}),
+          ...init.headers,
+        },
+        ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
       },
-      ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
-    });
+      // The socket address, as main.ts hands it over from Bun
+      { address: init.ip ?? "192.0.2.1" },
+    );
   return { app, db, clock, member, request };
 };

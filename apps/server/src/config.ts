@@ -14,6 +14,8 @@ const Config = z.object({
   KENNWORT_PUBLIC_URL: z.url({ protocol: /^https?$/ }).default("http://localhost:8100"),
   // Signs sessions; at least 32 characters, generated once per installation
   KENNWORT_AUTH_SECRET: z.string().min(32),
+  // Behind a reverse proxy the rate limits count the address it appends to X-Forwarded-For
+  KENNWORT_BEHIND_PROXY: z.enum(["true", "false"]).default("false"),
 });
 
 export type Config = {
@@ -22,6 +24,7 @@ export type Config = {
   logLevel: z.infer<typeof Config>["KENNWORT_LOG_LEVEL"];
   publicUrl: string;
   authSecret: string;
+  behindProxy: boolean;
 };
 
 export const readConfig = (env: Record<string, string | undefined>) => {
@@ -35,6 +38,7 @@ export const readConfig = (env: Record<string, string | undefined>) => {
     logLevel: data.KENNWORT_LOG_LEVEL,
     publicUrl: data.KENNWORT_PUBLIC_URL,
     authSecret: data.KENNWORT_AUTH_SECRET,
+    behindProxy: data.KENNWORT_BEHIND_PROXY === "true",
   };
   return { ok: true as const, value };
 };

@@ -13,6 +13,7 @@ import { z } from "zod";
 import type { Db } from "../db/database.ts";
 import { loginChallenges, loginKeys } from "../db/schema.ts";
 import type { Auth } from "./better-auth.ts";
+import type { ClientAddress, ClientEnv } from "./client-address.ts";
 import { clearFailures, isLocked, recordFailure } from "./limits.ts";
 
 const CHALLENGE_MS = 2 * 60 * 1000;
@@ -27,18 +28,17 @@ export type LoginKeyDeps = {
   now: () => number;
   random: (length: number) => Uint8Array;
   allow: (key: string) => boolean;
+  address: ClientAddress;
 };
 
-const clientKey = (request: Request) => request.headers.get("x-forwarded-for") ?? "local";
-
-export const loginKeyRoutes = ({ db, secret, auth, now, random, allow }: LoginKeyDeps) => {
+export const loginKeyRoutes = ({ db, secret, auth, now, random, allow, address }: LoginKeyDeps) => {
   const decoySalt = (accountId: string) =>
     encodeBytes(
       createHmac("sha256", secret).update(`decoy-salt:${accountId}`).digest().subarray(0, 16),
     );
   return new Hono()
     .post("/challenge", async (c) => {
-      if (!allow(`challenge:${clientKey(c.req.raw)}`))
+      if (!allow(`challenge:${address(c.req.raw, c.env as ClientEnv)}`))
         return c.json({ error: "too-many-requests" }, 429);
       const parsed = ChallengeRequest.safeParse(await c.req.json().catch(() => undefined));
       if (!parsed.success) return c.json({ error: "invalid" }, 400);
@@ -63,7 +63,7 @@ export const loginKeyRoutes = ({ db, secret, auth, now, random, allow }: LoginKe
       return c.json({ challengeId: id, challenge, accountSalt });
     })
     .post("/verify", async (c) => {
-      if (!allow(`verify:${clientKey(c.req.raw)}`))
+      if (!allow(`verify:${address(c.req.raw, c.env as ClientEnv)}`))
         return c.json({ error: "too-many-requests" }, 429);
       const parsed = VerifyRequest.safeParse(await c.req.json().catch(() => undefined));
       if (!parsed.success) return c.json({ error: "invalid" }, 400);
