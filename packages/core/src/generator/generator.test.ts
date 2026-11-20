@@ -92,7 +92,7 @@ describe("password", () => {
       firsts.add(made[0] as string);
     }
     expect([...seen].sort()).toEqual([...(LOWER + UPPER + DIGITS + SYMBOLS)].sort());
-    // The required characters are shuffled in, not always first: all kinds start a password
+    // Every kind can come first: no kind has a fixed place
     for (const kind of [LOWER, UPPER, DIGITS, SYMBOLS])
       expect([...firsts].some((c) => kind.includes(c))).toBe(true);
   });
