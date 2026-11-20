@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { newDevice, PASSPHRASE, SETUP_CODE, setUpCompany, test, unlock } from "./account.ts";
@@ -52,6 +53,43 @@ test.describe("an account", { tag: "@phone" }, () => {
     await page.getByLabel("Passphrase").fill(PASSPHRASE);
     await page.getByRole("button", { name: "Entsperren" }).click();
     await expect(heading(page, where)).toBeVisible({ timeout: 20_000 });
+  });
+
+  test("the kit saves as a PDF with every key, and its link fills in a new device", async ({
+    page,
+    browser,
+  }) => {
+    await page.goto("/setup");
+    await page.getByLabel("Einrichtungs-Code").fill(SETUP_CODE);
+    await page.getByLabel("Passphrase", { exact: true }).fill(PASSPHRASE);
+    await page.getByLabel("Passphrase wiederholen").fill(PASSPHRASE);
+    await page.getByRole("button", { name: "Firma anlegen" }).click();
+    await expect(heading(page, "Dein Recovery-Kit")).toBeVisible({ timeout: 20_000 });
+    const accountId = (await page.getByTestId("account-id").textContent()) ?? "";
+    const secretKey = (await page.getByTestId("secret-key").textContent()) ?? "";
+    const recoveryKey = (await page.getByTestId("recovery-key").textContent()) ?? "";
+
+    const saving = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Als PDF speichern" }).click();
+    const download = await saving;
+    expect(download.suggestedFilename()).toBe("kennwort-recovery-kit.pdf");
+    const pdf = (await readFile((await download.path()) ?? "")).toString("latin1");
+    expect(pdf.startsWith("%PDF-1.4")).toBe(true);
+    for (const value of [accountId, secretKey, recoveryKey, new URL(page.url()).origin])
+      expect(pdf).toContain(`(${value})`);
+
+    // What the QR code opens on a new device: account ID and Secret Key filled in from the fragment
+    const other = await newDevice(browser);
+    await other.goto(`/unlock#${new URLSearchParams({ account: accountId, secret: secretKey })}`);
+    await expect(other.getByLabel("Konto-ID")).toHaveValue(accountId);
+    await expect(other.getByLabel("Secret Key")).toHaveValue(secretKey);
+    await axe(other);
+    await other.getByLabel("Passphrase").fill(PASSPHRASE);
+    await other.getByRole("button", { name: "Entsperren" }).click();
+    await expect(heading(other, "Alle Einträge")).toBeVisible({ timeout: 20_000 });
+    // The fragment with the Secret Key does not stay in the address or the history entry
+    expect(new URL(other.url()).hash).toBe("");
+    expect(new URL(other.url()).pathname).toBe("/entries");
   });
 
   test("a wrong setup code is refused", async ({ page }) => {

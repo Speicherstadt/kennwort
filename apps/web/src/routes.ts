@@ -14,6 +14,7 @@ export type Route =
   | { page: "groups" }
   | { page: "settings" }
   | { page: "setup" }
+  | { page: "unlock" }
   | { page: "invite"; id: string }
   | { page: "not-found" };
 
@@ -69,7 +70,11 @@ export const parseRoute = (path: string): Route => {
   }
   if (
     rest.length === 0 &&
-    (first === "generator" || first === "groups" || first === "settings" || first === "setup")
+    (first === "generator" ||
+      first === "groups" ||
+      first === "settings" ||
+      first === "setup" ||
+      first === "unlock")
   )
     return { page: first };
   return { page: "not-found" };

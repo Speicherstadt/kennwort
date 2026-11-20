@@ -5,6 +5,7 @@ export {
   Archive,
   ArrowLeft,
   Copy,
+  Download,
   Ellipsis,
   Eye,
   EyeOff,

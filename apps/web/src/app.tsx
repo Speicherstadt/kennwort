@@ -7,7 +7,7 @@ import { getLocale, type Locale, setLocale } from "@kennwort/ui";
 import { createSignal, Match, onCleanup, Show, Switch } from "solid-js";
 import { InvitePage } from "./account/invite-page.tsx";
 import { SetupPage } from "./account/setup-page.tsx";
-import { UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
+import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
 import { Frame } from "./frame/frame.tsx";
 import type { Navigation } from "./navigation.ts";
 import type { Session } from "./session/session.ts";
@@ -21,6 +21,11 @@ export const App = (props: { nav: Navigation; session: Session; hash?: string })
     setShownLocale(next);
   };
   const route = () => props.nav.route();
+  // The kit's link carries the Secret Key in its fragment: read it once, then drop it from the
+  // address and the history entry at once, whether or not unlocking follows (P-12)
+  const deviceLink =
+    route().page === "unlock" ? readDeviceLink(props.hash ?? location.hash) : undefined;
+  if (deviceLink) props.nav.dropFragment();
   // Every key press or click pushes the automatic lock back (P-03)
   const touch = () => props.session.touch();
   document.addEventListener("pointerdown", touch);
@@ -37,6 +42,13 @@ export const App = (props: { nav: Navigation; session: Session; hash?: string })
     <Show when={locale()} keyed>
       {(_locale) => (
         <Switch>
+          <Match when={route().page === "unlock"}>
+            <UnlockPage
+              session={props.session}
+              link={deviceLink}
+              onUnlocked={() => props.nav.replace("/entries")}
+            />
+          </Match>
           <Match when={route().page === "setup"}>
             <SetupPage nav={props.nav} session={props.session} />
           </Match>

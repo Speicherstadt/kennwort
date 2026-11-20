@@ -86,5 +86,11 @@
   "error_wrong_passphrase": "Passphrase or Secret Key is wrong.",
   "error_unexpected": "That did not work. Try again.",
   "error_passphrase_mismatch": "The two passphrases differ.",
-  "error_passphrase_short": "The passphrase is too short."
+  "error_passphrase_short": "The passphrase is too short.",
+  "kit_download": "Save as PDF",
+  "kit_pdf_title": "Kennwort – Recovery Kit",
+  "kit_server": "Server",
+  "kit_created": "Created on",
+  "kit_qr": "Scan this code with a new device: it fills in server, account ID and Secret Key. You type the passphrase yourself; the Recovery Key is not in the code.",
+  "kit_keep": "Keep this sheet safe, in a safe or with your documents. Whoever has it and knows your passphrase can get into your account. Nobody can reset your passphrase or Recovery Key for you."
 }

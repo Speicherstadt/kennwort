@@ -3,6 +3,7 @@ import { render } from "@solidjs/web";
 import { createSignal, flush } from "solid-js";
 import { afterEach, describe, expect, it } from "vitest";
 import { readInvitation } from "./account/invite-page.tsx";
+import { readDeviceLink } from "./account/unlock-page.tsx";
 import { App } from "./app.tsx";
 import { createNavigation, type Navigation } from "./navigation.ts";
 import type { Session } from "./session/session.ts";
@@ -88,6 +89,27 @@ describe("the gate", () => {
     expect(root.querySelector('[role="alert"]')?.textContent).toBe(
       "Dieser Einladungslink ist unvollständig.",
     );
+  });
+
+  it("fills account ID and Secret Key from the kit's link, even on a device that knows an account", () => {
+    const link = "#account=abc&secret=K1-XYZ";
+    const root = open(`/unlock${link}`, fakeSession({ device: true }).session, link);
+    // Dropped from the address before anyone types: the Secret Key does not stay in the history
+    expect(window.location.hash).toBe("");
+    expect(window.location.pathname).toBe("/unlock");
+    expect(heading(root)).toBe("Kennwort ist gesperrt");
+    const values = [...root.querySelectorAll("input")].map((input) => input.value);
+    expect(values).toEqual(["abc", "K1-XYZ", ""]);
+  });
+
+  it("reads account ID and Secret Key from a link's fragment", () => {
+    expect(readDeviceLink("#account=abc&secret=K1-XYZ")).toEqual({
+      accountId: "abc",
+      secretKey: "K1-XYZ",
+    });
+    expect(readDeviceLink("#account=abc")).toBeUndefined();
+    expect(readDeviceLink("#secret=K1-XYZ")).toBeUndefined();
+    expect(readDeviceLink("")).toBeUndefined();
   });
 
   it("reads token and root fingerprint from the link's fragment", () => {

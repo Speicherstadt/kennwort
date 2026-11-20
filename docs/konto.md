@@ -40,13 +40,20 @@ Nach dem Anlegen zeigt Kennwort einmal drei Angaben:
 | Secret Key (`K1-…`) | macht zusammen mit der Passphrase deine Schlüssel; ohne ihn hilft eine erratene Passphrase nichts |
 | Recovery Key (`R1-…`) | öffnet dein Konto, wenn du die Passphrase vergisst |
 
-Schreib sie auf oder drucke sie aus und bewahre sie sicher auf. Erst dann geht es weiter.
+Mit **Als PDF speichern** bekommst du ein Blatt zum Ausdrucken mit allen drei Angaben, der Adresse
+des Servers und einem QR-Code. Das PDF entsteht auf deinem Gerät; nichts davon geht an den Server.
+Bewahre das Blatt sicher auf und bestätige, dass du es getan hast. Erst dann geht es weiter.
+
+Der QR-Code öffnet auf einem neuen Gerät die Entsperr-Seite deines Servers und füllt Konto-ID und
+Secret Key aus; die Passphrase gibst du selbst ein. Der Recovery Key steht nicht im Code, ein Foto
+davon öffnet dein Konto also nicht.
 
 ## Entsperren
 
 Dein Gerät merkt sich Konto-ID und Secret Key, nie die Passphrase. Zum Entsperren reicht deshalb
 die Passphrase. Auf einem neuen Gerät wählst du **Anderes Konto** und gibst Konto-ID, Secret Key und
-Passphrase ein; danach kennt auch dieses Gerät dein Konto.
+Passphrase ein, oder du scannst den QR-Code auf dem Recovery-Kit; danach kennt auch dieses Gerät
+dein Konto.
 
 ## Automatisch sperren
 

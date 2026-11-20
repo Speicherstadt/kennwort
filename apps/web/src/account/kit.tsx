@@ -1,14 +1,43 @@
 /**
  * The two keys after an account is made (P-01 step 3, P-12): shown once on this device, the user
- * confirms keeping them, next to the account ID, before the account is used. The printable PDF follows (K-303 part 3).
+ * confirms keeping them, next to the account ID, before the account is used; the printable PDF
+ * holds the same and a QR code for a new device.
  */
 
 import { encodeBytes } from "@kennwort/core";
 import { formatRecoveryKey, formatSecretKey } from "@kennwort/crypto";
-import { Button, m } from "@kennwort/ui";
+import { Button, getLocale, Icon, m } from "@kennwort/ui";
+import { Download } from "@kennwort/ui/icons";
 import { createSignal } from "solid-js";
+import { kitPdf } from "../kit/kit-pdf.ts";
+import { saveFile } from "../kit/save.ts";
 import type { NewKeys } from "../session/session.ts";
 import { Card } from "./form.tsx";
+
+/** The printable kit for these keys, in the language the app speaks */
+const savePdf = (keys: NewKeys) =>
+  saveFile(
+    kitPdf({
+      server: location.origin,
+      accountId: encodeBytes(keys.accountId),
+      secretKey: formatSecretKey(keys.secretKey),
+      recoveryKey: formatRecoveryKey(keys.recoveryKey),
+      created: new Date().toLocaleDateString(getLocale()),
+      texts: {
+        title: m.kit_pdf_title(),
+        intro: m.kit_text(),
+        server: m.kit_server(),
+        account: m.unlock_account(),
+        secretKey: m.kit_secret_key(),
+        recoveryKey: m.kit_recovery_key(),
+        created: m.kit_created(),
+        qr: m.kit_qr(),
+        keep: m.kit_keep(),
+      },
+    }),
+    "kennwort-recovery-kit.pdf",
+    "application/pdf",
+  );
 
 export const Kit = (props: { keys: NewKeys; onDone: () => void }) => {
   const [saved, setSaved] = createSignal(false);
@@ -44,6 +73,9 @@ export const Kit = (props: { keys: NewKeys; onDone: () => void }) => {
           </dd>
         </div>
       </dl>
+      <Button class="w-fit" onClick={() => savePdf(props.keys)}>
+        <Icon icon={Download} /> {m.kit_download()}
+      </Button>
       <label class="flex items-start gap-2 text-[13px]">
         <input
           type="checkbox"
