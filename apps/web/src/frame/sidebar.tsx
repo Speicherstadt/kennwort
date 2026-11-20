@@ -3,10 +3,11 @@ import { Badge, cn, Icon, m } from "@kennwort/ui";
 import type { IconNode } from "@kennwort/ui/icons";
 import { Archive, List, ShieldCheck, Star, TriangleExclamationPoint } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
-import { For } from "solid-js";
+import { For, Show } from "solid-js";
 import { company, entries, groups, vaults } from "../demo.ts";
 import type { Navigation } from "../navigation.ts";
 import type { ListFilter } from "../routes.ts";
+import type { ShownVault } from "./entry-list.tsx";
 import { Link } from "./link.tsx";
 
 const sameFilter = (a: ListFilter, b: ListFilter) =>
@@ -47,7 +48,11 @@ const Heading = (props: { children: JSX.Element }) => (
   </h2>
 );
 
-export const Sidebar = (props: { nav: Navigation }) => (
+/** The vaults the app loaded, or the demo's while there are none (K-305 replaces them) */
+const sidebarVaults = (loaded: ShownVault[] | undefined) =>
+  loaded ? loaded.map((v) => ({ id: v.idText, name: v.name ?? m.vaults_unnamed() })) : vaults;
+
+export const Sidebar = (props: { nav: Navigation; vaults?: ShownVault[] | undefined }) => (
   <aside
     class="hidden w-58 shrink-0 flex-col border-r border-border bg-muted p-3 lg:flex"
     aria-label={m.nav_sections()}
@@ -77,7 +82,7 @@ export const Sidebar = (props: { nav: Navigation }) => (
         trailing={<Badge tone="warning">{entries.filter((entry) => entry.weak).length}</Badge>}
       />
       <Heading>{m.nav_vaults()}</Heading>
-      <For each={vaults}>
+      <For each={sidebarVaults(props.vaults)}>
         {(vault) => (
           <Item
             nav={props.nav}
@@ -88,6 +93,15 @@ export const Sidebar = (props: { nav: Navigation }) => (
           />
         )}
       </For>
+      <Show when={props.vaults}>
+        <Link
+          nav={props.nav}
+          href="/vaults"
+          class="flex items-center gap-2 rounded-md px-2 py-1.5 text-muted-foreground hover:bg-accent"
+        >
+          {m.vaults_all()}
+        </Link>
+      </Show>
       <Heading>{m.nav_groups()}</Heading>
       <For each={groups}>
         {(group) => (

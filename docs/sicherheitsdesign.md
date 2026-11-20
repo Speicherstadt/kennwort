@@ -484,6 +484,26 @@ nur an Konten, die gerade Mitglied sind; wer entfernt wurde oder abgelaufen ist,
 neuen Eintrag mehr. Seinen alten Schlüssel behält er trotzdem, bis der Schlüsselwechsel (K-307)
 ein neues VK verteilt.
 
+Der Name eines Tresors liegt als F-01-Geheimtext mit VKₑ beim Server (`PUT /api/vaults/:id/name`,
+nur von Verwaltern, nur für die aktuelle Epoche):
+
+```text
+name = F-01(VKₑ, Name in UTF-8 NFC, 1 bis 100 Zeichen, zweck = "vault-name", kontext = tresor-ID, epoche)
+```
+
+Ein Name, den der Server aus einem anderen Tresor oder einer anderen Epoche herüberschiebt, lässt
+sich nicht öffnen; der Client zeigt dann „Tresor ohne Namen“ (`sealVaultName`, `openVaultName` in
+`packages/core/src/membership/vault-name.ts`). Restrisiko: Der Server kann einen früheren Namen
+derselben Epoche zurückspielen. Die Web-App lädt jeden Tresor über `loadVaults`
+(`apps/web/src/vaults/vaults.ts`): Log mit `verifyLog` gegen den gemerkten Stand prüfen, VKₑ nur
+mit passender Bindung annehmen, nur öffnen, solange das Konto nach dem Log und der eigenen Uhr
+Mitglied ist, den neuen Stand im Kontozustand merken.
+
+Den persönlichen Tresor legt die Web-App nur für ein Konto an, das noch nie einen Tresor gesehen
+hat (keine Logs im Kontozustand): Verschweigt der Server die Tresore eines Kontos, deckt kein neuer
+Tresor das zu. Seine ID ist `kdf(AK, leer, "kennwort/personal-vault/v1", konto-ID)`, gekürzt auf
+16 Byte; zwei Geräte desselben Kontos wählen dieselbe, und nur der erste Genesis-Eintrag zählt.
+
 **Wehrt ab:** E-02, E-05, E-06, E-16, E-27.
 
 ### P-06 Mitgliedschafts-Log

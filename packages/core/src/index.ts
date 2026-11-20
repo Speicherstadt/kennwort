@@ -136,6 +136,7 @@ export {
   ROOT_GRANT_LENGTH,
   type RootGrantError,
 } from "./membership/root-grant.ts";
+export { NAME_LENGTH, openVaultName, sealVaultName } from "./membership/vault-name.ts";
 export {
   type Access,
   addMember,
@@ -193,4 +194,11 @@ export {
   type VaultKeyring,
 } from "./sync/record.ts";
 export { parseSse, type SseEvent } from "./sync/sse.ts";
-export { CertificateWire, LogEntryWire, toWire } from "./sync/wire.ts";
+export {
+  CertificateWire,
+  LogEntryWire,
+  toWire,
+  VaultKeysWire,
+  VaultListWire,
+  VaultLogWire,
+} from "./sync/wire.ts";

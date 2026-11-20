@@ -126,6 +126,32 @@ const append = (s: Store, deps: Deps) => async (c: Context<TenantEnv>) => {
   return c.json({ seq: stored.seq }, 201);
 };
 
+/** A sealed name (F-01): version, nonce, 1 to 100 characters of up to 4 bytes, tag */
+const SEALED_NAME = { min: 1 + 24 + 1 + 16, max: 1 + 24 + 400 + 16 };
+const Rename = z.object({
+  epoch: z.number().int().nonnegative(),
+  name: bytes().refine((b) => b.length >= SEALED_NAME.min && b.length <= SEALED_NAME.max),
+});
+
+/** A current manager names the vault, sealed with the key of the vault's current epoch (P-05) */
+const rename = (s: Store) => async (c: Context<TenantEnv>) => {
+  const vaultId = c.req.param("vaultId") ?? "";
+  if (!s.isMemberNow(c, vaultId)) return c.json({ error: "not-found" }, 404);
+  const body = Rename.safeParse(await c.req.json().catch(() => undefined));
+  if (!body.success) return c.json({ error: "invalid" }, 400);
+  const entries = s.entriesOf(s.rowsOf(vaultId));
+  if (membersOf(entries).get(c.var.session.accountId)?.role !== "manage")
+    return c.json({ error: "forbidden" }, 403);
+  const epoch = Math.max(...entries.map((e) => e.epoch));
+  if (body.data.epoch !== epoch) return c.json({ error: "invalid" }, 400);
+  s.db
+    .update(vaults)
+    .set({ name: Buffer.from(body.data.name), nameEpoch: epoch })
+    .where(eq(vaults.id, vaultId))
+    .run();
+  return c.json({ epoch });
+};
+
 const keysOf = (s: Store, vaultId: string, accountId: string) =>
   s.db
     .select()
@@ -141,7 +167,15 @@ export const logRoutes = (deps: Deps) => {
       const me = c.var.session.accountId;
       const held = s.db.select().from(vaultKeys).where(eq(vaultKeys.accountId, me)).all();
       const ids = [...new Set(held.map((row) => row.vaultId))].filter((id) => s.isMemberNow(c, id));
-      return c.json({ vaults: ids });
+      const named = ids.map((id) => {
+        const vault = s.vaultOf(c.var.session.companyId, id);
+        return {
+          id,
+          name: vault?.name ? encodeBytes(vault.name) : null,
+          nameEpoch: vault?.nameEpoch ?? null,
+        };
+      });
+      return c.json({ vaults: named });
     })
     .get("/vaults/:vaultId/log", (c) => {
       const vaultId = c.req.param("vaultId");
@@ -156,5 +190,6 @@ export const logRoutes = (deps: Deps) => {
         keys: rows.map((row) => ({ epoch: row.epoch, wrapped: encodeBytes(row.wrapped) })),
       });
     })
-    .post("/vaults/:vaultId/log", append(s, deps));
+    .post("/vaults/:vaultId/log", append(s, deps))
+    .put("/vaults/:vaultId/name", rename(s));
 };

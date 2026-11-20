@@ -7,7 +7,7 @@ import type { JSX } from "@solidjs/web";
 import { Match, Switch } from "solid-js";
 import type { Navigation } from "../navigation.ts";
 import { EntryDetail } from "./entry-detail.tsx";
-import { EntryList } from "./entry-list.tsx";
+import { EntryList, type ShownVault } from "./entry-list.tsx";
 import { GeneratorPage, GroupsPage, NotFoundPage, SettingsPage } from "./pages.tsx";
 import { Rail } from "./rail.tsx";
 import { Sidebar } from "./sidebar.tsx";
@@ -22,6 +22,9 @@ export const Frame = (props: {
   devices?: (() => JSX.Element) | undefined;
   /** The members page (K-304); the app passes it with session and API */
   members?: (() => JSX.Element) | undefined;
+  /** The vaults the app loaded and their page (K-305) */
+  vaults?: (() => ShownVault[] | undefined) | undefined;
+  vaultsPage?: (() => JSX.Element) | undefined;
 }) => {
   const toasts = createToasts();
   const route = () => props.nav.route();
@@ -37,9 +40,14 @@ export const Frame = (props: {
         >
           {(entries) => (
             <>
-              <Sidebar nav={props.nav} />
+              <Sidebar nav={props.nav} vaults={props.vaults?.()} />
               <main class="flex min-h-0 flex-1">
-                <EntryList nav={props.nav} filter={entries().filter} selected={entries().entry} />
+                <EntryList
+                  nav={props.nav}
+                  filter={entries().filter}
+                  selected={entries().entry}
+                  vaults={props.vaults?.()}
+                />
                 <EntryDetail
                   nav={props.nav}
                   filter={entries().filter}
@@ -67,12 +75,16 @@ export const Frame = (props: {
               onLocale={props.onLocale}
               onAddDevice={props.onAddDevice}
               onMembers={props.members ? () => props.nav.go("/members") : undefined}
+              onVaults={props.vaultsPage ? () => props.nav.go("/vaults") : undefined}
               devices={props.devices}
             />
           </main>
         </Match>
         <Match when={route().page === "members" && props.members}>
           <main class="flex min-h-0 flex-1">{props.members?.()}</main>
+        </Match>
+        <Match when={route().page === "vaults" && props.vaultsPage}>
+          <main class="flex min-h-0 flex-1">{props.vaultsPage?.()}</main>
         </Match>
         <Match when={route().page === "not-found"}>
           <main class="flex min-h-0 flex-1">

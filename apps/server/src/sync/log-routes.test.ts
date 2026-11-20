@@ -10,7 +10,9 @@ import {
   encodeBytes,
   idKey,
   LogEntryWire,
+  openVaultName,
   removeMember,
+  sealVaultName,
   toWire,
   verifyLog,
 } from "@kennwort/core";
@@ -74,6 +76,7 @@ const weber = async () => {
     .run();
   return { o, jonas, annaId, annaToken, annaCert, annaEd };
 };
+type Listed = { id: string; name: string | null; nameEpoch: number | null };
 type Weber = Awaited<ReturnType<typeof weber>>;
 
 const post = (w: Weber, vaultId: string, body: unknown, token = w.o.token) =>
@@ -126,9 +129,9 @@ describe("vault log and keys (K-305 part 1)", () => {
     };
     expect(keys.keys).toEqual([{ epoch: 0, wrapped: encodeBytes(vault.wrappedKey) }]);
     const mine = (await (await w.o.setup.request("/api/vaults", { token: w.o.token })).json()) as {
-      vaults: string[];
+      vaults: Listed[];
     };
-    expect(mine.vaults).toEqual([vaultId]);
+    expect(mine.vaults).toEqual([{ id: vaultId, name: null, nameEpoch: null }]);
   });
 
   it("adds Anna with her key; she then sees the vault and its log, a chain the client accepts", async () => {
@@ -155,8 +158,8 @@ describe("vault log and keys (K-305 part 1)", () => {
     expect((await logOf(w, vaultId, w.annaToken)) as unknown[]).toHaveLength(2);
     const annaVaults = (await (
       await w.o.setup.request("/api/vaults", { token: w.annaToken })
-    ).json()) as { vaults: string[] };
-    expect(annaVaults.vaults).toEqual([vaultId]);
+    ).json()) as { vaults: Listed[] };
+    expect(annaVaults.vaults.map((v) => v.id)).toEqual([vaultId]);
     const checked = stateOf(w, vault.ring.vaultId, (await logOf(w, vaultId)) as never);
     expect(checked.ok).toBe(true);
   });
@@ -249,7 +252,7 @@ describe("vault log and keys (K-305 part 1)", () => {
     expect((await post(w, vaultId, { entry: toWire(removed) })).status).toBe(201);
     const annaVaults = (await (
       await w.o.setup.request("/api/vaults", { token: w.annaToken })
-    ).json()) as { vaults: string[] };
+    ).json()) as { vaults: Listed[] };
     expect(annaVaults.vaults).toEqual([]);
   });
 
@@ -301,7 +304,7 @@ describe("vault log against what verifyLog rejects (review of K-305 part 1)", ()
     const listed = (await (
       await w.o.setup.request("/api/vaults", { token: w.annaToken })
     ).json()) as {
-      vaults: string[];
+      vaults: Listed[];
     };
     expect(listed.vaults).toEqual([]);
     expect(await logOf(w, vaultId, w.annaToken)).toBe(404);
@@ -473,5 +476,69 @@ describe("signed times against the server's clock", () => {
       status: 400,
       ok: true,
     });
+  });
+});
+
+describe("the vault's name, sealed with its key (K-305 part 2)", () => {
+  const rename = (w: Weber, vaultId: string, body: unknown, token = w.o.token) =>
+    w.o.setup.request(`/api/vaults/${vaultId}/name`, { method: "PUT", token, body });
+  const listOf = async (w: Weber, token: string) =>
+    ((await (await w.o.setup.request("/api/vaults", { token })).json()) as { vaults: Listed[] })
+      .vaults;
+
+  it("keeps the name a manager sealed and lists it to every member, who opens it", async () => {
+    const w = await weber();
+    const { vault, vaultId } = await createBuero(w);
+    const name = encodeBytes(sealVaultName(vault.ring, "Büro"));
+    expect((await rename(w, vaultId, { epoch: 0, name })).status).toBe(200);
+    const s0 = stateOf(w, vault.ring.vaultId, [vault.genesis]);
+    if (!s0.ok) throw new Error(s0.error);
+    const added = addMember(
+      w.jonas.signer,
+      s0.value,
+      vault.ring,
+      w.annaCert,
+      { role: "read", validUntil: 0 },
+      NOW + 1,
+    );
+    await post(w, vaultId, {
+      entry: toWire(added.entry),
+      wrappedKey: encodeBytes(added.wrappedKey),
+    });
+    const [listed] = await listOf(w, w.annaToken);
+    expect(listed).toEqual({ id: vaultId, name, nameEpoch: 0 });
+    expect(openVaultName(vault.ring, Buffer.from(name, "base64url"))).toEqual({
+      ok: true,
+      value: "Büro",
+    });
+    // Anna only reads: she does not rename
+    expect((await rename(w, vaultId, { epoch: 0, name }, w.annaToken)).status).toBe(403);
+  });
+
+  it("takes only the current epoch and a sealed name of a possible length", async () => {
+    const w = await weber();
+    const { vault, vaultId } = await createBuero(w);
+    const name = encodeBytes(sealVaultName(vault.ring, "Büro"));
+    expect((await rename(w, vaultId, { epoch: 1, name })).status).toBe(400);
+    expect(
+      (await rename(w, vaultId, { epoch: 0, name: encodeBytes(new Uint8Array(41)) })).status,
+    ).toBe(400);
+    expect(
+      (await rename(w, vaultId, { epoch: 0, name: encodeBytes(new Uint8Array(442)) })).status,
+    ).toBe(400);
+    expect(
+      (await rename(w, vaultId, { epoch: 0, name: encodeBytes(new Uint8Array(42)) })).status,
+    ).toBe(200);
+    expect(
+      (await rename(w, vaultId, { epoch: 0, name: encodeBytes(new Uint8Array(441)) })).status,
+    ).toBe(200);
+    expect((await rename(w, vaultId, { epoch: 0 })).status).toBe(400);
+  });
+
+  it("is no business of a non-member", async () => {
+    const w = await weber();
+    const { vault, vaultId } = await createBuero(w);
+    const name = encodeBytes(sealVaultName(vault.ring, "Büro"));
+    expect((await rename(w, vaultId, { epoch: 0, name }, w.annaToken)).status).toBe(404);
   });
 });

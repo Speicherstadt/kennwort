@@ -12,6 +12,9 @@ export const vaults = sqliteTable(
       .notNull()
       .references(() => companies.id),
     createdAt: integer("created_at").notNull(),
+    /** The name sealed with the vault key of nameEpoch (P-05); only members read it */
+    name: blob("name", { mode: "buffer" }),
+    nameEpoch: integer("name_epoch"),
   },
   (table) => [index("vaults_company").on(table.companyId)],
 );

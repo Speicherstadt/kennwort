@@ -32,6 +32,17 @@ export const CertificateWire = z.object({
   signature: bytes(65),
 });
 
+/** GET /api/vaults: the vaults this account is a member of, with their sealed names (K-305) */
+export const VaultListWire = z.object({
+  vaults: z.array(
+    z.object({ id: bytes(16), name: bytes().nullable(), nameEpoch: z.number().int().nullable() }),
+  ),
+});
+export const VaultLogWire = z.object({ entries: z.array(LogEntryWire) });
+export const VaultKeysWire = z.object({
+  keys: z.array(z.object({ epoch: z.number().int().nonnegative(), wrapped: bytes() })),
+});
+
 /** Any record of bytes and plain values as JSON for the wire; the schemas read it back */
 export const toWire = (value: Record<string, unknown>) =>
   Object.fromEntries(
