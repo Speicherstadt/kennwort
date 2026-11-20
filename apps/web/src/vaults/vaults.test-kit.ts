@@ -10,6 +10,7 @@ type Stored = {
   /** Wrapped vault keys by account, then by epoch */
   keys: Map<string, Map<number, Uint8Array>>;
   name: Uint8Array | null;
+  nameEpoch: number | null;
   requests: Map<string, number>;
 };
 
@@ -35,7 +36,7 @@ export const vaultServer = (
         .map(([id, v]) => ({
           id: Buffer.from(id, "base64url") as Uint8Array,
           name: v.name,
-          nameEpoch: v.name ? 0 : null,
+          nameEpoch: v.nameEpoch,
         })),
     vaultLog: async (_t, id) => of(id)?.entries,
     vaultKeys: async (_t, id) => {
@@ -50,6 +51,7 @@ export const vaultServer = (
         entries: [],
         keys: new Map(),
         name: null,
+        nameEpoch: null,
         requests: new Map(),
       });
       return "ok";
@@ -85,9 +87,12 @@ export const vaultServer = (
     },
     dropRequest: async (_t, id, accountId) =>
       of(id)?.requests.delete(encodeBytes(accountId)) ?? false,
-    renameVault: async (_t, id, _epoch, sealed) => {
+    renameVault: async (_t, id, epoch, sealed) => {
       const vault = of(id);
-      if (vault) vault.name = sealed;
+      if (vault) {
+        vault.name = sealed;
+        vault.nameEpoch = epoch;
+      }
       return vault !== undefined;
     },
   };

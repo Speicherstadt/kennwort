@@ -107,8 +107,10 @@ const openOne = async (
   const rings = openRings(opened.keyBlock, opened.accountId, log, listed.id, keys);
   if (!rings.ok) return { idText, error: rings.error };
   const ring = rings.value.current;
-  const name =
-    listed.name && listed.nameEpoch === log.epoch ? openVaultName(ring, listed.name) : null;
+  // The name under the key of its own epoch: a rotation seals it anew, and until then the older
+  // key, which every member left holds, still reads it
+  const nameRing = [ring, ...rings.value.older].find((r) => r.epoch === listed.nameEpoch);
+  const name = listed.name && nameRing ? openVaultName(nameRing, listed.name) : null;
   return {
     idText,
     name: name?.ok ? name.value : undefined,

@@ -16,11 +16,13 @@ import {
   type Exposure,
   encodeBytes,
   genuineShares,
+  type Keyring,
   type LogEntry,
   pastExposures,
   removeMember,
   reshare,
   rotateVaultKey,
+  sealVaultName,
   type Trust,
   verifyLog,
   type WrappedKey,
@@ -49,7 +51,7 @@ type Done = { ok: true } | { ok: false; error: ExitError };
 const timeFor = (vault: Vault) => Math.max(Math.floor(Date.now() / 1000), vault.log.time);
 
 type Signer = { accountId: Uint8Array; edSecretKey: Uint8Array };
-type Exit = { entries: LogEntry[]; wrappedKeys: WrappedKey[] };
+type Exit = { entries: LogEntry[]; wrappedKeys: WrappedKey[]; ring: Keyring };
 
 /**
  * The entries that take these people out and rotate the key: each removal checked against the log
@@ -76,7 +78,8 @@ const exitEntries = (
   const rotation = rotateVaultKey(signer, state, vaultId, now, time);
   if (!rotation.ok) return rotation;
   const entries = [...log.slice(vault.entries.length), rotation.value.entry];
-  return { ok: true, value: { entries, wrappedKeys: rotation.value.wrappedKeys } };
+  const { wrappedKeys, ring } = rotation.value;
+  return { ok: true, value: { entries, wrappedKeys, ring } };
 };
 
 const authorOf = (session: Session) => {
@@ -149,6 +152,11 @@ export const exitVault = async (
     const keys = entry.action === "rotate" ? exit.value.wrappedKeys : undefined;
     const appended = await deps.api.appendLog(me.token, entry, undefined, keys);
     if (appended !== "ok") return { ok: false, error: appended };
+  }
+  // The name sealed anew under the new key; if that fails the older key still reads it
+  if (vault.name !== undefined) {
+    const { ring } = exit.value;
+    await deps.api.renameVault(me.token, ring.vaultId, ring.epoch, sealVaultName(ring, vault.name));
   }
   const loaded = await stores.reload();
   if (!loaded) return { ok: false, error: "unreachable" };

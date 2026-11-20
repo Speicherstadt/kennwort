@@ -56,6 +56,21 @@ describe("removing someone from a vault (P-11)", () => {
     ]);
   });
 
+  it("seals the vault's name again under the new key", async () => {
+    const w = await annaInBuero();
+    await exitVault(w.deps, w.exits, w.vaultOf(), w.loaded.trust, [w.anna.account.accountId]);
+    expect(w.vaultServer.vaults.get(w.vault.idText)?.nameEpoch).toBe(1);
+    expect(w.vaultOf(await w.reload()).name).toBe("Büro");
+  });
+
+  it("still names a vault whose name is under an older key", async () => {
+    const w = await annaInBuero();
+    const keepsName = { ...w.deps, api: { ...w.deps.api, renameVault: async () => false } };
+    await exitVault(keepsName, w.exits, w.vaultOf(), w.loaded.trust, [w.anna.account.accountId]);
+    expect(w.vaultServer.vaults.get(w.vault.idText)?.nameEpoch).toBe(0);
+    expect(w.vaultOf(await w.reload()).name).toBe("Büro");
+  });
+
   it("writes every entry again in the new epoch, marked for the secrets Anna could read", async () => {
     const w = await annaInBuero();
     await exitVault(w.deps, w.exits, w.vaultOf(), w.loaded.trust, [w.anna.account.accountId]);
