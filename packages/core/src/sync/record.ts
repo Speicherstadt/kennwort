@@ -74,7 +74,18 @@ export const sealRecord = (
   return { ...unsigned, signature: sign(author.edSecretKey, "entry", ...signedFields(unsigned)) };
 };
 
+/** JSON as a value, so content that does not parse is an error value, not a throw */
+const parseJson = (text: string): Result<unknown, "not-json"> => {
+  try {
+    return ok(JSON.parse(text));
+  } catch {
+    return err("not-json");
+  }
+};
+
 export type AcceptError =
+  | "not-json"
+  | "malformed"
   | "wrong-vault"
   | "stale"
   | "uncertified-author"
@@ -103,6 +114,8 @@ export const openRecord = (
   if (!entryKey.ok) return err("unreadable");
   const plain = openEntry(entryKey.value, record.content, at, record.version);
   if (!plain.ok) return err("unreadable");
-  const parsed = EntryContent.safeParse(JSON.parse(new TextDecoder().decode(plain.value)));
-  return parsed.success ? ok(parsed.data) : err("unreadable");
+  const json = parseJson(new TextDecoder().decode(plain.value));
+  if (!json.ok) return json;
+  const parsed = EntryContent.safeParse(json.value);
+  return parsed.success ? ok(parsed.data) : err("malformed");
 };

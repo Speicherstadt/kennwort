@@ -81,7 +81,7 @@ describe("openRecord (P-09)", () => {
       { title: 1 } as unknown as EntryContent,
       ctx.lastSeen,
     );
-    expect(open(notAnEntry)).toEqual({ ok: false, error: "unreadable" });
+    expect(open(notAnEntry)).toEqual({ ok: false, error: "malformed" });
   });
 
   it("refuses a record whose content box belongs to another version", () => {

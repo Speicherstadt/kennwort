@@ -140,3 +140,40 @@ describe("EntryContent accepts every type and kind", () => {
     );
   });
 });
+
+describe("what both sides changed differently", () => {
+  it("keeps my renamed field beside theirs, under its own ID", () => {
+    const rename = (name: string) => ({
+      ...bank,
+      fields: bank.fields.map((f) => (f.id === "password" ? { ...f, name } : f)),
+    });
+    const merged = mergeContent(bank, rename("PIN"), rename("Kennwort"), now);
+    expect(
+      merged.fields.filter((f) => f.id.startsWith("password")).map((f) => [f.id, f.name]),
+    ).toEqual([
+      ["password", "Kennwort"],
+      [`password~${now}`, "PIN"],
+    ]);
+    expect(merged.history).toEqual([]);
+  });
+
+  it("keeps my field of another kind beside theirs", () => {
+    const rekind = (kind: "text" | "note") => ({
+      ...bank,
+      fields: bank.fields.map((f) => (f.id === "user" ? { ...f, kind } : f)),
+    });
+    const merged = mergeContent(
+      bank,
+      rekind("note"),
+      { ...rekind("text"), fields: withField(bank, "user", "x").fields },
+      now,
+    );
+    expect(merged.fields.find((f) => f.id === `user~${now}`)?.kind).toBe("note");
+  });
+
+  it("puts my type into the history", () => {
+    const merged = mergeContent(bank, { ...bank, type: "card" }, { ...bank, type: "wifi" }, now);
+    expect(merged.type).toBe("wifi");
+    expect(merged.history).toEqual([{ fieldId: "type", value: "card", replacedAt: now }]);
+  });
+});

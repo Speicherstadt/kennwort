@@ -32,7 +32,8 @@ export type SyncContext = {
   lastSeen: Uint8Array;
   now: number;
 };
-export type Refused = { entryId: Uint8Array; version: number; error: AcceptError };
+/** A record the device would not take, or ("missing") a known entry the server no longer shows (E-15) */
+export type Refused = { entryId: Uint8Array; version: number; error: AcceptError | "missing" };
 
 export const emptyDevice = (): Device => ({ known: new Map(), queue: [] });
 
@@ -57,7 +58,8 @@ export type Pulled = { device: Device; refused: Refused[] };
 export const pull = (device: Device, server: SyncServer, ctx: SyncContext): Pulled => {
   const known = new Map(device.known);
   const refused: Refused[] = [];
-  for (const record of server.pull()) {
+  const records = server.pull();
+  for (const record of records) {
     const mine = known.get(idKey(record.entryId));
     const opened = openRecord(record, ctx.ring, ctx.log, ctx.trust, mine?.version ?? 0);
     if (opened.ok)
@@ -70,6 +72,11 @@ export const pull = (device: Device, server: SyncServer, ctx: SyncContext): Pull
     else if (opened.error !== "stale")
       refused.push({ entryId: record.entryId, version: record.version, error: opened.error });
   }
+  // Deleting is a signed tombstone (P-09); an entry that just vanishes is hidden, not gone
+  const shown = new Set(records.map((record) => idKey(record.entryId)));
+  for (const mine of device.known.values())
+    if (!shown.has(idKey(mine.entryId)))
+      refused.push({ entryId: mine.entryId, version: mine.version, error: "missing" });
   return { device: { ...device, known }, refused };
 };
 
@@ -81,12 +88,24 @@ const contentFor = (op: Pending, current: Known | undefined, now: number) =>
     ? mergeContent(op.base.content, op.content, current.content, now)
     : op.content;
 
+/** Every refusal once, from all pulls of one sync: a server must not hide one behind a retry */
+const allRefused = (lists: Refused[][]) => {
+  const seen = new Set<string>();
+  return lists.flat().filter((refusal) => {
+    const key = `${idKey(refusal.entryId)}:${refusal.version}:${refusal.error}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 /** Pushes one change as the next version, pulling and merging again when someone was faster */
 const pushChange = (
   start: ReturnType<typeof pull>,
   op: Pending,
   server: SyncServer,
   ctx: SyncContext,
+  seen: Refused[][],
 ) => {
   let state = start;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
@@ -104,6 +123,7 @@ const pushChange = (
       return { state: { ...state, device: { ...state.device, known } }, done: true };
     }
     state = pull(state.device, server, ctx);
+    seen.push(state.refused);
   }
   return { state, done: false };
 };
@@ -111,11 +131,12 @@ const pushChange = (
 /** Pulls, then pushes every queued change; what the server keeps refusing stays queued */
 export const sync = (device: Device, server: SyncServer, ctx: SyncContext): Pulled => {
   let state: Pulled = pull(device, server, ctx);
+  const seen = [state.refused];
   const left: Pending[] = [];
   for (const op of state.device.queue) {
-    const result = pushChange(state, op, server, ctx);
+    const result = pushChange(state, op, server, ctx, seen);
     state = result.state;
     if (!result.done) left.push(op);
   }
-  return { device: { ...state.device, queue: left }, refused: state.refused };
+  return { device: { ...state.device, queue: left }, refused: allRefused(seen) };
 };

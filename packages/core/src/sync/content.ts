@@ -47,17 +47,18 @@ const fieldKey = (field: Field | undefined) =>
   field && JSON.stringify([field.name, field.value, field.kind]);
 const sameField = (a: Field | undefined, b: Field | undefined) => fieldKey(a) === fieldKey(b);
 
-/** One field: taken from the side that changed it; if both did, theirs stays and mine is lost to history */
+/** One field: taken from the side that changed it; if both did, theirs stays and mine is lost */
 const mergeField = (
   base: Field | undefined,
   mine: Field | undefined,
   theirs: Field | undefined,
-) => {
-  if (sameField(mine, theirs)) return { field: theirs, lost: undefined };
-  if (sameField(base, mine)) return { field: theirs, lost: undefined };
-  if (sameField(base, theirs)) return { field: mine, lost: undefined };
-  const field = theirs ?? mine;
-  return { field, lost: field === mine ? undefined : mine };
+): { field: Field | undefined; lost?: undefined } | { field: Field; lost: Field | undefined } => {
+  if (sameField(mine, theirs) || sameField(base, mine)) return { field: theirs };
+  if (sameField(base, theirs)) return { field: mine };
+  // An edit beats a deletion on the other side
+  if (!theirs) return { field: mine };
+  // Mine deleted, theirs edited: lost is then undefined and theirs simply stays
+  return { field: theirs, lost: mine };
 };
 
 const byId = (fields: Field[]) => new Map(fields.map((field) => [field.id, field]));
@@ -80,6 +81,23 @@ const mergeHistory = (lists: EntryContent["history"][]) => {
   });
 };
 
+/** The losing side's value of a scalar both changed, for the history */
+const lostScalar = (fieldId: string, base: string, mine: string, merged: string, now: number) =>
+  mine !== base && mine !== merged ? [{ fieldId, value: mine, replacedAt: now }] : [];
+
+/**
+ * Where both changed a field: a lost value goes into the history; a lost name or kind stays as a
+ * field of its own beside theirs (`id~time`), since the history keeps values only.
+ */
+const keepLost = (id: string, field: Field, gone: Field, now: number) => {
+  const reshaped = gone.name !== field.name || gone.kind !== field.kind;
+  if (reshaped) return { extra: [{ ...gone, id: `${id}~${now}` }], history: [] };
+  return {
+    extra: [],
+    history: gone.value === "" ? [] : [{ fieldId: id, value: gone.value, replacedAt: now }],
+  };
+};
+
 export const mergeContent = (
   base: EntryContent,
   mine: EntryContent,
@@ -90,15 +108,18 @@ export const mergeContent = (
   const ids = [...new Set([...theirs.fields, ...mine.fields].map((field) => field.id))];
   const lost: EntryContent["history"] = [];
   const fields = ids.flatMap((id) => {
-    const { field, lost: gone } = mergeField(b.get(id), m.get(id), t.get(id));
-    if (gone && gone.value !== "") lost.push({ fieldId: id, value: gone.value, replacedAt: now });
-    return field ? [field] : [];
+    const merged = mergeField(b.get(id), m.get(id), t.get(id));
+    if (!merged.lost) return merged.field ? [merged.field] : [];
+    const kept = keepLost(id, merged.field, merged.lost, now);
+    lost.push(...kept.history);
+    return [merged.field, ...kept.extra];
   });
   const title = mergeScalar(base.title, mine.title, theirs.title);
-  if (title !== mine.title && mine.title !== base.title)
-    lost.push({ fieldId: "title", value: mine.title, replacedAt: now });
+  const type = mergeScalar(base.type, mine.type, theirs.type);
+  lost.push(...lostScalar("title", base.title, mine.title, title, now));
+  lost.push(...lostScalar("type", base.type, mine.type, type, now));
   return {
-    type: mergeScalar(base.type, mine.type, theirs.type),
+    type,
     title,
     fields,
     tags: mergeTags(base.tags, mine.tags, theirs.tags),

@@ -23,6 +23,11 @@ export const bytes = (length?: number) =>
         return z.NEVER;
       }
       const value = fromBase64Url(text);
+      // One encoding per value: unused trailing bits must be zero
+      if (toBase64Url(value) !== text) {
+        ctx.addIssue({ code: "custom", message: "not canonical base64url" }); // i18n-ignore: for developers
+        return z.NEVER;
+      }
       if (length !== undefined && value.length !== length) {
         ctx.addIssue({ code: "custom", message: `expected ${length} bytes` }); // i18n-ignore: for developers
         return z.NEVER;

@@ -626,8 +626,14 @@ den lokalen Stand ändert.
 
 Zusammenführen heißt dreiseitig gegen den Stand, von dem die Änderung ausging: Was nur eine Seite
 geändert hat, gilt; haben beide dasselbe Feld unterschiedlich geändert, bleibt der Wert, der schon
-auf dem Server liegt, und der eigene kommt in die früheren Werte des Eintrags. Tags beider Seiten
-bleiben, entfernt wird, was eine Seite entfernt hat. So geht beim Abgleich nichts verloren.
+auf dem Server liegt, und der eigene kommt in die früheren Werte des Eintrags. Hat die eigene Seite
+dabei Name oder Art des Felds geändert, bleibt das eigene Feld als eigenes Feld daneben stehen;
+Titel und Typ der eigenen Seite kommen in die früheren Werte. Tags beider Seiten bleiben, entfernt
+wird, was eine Seite entfernt hat. So geht beim Abgleich nichts verloren.
+
+Fehlt in einer Antwort des Servers ein Eintrag, den das Gerät kennt, meldet der Client das als
+verborgenen Eintrag (E-15); Löschen geschieht nur über einen signierten Grabstein. Was der Client
+ablehnt, sammelt ein Abgleich über alle Abrufe, auch die nach einem Konflikt.
 
 Umgesetzt in `packages/core/src/sync/` (Zod-Schemas für Einträge, Log-Einträge und Zertifikate,
 Warteschlange, Zusammenführen, Server-Ersatz im Speicher), mit Mutation-Tests bei 100 %.
