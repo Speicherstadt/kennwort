@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./testing": "./src/sync/test/fixtures.ts"
+    "./testing": "./src/sync/test/fixtures.ts",
+    "./adversary": "./src/adversary/index.ts"
   },
   "dependencies": {
     "@kennwort/crypto": "workspace:*",

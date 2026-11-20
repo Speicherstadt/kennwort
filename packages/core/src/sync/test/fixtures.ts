@@ -13,8 +13,8 @@ import type { EntryContent } from "../content.ts";
 import type { SyncContext } from "../device.ts";
 
 export const id = (byte: number) => new Uint8Array(16).fill(byte);
-const root = ed25519KeyPair(new Uint8Array(32).fill(1));
-const person = (byte: number) => ({
+export const root = ed25519KeyPair(new Uint8Array(32).fill(1));
+export const person = (byte: number) => ({
   id: id(byte),
   ed: ed25519KeyPair(new Uint8Array(32).fill(byte)),
   xwing: xwingKeyPair(new Uint8Array(32).fill(byte)),
@@ -22,9 +22,9 @@ const person = (byte: number) => ({
 export const jonas = person(0x10);
 export const anna = person(0x20);
 export const max = person(0x30);
-type Person = typeof jonas;
+export type Person = typeof jonas;
 
-const certificate = (p: Person) =>
+export const certificate = (p: Person) =>
   certify(root.secretKey, {
     accountId: p.id,
     xwingPublicKey: p.xwing.publicKey,
@@ -40,10 +40,10 @@ export const trust: Trust = {
   now: 1_800_000_100,
 };
 
-const vaultId = id(0xb0);
-const vaultKey = new Uint8Array(32).fill(0x55);
-const commitment = keyCommitment(vaultKey, "vault-key", vaultId, 0);
-const entry = (
+export const vaultId = id(0xb0);
+export const vaultKey = new Uint8Array(32).fill(0x55);
+export const commitment = keyCommitment(vaultKey, "vault-key", vaultId, 0);
+export const entry = (
   seq: number,
   prev: LogEntry | undefined,
   subject: Person,
@@ -67,7 +67,9 @@ const entry = (
 const genesis = entry(0, undefined, jonas, "manage");
 const addAnna = entry(1, genesis, anna, "edit");
 const addMax = entry(2, addAnna, max, "read");
-const checked = verifyLog(vaultId, [genesis, addAnna, addMax], trust);
+/** The log as the server stores it: Jonas creates the vault, adds Anna (edit) and Max (read) */
+export const logEntries = [genesis, addAnna, addMax];
+const checked = verifyLog(vaultId, logEntries, trust);
 if (!checked.ok) throw new Error(checked.error);
 export const log = checked.value;
 

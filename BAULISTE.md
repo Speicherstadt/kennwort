@@ -84,7 +84,7 @@ und die Schritte für Menschen am Ende erledigt sind.
   speichert (Test liest die Datenbank).
 - [x] **K-205 Audit-Log** – Hash-Kette, Export für Prüfer.
   Fertig, wenn: eine manipulierte Zeile beim Prüfen auffällt.
-- [ ] **K-206 Bösartiger Testserver** – Testserver, der gezielt lügt (Schlüssel austauschen,
+- [x] **K-206 Bösartiger Testserver** – Testserver, der gezielt lügt (Schlüssel austauschen,
   Mitglieder einschmuggeln, alte Stände, vertauschte Geheimtexte).
   Fertig, wenn: die ersten Angriffe der ETH-Studie als Tests laufen und der Client jeden erkennt;
   die übrigen folgen mit den Funktionen, die sie betreffen.
