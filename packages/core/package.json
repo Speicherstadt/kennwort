@@ -7,7 +7,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@kennwort/crypto": "workspace:*"
+    "@kennwort/crypto": "workspace:*",
+    "zod": "4.6.7"
   },
   "scripts": {
     "mutation": "stryker run"

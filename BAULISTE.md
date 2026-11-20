@@ -62,7 +62,7 @@ und die Schritte für Menschen am Ende erledigt sind.
   letzten Stands, Firmen-Wurzelschlüssel signiert Mitarbeiterschlüssel.
   nach: K-107. Fertig, wenn: ausgelassene, vertauschte, unsignierte und zurückgespielte Einträge
   erkannt werden (je ein Test).
-- [ ] **K-109 Datenmodell und Sync-Protokoll** – Zod-Schemas in `packages/core` für alles, was
+- [x] **K-109 Datenmodell und Sync-Protokoll** – Zod-Schemas in `packages/core` für alles, was
   zwischen Client und Server geht; Versionen, Konflikte, Offline-Warteschlange.
   nach: K-108. Fertig, wenn: zwei simulierte Geräte offline denselben Eintrag ändern und nach dem
   Abgleich nichts verloren ist.
