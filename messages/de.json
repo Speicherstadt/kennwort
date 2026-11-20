@@ -59,7 +59,6 @@
   "generator_strength_weak": "Schwach · {bits} Bit",
   "generator_strength_good": "Gut · {bits} Bit",
   "generator_strength_strong": "Stark · {bits} Bit",
-  "entry_editor_generate": "Passwort erzeugen",
   "groups_intro": "Gruppen teilen Tresore mit mehreren Personen zugleich.",
   "groups_members": "{count} Mitglieder",
   "settings_theme": "Darstellung",
@@ -177,8 +176,13 @@
   "policy_invalid": "Die Richtlinien vom Server sind nicht gültig unterschrieben. Kennwort hält sich an die letzten gültigen.",
   "policy_lock_after": [
     {
-      "declarations": ["input minutes", "local count = minutes: plural"],
-      "selectors": ["count"],
+      "declarations": [
+        "input minutes",
+        "local count = minutes: plural"
+      ],
+      "selectors": [
+        "count"
+      ],
       "match": {
         "count=one": "Kennwort sperrt sich nach 1 Minute ohne Nutzung.",
         "count=*": "Kennwort sperrt sich nach {minutes} Minuten ohne Nutzung."
@@ -294,7 +298,6 @@
   "kind_email": "E-Mail",
   "kind_note": "Mehrzeiliger Text",
   "entry_editor_type": "Art",
-  "entry_editor_custom": "Eigene Felder",
   "entry_editor_add_field": "Feld hinzufügen",
   "entry_editor_field_name": "Name des Felds",
   "entry_editor_field_kind": "Art des Felds",

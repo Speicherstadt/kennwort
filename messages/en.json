@@ -59,7 +59,6 @@
   "generator_strength_weak": "Weak · {bits} bits",
   "generator_strength_good": "Good · {bits} bits",
   "generator_strength_strong": "Strong · {bits} bits",
-  "entry_editor_generate": "Generate password",
   "groups_intro": "Groups share vaults with several people at once.",
   "groups_members": "{count} members",
   "settings_theme": "Appearance",
@@ -177,8 +176,13 @@
   "policy_invalid": "The policies from the server are not validly signed. Kennwort keeps to the last valid ones.",
   "policy_lock_after": [
     {
-      "declarations": ["input minutes", "local count = minutes: plural"],
-      "selectors": ["count"],
+      "declarations": [
+        "input minutes",
+        "local count = minutes: plural"
+      ],
+      "selectors": [
+        "count"
+      ],
       "match": {
         "count=one": "Kennwort locks after 1 minute without use.",
         "count=*": "Kennwort locks after {minutes} minutes without use."
@@ -294,7 +298,6 @@
   "kind_email": "Email",
   "kind_note": "Multi-line text",
   "entry_editor_type": "Kind",
-  "entry_editor_custom": "Own fields",
   "entry_editor_add_field": "Add field",
   "entry_editor_field_name": "Field name",
   "entry_editor_field_kind": "Field kind",
