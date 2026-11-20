@@ -36,6 +36,7 @@ export {
   passphraseKeysWith,
   SECRET_KEY_LENGTH,
 } from "./passphrase.ts";
+export { randomBytes } from "./random.ts";
 export type { Result } from "./result.ts";
 export {
   formatRecoveryKey,

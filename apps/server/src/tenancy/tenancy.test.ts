@@ -4,7 +4,14 @@ import { describe, expect, it } from "vitest";
 import { createApp } from "../app.ts";
 import { createAuth } from "../auth/better-auth.ts";
 import { migrate, openDatabase } from "../db/database.ts";
-import { accounts, auditEvents, companies, invitations, vaults } from "../db/schema.ts";
+import {
+  accountKeys,
+  accounts,
+  auditEvents,
+  companies,
+  invitations,
+  vaults,
+} from "../db/schema.ts";
 import { createLog } from "../log.ts";
 import type { Session } from "./session.ts";
 
@@ -93,6 +100,48 @@ const cases: Record<string, () => Promise<void>> = {
   "GET /api/accounts/:accountId": async () => {
     expect((await asJonas("/api/accounts/max")).status).toBe(404);
     expect((await asJonas("/api/accounts/anna")).status).toBe(200);
+  },
+  "GET /api/account/keys": async () => {
+    // Max (Müller Elektro) has uploaded keys; Jonas gets only his own, which he has not
+    app.db
+      .insert(accountKeys)
+      .values({
+        accountId: "max",
+        xwingPublicKey: Buffer.alloc(1216),
+        edPublicKey: Buffer.alloc(32),
+        keyBlock: Buffer.alloc(8),
+        unlockPassphrase: Buffer.alloc(8),
+        unlockRecovery: Buffer.alloc(8),
+        state: Buffer.alloc(8),
+        stateCounter: 0,
+        updatedAt: 1,
+      })
+      .run();
+    expect((await asJonas("/api/account/keys")).status).toBe(404);
+  },
+  "PUT /api/account/keys": async () => {
+    const keys = {
+      xwingPublicKey: encodeBytes(new Uint8Array(1216)),
+      edPublicKey: encodeBytes(new Uint8Array(32)),
+      keyBlock: "AAAA",
+      unlock: { passphrase: "AAAA", recovery: "AAAA" },
+      state: "AAAA",
+      stateCounter: 0,
+    };
+    expect((await jonasSends("PUT", "/api/account/keys", keys)).status).toBe(201);
+    const rows = app.db.select().from(accountKeys).all();
+    expect(rows.find((row) => row.accountId === "jonas")?.stateCounter).toBe(0);
+  },
+  "PUT /api/account/state": async () => {
+    // Writes only Jonas's own state; Max's stays at counter 0
+    await jonasSends("PUT", "/api/account/state", { state: "AAAA", stateCounter: 1 });
+    expect(
+      app.db
+        .select()
+        .from(accountKeys)
+        .all()
+        .find((row) => row.accountId === "max")?.stateCounter,
+    ).toBe(0);
   },
   "GET /api/audit": async () => {
     // Jonas (owner) gets only Weber Haustechnik's chain, though Müller Elektro has one too

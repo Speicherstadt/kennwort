@@ -31,5 +31,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795138291921,
     "breakpoints": true,
     "sql": "CREATE TABLE `audit_events` (\n\t`company_id` text NOT NULL,\n\t`seq` integer NOT NULL,\n\t`time` integer NOT NULL,\n\t`actor` text NOT NULL,\n\t`action` text NOT NULL,\n\t`subject` text NOT NULL,\n\t`signature` blob NOT NULL,\n\t`prev_hash` blob NOT NULL,\n\t`hash` blob NOT NULL,\n\tPRIMARY KEY(`company_id`, `seq`),\n\tFOREIGN KEY (`company_id`) REFERENCES `companies`(`id`) ON UPDATE no action ON DELETE no action\n);\n"
+  },
+  {
+    "tag": "0005_account",
+    "when": 1795149453520,
+    "breakpoints": true,
+    "sql": "CREATE TABLE `account_keys` (\n\t`account_id` text PRIMARY KEY NOT NULL,\n\t`xwing_public_key` blob NOT NULL,\n\t`ed_public_key` blob NOT NULL,\n\t`key_block` blob NOT NULL,\n\t`unlock_passphrase` blob NOT NULL,\n\t`unlock_recovery` blob NOT NULL,\n\t`state` blob NOT NULL,\n\t`state_counter` integer NOT NULL,\n\t`certificate` text,\n\t`updated_at` integer NOT NULL,\n\tFOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action\n);\n"
   }
 ];

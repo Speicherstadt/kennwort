@@ -35,8 +35,9 @@ const invitedAnna = async (
   const jonas = await setup.member("weber", "owner");
   const created = await setup.request("/api/invitations", { method: "POST", token: jonas.token });
   const invite = (await created.json()) as { id: string; token: string };
-  const accountId = encodeBytes(crypto.getRandomValues(new Uint8Array(16)));
-  const keys = loginKeyPair(PASSPHRASE, accountSalt, secretKey, accountId, derive);
+  const id = crypto.getRandomValues(new Uint8Array(16));
+  const accountId = encodeBytes(id);
+  const keys = loginKeyPair(PASSPHRASE, accountSalt, secretKey, id, derive);
   const body = {
     token: invite.token,
     accountId,
@@ -44,7 +45,7 @@ const invitedAnna = async (
     accountSalt: encodeBytes(accountSalt),
   };
   const accepted = await setup.request(`/auth/invitations/${invite.id}/accept`, { body });
-  return { jonas, invite, accepted, accountId, body };
+  return { jonas, invite, accepted, accountId, id, body };
 };
 
 describe("invitations (P-08)", () => {
@@ -122,7 +123,7 @@ describe("invitations (P-08)", () => {
 });
 
 const enrolled = async (setup: Awaited<ReturnType<typeof signInSetup>>, derive: Derive = quick) =>
-  (await invitedAnna(setup, derive)).accountId;
+  (await invitedAnna(setup, derive)).id;
 
 describe("sign-in with the passphrase (P-02)", () => {
   it("gives a session for the right passphrase and Secret Key", async () => {
@@ -211,13 +212,20 @@ describe("sign-in with the passphrase (P-02)", () => {
       ).accountSalt;
     expect(await ask()).toBe(await ask());
     expect(
-      await signInWithPassphrase(postFor(setup), "niemand", PASSPHRASE, secretKey, quick),
+      await signInWithPassphrase(
+        postFor(setup),
+        new Uint8Array(16).fill(0x99),
+        PASSPHRASE,
+        secretKey,
+        quick,
+      ),
     ).toEqual({ ok: false, error: "denied" });
   });
 
   it("takes each challenge once and only for two minutes", async () => {
     const setup = await signInSetup();
-    const accountId = await enrolled(setup);
+    const id = await enrolled(setup);
+    const accountId = encodeBytes(id);
     const started = (await (
       await setup.request("/auth/login-key/challenge", { body: { accountId } })
     ).json()) as {
@@ -226,7 +234,7 @@ describe("sign-in with the passphrase (P-02)", () => {
     };
     const { answerChallenge } = await import("@kennwort/core");
     const { bytes } = await import("@kennwort/core");
-    const keys = loginKeyPair(PASSPHRASE, accountSalt, secretKey, accountId, quick);
+    const keys = loginKeyPair(PASSPHRASE, accountSalt, secretKey, id, quick);
     const signature = encodeBytes(
       answerChallenge(keys.secretKey, accountId, bytes(32).parse(started.challenge)),
     );
@@ -263,12 +271,7 @@ describe("sign-in with the passphrase (P-02)", () => {
       passphraseKeys,
     );
     expect(result.ok).toBe(true);
-    const derived = passphraseKeys(
-      PASSPHRASE,
-      accountSalt,
-      secretKey,
-      new TextEncoder().encode(accountId),
-    );
+    const derived = passphraseKeys(PASSPHRASE, accountSalt, secretKey, accountId);
     const secrets = [
       PASSPHRASE,
       encodeBytes(secretKey),

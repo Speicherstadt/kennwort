@@ -30,6 +30,7 @@ export const accounts = sqliteTable(
   (table) => [index("accounts_company").on(table.companyId)],
 );
 
+export * from "./account-schema.ts";
 export * from "./audit-schema.ts";
 export * from "./auth-schema.ts";
 export * from "./sync-schema.ts";

@@ -246,6 +246,9 @@ entsperren = kdf(p₁, secretKey (16 Byte), "kennwort/unlock-passphrase/v1", kon
 anmelden   = kdf(p₁, secretKey (16 Byte), "kennwort/login/v1", konto-ID)
 ```
 
+Die Konto-ID geht hier als ihre 16 Byte ein, nicht als ihr Base64url-Text, unter dem der Server sie
+führt; nur die Signatur der Anmeldung nennt den Text, so wie der Server ihn prüft.
+
 Die Parameter gehören zur Formatversion und stehen nicht in der Datenbank; der Server kann sie
 nicht senken (E-18). Stärkere Parameter heißen v2. Das Salt ist genau 16 Byte, wie libsodium
 (`crypto_pwhash`) es verlangt; so lassen sich die Testvektoren unabhängig nachrechnen. Der
@@ -321,6 +324,16 @@ bleibt.
 4. Zum Server gehen nur: Konto-ID, Konto-Salt, die Geheimtexte (Schlüsselblock, Kontozustand,
    verpackter AK), das Schlüsselbündel (F-06) und der öffentliche Anmelde-Schlüssel
    ([P-02](#p-02-anmelden)).
+
+Die Firma legt der erste Inhaber an: mit dem Einrichtungs-Code, den der Betreiber in den
+Einstellungen des Servers setzt (`KENNWORT_SETUP_CODE`, mindestens 16 Zeichen, nie im Log), und nur
+solange es noch keine Firma gibt. Firmen-ID, Konto und Wurzelschlüssel entstehen auf dem Gerät; der
+private Wurzelschlüssel liegt im Kontozustand des Inhabers, weitere Inhaber bekommen ihn verpackt
+(K-304). Sein Zertifikat signiert der Inhaber selbst mit dem neuen Wurzelschlüssel. Der Server nimmt
+die Geheimtexte einmal an und den Kontozustand danach nur mit dem nächsten Zähler.
+
+Umgesetzt in `packages/core/src/account/` (anlegen, Kontozustand mit Zusammenführen, entsperren mit
+Passphrase und Recovery Key) und `apps/server/src/account/`, `apps/server/src/auth/setup.ts`.
 
 **Wehrt ab:** E-10, E-18, E-24.
 

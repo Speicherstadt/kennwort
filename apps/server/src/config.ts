@@ -16,6 +16,9 @@ const Config = z.object({
   KENNWORT_AUTH_SECRET: z.string().min(32),
   // Behind a reverse proxy the rate limits count the address it appends to X-Forwarded-For
   KENNWORT_BEHIND_PROXY: z.enum(["true", "false"]).default("false"),
+  // Lets the first owner create the company (POST /auth/setup); chosen by the admin, at least 16
+  // characters, and never written to a log. Without it the server cannot be set up from outside.
+  KENNWORT_SETUP_CODE: z.string().min(16).optional(),
 });
 
 export type Config = {
@@ -25,6 +28,7 @@ export type Config = {
   publicUrl: string;
   authSecret: string;
   behindProxy: boolean;
+  setupCode: string | undefined;
 };
 
 export const readConfig = (env: Record<string, string | undefined>) => {
@@ -39,6 +43,7 @@ export const readConfig = (env: Record<string, string | undefined>) => {
     publicUrl: data.KENNWORT_PUBLIC_URL,
     authSecret: data.KENNWORT_AUTH_SECRET,
     behindProxy: data.KENNWORT_BEHIND_PROXY === "true",
+    setupCode: data.KENNWORT_SETUP_CODE,
   };
   return { ok: true as const, value };
 };

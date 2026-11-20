@@ -11,17 +11,14 @@ import { bytes, encodeBytes } from "../sync/bytes.ts";
 export type Post = (path: string, body: unknown) => Promise<{ status: number; json: unknown }>;
 export type Derive = typeof passphraseKeys;
 
-/** The sign-in key pair of an account */
+/** The sign-in key pair of an account, derived with its 16-byte ID as F-05 says (`konto-ID`) */
 export const loginKeyPair = (
   passphrase: string,
   accountSalt: Uint8Array,
   secretKey: Uint8Array,
-  accountId: string,
+  accountId: Uint8Array,
   derive: Derive = passphraseKeys,
-) =>
-  ed25519KeyPair(
-    derive(passphrase, accountSalt, secretKey, new TextEncoder().encode(accountId)).login,
-  );
+) => ed25519KeyPair(derive(passphrase, accountSalt, secretKey, accountId).login);
 
 /** The signature that answers a challenge; bound to its purpose, the account and the challenge */
 export const answerChallenge = (secretKey: Uint8Array, accountId: string, challenge: Uint8Array) =>
@@ -52,16 +49,18 @@ const failure = (status: number): SignInResult => ({
 
 export const signInWithPassphrase = async (
   post: Post,
-  accountId: string,
+  accountId: Uint8Array,
   passphrase: string,
   secretKey: Uint8Array,
   derive: Derive = passphraseKeys,
 ): Promise<SignInResult> => {
-  const started = await post("/auth/login-key/challenge", { accountId });
+  // On the wire and in the signature the ID is its base64url text, as the server keeps it
+  const wireId = encodeBytes(accountId);
+  const started = await post("/auth/login-key/challenge", { accountId: wireId });
   const challenge = Challenge.safeParse(started.json);
   if (started.status !== 200 || !challenge.success) return failure(started.status);
   const keys = loginKeyPair(passphrase, challenge.data.accountSalt, secretKey, accountId, derive);
-  const signature = answerChallenge(keys.secretKey, accountId, challenge.data.challenge);
+  const signature = answerChallenge(keys.secretKey, wireId, challenge.data.challenge);
   const verified = await post("/auth/login-key/verify", {
     challengeId: challenge.data.challengeId,
     signature: encodeBytes(signature),
