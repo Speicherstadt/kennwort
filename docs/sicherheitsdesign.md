@@ -496,7 +496,13 @@ sich nicht öffnen; der Client zeigt dann „Tresor ohne Namen“ (`sealVaultNam
 `packages/core/src/membership/vault-name.ts`). Restrisiko: Der Server kann einen früheren Namen
 derselben Epoche zurückspielen. Die Web-App lädt jeden Tresor über `loadVaults`
 (`apps/web/src/vaults/vaults.ts`): Log mit `verifyLog` gegen den gemerkten Stand prüfen, VKₑ nur
-mit passender Bindung annehmen, den neuen Stand im Kontozustand merken.
+mit passender Bindung annehmen, nur öffnen, solange das Konto nach dem Log und der eigenen Uhr
+Mitglied ist, den neuen Stand im Kontozustand merken.
+
+Den persönlichen Tresor legt die Web-App nur für ein Konto an, das noch nie einen Tresor gesehen
+hat (keine Logs im Kontozustand): Verschweigt der Server die Tresore eines Kontos, deckt kein neuer
+Tresor das zu. Seine ID ist `kdf(AK, leer, "kennwort/personal-vault/v1", konto-ID)`, gekürzt auf
+16 Byte; zwei Geräte desselben Kontos wählen dieselbe, und nur der erste Genesis-Eintrag zählt.
 
 **Wehrt ab:** E-02, E-05, E-06, E-16, E-27.
 

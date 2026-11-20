@@ -38,14 +38,12 @@ describe("newVault and loadVaults", () => {
   });
 
   it("refuses a log the server cut back behind what this account saw (E-07)", async () => {
-    const { c, api, store } = await jonasWithVaults();
+    const { c, api } = await jonasWithVaults();
     const made = await newVault(api, c.session, "Büro");
     if (!made.ok) throw new Error(made.error);
     await loadVaults(api, c.session);
-    const vault = store.vaults.get(made.value);
-    if (!vault) throw new Error("no vault");
-    vault.entries.length = 0;
-    const loaded = await loadVaults(api, c.session);
+    const cut = { ...api, vaultLog: async () => [] };
+    const loaded = await loadVaults(cut, c.session);
     expect(loaded.ok && loaded.value).toEqual({
       vaults: [],
       refused: [{ idText: made.value, error: "empty" }],
@@ -101,7 +99,9 @@ describe("newVault and loadVaults", () => {
       ok: false,
       error: "unreachable",
     });
-    expect(await newVault({ ...api, newVault: async () => false }, c.session, "Büro")).toEqual({
+    expect(
+      await newVault({ ...api, newVault: async () => "failed" as const }, c.session, "Büro"),
+    ).toEqual({
       ok: false,
       error: "unreachable",
     });

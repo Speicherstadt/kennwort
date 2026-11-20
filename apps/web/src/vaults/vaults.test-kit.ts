@@ -10,24 +10,30 @@ export const vaultServer = () => {
   const vaults = new Map<string, Stored>();
   const of = (vaultId: Uint8Array) => vaults.get(encodeBytes(vaultId));
   const api: VaultApi = {
+    // as the real server: only vaults whose log names a member, none still without genesis
     vaults: async () =>
-      [...vaults.entries()].map(([id, v]) => ({
-        id: Buffer.from(id, "base64url") as Uint8Array,
-        name: v.name,
-        nameEpoch: v.name ? 0 : null,
-      })),
+      [...vaults.entries()]
+        .filter(([, v]) => v.entries.length > 0)
+        .map(([id, v]) => ({
+          id: Buffer.from(id, "base64url") as Uint8Array,
+          name: v.name,
+          nameEpoch: v.name ? 0 : null,
+        })),
     vaultLog: async (_t, id) => of(id)?.entries,
     vaultKeys: async (_t, id) => {
       const wrapped = of(id)?.keys.values().next().value;
       return wrapped ? [{ epoch: 0, wrapped }] : [];
     },
     newVault: async (_t, id) => {
+      if (vaults.has(encodeBytes(id))) return "taken";
       vaults.set(encodeBytes(id), { entries: [], keys: new Map(), name: null });
-      return true;
+      return "ok";
     },
     appendLog: async (_t, entry, wrappedKey) => {
       const vault = of(entry.vaultId);
       if (!vault) return "refused";
+      // the next link only, as the real server takes it
+      if (entry.seq !== vault.entries.length) return "stale";
       vault.entries.push(entry);
       if (wrappedKey) vault.keys.set(encodeBytes(entry.accountId), wrappedKey);
       return "ok";

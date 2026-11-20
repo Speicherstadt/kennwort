@@ -27,9 +27,11 @@ export const vaultCalls = (call: Call) => ({
   vaultKeys: async (token: string, vaultId: Uint8Array) =>
     parsed(Keys, await call("GET", `/api/vaults/${encodeBytes(vaultId)}/keys`, undefined, token))
       ?.keys,
-  /** The vault's ID on the server, before its genesis entry (K-204) */
-  newVault: async (token: string, vaultId: Uint8Array) =>
-    (await call("POST", "/api/vaults", { id: encodeBytes(vaultId) }, token)).status === 201,
+  /** The vault's ID on the server, before its genesis entry (K-204); "taken" if it is there */
+  newVault: async (token: string, vaultId: Uint8Array): Promise<"ok" | "taken" | "failed"> => {
+    const answer = await call("POST", "/api/vaults", { id: encodeBytes(vaultId) }, token);
+    return answer.status === 201 ? "ok" : answer.status === 409 ? "taken" : "failed";
+  },
   appendLog: async (token: string, entry: LogEntry, wrappedKey?: Uint8Array): Promise<Appended> => {
     const body = {
       entry: toWire(entry),

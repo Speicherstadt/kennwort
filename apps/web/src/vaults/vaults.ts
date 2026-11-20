@@ -11,6 +11,7 @@ import {
   createVault,
   encodeBytes,
   idKey,
+  isMember,
   type Keyring,
   type LogState,
   openVaultKey,
@@ -22,10 +23,11 @@ import {
   type VaultRole,
   verifyLog,
 } from "@kennwort/core";
+import { kdf } from "@kennwort/crypto";
 import type { MembersApi } from "../session/members-api.ts";
 import type { Opened, Session } from "../session/session.ts";
 import type { StateDeps } from "../session/state-sync.ts";
-import type { ListedVault, VaultApi } from "../session/vaults-api.ts";
+import type { Appended, ListedVault, VaultApi } from "../session/vaults-api.ts";
 
 export type VaultDeps = VaultApi & Pick<MembersApi, "company" | "members"> & StateDeps;
 
@@ -77,6 +79,8 @@ const openOne = async (
   const wrapped = keys.find((key) => key.epoch === log.epoch)?.wrapped;
   const member = log.members.get(idKey(opened.accountId));
   if (!wrapped || !member) return { idText, error: "no-key" };
+  // A server that still lists the vault after this account's access ran out gets no opening
+  if (!isMember(log, opened.accountId, seconds())) return { idText, error: "expired" };
   const ring = openVaultKey(opened.keyBlock, opened.accountId, log, listed.id, log.epoch, wrapped);
   if (!ring.ok) return { idText, error: ring.error };
   const name =
@@ -120,26 +124,46 @@ export const loadVaults = async (
   return { ok: true, value: { vaults, refused } };
 };
 
-export type CreateError = "uncertified" | "unreachable" | "refused";
+export type CreateError = "uncertified" | "unreachable" | "refused" | "exists";
 
-/** A new vault with this account as its manager, named under its key (P-05) */
+/**
+ * The personal vault's ID, derived from the account key: every device of the account picks the same
+ * one, so two devices opening an empty account at once make one personal vault, not two
+ */
+export const personalVaultId = (opened: Opened) =>
+  kdf(opened.accountKey, new Uint8Array(), "kennwort/personal-vault/v1", opened.accountId).slice(
+    0,
+    16,
+  );
+
+const appendedError = (appended: Exclude<Appended, "ok">): CreateError =>
+  appended === "unreachable" ? "unreachable" : appended === "stale" ? "exists" : "refused";
+
+/**
+ * A new vault with this account as its manager, named under its key (P-05). The personal vault
+ * may be taken already by another device of the account: then its genesis decides, and only the
+ * first one counts ("exists" for the other).
+ */
 export const newVault = async (
   api: VaultDeps,
   session: Session,
   name: string,
+  personal = false,
 ): Promise<{ ok: true; value: string } | { ok: false; error: CreateError }> => {
   const opened = session.opened();
   if (!opened) return { ok: false, error: "unreachable" };
-  const trust = await trustOf(api, opened);
-  const me = trust?.certificates.get(idKey(opened.accountId));
+  const checked = await trustOf(api, opened);
+  const me = checked?.certificates.get(idKey(opened.accountId));
   if (!me) return { ok: false, error: "uncertified" };
   const signer = { accountId: opened.accountId, edSecretKey: opened.keyBlock.ed.secretKey };
-  const made = createVault(signer, me, seconds());
+  const pick = personal ? () => personalVaultId(opened) : undefined;
+  const made = createVault(signer, me, seconds(), pick);
   const { token } = opened;
-  if (!(await api.newVault(token, made.ring.vaultId))) return { ok: false, error: "unreachable" };
+  const created = await api.newVault(token, made.ring.vaultId);
+  if (created === "failed" || (created === "taken" && !personal))
+    return { ok: false, error: created === "taken" ? "refused" : "unreachable" };
   const appended = await api.appendLog(token, made.genesis, made.wrappedKey);
-  if (appended !== "ok")
-    return { ok: false, error: appended === "unreachable" ? "unreachable" : "refused" };
+  if (appended !== "ok") return { ok: false, error: appendedError(appended) };
   const sealed = sealVaultName(made.ring, name);
   if (!(await api.renameVault(token, made.ring.vaultId, 0, sealed)))
     return { ok: false, error: "unreachable" };

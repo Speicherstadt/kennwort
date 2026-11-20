@@ -188,5 +188,6 @@
   "vault_role_read": "Read",
   "vault_role_edit": "Edit",
   "vault_role_manage": "Manage",
-  "settings_vaults": "Vaults"
+  "settings_vaults": "Vaults",
+  "vaults_untrusted": "The vaults cannot be checked: the server's company key does not match your account."
 }

@@ -15,7 +15,7 @@ Nummer und wer Mitglied ist.
 ## Der persönliche Tresor
 
 Beim ersten Öffnen legt Kennwort für dich den Tresor **Persönlich** an, sobald deine Schlüssel
-bestätigt sind. In ihm bist nur du; was du dort ablegst, sieht niemand sonst in der Firma.
+bestätigt sind – einmal, auch wenn du mehrere Geräte zugleich öffnest. In ihm bist nur du; was du dort ablegst, sieht niemand sonst in der Firma.
 
 ## Einen Tresor anlegen
 

@@ -68,10 +68,17 @@ export const VaultsPage = (props: { nav: Navigation; store: VaultStore }) => (
       <Match when={props.store.shown().state === "loading"}>
         <p class="text-muted-foreground">{m.vaults_loading()}</p>
       </Match>
-      <Match when={props.store.shown().state === "failed"}>
-        <p class={alertClass} role="alert">
-          {m.vaults_unreachable()}
-        </p>
+      <Match
+        when={(() => {
+          const s = props.store.shown();
+          return s.state === "failed" ? s : undefined;
+        })()}
+      >
+        {(failed) => (
+          <p class={alertClass} role="alert">
+            {failed().error === "untrusted" ? m.vaults_untrusted() : m.vaults_unreachable()}
+          </p>
+        )}
       </Match>
       <Match
         when={(() => {
