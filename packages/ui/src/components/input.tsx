@@ -36,6 +36,26 @@ export const Input = (props: InputProps) => {
   );
 };
 
+export type TextAreaProps = JSX.TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string };
+
+/** Long text (a note, an address, a key) with a visible label, like Input */
+export const TextArea = (props: TextAreaProps) => {
+  const id = createUniqueId();
+  return (
+    <div class="grid gap-1.5">
+      <label for={id} class="text-xs font-medium">
+        {props.label}
+      </label>
+      <textarea
+        id={id}
+        rows={4}
+        {...omit(props, "label", "class")}
+        class={[fieldClass, "h-auto min-h-20 py-1.5", props.class]}
+      />
+    </div>
+  );
+};
+
 /** Typing the shortcut anywhere outside a field focuses the search, as "/" does in the list */
 const isTyping = (target: EventTarget | null) =>
   target instanceof HTMLElement &&

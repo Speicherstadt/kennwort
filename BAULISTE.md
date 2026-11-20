@@ -177,8 +177,10 @@ und die Schritte für Menschen am Ende erledigt sind.
     Detail aus den geprüften Einträgen (P-09, P-21). Fertig, wenn: kein Gerät einen Eintrag zeigt,
     den es nicht geprüft hat, Leser nicht ändern können und Anlegen, Ändern und Lesen auf einem
     zweiten Konto als Playwright-Test desktop und `@phone` laufen.
-  - [ ] Teil 2: Alle Typen (Notiz, WLAN, Karte, SSH- und API-Schlüssel, Identität) und eigene
-    Felder.
+  - [x] Teil 2: Alle Typen (Notiz, WLAN, Karte, SSH- und API-Schlüssel, Identität) und eigene
+    Felder. Fertig, wenn: jede Art ihre Felder mitbringt, Felder unbekannter Art erhalten bleiben
+    und Anlegen mit eigenem Feld, Ändern und Entfernen als Playwright-Test desktop und `@phone`
+    laufen.
   - [x] Teil 3: Generator für Passwörter und Passphrasen. Fertig, wenn: jede Wahl gleich
     wahrscheinlich ist (Verwerfungsstichprobe, Mutationstests), die Wortliste per Prüfsumme
     feststeht und Erzeugen sowie Übernehmen in den Eintrag als Playwright-Test desktop und `@phone`

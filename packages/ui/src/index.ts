@@ -6,7 +6,13 @@ export { Button, type ButtonProps, buttonClass, IconButton } from "./components/
 export { Combobox, type ComboboxProps, matching } from "./components/combobox.tsx";
 export { Dialog, type DialogProps } from "./components/dialog.tsx";
 export { Icon, type IconProps } from "./components/icon.tsx";
-export { Input, type InputProps, SearchInput } from "./components/input.tsx";
+export {
+  Input,
+  type InputProps,
+  SearchInput,
+  TextArea,
+  type TextAreaProps,
+} from "./components/input.tsx";
 export { List, type ListItem, type ListProps } from "./components/list.tsx";
 export { Menu, type MenuItem, type MenuProps } from "./components/menu.tsx";
 export { Popover, type PopoverProps } from "./components/popover.tsx";

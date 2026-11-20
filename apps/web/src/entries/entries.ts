@@ -1,14 +1,27 @@
 /**
  * Entries as the app shows them (K-306): the decrypted content of an entry from a vault mapped to
- * what the list and the detail need, and the content of a new or changed login. The fields of a
- * login carry fixed IDs, so the app finds username, password and website whatever their name.
+ * what the list and the detail need: the type's fields with their labels, and a login's username,
+ * password and website by their fixed IDs (entry-types.ts), whatever names another device stored.
  */
 import type { EntryContent, VaultRole } from "@kennwort/core";
+import { type EntryType, labelOf } from "./entry-types.ts";
+
+/** A field as the detail shows it: its label in the app's language, its value and kind */
+export type ShownField = {
+  id: string;
+  label: string;
+  value: string;
+  kind: EntryContent["fields"][number]["kind"];
+};
 
 /** What list, detail and filter show of an entry; the demo's entries have the same shape */
 export type ShownEntry = {
   id: string;
+  type: EntryType;
   title: string;
+  /** What the list shows under the title: the first filled field that is not secret or long */
+  subtitle: string;
+  fields: ShownField[];
   username: string;
   password: string;
   website: string;
@@ -23,38 +36,14 @@ export type ShownEntry = {
 };
 
 export type LoginInput = { title: string; username: string; password: string; website: string };
-export type FieldNames = { username: string; password: string; website: string };
-
-export const FIELD = { username: "username", password: "password", website: "website" } as const;
-
 const fieldValue = (content: EntryContent, id: string) =>
   content.fields.find((field) => field.id === id)?.value ?? "";
 
-/** The content of a login; field names are labels for other apps, the IDs are what counts here */
-export const loginContent = (
-  input: LoginInput,
-  names: FieldNames,
-  base?: EntryContent,
-): EntryContent => ({
-  type: base?.type ?? "login",
-  title: input.title.trim(),
-  fields: [
-    { id: FIELD.username, name: names.username, value: input.username, kind: "text" },
-    { id: FIELD.password, name: names.password, value: input.password, kind: "secret" },
-    { id: FIELD.website, name: names.website, value: input.website.trim(), kind: "url" },
-    // fields this app does not know yet stay as they were
-    ...(base?.fields.filter((f) => !Object.values(FIELD).includes(f.id as never)) ?? []),
-  ],
-  tags: base?.tags ?? [],
-  favorite: base?.favorite ?? false,
-  history: base?.history ?? [],
-});
-
 export const loginOf = (content: EntryContent): LoginInput => ({
   title: content.title,
-  username: fieldValue(content, FIELD.username),
-  password: fieldValue(content, FIELD.password),
-  website: fieldValue(content, FIELD.website),
+  username: fieldValue(content, "username"),
+  password: fieldValue(content, "password"),
+  website: fieldValue(content, "website"),
 });
 
 export type StoredEntry = {
@@ -65,9 +54,25 @@ export type StoredEntry = {
   content: EntryContent;
 };
 
+const shownFields = (content: EntryContent): ShownField[] =>
+  content.fields.map((f) => ({
+    id: f.id,
+    label: labelOf(content, f),
+    value: f.value,
+    kind: f.kind,
+  }));
+
+export const subtitleOf = (fields: readonly ShownField[]) =>
+  fields.find(
+    (f) => f.value !== "" && (f.kind === "text" || f.kind === "url" || f.kind === "email"),
+  )?.value ?? "";
+
 /** An entry from a vault as list and detail show it */
 export const shown = (entry: StoredEntry): ShownEntry => ({
   id: entry.idText,
+  type: entry.content.type,
+  subtitle: subtitleOf(shownFields(entry.content)),
+  fields: shownFields(entry.content),
   ...loginOf(entry.content),
   vault: entry.vaultIdText,
   favorite: entry.content.favorite,

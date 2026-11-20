@@ -1,5 +1,7 @@
+import { setLocale } from "@kennwort/ui";
 import { describe, expect, it } from "vitest";
-import { FIELD, loginContent, loginOf, shown } from "./entries.ts";
+import { FIELD, loginContent } from "./entries.test-kit.ts";
+import { loginOf, shown } from "./entries.ts";
 
 const names = { username: "Benutzername", password: "Passwort", website: "Website" };
 
@@ -87,5 +89,49 @@ describe("logins", () => {
       editable: false,
     });
     expect(shown({ ...entry, role: "edit" }).editable).toBe(true);
+  });
+});
+
+// K-306 part 2: every type, with the labels of the app's language
+describe("shown types", () => {
+  const entry = (content: Parameters<typeof shown>[0]["content"]) =>
+    shown({ idText: "e2", vaultIdText: "v1", role: "edit", version: 1, content });
+  const base = { tags: [], favorite: false, history: [] };
+
+  it("labels the type's fields in the app's language and own fields by their name", () => {
+    setLocale("de", { reload: false });
+    const wifi = entry({
+      ...base,
+      type: "wifi",
+      title: "Büro-WLAN",
+      fields: [
+        { id: "ssid", name: "Network name", value: "Weber-Buero", kind: "text" },
+        { id: "password", name: "Password", value: "Rohr-2026", kind: "secret" },
+        { id: "c-1", name: "Router", value: "192.168.1.1", kind: "url" },
+      ],
+    });
+    expect(wifi.type).toBe("wifi");
+    expect(wifi.fields).toEqual([
+      { id: "ssid", label: "Netzwerkname", value: "Weber-Buero", kind: "text" },
+      { id: "password", label: "Passwort", value: "Rohr-2026", kind: "secret" },
+      { id: "c-1", label: "Router", value: "192.168.1.1", kind: "url" },
+    ]);
+    expect(wifi.subtitle).toBe("Weber-Buero");
+  });
+
+  it("shows under the title the first filled field that is not secret or long", () => {
+    const card = entry({
+      ...base,
+      type: "card",
+      title: "Firmenkarte",
+      fields: [
+        { id: "holder", name: "", value: "", kind: "text" },
+        { id: "number", name: "", value: "4111 1111 1111 1111", kind: "secret" },
+        { id: "c-n", name: "Notiz", value: "Tresor im Büro", kind: "note" },
+        { id: "c-e", name: "Bank", value: "info@bank.test", kind: "email" },
+      ],
+    });
+    expect(card.subtitle).toBe("info@bank.test");
+    expect(entry({ ...base, type: "note", title: "Alarm", fields: [] }).subtitle).toBe("");
   });
 });
