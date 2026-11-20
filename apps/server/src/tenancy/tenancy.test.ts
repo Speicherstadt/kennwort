@@ -53,35 +53,41 @@ const cases: Record<string, () => Promise<void>> = {
   },
 };
 
-// Every route under /api, of any method; only the session middleware itself (ALL /api/*) is no endpoint
+// Every route at /api or below, of any method; only the session middleware itself is no endpoint
+type Route = { method: string; path: string; handler: unknown };
 const isApi = (path: string) => path === "/api" || path.startsWith("/api/");
-const isSessionMiddleware = (route: { method: string; path: string }) =>
-  route.method === "ALL" && route.path === "/api/*";
-export const apiRoutes = (routes: { method: string; path: string }[]) =>
+export const apiRoutes = (routes: Route[], middleware: unknown) =>
   [
     ...new Set(
       routes
-        .filter((route) => isApi(route.path) && !isSessionMiddleware(route))
+        .filter((route) => isApi(route.path) && route.handler !== middleware)
         .map((route) => `${route.method} ${route.path}`),
     ),
   ].sort();
 
 describe("apiRoutes", () => {
-  it("lists any-method routes and the /api root, and leaves out only the session middleware", () => {
+  it("lists any-method and catch-all routes and the /api root, and leaves out only the session middleware", () => {
+    const middleware = () => {};
+    const endpoint = () => {};
     const routes = [
-      { method: "ALL", path: "/api/*" },
-      { method: "ALL", path: "/api/everything" },
-      { method: "GET", path: "/api" },
-      { method: "GET", path: "/apis" },
-      { method: "GET", path: "/health" },
+      { method: "ALL", path: "/api/*", handler: middleware },
+      { method: "ALL", path: "/api/*", handler: endpoint },
+      { method: "ALL", path: "/api/everything", handler: endpoint },
+      { method: "GET", path: "/api", handler: endpoint },
+      { method: "GET", path: "/apis", handler: endpoint },
+      { method: "GET", path: "/health", handler: endpoint },
     ];
-    expect(apiRoutes(routes)).toEqual(["ALL /api/everything", "GET /api"]);
+    expect(apiRoutes(routes, middleware)).toEqual([
+      "ALL /api/*",
+      "ALL /api/everything",
+      "GET /api",
+    ]);
   });
 });
 
 describe("tenants (K-202)", () => {
   it("has a case for every route under /api", () => {
-    expect(apiRoutes(app.routes)).toEqual(Object.keys(cases).sort());
+    expect(apiRoutes(app.routes, app.requireSession)).toEqual(Object.keys(cases).sort());
   });
 
   it.each(Object.keys(cases))("%s gives no data of another company", async (route) => {
@@ -89,9 +95,12 @@ describe("tenants (K-202)", () => {
   });
 
   it.each(Object.keys(cases))("%s needs a session", async (route) => {
-    const path = (route.split(" ")[1] ?? "").replace(/:\w+/g, "anna");
-    expect((await app.request(path)).status).toBe(401);
-    expect((await app.request(path, { headers: { "x-test-session": "forged" } })).status).toBe(401);
+    const [method = "GET", pattern = ""] = route.split(" ");
+    const path = pattern.replace(/:\w+/g, "anna").replace("*", "x");
+    const request = method === "ALL" ? "POST" : method;
+    expect((await app.request(path, { method: request })).status).toBe(401);
+    const forged = { method: request, headers: { "x-test-session": "forged" } };
+    expect((await app.request(path, forged)).status).toBe(401);
   });
 
   it("gives Müller Elektro its own data", async () => {
