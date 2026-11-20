@@ -45,7 +45,7 @@ später).
 | Neues Gerät | Der QR-Code trägt Kopplungs-ID, Fingerabdruck des Einmal-Schlüssels und ein Kopplungs-Geheimnis, nicht den Schlüssel; das Paket ist an das Geheimnis gebunden und enthält auch den Secret Key | Ein X-Wing-Schlüssel hat 1216 Byte, der QR-Code bliebe kaum lesbar, und der Fingerabdruck bindet ihn genauso; das Geheimnis sieht der Server nie, so kann er kein eigenes Paket unterschieben (Review von K-303); ohne Secret Key könnte das neue Gerät nach dem Sperren nicht mit der Passphrase entsperren |
 | Icons | `lucide` (die Icon-Daten ohne Framework) mit einer eigenen Icon-Komponente in `packages/ui` statt `lucide-solid` | `lucide-solid` baut auf Solid 1 (`splitProps`, `solid-js/web`) und läuft mit Solid 2 nicht; die Daten sind dieselben, und eine Abhängigkeit weniger läuft im Client |
 | Lizenz | AGPL-3.0 mit Namensnennung nach § 7(b) und kommerzieller Lizenz wie bei haben, dazu ein kurzes CLA für Beitragende | erlaubt die iPhone-App im App Store und die kommerzielle Lizenz trotz Beiträgen von außen |
-| Merge | Der Agenten-Loop merged alles selbst, wenn CI grün ist und das unabhängige Review keine Befunde mehr hat; er wartet nie auf einen Menschen | der Loop soll ohne Warten durchlaufen |
+| Merge | Der Agenten-Loop merged alles selbst, wenn CI grün ist; er wartet nie auf einen Menschen. Ein unabhängiges Review durch einen eigenen Sub-Agenten gibt es nur noch für sicherheitsrelevanten Code (Kryptografie, Sync, Mitglieder-Log, Freigaben, Anmeldung, Zugriffsprüfung, Entsperren, Schlüssel, Kopplung, Autofill, signiertes Update, CSP, erlaubte Pakete), und dort erst ohne offene Befunde | der Loop soll ohne Warten durchlaufen; ein Review für jeden Pull Request kostete zu viel Zeit, deshalb gilt es seit dem 20.11.2026 auf Wunsch des Nutzers nur noch dort, wo ein Fehler Geheimnisse kostet |
 | Geräte und Sitzungen | Jedes Gerät schickt eine zufällige Geräte-ID und einen Namen aus dem Browser mit; der Server hält pro Gerät und Konto genau eine Sitzung, die Geräteliste zeigt diese Sitzungen | Better Auth kennt nur Sitzungen; ohne Geräte-ID würde jede Anmeldung eine neue Zeile in der Liste, und „Gerät abmelden“ träfe nur eine von mehreren Sitzungen desselben Geräts |
 | Einladungsgeheimnis | Der Client des Einladenden hinterlegt das Einladungsgeheimnis versiegelt unter seinem eigenen AK auf dem Server; eine Einladung macht immer einen Mitarbeiter, eine höhere Rolle vergibt ein Inhaber eigens | So prüft der Einladende die Antwort auch Tage später und auf jedem seiner Geräte, ohne dass der Server das Geheimnis kennt; und kein Server kann einen Eingeladenen als Inhaber zertifizieren lassen |
 | Namen der Mitglieder | Der Einladende tippt einen Namen ein; der Server speichert ihn an der Einladung und zeigt ihn in der Mitgliederliste | Konten haben sonst keine Namen, bis OIDC oder SCIM sie liefern; der Name ist nur eine Beschriftung, Vertrauen kommt allein aus dem Zertifikat |
@@ -205,7 +205,8 @@ Regeln für den Loop:
    Bauliste. Ohne Kriterium kein Code.
 2. **Ein Durchlauf, ein Punkt**: nächsten offenen Punkt nehmen, Tests zuerst (Vitest; Playwright
    desktop und `@phone`), umsetzen, Docs und Texte de/en nachziehen, `bun run check` grün, eigener
-   Branch, Pull Request, unabhängiges Review, CI grün, mergen, Punkt abhaken.
+   Branch, Pull Request, bei sicherheitsrelevantem Code unabhängiges Review, CI grün, mergen, Punkt
+   abhaken.
 3. **Automatische Sicherheits-Gates in CI**: Testvektoren und Property-Tests für die Kryptografie,
    manipulierter Testserver mit den Angriffen der ETH-Studie, Liste erlaubter Laufzeit-Pakete,
    Bundle-Größe, CSP, Barrierefreiheit mit axe.
