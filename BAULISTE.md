@@ -79,7 +79,7 @@ und die Schritte für Menschen am Ende erledigt sind.
   Passphrase als Notweg, Rate-Limits und Sperre nach Fehlversuchen.
   Fertig, wenn: Login, Einladung und Sperre in Tests laufen und die Passphrase nachweislich nie den
   Client verlässt.
-- [ ] **K-204 Sync-API und Live-Sync** – Speichern und Abrufen von Geheimtexten, Versionen, SSE.
+- [x] **K-204 Sync-API und Live-Sync** – Speichern und Abrufen von Geheimtexten, Versionen, SSE.
   nach: K-109. Fertig, wenn: zwei Clients Änderungen live sehen und der Server nur Geheimtexte
   speichert (Test liest die Datenbank).
 - [ ] **K-205 Audit-Log** – Hash-Kette, Export für Prüfer.

@@ -9,11 +9,11 @@ const contentOf = (device: ReturnType<typeof emptyDevice>) =>
   device.known.get("e1".repeat(16))?.content;
 
 describe("two devices change the same entry offline (K-109)", () => {
-  it("lose nothing after both have synced", () => {
+  it("lose nothing after both have synced", async () => {
     const server = memoryServer();
     // Jonas creates the entry; Anna's laptop and Jonas's phone both have version 1
-    let phone = sync(edit(emptyDevice(), entryId, bank), server, contextFor(jonas)).device;
-    let laptop = pull(emptyDevice(), server, contextFor(anna)).device;
+    let phone = (await sync(edit(emptyDevice(), entryId, bank), server, contextFor(jonas))).device;
+    let laptop = (await pull(emptyDevice(), server, contextFor(anna))).device;
     expect(contentOf(laptop)).toEqual(bank);
 
     // Offline: the phone changes the password, the laptop the user name and the password too
@@ -28,9 +28,9 @@ describe("two devices change the same entry offline (K-109)", () => {
       ),
     );
 
-    phone = sync(phone, server, contextFor(jonas, 1_800_000_300)).device;
-    laptop = sync(laptop, server, contextFor(anna, 1_800_000_400)).device;
-    phone = sync(phone, server, contextFor(jonas, 1_800_000_500)).device;
+    phone = (await sync(phone, server, contextFor(jonas, 1_800_000_300))).device;
+    laptop = (await sync(laptop, server, contextFor(anna, 1_800_000_400))).device;
+    phone = (await sync(phone, server, contextFor(jonas, 1_800_000_500))).device;
 
     const merged = contentOf(laptop);
     expect(contentOf(phone)).toEqual(merged);
@@ -47,19 +47,19 @@ describe("two devices change the same entry offline (K-109)", () => {
     expect(server.pull()[0]?.version).toBe(3);
   });
 
-  it("keeps changes queued while offline and sends the newest one as one version", () => {
+  it("keeps changes queued while offline and sends the newest one as one version", async () => {
     const server = memoryServer();
     let device = edit(emptyDevice(), entryId, bank);
     device = edit(device, entryId, withField(bank, "password", "second"));
     expect(device.queue).toHaveLength(1);
-    device = sync(device, server, contextFor(jonas)).device;
+    device = (await sync(device, server, contextFor(jonas))).device;
     expect(server.pull()).toHaveLength(1);
     expect(contentOf(device)?.fields.find((f) => f.id === "password")?.value).toBe("second");
   });
 });
 
 describe("pull checks every record (P-09)", () => {
-  it("refuses a record by a member who may only read", () => {
+  it("refuses a record by a member who may only read", async () => {
     const server = memoryServer();
     server.push(
       sealRecord(
@@ -71,24 +71,25 @@ describe("pull checks every record (P-09)", () => {
         new Uint8Array(),
       ),
     );
-    const { device, refused } = pull(emptyDevice(), server, contextFor(anna));
+    const { device, refused } = await pull(emptyDevice(), server, contextFor(anna));
     expect(device.known.size).toBe(0);
     expect(refused).toEqual([{ entryId, version: 1, error: "not-editor" }]);
   });
 
-  it("refuses an older version than the device has seen (E-13)", () => {
+  it("refuses an older version than the device has seen (E-13)", async () => {
     const server = memoryServer();
     const ctx = contextFor(jonas);
     const old = sealRecord(ctx.author, ctx.ring, entryId, 1, bank, ctx.lastSeen);
     server.push(old);
-    let device = pull(emptyDevice(), server, ctx).device;
-    device = sync(edit(device, entryId, withField(bank, "password", "new")), server, ctx).device;
+    let device = (await pull(emptyDevice(), server, ctx)).device;
+    device = (await sync(edit(device, entryId, withField(bank, "password", "new")), server, ctx))
+      .device;
     const replaying = { push: server.push, pull: () => [old] };
-    const after = pull(device, replaying, ctx);
+    const after = await pull(device, replaying, ctx);
     expect(contentOf(after.device)?.fields.find((f) => f.id === "password")?.value).toBe("new");
   });
 
-  it("refuses a record whose content was swapped or whose signature is not the author's", () => {
+  it("refuses a record whose content was swapped or whose signature is not the author's", async () => {
     const ctx = contextFor(jonas);
     const a = sealRecord(ctx.author, ctx.ring, entryId, 1, bank, ctx.lastSeen);
     const b = sealRecord(
@@ -102,7 +103,7 @@ describe("pull checks every record (P-09)", () => {
     const swapped = { ...a, content: b.content, entryKey: b.entryKey };
     const forged = { ...a, author: anna.id };
     const server = { push: () => ({ ok: true as const }), pull: () => [swapped, forged] };
-    expect(pull(emptyDevice(), server, ctx).refused.map((r) => r.error)).toEqual([
+    expect((await pull(emptyDevice(), server, ctx)).refused.map((r) => r.error)).toEqual([
       "bad-signature",
       "bad-signature",
     ]);
@@ -110,14 +111,14 @@ describe("pull checks every record (P-09)", () => {
 });
 
 describe("records on the wire", () => {
-  it("parse back from JSON with the Zod schema", () => {
+  it("parse back from JSON with the Zod schema", async () => {
     const ctx = contextFor(jonas);
     const record = sealRecord(ctx.author, ctx.ring, entryId, 1, bank, ctx.lastSeen);
     const parsed = EntryRecord.parse(JSON.parse(JSON.stringify(recordToWire(record))));
     expect(parsed).toEqual(record);
   });
 
-  it("refuse IDs of the wrong length and text that is not base64url", () => {
+  it("refuse IDs of the wrong length and text that is not base64url", async () => {
     const ctx = contextFor(jonas);
     const wire = recordToWire(sealRecord(ctx.author, ctx.ring, entryId, 1, bank, ctx.lastSeen));
     expect(EntryRecord.safeParse({ ...wire, entryId: "AAAA" }).success).toBe(false);

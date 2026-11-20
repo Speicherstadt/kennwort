@@ -7,9 +7,14 @@ import { idKey } from "../membership/verify-log.ts";
 import type { EntryRecord } from "./record.ts";
 
 export type PushResult = { ok: true } | { ok: false; current: EntryRecord | undefined };
-export type SyncServer = { push: (record: EntryRecord) => PushResult; pull: () => EntryRecord[] };
+/** What a device needs from a server: the memory stand-in answers at once, HTTP later (K-204) */
+export type SyncServer = {
+  push: (record: EntryRecord) => PushResult | Promise<PushResult>;
+  pull: () => EntryRecord[] | Promise<EntryRecord[]>;
+};
+type MemoryServer = { push: (record: EntryRecord) => PushResult; pull: () => EntryRecord[] };
 
-export const memoryServer = (): SyncServer => {
+export const memoryServer = (): MemoryServer => {
   const records = new Map<string, EntryRecord>();
   return {
     push: (record) => {

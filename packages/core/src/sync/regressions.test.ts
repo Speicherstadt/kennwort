@@ -10,7 +10,7 @@ import { anna, bank, contextFor, id, jonas, max, withField } from "./test/fixtur
 const entryId = id(0xe1);
 
 describe("sync regressions found in the review of K-109", () => {
-  it("R1 openRecord returns an error value for a signed record whose plaintext is not JSON", () => {
+  it("R1 openRecord returns an error value for a signed record whose plaintext is not JSON", async () => {
     const ctx = contextFor(anna);
     const at = { vaultId: ctx.ring.vaultId, entryId, epoch: 0 };
     const ek = newEntryKey();
@@ -42,7 +42,7 @@ describe("sync regressions found in the review of K-109", () => {
     });
   });
 
-  it("R2 a field renamed differently on both sides keeps both names somewhere", () => {
+  it("R2 a field renamed differently on both sides keeps both names somewhere", async () => {
     const rename = (name: string) => ({
       ...bank,
       fields: bank.fields.map((f) => (f.id === "password" ? { ...f, name } : f)),
@@ -51,20 +51,21 @@ describe("sync regressions found in the review of K-109", () => {
     expect(JSON.stringify(merged)).toContain("PIN");
   });
 
-  it("R3 a type changed differently on both sides is not silently dropped", () => {
+  it("R3 a type changed differently on both sides is not silently dropped", async () => {
     const merged = mergeContent(bank, { ...bank, type: "card" }, { ...bank, type: "wifi" }, 1);
     expect(JSON.stringify(merged)).toContain("card");
   });
 
-  it("R4 a known entry that vanishes from the server is reported (E-15)", () => {
+  it("R4 a known entry that vanishes from the server is reported (E-15)", async () => {
     const server = memoryServer();
-    const device = sync(edit(emptyDevice(), entryId, bank), server, contextFor(jonas)).device;
+    const device = (await sync(edit(emptyDevice(), entryId, bank), server, contextFor(jonas)))
+      .device;
     const hiding = { push: server.push, pull: () => [] };
-    const { refused } = pull(device, hiding, contextFor(jonas));
+    const { refused } = await pull(device, hiding, contextFor(jonas));
     expect(refused).toEqual([{ entryId, version: 1, error: "missing" }]);
   });
 
-  it("R5 a refusal from the first pull survives a retry pull during push", () => {
+  it("R5 a refusal from the first pull survives a retry pull during push", async () => {
     const real = memoryServer();
     const ctx = contextFor(jonas);
     const bad = sealRecord(
@@ -75,7 +76,7 @@ describe("sync regressions found in the review of K-109", () => {
       bank,
       new Uint8Array(),
     );
-    let device = sync(edit(emptyDevice(), entryId, bank), real, ctx).device;
+    let device = (await sync(edit(emptyDevice(), entryId, bank), real, ctx)).device;
     real.push(sealRecord(ctx.author, ctx.ring, entryId, 2, { ...bank, title: "x" }, ctx.lastSeen));
     let first = true;
     let calls = 0;
@@ -92,11 +93,11 @@ describe("sync regressions found in the review of K-109", () => {
       },
     };
     device = edit(device, entryId, { ...bank, favorite: true });
-    const out = sync(device, server, ctx);
+    const out = await sync(device, server, ctx);
     expect(out.refused.map((r) => r.error)).toContain("not-editor");
   });
 
-  it("R6 bytes() refuses non-canonical base64url", () => {
+  it("R6 bytes() refuses non-canonical base64url", async () => {
     expect(bytes(1).safeParse("AA").success).toBe(true);
     expect(bytes(1).safeParse("AB").error?.issues[0]).toMatchObject({
       code: "custom",
@@ -104,7 +105,7 @@ describe("sync regressions found in the review of K-109", () => {
     });
   });
 
-  it("keeps a refusal that only a retry pull showed, and reports a repeated one once", () => {
+  it("keeps a refusal that only a retry pull showed, and reports a repeated one once", async () => {
     const real = memoryServer();
     const ctx = contextFor(jonas);
     const bad = sealRecord(
@@ -115,7 +116,7 @@ describe("sync regressions found in the review of K-109", () => {
       bank,
       new Uint8Array(),
     );
-    let device = sync(edit(emptyDevice(), entryId, bank), real, ctx).device;
+    let device = (await sync(edit(emptyDevice(), entryId, bank), real, ctx)).device;
     real.push(sealRecord(ctx.author, ctx.ring, entryId, 2, { ...bank, title: "x" }, ctx.lastSeen));
     let pulls = 0;
     let pushes = 0;
@@ -125,14 +126,14 @@ describe("sync regressions found in the review of K-109", () => {
       pull: () => (pulls++ === 0 ? real.pull() : [bad, ...real.pull()]),
     };
     device = edit(device, entryId, { ...bank, favorite: true });
-    expect(sync(device, lateBad, ctx).refused.map((r) => r.error)).toEqual(["not-editor"]);
+    expect((await sync(device, lateBad, ctx)).refused.map((r) => r.error)).toEqual(["not-editor"]);
     const alwaysBad = { push: real.push, pull: () => [bad, ...real.pull()] };
     const failing = { ...alwaysBad, push: () => ({ ok: false as const, current: undefined }) };
-    const twice = sync(edit(device, entryId, { ...bank, favorite: false }), failing, ctx);
+    const twice = await sync(edit(device, entryId, { ...bank, favorite: false }), failing, ctx);
     expect(twice.refused.map((r) => r.error)).toEqual(["not-editor"]);
   });
 
-  it("reports two different refusals of one sync both", () => {
+  it("reports two different refusals of one sync both", async () => {
     const real = memoryServer();
     const ctx = contextFor(jonas);
     const byMax = (entry: number) =>
@@ -145,21 +146,22 @@ describe("sync regressions found in the review of K-109", () => {
         new Uint8Array(),
       );
     const server = { push: real.push, pull: () => [byMax(0xe3), byMax(0xe4), ...real.pull()] };
-    const result = sync(edit(emptyDevice(), entryId, bank), server, ctx);
+    const result = await sync(edit(emptyDevice(), entryId, bank), server, ctx);
     expect(result.refused.map((r) => r.entryId[0])).toEqual([0xe3, 0xe4]);
   });
 
-  it("reports a server that replays an older version of a known entry (E-13/E-15)", () => {
+  it("reports a server that replays an older version of a known entry (E-13/E-15)", async () => {
     const server = memoryServer();
     const ctx = contextFor(jonas);
     const v1 = sealRecord(ctx.author, ctx.ring, entryId, 1, bank, ctx.lastSeen);
     server.push(v1);
-    let device = pull(emptyDevice(), server, ctx).device;
-    device = sync(edit(device, entryId, withField(bank, "password", "new")), server, ctx).device;
+    let device = (await pull(emptyDevice(), server, ctx)).device;
+    device = (await sync(edit(device, entryId, withField(bank, "password", "new")), server, ctx))
+      .device;
     const rollingBack = { push: server.push, pull: () => [v1] };
-    expect(pull(device, rollingBack, ctx).refused).toEqual([
+    expect((await pull(device, rollingBack, ctx)).refused).toEqual([
       { entryId, version: 1, error: "rollback" },
     ]);
-    expect(pull(device, server, ctx).refused).toEqual([]);
+    expect((await pull(device, server, ctx)).refused).toEqual([]);
   });
 });

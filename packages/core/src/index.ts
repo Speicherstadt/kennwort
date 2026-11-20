@@ -56,6 +56,7 @@ export {
   type SyncContext,
   sync,
 } from "./sync/device.ts";
+export { type Connection, httpServer, type LiveEvent, watchVault } from "./sync/http.ts";
 export { memoryServer, type PushResult, type SyncServer } from "./sync/memory-server.ts";
 export {
   type AcceptError,
@@ -66,4 +67,5 @@ export {
   sealRecord,
   type VaultKeyring,
 } from "./sync/record.ts";
+export { parseSse, type SseEvent } from "./sync/sse.ts";
 export { CertificateWire, LogEntryWire, toWire } from "./sync/wire.ts";

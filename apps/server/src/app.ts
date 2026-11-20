@@ -7,6 +7,8 @@ import { acceptInvitationRoute, createInvitationRoute } from "./auth/invitations
 import { loginKeyRoutes } from "./auth/login-key.ts";
 import type { Db } from "./db/database.ts";
 import type { Log } from "./log.ts";
+import { createHub, type Hub } from "./sync/hub.ts";
+import { syncRoutes } from "./sync/routes.ts";
 import { companyRoutes, type TenantEnv } from "./tenancy/routes.ts";
 import { companyScope } from "./tenancy/scope.ts";
 import type { Authenticate } from "./tenancy/session.ts";
@@ -21,7 +23,15 @@ export type SignIn = {
   address: ClientAddress;
 };
 
-export type Deps = { db: Db; log: Log; authenticate: Authenticate; signIn?: SignIn };
+export type Deps = {
+  db: Db;
+  log: Log;
+  authenticate: Authenticate;
+  signIn?: SignIn;
+  hub?: Hub;
+  now?: () => number;
+  keepAliveMs?: number;
+};
 
 const databaseReachable = (db: Db) => {
   try {
@@ -32,7 +42,15 @@ const databaseReachable = (db: Db) => {
   }
 };
 
-export const createApp = ({ db, log, authenticate, signIn }: Deps) => {
+export const createApp = ({
+  db,
+  log,
+  authenticate,
+  signIn,
+  hub = createHub(),
+  now = Date.now,
+  keepAliveMs,
+}: Deps) => {
   const app = new Hono();
 
   // Method, path without query string, status and duration; nothing of headers or body
@@ -66,6 +84,7 @@ export const createApp = ({ db, log, authenticate, signIn }: Deps) => {
   };
   api.use(requireSession);
   api.route("/", companyRoutes());
+  api.route("/", syncRoutes({ hub, now, ...(keepAliveMs ? { keepAliveMs } : {}) }));
   if (signIn) {
     const deps = { db, ...signIn };
     api.route("/", createInvitationRoute(deps));
@@ -88,5 +107,5 @@ export const createApp = ({ db, log, authenticate, signIn }: Deps) => {
   });
 
   // The tenancy test tells the middleware from endpoints by this handler, not by method and path
-  return Object.assign(app, { requireSession });
+  return Object.assign(app, { requireSession, hub });
 };

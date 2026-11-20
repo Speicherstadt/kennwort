@@ -31,3 +31,4 @@ export const accounts = sqliteTable(
 );
 
 export * from "./auth-schema.ts";
+export * from "./sync-schema.ts";

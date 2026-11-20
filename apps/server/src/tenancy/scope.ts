@@ -5,8 +5,10 @@
 import { and, eq } from "drizzle-orm";
 import type { Db } from "../db/database.ts";
 import { accounts, companies } from "../db/schema.ts";
+import { syncScope } from "../sync/scope.ts";
 
 export const companyScope = (db: Db, companyId: string) => ({
+  ...syncScope(db, companyId),
   company: () => db.select().from(companies).where(eq(companies.id, companyId)).get(),
   accounts: () => db.select().from(accounts).where(eq(accounts.companyId, companyId)).all(),
   account: (accountId: string) =>
