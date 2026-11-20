@@ -2,6 +2,7 @@ import { encodeBytes, idKey } from "@kennwort/core";
 import { flush } from "solid-js";
 import { describe, expect, it } from "vitest";
 import { ownerRow } from "../members/members.test-kit.ts";
+import { endOfDay } from "./day.ts";
 import {
   addToVault,
   declineRequest,
@@ -10,7 +11,6 @@ import {
   requestAccess,
   vaultIdOf,
 } from "./vault-members.ts";
-import { endOfDay } from "./vault-members-dialog.tsx";
 import { certifiedAnna, jonasWithVaults, vaultServer } from "./vaults.test-kit.ts";
 import { loadVaults, newVault, type Vault } from "./vaults.ts";
 

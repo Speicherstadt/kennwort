@@ -5,6 +5,7 @@
  * with that key once share and record pass the checks below.
  */
 import {
+  constantTimeEqual,
   type ShareKeyError,
   type SharePlace,
   shareKeyCommitment,
@@ -15,7 +16,13 @@ import {
 } from "@kennwort/crypto";
 import { z } from "zod";
 import { type Certificate, certificateFingerprint } from "../membership/certificate.ts";
-import { certificateOf, idKey, type Trust } from "../membership/verify-log.ts";
+import {
+  certificateOf,
+  idKey,
+  isMember,
+  type LogState,
+  type Trust,
+} from "../membership/verify-log.ts";
 import { err, type Result } from "../result.ts";
 import { bytes } from "./bytes.ts";
 import type { EntryContent } from "./content.ts";
@@ -96,6 +103,7 @@ export type SharedError =
   | "bad-signature"
   | ShareKeyError
   | "wrong-entry"
+  | "rollback"
   | "uncertified-author"
   | "unreadable"
   | "not-json"
@@ -114,14 +122,16 @@ const checkShare = (share: Share, me: ShareReader, trust: Trust): SharedError | 
 
 /**
  * Opens the shared entry: the share as above, its entry key against the signed binding, and the
- * record of that very entry signed by a certified author. Without the vault log the recipient
- * cannot tell whether that author may edit the vault; P-10 names this residual risk.
+ * record of that very entry signed by a certified author, no older than the highest version the
+ * reader has seen of it (E-13). Without the vault log the recipient cannot tell whether that
+ * author may edit the vault; P-10 names this residual risk.
  */
 export const openShared = (
   share: Share,
   record: EntryRecord,
   me: ShareReader,
   trust: Trust,
+  seenVersion = 0,
 ): Result<EntryContent, SharedError> => {
   const refused = checkShare(share, me, trust);
   if (refused) return err(refused);
@@ -133,8 +143,61 @@ export const openShared = (
     idKey(record.entryId) !== idKey(share.entryId)
   )
     return err("wrong-entry");
+  if (record.version < seenVersion) return err("rollback");
   const author = certificateOf(trust, record.author);
   if (!author) return err("uncertified-author");
   if (!isSignedBy(author, record)) return err("bad-signature");
   return readContent(entryKey.value, record);
 };
+
+/** The certificate of a member who may edit the vault now, the very one the log names (E-05) */
+const editorNow = (accountId: Uint8Array, log: LogState, trust: Trust) => {
+  const certificate = certificateOf(trust, accountId);
+  const member = log.members.get(idKey(accountId));
+  if (!certificate || !member) return undefined;
+  if (!constantTimeEqual(member.fingerprint, certificateFingerprint(certificate))) return undefined;
+  const mayEdit = member.role === "edit" || member.role === "manage";
+  return mayEdit && isMember(log, accountId, trust.now) ? certificate : undefined;
+};
+
+/**
+ * The shares of an entry a member of its vault can trust, from what the server lists: signed by a
+ * certified member who may edit the vault now, over the entry key given. A server that adds a share
+ * of its own to the list gets it neither shown nor made again with a new key (P-10).
+ */
+export const genuineShares = (
+  shares: readonly Share[],
+  entryKey: Uint8Array,
+  place: SharePlace,
+  log: LogState,
+  trust: Trust,
+): Share[] =>
+  shares.filter((share) => {
+    const sharer = editorNow(share.sharer, log, trust);
+    return (
+      sharer !== undefined &&
+      idKey(share.vaultId) === idKey(place.vaultId) &&
+      idKey(share.entryId) === idKey(place.entryId) &&
+      constantTimeEqual(share.commitment, shareKeyCommitment(entryKey, place)) &&
+      verify(sharer.edPublicKey, share.signature, "share", ...signedFields(share))
+    );
+  });
+
+/**
+ * After a revoke the entry has a new entry key (P-10): the remaining shares made again under it, to
+ * the same certified recipients with the same expiry, signed by the author. Shares that ran out or
+ * whose recipient has no certificate any more are left out; the caller passes genuine ones only.
+ */
+export const reshare = (
+  author: Author,
+  entryKey: Uint8Array,
+  shares: readonly Share[],
+  trust: Trust,
+  time: number,
+): Share[] =>
+  shares.flatMap((share) => {
+    const recipient = certificateOf(trust, share.recipient);
+    if (!recipient || (share.validUntil !== 0 && share.validUntil <= trust.now)) return [];
+    const place = { vaultId: share.vaultId, entryId: share.entryId };
+    return [makeShare(author, entryKey, recipient, place, { validUntil: share.validUntil, time })];
+  });

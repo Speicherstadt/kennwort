@@ -55,15 +55,16 @@ einziges Merkmal: dazu immer Text oder Icon.
 ## Aufbau
 
 **Desktop (ab `md`, 768 px)**: Rail (56 px) mit Logo, Bereichen und Avatar · Seitenleiste (232 px,
-ab `lg`) mit Firma, „Alle Einträge“, „Favoriten“, „Zum Ändern“, Tresoren und Gruppen, unten der
+ab `lg`) mit Firma, „Alle Einträge“, „Favoriten“, „Zum Ändern“, „Mit mir geteilt“ (sobald jemand
+etwas geteilt hat), Tresoren und Gruppen, unten der
 Hinweis zur Verschlüsselung · Liste (340 px) mit Titel, Suche (`/`) und Einträgen · Detail mit
 Kopfzeile (Icon, Titel, Tresor, letzte Änderung, Teilen, Bearbeiten), Feldkarte und rechts Zugriff
 und Verlauf.
 
 **Handy (unter `md`)**: ein Screen zur Zeit, über die URL gewählt; großer Titel, Suchfeld, Filter-Chips
-(„Alle“, „Favoriten“, „Zum Ändern · 3“), Liste mit 40-px-Icons; Eintrag mit Zurück-Link, großem Icon,
-Feldkarte; unten Tab-Leiste (Einträge, Generator, Gruppen, Einstellungen). Berührungsziele mindestens
-44 px.
+(„Alle“, „Favoriten“, „Zum Ändern · 3“, „Mit mir geteilt“ wie in der Seitenleiste), Liste mit
+40-px-Icons; Eintrag mit Zurück-Link, großem Icon, Feldkarte; unten Tab-Leiste (Einträge,
+Generator, Gruppen, Einstellungen). Berührungsziele mindestens 44 px.
 
 **Extension-Popup (360 × 600)**: Kopf mit Logo und Sperren, Suche, „Für <Host>“ mit Treffern und
 „Ausfüllen“, Favoriten, Generator unten, Fußzeile mit Sperrzeit und Link zur Web-App. Gesperrt:

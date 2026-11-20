@@ -23,16 +23,22 @@ export const listTitle = (filter: ListFilter, vaults: ShownVault[] = []) =>
       ? m.nav_favorites()
       : filter.kind === "to-change"
         ? m.nav_to_change()
-        : (vaults.find((v) => v.idText === filter.id)?.name ?? vaultName(filter.id));
+        : filter.kind === "shared"
+          ? m.nav_shared()
+          : (vaults.find((v) => v.idText === filter.id)?.name ?? vaultName(filter.id));
 
+/** The phone's filters; "Mit mir geteilt" only once something is shared with this account */
 const chips = (entries: readonly ShownEntry[]) => [
   { href: "/entries", kind: "all", label: m.chip_all() },
   { href: "/favorites", kind: "favorites", label: m.nav_favorites() },
   {
     href: "/to-change",
     kind: "to-change",
-    label: m.chip_to_change({ count: entries.filter((e) => e.weak).length }),
+    label: m.chip_to_change({ count: entries.filter((e) => e.weak && !e.sharedBy).length }),
   },
+  ...(entries.some((e) => e.sharedBy !== undefined)
+    ? [{ href: "/shared", kind: "shared", label: m.nav_shared() }]
+    : []),
 ];
 
 export const EntryList = (props: {
@@ -76,7 +82,7 @@ export const EntryList = (props: {
           value={search()}
           onInput={(event) => setSearch(event.currentTarget.value)}
         />
-        <nav aria-label={m.list_filters()} class="flex gap-2 md:hidden">
+        <nav aria-label={m.list_filters()} class="flex flex-wrap gap-2 md:hidden">
           <For each={chips(all())}>
             {(chip) => (
               <Link

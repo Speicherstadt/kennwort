@@ -738,8 +738,27 @@ weitergereicht werden kann) und signiert die Freigabe mit Rolle und optionalem A
 (`gültig-bis` in Sekunden, 0 für keinen). Die Rolle ist vorerst nur „lesen“; sie steht schon im
 signierten Format, damit „bearbeiten“ später ohne neues Format dazukommen kann. Weil EK über die
 Versionen eines Eintrags gleich bleibt ([P-09](#p-09-eintrage-speichern-und-lesen)), öffnet eine
-Freigabe auch spätere Versionen. Widerrufen wechselt EK und verschlüsselt den Eintrag neu (kommt
-mit der Web-App, K-305 Teil 6b).
+Freigabe auch spätere Versionen. Widerrufen wechselt EK und verschlüsselt den Eintrag neu, in
+dieser Reihenfolge (`revokeShare` in `apps/web/src/shares/shares.ts`):
+
+1. Der Client des Widerrufenden holt den Tresor neu und arbeitet nur mit der neuesten Version, die
+   er annimmt; eine abgelehnte oder fehlende Version des Eintrags bricht den Widerruf ab.
+2. Übrig bleiben die Freigaben, die `genuineShares` unter dem EK dieser Version annimmt: von einem
+   zertifizierten Mitglied mit „bearbeiten“ oder „verwalten“ laut Log signiert, für genau diesen
+   Eintrag und mit der Bindung dieses EK, ohne die widerrufene. Eine Freigabe, die der Server selbst
+   in die Liste legt oder die unter einem älteren EK schon widerrufen wurde, wird so nicht neu
+   verpackt.
+3. Er schreibt den Inhalt unverändert als nächste Version unter einem neuen EK (`rekey` in
+   `packages/core/src/sync/device.ts`, auch wenn eine Version unter dem alten EK dazwischenkommt).
+   Ersetzt diese Version nicht genau die geprüfte, weil ein anderes Gerät dazwischen geschrieben
+   hat, verpackt er keine Freigabe neu und sagt das; ihre Empfänger bekommen den Eintrag neu
+   geteilt.
+4. Er verpackt den neuen EK an die übrigen Empfänger neu (`reshare` in
+   `packages/core/src/sync/share.ts`), mit derselben Gültigkeit.
+5. Erst dann löscht der Server die Freigabe. Scheitert die neue Version, bleibt die Freigabe
+   bestehen und gelistet, und die wartende Änderung verliert ihren Anspruch auf einen neuen EK: Der
+   Widerruf ist nicht geschehen und lässt sich als Ganzes wiederholen, auch nach dem Sperren; eine
+   spätere Änderung vollendet ihn nicht halb, ohne die übrigen Freigaben neu zu verpacken.
 
 Der Empfänger ist kein Mitglied des Tresors; er kennt weder VKₑ noch das Log. Bevor er den Eintrag
 liest, prüft sein Client (`openShared` in `packages/core/src/sync/share.ts`):
@@ -751,7 +770,10 @@ liest, prüft sein Client (`openShared` in `packages/core/src/sync/share.ts`):
    signierten Freigabe; einen eigenen Schlüssel kann der Server so nicht unterschieben (E-16).
 4. Der Datensatz gehört zu genau diesem Tresor und Eintrag (E-12), und ein zertifizierter Autor
    hat ihn signiert.
-5. Der Inhalt öffnet sich mit EK (AAD mit Tresor-ID, Eintrags-ID und Version) und ist ein Eintrag.
+5. Der Datensatz ist nicht älter als die höchste Version, die der Empfänger von diesem Eintrag
+   schon gesehen hat (E-13); die Web-App merkt sich diese Version im verschlüsselten Kontostand
+   (`versions`), also über Geräte und Sitzungen hinweg.
+6. Der Inhalt öffnet sich mit EK (AAD mit Tresor-ID, Eintrags-ID und Version) und ist ein Eintrag.
 
 Umgesetzt in `packages/crypto/src/share.ts` (Verpacken, Entpacken und Bindung; Testvektor in
 `packages/crypto/vectors/wrap-v1.json`), `packages/core/src/sync/share.ts` (Format, Signatur und
@@ -772,13 +794,43 @@ entschlüsseln kann.
 
 Andere Einträge, Versionen, Log, Schlüssel und Live-Strom des Tresors bekommt der Empfänger nicht.
 
-Restrisiko: Ohne das Log kann der Empfänger nicht prüfen, ob der Autor des Datensatzes den Tresor
-bearbeiten darf, und nicht, ob der Teilende noch Mitglied ist. Einen Datensatz unter EK kann aber
-nur bauen, wer EK kennt, also ein Mitglied des Tresors oder ein Empfänger einer Freigabe; der
-Server allein kann es nicht. Ein Widerruf ohne neuen EK nimmt dem Empfänger nur, was der Server
-ihm noch ausliefert; erst der neue EK schützt spätere Versionen.
+In der Web-App öffnet **Teilen** im Eintrag den Dialog dazu (`apps/web/src/shares/`); den
+Empfänger zeigt „Mit mir geteilt“ nur, was `openShared` angenommen hat, und eine Freigabe, deren
+Datensatz sich nach einem Widerruf nicht mehr öffnet, zeigt sie nicht.
 
-**Wehrt ab:** E-05, E-12, E-16.
+Restrisiken:
+
+- Ohne das Log kann der Empfänger nicht prüfen, ob der Autor des Datensatzes den Tresor bearbeiten
+  darf. Einen Datensatz unter EK kann aber nur bauen, wer EK kennt, also ein Mitglied des Tresors
+  oder ein Empfänger einer Freigabe; der Server allein kann es nicht.
+- **Alte Versionen:** Kennt der Empfänger einen geteilten Eintrag noch nicht oder hat er seinen
+  Kontostand verloren, kann ihm der Server eine ältere Version des Eintrags ausliefern, die mit
+  demselben EK verschlüsselt ist; erst ab der ersten gesehenen Version lehnt sein Client ältere ab
+  (Schritt 5). Neuere Versionen kann der Server ihm vorenthalten.
+- **Schlüsselwechsel:** Ein Schlüsselwechsel ([P-11](#p-11-austritt-und-schlusselwechsel), K-307)
+  gibt jedem Eintrag des Tresors einen neuen EK. Damit öffnet keine bestehende Freigabe die neuen
+  Versionen mehr, bis sie neu verpackt ist; das macht K-307 mit dem Schlüsselwechsel, wie beim
+  Widerruf mit `reshare`.
+- **Teilender verlässt den Tresor:** Der Server liefert eine Freigabe weiter aus, auch wenn ihr
+  Teilender den Tresor inzwischen verlassen hat oder nur noch lesen darf; der Empfänger kennt das
+  Log nicht und merkt es nicht. Nach dem Entfernen folgt ein Schlüsselwechsel (P-11, K-307), und
+  danach öffnet die Freigabe keine neue Version mehr, bis ein Mitglied sie neu verpackt. Bis dahin
+  liest der Empfänger, was er vorher auch lesen konnte. Die Mitglieder sehen eine solche Freigabe
+  im Dialog nicht mehr, weil `genuineShares` nur Freigaben aktueller Bearbeiter annimmt, und können
+  sie dort darum nicht entfernen; ein Widerruf einer anderen Freigabe des Eintrags verpackt sie
+  aber nicht neu, sodass auch er sie beendet.
+- **Widerruf:** Ein Widerruf ohne neuen EK nimmt dem Empfänger nur, was der Server ihm noch
+  ausliefert; erst der neue EK schützt spätere Versionen. Was der Empfänger vor dem Widerruf
+  gelesen hat, kennt er weiter, auch das Passwort; es gilt erst nach einer Änderung wieder als
+  sicher. Ein Server, der dem Widerrufenden einen abgespaltenen, älteren Stand als neuesten zeigt
+  (eine Gabelung wie E-08 beim Log), kann ihn eine unter dem damaligen EK widerrufene Freigabe neu
+  verpacken lassen; das verhindert erst ein Abgleich der Versionen über alle Geräte. Geht die
+  Antwort auf die neue Version verloren, obwohl der Server sie gespeichert hat, sind die übrigen
+  Freigaben nicht neu verpackt und müssen neu geteilt werden.
+- **Kontostand:** Lehnt der Server das Schreiben des Kontostands ab, merkt sich der Empfänger die
+  gesehene Version nur bis zum Sperren; danach kann ihm der Server wieder eine ältere ausliefern.
+
+**Wehrt ab:** E-05, E-12, E-13, E-16.
 
 ### P-11 Austritt und Schlüsselwechsel
 

@@ -23,7 +23,9 @@ import { ApplyPolicy } from "./policy/policy-section.tsx";
 import type { DevicesApi } from "./session/devices-api.ts";
 import type { GroupApi } from "./session/groups-api.ts";
 import type { Session } from "./session/session.ts";
+import type { ShareApi } from "./session/shares-api.ts";
 import type { VaultApi } from "./session/vaults-api.ts";
+import { createSharing } from "./shares/shares-wiring.tsx";
 import { NoAccess } from "./vaults/no-access.tsx";
 import { requestAccess, vaultIdOf } from "./vaults/vault-members.ts";
 import { createVaultStore, type VaultStore } from "./vaults/vault-store.ts";
@@ -33,7 +35,8 @@ export type AppApi = PairDeps &
   DevicesApi &
   MembersDeps &
   VaultApi &
-  GroupApi & { syncFetch: typeof fetch };
+  GroupApi &
+  ShareApi & { syncFetch: typeof fetch };
 
 /** The vaults while the account is open: loaded when it opens, gone when it locks */
 const OpenedFrame = (props: {
@@ -43,8 +46,10 @@ const OpenedFrame = (props: {
   onLocale: (next: Locale) => void;
 }) => {
   const entries = createEntries(httpServerFor(props.api.syncFetch), props.session);
+  const sharing = createSharing(props.api, props.session, entries.keys);
   const store: VaultStore = createVaultStore(props.api, props.session, (loaded) => {
     void entries.load(loaded.vaults, loaded.trust);
+    void sharing.load(loaded);
   });
   void store.reload();
   /** A new entry needs a vault this account may write in, loaded */
@@ -62,6 +67,7 @@ const OpenedFrame = (props: {
     return shown.state === "ready" ? shown.vaults : undefined;
   };
   const Editor = entries.editor;
+  const ShareDialog = sharing.dialog;
   return (
     <>
       <Frame
@@ -73,10 +79,11 @@ const OpenedFrame = (props: {
           <MembersPage session={props.session} api={props.api} origin={location.origin} />
         )}
         vaults={shownVaults}
-        entries={entries.entries}
+        entries={() => [...entries.entries(), ...sharing.entries()]}
         vaultName={vaultName}
         onNewEntry={canWrite() ? entries.startNew : undefined}
         onEditEntry={entries.startChange}
+        onShareEntry={sharing.start}
         noAccess={(vaultId) => {
           const shown = store.shown();
           // A vault refused for any reason but a time run out is this account's: no "no access" then
@@ -117,6 +124,7 @@ const OpenedFrame = (props: {
         )}
       />
       <Editor nav={props.nav} vaults={store} />
+      <ShareDialog vaults={store} />
     </>
   );
 };

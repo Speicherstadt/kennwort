@@ -33,6 +33,8 @@ export type ShownEntry = {
   access: string[];
   /** false in a vault this account may only read; the demo's entries leave it out */
   editable?: boolean;
+  /** Who shared it with this account (P-10); only entries from "Mit mir geteilt" have it */
+  sharedBy?: string;
 };
 
 export type LoginInput = { title: string; username: string; password: string; website: string };

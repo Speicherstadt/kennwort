@@ -2,7 +2,7 @@
 title: Einträge
 description: >-
   Wie Kennwort Zugänge in Tresoren speichert: die Arten von Einträgen und eigene Felder, einen
-  Eintrag anlegen und ändern, Passwörter und Passphrasen erzeugen, was ein Gerät prüft, bevor es
+  Eintrag anlegen, ändern und einzeln teilen, Passwörter und Passphrasen erzeugen, was ein Gerät prüft, bevor es
   einen Eintrag zeigt, und was der Server davon sieht.
 ---
 
@@ -76,6 +76,37 @@ ausgegraut.
 Erreicht dein Gerät den Server gerade nicht, sagt Kennwort das; die Änderung wartet auf dem Gerät,
 bis du es wieder versuchst.
 
+## Einen einzelnen Eintrag teilen
+
+Manchmal braucht jemand aus der Firma nur einen Zugang aus einem Tresor, nicht den ganzen Tresor.
+Dann wählst du im Eintrag **Teilen**. Der Dialog zeigt, mit wem der Eintrag schon geteilt ist, und
+bietet alle bestätigten Personen der Firma an, die nicht Mitglied des Tresors sind. Du wählst eine
+Person, auf Wunsch einen letzten Tag, und **Teilen**. Teilen darf, wer im Tresor bearbeiten oder
+verwalten darf; wer nur lesen darf, sieht **Teilen** ausgegraut.
+
+Die Person kann den Eintrag nur lesen, nicht ändern und nicht weiter teilen. Sie sieht auch
+spätere Änderungen, bis der letzte Tag vorbei ist oder du die Freigabe entfernst. Vom übrigen
+Tresor sieht sie nichts, auch nicht seinen Namen.
+
+**Entfernen** nimmt die Freigabe zurück. Kennwort verschlüsselt den Eintrag dabei mit einem neuen
+Schlüssel neu und speichert ihn als neue Version; mit dem Schlüssel, den die Person hatte, öffnet
+sich keine spätere Version mehr. Wer den Eintrag sonst noch geteilt bekommen hat, bekommt den
+neuen Schlüssel automatisch. Erst danach verschwindet die Freigabe; klappt das Neuverschlüsseln
+nicht, etwa weil der Server nicht erreichbar ist, bleibt sie stehen, und du entfernst sie einfach
+noch einmal. Was die Person vorher lesen konnte, kennt sie weiter: Ändere das Passwort, wenn das
+nicht so bleiben soll.
+
+### Mit mir geteilt
+
+Was andere mit dir geteilt haben, steht in der Seitenleiste unter **Mit mir geteilt**, am Handy
+als eigener Filter über der Liste. Diese Einträge erscheinen nicht unter „Alle Einträge“; im
+Eintrag steht, wer ihn geteilt hat, und **Bearbeiten** und **Teilen** sind ausgegraut. Bevor
+Kennwort einen geteilten Eintrag zeigt, prüft dein Gerät, dass ihn jemand aus deiner Firma mit
+zertifiziertem Schlüssel an dich geteilt hat, dass der Schlüssel dazu passt und dass er nicht
+älter ist als eine Version, die du schon gesehen hast. Eine Freigabe, die entfernt wurde, zeigt
+es nicht mehr. Wie das geschützt ist und wo Grenzen bleiben, steht im
+[Sicherheitsdesign](sicherheitsdesign.md#p-10-einzelnen-eintrag-teilen).
+
 ## Passwörter und Passphrasen erzeugen
 
 Der **Generator** erzeugt auf deinem Gerät ein zufälliges Passwort oder eine Passphrase:
@@ -105,4 +136,5 @@ nicht. Wie das im Einzelnen geschützt ist, steht im
 
 Der Server bekommt nur Geheimtexte: Er sieht, dass es einen Eintrag gibt, wie groß er ist und wann
 er sich geändert hat, aber weder Titel noch Benutzername, Passwort oder Website. Einträge und
-ihre Änderungen gibt er nur an Mitglieder des Tresors.
+ihre Änderungen gibt er nur an Mitglieder des Tresors und einen geteilten Eintrag an die Person,
+mit der er geteilt ist.

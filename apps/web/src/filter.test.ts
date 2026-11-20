@@ -32,3 +32,20 @@ describe("shownEntries", () => {
     expect(titles(shownEntries(entries, { kind: "favorites" }, "datev"))).toEqual([]);
   });
 });
+
+describe("entries shared with this account (P-10)", () => {
+  const [first, second] = entries;
+  const shared = { ...(first as (typeof entries)[number]), id: "geteilt", sharedBy: "Jonas" };
+  const list = [shared, second as (typeof entries)[number]];
+
+  it("show under their own filter only, not among the vaults' entries", () => {
+    expect(shownEntries(list, { kind: "shared" }, "").map((e) => e.id)).toEqual(["geteilt"]);
+    for (const filter of [
+      { kind: "all" },
+      { kind: "favorites" },
+      { kind: "to-change" },
+      { kind: "vault", id: shared.vault },
+    ] as const)
+      expect(shownEntries(list, filter, "").map((e) => e.id)).not.toContain("geteilt");
+  });
+});

@@ -31,6 +31,7 @@ const Detail = (props: {
   toasts: Toasts;
   vaultName: (id: string) => string;
   onEdit?: (() => void) | undefined;
+  onShare?: (() => void) | undefined;
 }) => (
   <div class="grid gap-5 p-4 md:p-6 xl:grid-cols-[1fr_16rem]">
     <div class="grid content-start gap-5">
@@ -42,7 +43,9 @@ const Detail = (props: {
           <h1 class="truncate text-[28px] font-semibold md:text-lg">{props.entry.title}</h1>
           <p class="text-xs text-muted-foreground">
             {typeLabel(props.entry.type)} ·{" "}
-            {m.detail_in_vault({ name: props.vaultName(props.entry.vault) })}
+            {props.entry.sharedBy === undefined
+              ? m.detail_in_vault({ name: props.vaultName(props.entry.vault) })
+              : m.detail_shared_by({ name: props.entry.sharedBy })}
             <Show when={props.entry.changedAt > 0}>
               {" · "}
               {m.detail_changed({ date: date(props.entry.changedAt) })}
@@ -50,7 +53,7 @@ const Detail = (props: {
           </p>
         </div>
         <div class="flex gap-2">
-          <Button>
+          <Button disabled={!props.onShare} onClick={() => props.onShare?.()}>
             <Icon icon={Share2} /> {m.detail_share()}
           </Button>
           <Button variant="primary" disabled={!props.onEdit} onClick={() => props.onEdit?.()}>
@@ -101,6 +104,8 @@ export const EntryDetail = (props: {
   entries?: ShownEntry[] | undefined;
   vaultName?: ((id: string) => string) | undefined;
   onEdit?: ((entry: ShownEntry) => void) | undefined;
+  /** Opens sharing for an entry of a vault this account may edit (P-10) */
+  onShare?: ((entry: ShownEntry) => void) | undefined;
 }) => {
   const entry = () =>
     (props.entries ?? demoEntries).find((candidate) => candidate.id === props.selected);
@@ -132,6 +137,11 @@ export const EntryDetail = (props: {
             vaultName={props.vaultName ?? demoVaultName}
             onEdit={
               props.onEdit && found.editable !== false ? () => props.onEdit?.(found) : undefined
+            }
+            onShare={
+              props.onShare && found.editable !== false && found.sharedBy === undefined
+                ? () => props.onShare?.(found)
+                : undefined
             }
           />
         )}

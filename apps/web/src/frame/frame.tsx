@@ -33,6 +33,7 @@ export const Frame = (props: {
   vaultName?: ((id: string) => string) | undefined;
   onNewEntry?: (() => void) | undefined;
   onEditEntry?: ((entry: ShownEntry) => void) | undefined;
+  onShareEntry?: ((entry: ShownEntry) => void) | undefined;
   /** A vault link this account cannot open: what shows instead of its entries (K-305) */
   noAccess?: ((vaultId: string) => JSX.Element | undefined) | undefined;
 }) => {
@@ -70,6 +71,7 @@ export const Frame = (props: {
                       entries={props.entries?.()}
                       vaultName={props.vaultName}
                       onEdit={props.onEditEntry}
+                      onShare={props.onShareEntry}
                       nav={props.nav}
                       filter={entries().filter}
                       selected={entries().entry}

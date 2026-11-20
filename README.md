@@ -42,7 +42,7 @@ deinem eigenen Server betreibst.
 |---|---|
 | 🔑 Konto | Firma mit Einrichtungs-Code anlegen, Mitglieder per Einladungslink einladen und bestätigen, Rollen (Inhaber, Admin, Mitarbeiter), signierte Firmen-Richtlinien (Sperrzeit), Recovery-Kit als PDF, Entsperren mit Passphrase, Passphrase vergessen mit dem Recovery Key, neues Gerät per QR-Code, Geräteliste und Gerät abmelden, automatisches Sperren |
 | 🔐 Tresore und Einträge | Logins, Notizen, WLAN, Karten, SSH- und API-Schlüssel, Anhänge, TOTP, Passkeys; Generator für Passwörter und Passphrasen |
-| 👥 Team | Gruppen, Rollen, Zugriff anfragen, Zugriff auf Zeit, Austritt mit Schlüsselwechsel und Bericht |
+| 👥 Team | Gruppen, Rollen, Zugriff anfragen, Zugriff auf Zeit, einzelnen Eintrag teilen, Austritt mit Schlüsselwechsel und Bericht |
 | 🧩 Browser-Extension | Chrome, Edge, Firefox (auch Android) und Safari; Ausfüllen erst nach Klick, Phishing-Warnung |
 | 📱 Handy | Web-App zum Installieren (PWA), die nur signierte und geprüfte Updates annimmt, und App für Android und iOS mit systemweitem Ausfüllen |
 | 🔁 Umzug | Import aus Bitwarden, LastPass, 1Password, KeePass, Team Password Manager, Passbolt, den Browsern und Authenticator-Apps |

@@ -24,6 +24,7 @@ import { groupCalls } from "./groups-api.ts";
 import { memberCalls } from "./members-api.ts";
 import { pairingCalls } from "./pairing-api.ts";
 import { policyCalls } from "./policy-api.ts";
+import { shareCalls } from "./shares-api.ts";
 import { requestCalls, vaultCalls } from "./vaults-api.ts";
 export type ApiError = "wrong-code" | "invalid-invitation" | "too-many-requests" | "unexpected";
 type Answer<T> = { ok: true; value: T } | { ok: false; error: ApiError };
@@ -74,9 +75,10 @@ const identityHeaders = (identity: DeviceIdentity | undefined): Record<string, s
       }
     : {};
 
-export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity) => {
-  /** Status 0 when the server cannot be reached: errors are values here too (review of K-303) */
-  const call: Call = async (method, path, body, token) => {
+/** Status 0 when the server cannot be reached: errors are values here too (review of K-303) */
+const callerOf =
+  (send: typeof fetch, identity: DeviceIdentity | undefined): Call =>
+  async (method, path, body, token) => {
     const response = await send(path, {
       method,
       headers: {
@@ -89,6 +91,9 @@ export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity)
     if (!response) return { status: 0, json: undefined };
     return { status: response.status, json: await response.json().catch(() => undefined) };
   };
+
+export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity) => {
+  const call = callerOf(send, identity);
   const session = (answer: { status: number; json: unknown }): Answer<string> => {
     const parsed = SessionWire.safeParse(answer.json);
     return answer.status === 201 && parsed.success
@@ -111,6 +116,7 @@ export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity)
     ...vaultCalls(call),
     ...requestCalls(call),
     ...groupCalls(call),
+    ...shareCalls(call),
     /** The root key's public half goes along, for every member to check certificates (P-07) */
     setup: async (
       code: string,
@@ -187,4 +193,5 @@ export type AccountApi = Omit<
   | keyof ReturnType<typeof vaultCalls>
   | keyof ReturnType<typeof requestCalls>
   | keyof ReturnType<typeof groupCalls>
+  | keyof ReturnType<typeof shareCalls>
 >;

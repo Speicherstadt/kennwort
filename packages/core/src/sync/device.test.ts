@@ -1,9 +1,9 @@
 import { openEntryKey } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
-import { edit, emptyDevice, pull, sync } from "./device.ts";
+import { edit, emptyDevice, pull, rekey, sync } from "./device.ts";
 import { memoryServer, type SyncServer } from "./memory-server.ts";
 import { type EntryRecord, sealRecord } from "./record.ts";
-import { bank, contextFor, id, jonas, max, withField } from "./test/fixtures.ts";
+import { anna, bank, contextFor, id, jonas, max, withField } from "./test/fixtures.ts";
 
 const e1 = id(0xe1);
 const e2 = id(0xe2);
@@ -134,5 +134,61 @@ describe("the entry key (P-09, P-10)", () => {
     expect(key?.epoch).toBe(1);
     expect(key?.entryKey).not.toEqual(old?.entryKey);
     expect(server.pull()[0]?.epoch).toBe(1);
+  });
+});
+
+describe("rekey (revoking a share, P-10)", () => {
+  const k1 = "e1".repeat(16);
+
+  it("writes the same content as the next version under a new entry key, kept for later versions", async () => {
+    const server = memoryServer();
+    const ctx = contextFor(jonas);
+    const device = (await sync(edit(emptyDevice(), e1, bank), server, ctx)).device;
+    const old = device.known.get(k1)?.key;
+    const renewed = (await sync(rekey(device, e1), server, ctx)).device;
+    const key = renewed.known.get(k1)?.key;
+    expect(renewed.known.get(k1)?.version).toBe(2);
+    expect(renewed.known.get(k1)?.content).toEqual(bank);
+    expect(key?.entryKey).not.toEqual(old?.entryKey);
+    expect(server.pull()[0]?.version).toBe(2);
+    const later = await sync(edit(renewed, e1, withField(bank, "user", "neu")), server, ctx);
+    expect(later.device.known.get(k1)?.key).toEqual(key);
+  });
+
+  it("takes a new key even when someone else wrote a version under the old one meanwhile", async () => {
+    const server = memoryServer();
+    const ctx = contextFor(jonas);
+    const device = (await sync(edit(emptyDevice(), e1, bank), server, ctx)).device;
+    const old = device.known.get(k1)?.key;
+    const laptop = (await pull(emptyDevice(), server, contextFor(anna))).device;
+    const changed = withField(bank, "user", "anna");
+    await sync(edit(laptop, e1, changed), server, contextFor(anna));
+    const renewed = (await sync(rekey(device, e1), server, ctx)).device;
+    expect(renewed.known.get(k1)?.version).toBe(3);
+    expect(renewed.known.get(k1)?.content).toEqual(changed);
+    expect(renewed.known.get(k1)?.key?.entryKey).not.toEqual(old?.entryKey);
+  });
+
+  it("keeps a change still queued for the entry and marks only that entry", async () => {
+    const changed = withField(bank, "user", "eins");
+    const device = edit(edit(emptyDevice(), e1, changed), e2, bank);
+    const renewed = rekey(device, e1);
+    expect(renewed.queue).toEqual([
+      { entryId: e1, base: undefined, content: changed, rekey: true },
+      { entryId: e2, base: undefined, content: bank },
+    ]);
+  });
+
+  it("queues the known content with the known version as its base", async () => {
+    const server = memoryServer();
+    const device = (await sync(edit(emptyDevice(), e1, bank), server, contextFor(jonas))).device;
+    expect(rekey(device, e1).queue).toEqual([
+      { entryId: e1, base: { version: 1, content: bank }, content: bank, rekey: true },
+    ]);
+  });
+
+  it("leaves a device that does not know the entry as it is", () => {
+    const device = edit(emptyDevice(), e2, bank);
+    expect(rekey(device, e1)).toBe(device);
   });
 });

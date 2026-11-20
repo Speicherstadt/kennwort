@@ -312,5 +312,18 @@
   "qr_not_totp": "This QR code holds no key for one-time codes.",
   "qr_no_camera": "Kennwort may not use the camera. Choose a screenshot instead.",
   "update_ready": "A new version is ready, checked and signed.",
-  "update_reload": "Reload"
+  "update_reload": "Reload",
+  "nav_shared": "Shared with me",
+  "detail_shared_by": "Shared by {name}",
+  "share_title": "Share {title}",
+  "share_intro": "Share this entry with someone from the company who is not in the vault. They can only read it, also after later changes. If you remove them, Kennwort encrypts the entry anew.",
+  "share_list": "Shared with",
+  "share_none": "Not shared with anyone yet.",
+  "share_remove_of": "Remove the share for {name}",
+  "share_until_hint": "After this day no device opens the entry for this person.",
+  "share_no_candidates": "There is nobody left to share with: every confirmed person of the company is in the vault or has the entry already.",
+  "share_failed": "That did not work. Try again.",
+  "share_not_renewed": "The entry could not be encrypted anew; the share is still in place. Try again once you are connected.",
+  "share_unnamed": "Someone from the company",
+  "share_not_current": "Someone changed the entry at the same moment. The share is removed and the entry encrypted anew; please share it with the others again."
 }

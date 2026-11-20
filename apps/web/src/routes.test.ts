@@ -8,6 +8,8 @@ describe("routes", () => {
       ["/entries/bank", { page: "entries", filter: { kind: "all" }, entry: "bank" }],
       ["/favorites", { page: "entries", filter: { kind: "favorites" } }],
       ["/to-change/mail", { page: "entries", filter: { kind: "to-change" }, entry: "mail" }],
+      ["/shared", { page: "entries", filter: { kind: "shared" } }],
+      ["/shared/bank", { page: "entries", filter: { kind: "shared" }, entry: "bank" }],
       ["/vaults/b%C3%BCro", { page: "entries", filter: { kind: "vault", id: "büro" } }],
       [
         "/vaults/office/wlan",

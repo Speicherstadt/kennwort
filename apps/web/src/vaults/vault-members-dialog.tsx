@@ -5,10 +5,11 @@
  */
 import type { Certificate, MemberView, VaultRole } from "@kennwort/core";
 import { idKey } from "@kennwort/core";
-import { Button, Dialog, getLocale, Input, m } from "@kennwort/ui";
+import { Button, Dialog, Input, m } from "@kennwort/ui";
 import { createSignal, For, Show } from "solid-js";
 import { linkGroup, outsideLinkedGroups, unlinkGroup } from "../groups/groups.ts";
 import type { Session } from "../session/session.ts";
+import { dateText, endOfDay, today } from "./day.ts";
 import { createDialogState, type DialogApi } from "./dialog-state.ts";
 import { RoleSelect, selectClass } from "./role-select.tsx";
 import { VaultGroups } from "./vault-groups.tsx";
@@ -38,23 +39,6 @@ const errorText = (error: ChangeError) =>
     : error === "past"
       ? m.vault_members_past()
       : m.vault_members_failed();
-
-/** Today on this device as yyyy-mm-dd, the earliest day a time limit can end */
-const today = () => {
-  const now = new Date();
-  const two = (n: number) => String(n).padStart(2, "0");
-  return `${now.getFullYear()}-${two(now.getMonth() + 1)}-${two(now.getDate())}`;
-};
-
-/** The end of the chosen day on this device, in Unix seconds; no day: no end (0) */
-export const endOfDay = (day: string) => {
-  if (!day) return 0;
-  const end = new Date(`${day}T23:59:59`).getTime();
-  return Number.isNaN(end) ? 0 : Math.floor(end / 1000);
-};
-
-const dateText = (seconds: number) =>
-  new Date(seconds * 1000).toLocaleDateString(getLocale(), { dateStyle: "medium" });
 
 const nameOf = (person: { name: string | null }) => person.name ?? m.vault_members_unnamed();
 
