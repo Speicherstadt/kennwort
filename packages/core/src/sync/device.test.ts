@@ -1,7 +1,8 @@
+import { openEntryKey } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
 import { edit, emptyDevice, pull, sync } from "./device.ts";
 import { memoryServer, type SyncServer } from "./memory-server.ts";
-import { sealRecord } from "./record.ts";
+import { type EntryRecord, sealRecord } from "./record.ts";
 import { bank, contextFor, id, jonas, max, withField } from "./test/fixtures.ts";
 
 const e1 = id(0xe1);
@@ -100,5 +101,38 @@ describe("memoryServer", () => {
     expect(server.push(v1)).toEqual({ ok: true });
     expect(server.push(v1)).toEqual({ ok: false, current: v1 });
     expect(server.pull()).toEqual([v1]);
+  });
+});
+
+describe("the entry key (P-09, P-10)", () => {
+  const keyOf = (record: EntryRecord | undefined) => {
+    const ring = contextFor(jonas).ring;
+    const opened = record && openEntryKey(ring.vaultKey, record.entryKey, { ...ring, entryId: e1 });
+    return opened?.ok ? opened.value : undefined;
+  };
+
+  it("stays the same over an entry's versions, on the device that wrote and one that pulled", async () => {
+    const server = memoryServer();
+    const ctx = contextFor(jonas);
+    let device = (await sync(edit(emptyDevice(), e1, bank), server, ctx)).device;
+    const first = keyOf(server.pull()[0]);
+    expect(device.known.get("e1".repeat(16))?.key).toEqual({ entryKey: first, epoch: 0 });
+    device = (await sync(edit(device, e1, withField(bank, "user", "neu")), server, ctx)).device;
+    expect([server.pull()[0]?.version, keyOf(server.pull()[0])]).toEqual([2, first]);
+    const laptop = (await pull(emptyDevice(), server, contextFor(jonas))).device;
+    expect(laptop.known.get("e1".repeat(16))?.key).toEqual({ entryKey: first, epoch: 0 });
+  });
+
+  it("is new for a change in a new epoch (P-11)", async () => {
+    const server = memoryServer();
+    const ctx = contextFor(jonas);
+    const device = (await sync(edit(emptyDevice(), e1, bank), server, ctx)).device;
+    const old = device.known.get("e1".repeat(16))?.key;
+    const next = { ...ctx, ring: { ...ctx.ring, epoch: 1 } };
+    const synced = await sync(edit(device, e1, withField(bank, "user", "neu")), server, next);
+    const key = synced.device.known.get("e1".repeat(16))?.key;
+    expect(key?.epoch).toBe(1);
+    expect(key?.entryKey).not.toEqual(old?.entryKey);
+    expect(server.pull()[0]?.epoch).toBe(1);
   });
 });

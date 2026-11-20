@@ -19,6 +19,7 @@ import { createHub, type Hub } from "./sync/hub.ts";
 import { logRoutes } from "./sync/log-routes.ts";
 import { requestRoutes } from "./sync/request-routes.ts";
 import { syncRoutes } from "./sync/routes.ts";
+import { shareRoutes } from "./sync/share-routes.ts";
 import { companyRoutes, type TenantEnv } from "./tenancy/routes.ts";
 import { companyScope } from "./tenancy/scope.ts";
 import type { Authenticate } from "./tenancy/session.ts";
@@ -104,6 +105,7 @@ export const createApp = ({
   api.route("/", logRoutes({ db, now }));
   api.route("/", requestRoutes({ db, now }));
   api.route("/", groupRoutes({ db, now }));
+  api.route("/", shareRoutes({ db, now }));
   api.route("/", syncRoutes({ db, hub, now, ...(keepAliveMs ? { keepAliveMs } : {}) }));
   if (signIn) {
     const deps = { db, ...signIn };

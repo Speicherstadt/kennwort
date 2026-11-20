@@ -205,12 +205,26 @@ export { memoryServer, type PushResult, type SyncServer } from "./sync/memory-se
 export {
   type AcceptError,
   type Author,
+  type EntryKey,
   EntryRecord,
+  entryKeyFor,
+  type Opened,
   openRecord,
+  openRecordWithKey,
   recordToWire,
   sealRecord,
   type VaultKeyring,
 } from "./sync/record.ts";
+export {
+  makeShare,
+  openShared,
+  Share,
+  type SharedError,
+  type ShareReader,
+  SharesWire,
+  shareToWire,
+  WRAPPED_ENTRY_KEY_LENGTH,
+} from "./sync/share.ts";
 export { parseSse, type SseEvent } from "./sync/sse.ts";
 export {
   CertificateWire,

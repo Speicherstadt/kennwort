@@ -9,9 +9,11 @@ import { auditLog, recordAudit } from "../audit/store.ts";
 import type { Db } from "../db/database.ts";
 import { accounts, companies } from "../db/schema.ts";
 import { syncScope } from "../sync/scope.ts";
+import { shareScope } from "../sync/share-scope.ts";
 
 export const companyScope = (db: Db, companyId: string) => ({
   ...syncScope(db, companyId),
+  ...shareScope(db, companyId),
   /** Appends to the company's audit chain (P-20) */
   audit: (fields: Omit<AuditFields, "seq" | "companyId">) =>
     recordAudit(db, { ...fields, companyId }),

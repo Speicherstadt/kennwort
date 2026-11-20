@@ -1,4 +1,5 @@
-// Weber Haustechnik for the sync tests: Jonas manages the vault "Büro", Anna edits, Max only reads
+// Weber Haustechnik for the sync tests: Jonas manages the vault "Büro", Anna edits, Max only reads;
+// Sandra works there too but is no member of Büro; Petra is of Müller Elektro
 import { ed25519KeyPair, keyCommitment, xwingKeyPair } from "@kennwort/crypto";
 import { certificateFingerprint, certify } from "../../membership/certificate.ts";
 import {
@@ -22,6 +23,8 @@ export const person = (byte: number) => ({
 export const jonas = person(0x10);
 export const anna = person(0x20);
 export const max = person(0x30);
+export const sandra = person(0x40);
+export const petra = person(0x50);
 export type Person = typeof jonas;
 
 export const certificate = (p: Person) =>
@@ -36,7 +39,7 @@ export const certificate = (p: Person) =>
 
 export const trust: Trust = {
   rootPublicKey: root.publicKey,
-  certificates: new Map([jonas, anna, max].map((p) => [idKey(p.id), certificate(p)])),
+  certificates: new Map([jonas, anna, max, sandra].map((p) => [idKey(p.id), certificate(p)])),
   now: 1_800_000_100,
 };
 

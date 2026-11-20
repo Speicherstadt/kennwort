@@ -1,7 +1,7 @@
 /**
  * What client code may rely on from a sync server, as tests (K-207). The same suite runs against
  * apps/server and the stand-in; a difference between the two fails one of them.
- * Sessions: t-jonas, t-anna, t-max (Weber Haustechnik), t-petra (Müller Elektro).
+ * Sessions: t-jonas, t-anna, t-max, t-sandra (Weber Haustechnik), t-petra (Müller Elektro).
  */
 import { describe, expect, it } from "vitest";
 import { encodeBytes } from "../bytes.ts";
@@ -28,6 +28,11 @@ import {
   noOneTakesANewVault,
   removedMemberHearsNothing,
 } from "./members-contract.ts";
+import {
+  expiredSharesAreGone,
+  onlyEditorsShareTheirOwnEntries,
+  recipientReadsOnlyThisEntry,
+} from "./share-contract.ts";
 
 export type Target = {
   connect: (token: string) => Connection;
@@ -270,6 +275,12 @@ export const syncContract = (name: string, target: () => Promise<Target>) =>
       rotationSignedAsAnother(await target()));
     it("answers a rotation on an old place as stale", async () =>
       rotationOnAStalePlace(await target()));
+    it("lets the recipient of a share read that one entry and nothing else of the vault", async () =>
+      recipientReadsOnlyThisEntry(await target()));
+    it("takes a share only from an editor, signed as the session, for a colleague and the entry in the path", async () =>
+      onlyEditorsShareTheirOwnEntries(await target()));
+    it("neither lists an expired share nor serves its entry", async () =>
+      expiredSharesAreGone(await target()));
     wireContract(target);
   });
 

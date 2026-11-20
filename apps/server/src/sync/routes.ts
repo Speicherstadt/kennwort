@@ -25,7 +25,7 @@ const MAX_RECORD_BYTES = 1024 * 1024;
 const notFound = { error: "not-found" } as const;
 
 /** The session's role in the vault by its stored log, if it is a current member (K-305) */
-const roleIn = (db: Db, c: Context<TenantEnv>, vaultId: string, now: number) =>
+export const roleIn = (db: Db, c: Context<TenantEnv>, vaultId: string, now: number) =>
   c.var.scope.vault(vaultId)
     ? currentMembers(db, vaultId, Math.floor(now / 1000)).get(c.var.session.accountId)?.role
     : undefined;

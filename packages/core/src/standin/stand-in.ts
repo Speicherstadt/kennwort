@@ -12,6 +12,8 @@ import { type LogError, verifyLog } from "../membership/verify-log.ts";
 import { bytes, encodeBytes } from "../sync/bytes.ts";
 import { EntryRecord, parseJson, recordToWire } from "../sync/record.ts";
 import { LogEntryWire } from "../sync/wire.ts";
+import { json, notFound } from "./answers.ts";
+import { standInShares } from "./stand-in-shares.ts";
 
 export type StandInSession = { accountId: string; companyId: string };
 /** The company the stand-in serves: its root and certificates for the logs, and its clock (ms) */
@@ -37,8 +39,6 @@ const parsedBody = <T extends z.ZodType>(schema: T, body: string) =>
 const MAX_RECORD_BYTES = 1024 * 1024;
 const VaultRequest = z.object({ id: bytes(16) });
 const Append = z.object({ entry: LogEntryWire, wrappedKey: bytes(1194).optional() });
-const json = (body: unknown, status = 200) => Response.json(body, { status });
-const notFound = () => json({ error: "not-found" }, 404);
 
 /** The role of a current member by the vault's log, as the server reads its stored entries */
 const roleOf = (vault: Vault, accountId: string, now: number) => {
@@ -167,6 +167,12 @@ export const standIn = (
   company: StandInCompany,
 ) => {
   const vaults = new Map<string, Vault>();
+  const shares = standInShares({
+    sessions,
+    now: company.now,
+    // Asked only for a vault the session is a member of, or holds a share in
+    newest: (vaultId, entryId) => (vaults.get(vaultId) as Vault).entries.get(entryId)?.at(-1),
+  });
 
   const createVault = (session: StandInSession, body: string) => {
     const parsed = parsedBody(VaultRequest, body);
@@ -205,7 +211,10 @@ export const standIn = (
       return appendLog(company, session, vaultId, vault, body);
     // Records and changes only for the vault's current members (K-305)
     const isMember = () => roleOf(vault, session.accountId, company.now()) !== undefined;
-    if (!isMember()) return notFound();
+    const role = roleOf(vault, session.accountId, company.now());
+    if (role === undefined) return notFound();
+    const share = shares.inVault(session, vaultId, role, method, rest, body);
+    if (share) return share;
     const versions = rest.match(/^\/entries\/([^/]+)\/versions$/);
     const call = `${method} ${versions ? "/versions" : rest}`;
     if (call === "GET /records") return json(newest(vault));
@@ -231,7 +240,10 @@ export const standIn = (
     if (!session) return json({ error: "unauthenticated" }, 401);
     const body = init.body == null ? "" : await new Response(init.body).text();
     if (`${method} ${url.pathname}` === "POST /api/vaults") return createVault(session, body);
-    return inVault(session, method, url.pathname, body, init.signal);
+    return (
+      shares.shared(session, method, url.pathname) ??
+      inVault(session, method, url.pathname, body, init.signal)
+    );
   }) as typeof globalThis.fetch;
 
   return { fetch, listening: (vaultId: string) => vaults.get(vaultId)?.listeners.size ?? 0 };

@@ -704,7 +704,11 @@ signatur  = F-03(autor, "entry", tresor-ID, eintrags-ID, version, epoche, SHA-51
   diesen Autor signiert hat und dessen Fingerabdruck das Log für ihn nennt (E-05).
 - **Löschen** ist ein signierter Grabstein mit neuer Version. Verschwindet ein bekannter Eintrag
   ohne Grabstein, warnt der Client (E-15).
-- **Schlüssel**: EK und VKₑ entstehen nur im Client. Ein EK ist unter VKₑ verschlüsselt, den der
+- **Schlüssel**: EK und VKₑ entstehen nur im Client. EK bleibt über die Versionen eines Eintrags
+  gleich, neu bei Schlüsselwechsel ([P-11](#p-11-austritt-und-schlusselwechsel)) und Widerruf
+  einer Freigabe ([P-10](#p-10-einzelnen-eintrag-teilen)); so öffnet eine Freigabe auch spätere
+  Versionen. Das Format bleibt dasselbe: Jede Version trägt EK weiter unter VKₑ versiegelt, und der
+  Client hält EK nur im Speicher. Ein EK ist unter VKₑ verschlüsselt, den der
   Server nicht kennt; ein VKₑ gilt nur, wenn er zur signierten Bindung im Log passt
   ([P-06](#p-06-mitgliedschafts-log)). Einen eigenen Schlüssel kann der Server so nicht
   unterschieben (E-16).
@@ -720,11 +724,58 @@ Tresors; entsperrte Inhalte liegen nur im Speicher.
 
 ### P-10 Einzelnen Eintrag teilen
 
+```text
+freigabe  = { tresor-ID, eintrags-ID, empfänger, rolle, gültig-bis, bindung, ek: F-02(empfänger, EK), teilender, zeit, signatur }
+bindung   = bindung(EK, "share", tresor-ID, eintrags-ID)
+ek        = F-02(zertifiziertes Bündel des Empfängers, EK, zweck = "share", kontext = tresor-ID, eintrags-ID, empfänger-ID)
+signatur  = F-03(teilender, "share", tresor-ID, eintrags-ID, empfänger, rolle, gültig-bis, bindung, ek, teilender, zeit)
+```
+
 Der Teilende verpackt EK an das zertifizierte Bündel des Empfängers (F-02, Zweck `share`, Kontext
-Tresor-ID, Eintrags-ID) und signiert die Freigabe mit Rolle und optionalem Ablauf. Der Empfänger
-liest den Eintrag mit dem EK, nachdem er ihn gegen die Bindung `bindung(EK, "share", tresor-ID,
-eintrags-ID)` in der signierten Freigabe geprüft hat. Widerrufen wechselt EK und verschlüsselt den
-Eintrag neu.
+Tresor-ID, Eintrags-ID und Empfänger-ID, sodass ein Paket nicht an einen anderen Empfänger
+weitergereicht werden kann) und signiert die Freigabe mit Rolle und optionalem Ablauf
+(`gültig-bis` in Sekunden, 0 für keinen). Die Rolle ist vorerst nur „lesen“; sie steht schon im
+signierten Format, damit „bearbeiten“ später ohne neues Format dazukommen kann. Weil EK über die
+Versionen eines Eintrags gleich bleibt ([P-09](#p-09-eintrage-speichern-und-lesen)), öffnet eine
+Freigabe auch spätere Versionen. Widerrufen wechselt EK und verschlüsselt den Eintrag neu (kommt
+mit der Web-App, K-305 Teil 6b).
+
+Der Empfänger ist kein Mitglied des Tresors; er kennt weder VKₑ noch das Log. Bevor er den Eintrag
+liest, prüft sein Client (`openShared` in `packages/core/src/sync/share.ts`):
+
+1. Die Freigabe ist an ihn gerichtet und nach seiner Uhr nicht abgelaufen.
+2. Der Teilende hat ein Zertifikat, das der Firmen-Wurzelschlüssel signiert hat, und dessen
+   Schlüssel hat die Freigabe signiert (E-05).
+3. Der entpackte EK passt zur Bindung `bindung(EK, "share", tresor-ID, eintrags-ID)` in der
+   signierten Freigabe; einen eigenen Schlüssel kann der Server so nicht unterschieben (E-16).
+4. Der Datensatz gehört zu genau diesem Tresor und Eintrag (E-12), und ein zertifizierter Autor
+   hat ihn signiert.
+5. Der Inhalt öffnet sich mit EK (AAD mit Tresor-ID, Eintrags-ID und Version) und ist ein Eintrag.
+
+Umgesetzt in `packages/crypto/src/share.ts` (Verpacken, Entpacken und Bindung; Testvektor in
+`packages/crypto/vectors/wrap-v1.json`), `packages/core/src/sync/share.ts` (Format, Signatur und
+die Prüfung des Empfängers) und `apps/server/src/sync/share-routes.ts` (Tabelle `entry_shares`).
+Der Server-Ersatz (`packages/core/src/standin/`) antwortet gleich; der gemeinsame Vertrag
+(`sync/test/share-contract.ts`) zeigt gegen beide, dass der Empfänger nur diesen Eintrag
+entschlüsseln kann.
+
+Über HTTP (mit Sitzung, nur in der eigenen Firma):
+
+| Route | Zweck |
+| --- | --- |
+| `PUT /api/vaults/:id/entries/:entry/shares` | Freigabe ablegen; nur aktuelle Mitglieder mit „bearbeiten“ oder „verwalten“ (sonst 403), als Teilender die angemeldete Person, Tresor und Eintrag wie im Pfad, ein bestehender Eintrag, der Empfänger ein anderes Konto derselben Firma; ersetzt eine frühere Freigabe an denselben Empfänger |
+| `GET /api/vaults/:id/entries/:entry/shares` | die Freigaben eines Eintrags, für die aktuellen Mitglieder des Tresors |
+| `DELETE /api/vaults/:id/entries/:entry/shares/:empfänger` | Freigabe löschen, für Mitglieder mit „bearbeiten“ oder „verwalten“ |
+| `GET /api/shared` | die eigenen Freigaben, die nach der Uhr des Servers nicht abgelaufen sind |
+| `GET /api/shared/:id/:entry` | die neueste Version dieses Eintrags, nur mit einer gültigen eigenen Freigabe; sonst 404, dieselbe Antwort wie für einen Eintrag, den es nicht gibt |
+
+Andere Einträge, Versionen, Log, Schlüssel und Live-Strom des Tresors bekommt der Empfänger nicht.
+
+Restrisiko: Ohne das Log kann der Empfänger nicht prüfen, ob der Autor des Datensatzes den Tresor
+bearbeiten darf, und nicht, ob der Teilende noch Mitglied ist. Einen Datensatz unter EK kann aber
+nur bauen, wer EK kennt, also ein Mitglied des Tresors oder ein Empfänger einer Freigabe; der
+Server allein kann es nicht. Ein Widerruf ohne neuen EK nimmt dem Empfänger nur, was der Server
+ihm noch ausliefert; erst der neue EK schützt spätere Versionen.
 
 **Wehrt ab:** E-05, E-12, E-16.
 
