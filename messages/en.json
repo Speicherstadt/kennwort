@@ -303,5 +303,12 @@
   "kind_totp": "One-time code (TOTP)",
   "totp_remaining": "{seconds} s left",
   "totp_invalid": "Not a valid key for one-time codes",
-  "totp_hint": "The key or the otpauth link from the service's setup page"
+  "totp_hint": "The key or the otpauth link from the service's setup page",
+  "qr_scan": "Scan QR code",
+  "qr_scan_intro": "Hold the QR code from the service's setup page up to the camera, or choose a screenshot of it.",
+  "qr_camera": "Use camera",
+  "qr_image": "Choose image",
+  "qr_not_found": "There is no QR code in this image.",
+  "qr_not_totp": "This QR code holds no key for one-time codes.",
+  "qr_no_camera": "Kennwort may not use the camera. Choose a screenshot instead."
 }

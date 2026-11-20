@@ -190,8 +190,9 @@ und die Schritte für Menschen am Ende erledigt sind.
     Testvektoren aus RFC 4226 und RFC 6238 treffen (Mutationstests), der Schlüssel nirgends im
     Klartext erscheint und Eintragen und Kopieren als Playwright-Test desktop und `@phone`
     laufen.
-  - [ ] Teil 4b: QR-Scan mit der Kamera und aus einem Bild (Screenshot), auf dem Handy und am
-    Desktop.
+  - [x] Teil 4b: QR-Scan mit der Kamera und aus einem Bild (Screenshot), auf dem Handy und am
+    Desktop. Fertig, wenn: nur ein `otpauth://totp`-Link übernommen wird und Scannen aus einem Bild
+    (desktop und `@phone`) sowie mit der Kamera als Playwright-Test laufen.
   - [ ] Teil 5: Frühere Passwörter, Favoriten, Tags, Suche über alles, „Zum Ändern“ (schwache und
     doppelte Passwörter).
 - [ ] **K-307 Austritt und Recovery** – Schlüsselwechsel, Änderungs-Markierung, Austritts-Bericht,

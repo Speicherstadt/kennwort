@@ -39,8 +39,11 @@ Kennwort nicht.
 
 Viele Dienste verlangen beim Anmelden einen zweiten Faktor: einen sechsstelligen Code, der alle
 30 Sekunden wechselt. Kennwort erzeugt diese Codes selbst. Beim Einrichten zeigt der Dienst einen
-QR-Code und meist auch einen Schlüssel zum Abtippen; den Schlüssel oder den `otpauth://`-Link
-trägst du im Feld **Einmalcode** des Logins ein. Passt er nicht, sagt Kennwort das sofort.
+QR-Code und meist auch einen Schlüssel zum Abtippen. Neben dem Feld **Einmalcode** des Logins
+öffnet **QR-Code scannen** zwei Wege: **Kamera verwenden** (am Handy die Kamera auf der Rückseite)
+oder **Bild wählen**, etwa einen Screenshot der Einrichtungsseite; ein Bild aus der
+Zwischenablage kannst du auch einfügen. Das Bild bleibt auf deinem Gerät. Du kannst den Schlüssel
+oder den `otpauth://`-Link auch selbst eintragen. Passt er nicht, sagt Kennwort das sofort.
 
 Im Eintrag steht dann statt des Schlüssels der aktuelle Code und wie viele Sekunden er noch gilt.
 **Einmalcode kopieren** legt den Code in die Zwischenablage, nie den Schlüssel. Der Schlüssel ist
