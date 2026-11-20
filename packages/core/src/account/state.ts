@@ -31,6 +31,13 @@ export const AccountState = z.object({
    * plays back after an owner changed it (review of K-304)
    */
   certificates: z.record(z.string(), z.number().int().nonnegative()).default({}),
+  /** The newest company policy version seen (K-304): an older one is a rollback */
+  policy: z.number().int().nonnegative().default(0),
+  /**
+   * That policy's lock time, kept for when the server later serves none or a bad one: the client
+   * stays with the last valid policy instead of falling back to the standard (review of K-304)
+   */
+  policyLock: z.number().int().min(1).max(60).default(10),
 });
 export type AccountState = z.infer<typeof AccountState>;
 
@@ -102,6 +109,12 @@ export const newest = (mine: Record<string, number>, theirs: Record<string, numb
     ]),
   );
 
+/** The policy version and its lock time from the side that saw the newer one */
+const newerPolicy = (mine: AccountState, theirs: AccountState) => {
+  const newer = theirs.policy > mine.policy ? theirs : mine;
+  return { policy: newer.policy, policyLock: newer.policyLock };
+};
+
 export type MergeError = "other-root" | "other-bundle" | "other-log" | "other-invitation";
 
 /** Both devices' knowledge, the higher of each; a different root or bundle for one account is refused */
@@ -134,6 +147,7 @@ export const mergeStates = (
     ),
     invitations: { ...theirs.invitations, ...mine.invitations },
     certificates: newest(mine.certificates, theirs.certificates),
+    ...newerPolicy(mine, theirs),
   });
 };
 
@@ -148,4 +162,6 @@ export const emptyState = (
   versions: {},
   invitations: {},
   certificates: {},
+  policy: 0,
+  policyLock: 10,
 });

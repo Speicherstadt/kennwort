@@ -14,6 +14,8 @@ export const companies = sqliteTable("companies", {
   createdAt: integer("created_at").notNull(),
   /** The root key's public half (P-07); clients take it only if it matches their pinned fingerprint */
   rootPublicKey: text("root_public_key"),
+  /** The policy the root signed (K-304, F-07), as JSON; clients check it, the server only keeps it */
+  policy: text("policy"),
 });
 
 /** An account belongs to exactly one company; its keys and ciphertexts follow in later items */

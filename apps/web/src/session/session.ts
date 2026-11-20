@@ -110,22 +110,37 @@ const invitedAccount = (
   };
 };
 
-/** The open account in memory and the automatic lock (P-03) */
+/**
+ * The open account in memory and the automatic lock (P-03). The lock keeps its own copy of what is
+ * open: a signal read right after its write still gives the old value until the next flush, and
+ * the timer must start the moment an account opens (review of K-304)
+ */
 const createLock = (deps: SessionDeps) => {
-  const [opened, setOpened] = createSignal<Opened>();
+  const [opened, setOpenedSignal] = createSignal<Opened>();
   const schedule = deps.schedule ?? ((run, ms) => setTimeout(run, ms));
   const cancel = deps.cancel ?? ((timer) => clearTimeout(timer as number));
   let timer: unknown;
+  let current: Opened | undefined;
+  let lockAfter = deps.lockAfterMs ?? LOCK_AFTER_MS;
+  const setOpened = (value: Opened | undefined) => {
+    current = value;
+    setOpenedSignal(value);
+  };
   const lock = () => {
     cancel(timer);
-    opened()?.accountKey.fill(0);
+    current?.accountKey.fill(0);
     setOpened(undefined);
   };
   /** Any use of the app pushes the automatic lock back */
   const touch = () => {
-    if (!opened()) return;
+    if (!current) return;
     cancel(timer);
-    timer = schedule(lock, deps.lockAfterMs ?? LOCK_AFTER_MS);
+    timer = schedule(lock, lockAfter);
+  };
+  /** The company policy's lock time (K-304); it counts from now on */
+  const setLockAfter = (ms: number) => {
+    lockAfter = ms;
+    touch();
   };
   // Another account opened while one is unlocked (setup or invitation) drops the first one properly
   const open = (value: Opened) => {
@@ -133,7 +148,7 @@ const createLock = (deps: SessionDeps) => {
     setOpened(value);
     touch();
   };
-  return { opened, setOpened, lock, touch, open };
+  return { opened, setOpened, lock, touch, open, setLockAfter };
 };
 
 /** The account state changed and written back; the open account sees the new one (state-sync.ts) */
@@ -148,7 +163,7 @@ const stateUpdater =
   };
 
 export const createSession = (deps: SessionDeps) => {
-  const { opened, setOpened, lock, touch, open } = createLock(deps);
+  const { opened, setOpened, lock, touch, open, setLockAfter } = createLock(deps);
   const [device, setDevice] = createSignal<DeviceAccount | undefined>(readDevice(deps.storage));
   const remember = (accountId: Uint8Array, secretKey: Uint8Array) => {
     rememberDevice(deps.storage, accountId, secretKey);
@@ -165,6 +180,7 @@ export const createSession = (deps: SessionDeps) => {
     device,
     lock,
     touch,
+    setLockAfter,
     /** The first owner: company, root key and account, all made on this device */
     setUp: async (code: string, passphrase: string) => {
       const company = createCompany(passphrase, deps.derive ? { derive: deps.derive } : {});

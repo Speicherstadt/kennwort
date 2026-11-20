@@ -117,6 +117,18 @@ export {
   trustedRoot,
 } from "./membership/members.ts";
 export {
+  checkPolicy,
+  isSignedPolicy,
+  LOCK_MINUTES,
+  type Policy,
+  type PolicyError,
+  PolicyWire,
+  policyToWire,
+  signPolicy,
+  standardPolicy,
+  type UnsignedPolicy,
+} from "./membership/policy.ts";
+export {
   changeRole,
   grantRoot,
   openRootGrant,

@@ -62,11 +62,15 @@ describe("CompanyWire", () => {
     expect(CompanyWire.parse({ id: "weber", rootPublicKey: key })).toEqual({
       id: "weber",
       rootPublicKey: new Uint8Array(32).fill(1),
+      policy: null,
     });
     expect(CompanyWire.parse({ id: "weber", rootPublicKey: null }).rootPublicKey).toBeNull();
     expect(CompanyWire.safeParse({ id: "", rootPublicKey: null }).success).toBe(false);
     expect(CompanyWire.safeParse({ id: "weber", rootPublicKey: "kurz" }).success).toBe(false);
     expect(CompanyWire.safeParse({ id: "weber" }).success).toBe(false);
+    expect(CompanyWire.safeParse({ id: "weber", rootPublicKey: null, policy: {} }).success).toBe(
+      false,
+    );
   });
 });
 

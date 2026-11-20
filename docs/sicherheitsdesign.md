@@ -263,6 +263,17 @@ bündel     = enc("kennwort/bundle/v1", konto-ID, xwingPk (1216 Byte), edPk (32 
 zertifikat = enc(bündel, firmen-ID, rolle, ausgestellt-am) ‖ F-03-Signatur(wurzel, "certificate", …)
 ```
 
+### F-07 Firmen-Richtlinie v1
+
+```text
+richtlinie = enc("kennwort/policy/v1", firmen-ID, version, sperren-nach-minuten,
+                 recovery (0 oder 1), fingerabdruck des recovery-schlüssels oder leer)
+signatur   = F-03(wurzel, "policy", richtlinie)
+```
+
+Die Version zählt von 1 an hoch; ohne Richtlinie gilt die Standardregel (zehn Minuten,
+Firmen-Recovery aus). Sperren nach 1 bis 60 Minuten. Der Fingerabdruck steht nur bei Recovery an.
+
 ## Schlüsselhierarchie
 
 ```text
@@ -291,7 +302,8 @@ Umgesetzt in `packages/crypto/src/account.ts` (AK, Schlüsselblock, Entsperr-Weg
 Was ein Client sich merkt, um den Server zu prüfen, liegt im **Kontozustand**: Fingerabdruck des
 Firmen-Wurzelschlüssels, bekannte Schlüsselbündel, der letzte Stand jedes Mitgliedschafts-Logs,
 die höchste Version jedes Eintrags, die Einladungen, die das Konto zertifiziert hat, mit dem Konto
-dazu, und je Konto das Ausstellungsdatum des neuesten Zertifikats, das es gesehen hat. Er ist ein F-01-Geheimtext unter AK (Zweck `account-state`,
+dazu, je Konto das Ausstellungsdatum des neuesten Zertifikats, das es gesehen hat, und die
+höchste Version der Firmen-Richtlinie mit ihrer Sperrzeit. Er ist ein F-01-Geheimtext unter AK (Zweck `account-state`,
 Kontext Konto-ID und ein Zähler) auf dem Server; jedes Gerät lädt ihn beim Entsperren, führt ihn
 mit seinem eigenen Stand zusammen (der höhere Stand gewinnt; ein anderer Wurzelschlüssel, ein anderes
 Bündel für ein bekanntes Konto oder ein anderer Hash an derselben Stelle eines Logs ist ein Angriff) und schreibt ihn mit höherem Zähler zurück. So kennt jedes Gerät eines Kontos, auch eines,
@@ -532,6 +544,17 @@ Umgesetzt in `packages/core/src/membership/` (`verifyLog`, Zertifikate nach F-06
   bestätigt ist ein Mitglied nur mit einem Zertifikat dieses Wurzelschlüssels für genau sein Konto,
   seine Schlüssel und seine Rolle. Passt der Wurzelschlüssel nicht, vertraut der Client keinem
   Mitglied und sagt das.
+- Die **Firmen-Richtlinie** (F-07) signiert ein Inhaber mit dem Wurzelschlüssel
+  (`PUT /api/company/policy`); der Server nimmt sie nur von Inhabern, für diese Firma, mit einer
+  gültigen Signatur des Wurzelschlüssels aus der Einrichtung und mit höherer Version, und gibt sie
+  mit `GET /api/company` heraus. Jeder Client prüft sie unter dem gemerkten Wurzelschlüssel, merkt
+  sich die höchste Version im Kontozustand und nimmt keine ältere mehr, auch nicht „keine
+  Richtlinie“, nachdem er eine gesehen hat. Dann gilt ihre Sperrzeit. Eine Richtlinie, die nicht
+  besteht, ändert nichts: Der Client bleibt bei der letzten gültigen und zeigt eine Warnung. Ihre
+  Sperrzeit steht dafür mit der Version im Kontozustand; auch nach einem Neuladen oder auf einem
+  anderen Gerät kann der Server sie nicht verlängern, indem er die Richtlinie weglässt.
+  Den Schalter für Firmen-Recovery bringt K-307 mit dem Firmen-Recovery-Schlüssel; das Format trägt
+  ihn schon.
 - Der gemerkte Fingerabdruck steht im Schlüsselblock unter AK
   ([Schlüsselhierarchie](#schlusselhierarchie)), nicht nur auf einem Gerät: Jedes Gerät des Kontos
   prüft gegen ihn, auch eines, das mit Passphrase, Recovery-Kit oder Firmen-Recovery entsperrt.
@@ -591,7 +614,9 @@ Kontoangabe, und sie bestätigt nichts.
 Umgesetzt in `packages/crypto/src/invite.ts` (MAC), `packages/core/src/membership/invitation.ts`
 (Einladung, Prüfen und Zertifizieren), `packages/core/src/membership/members.ts` (Mitgliederliste
 prüfen), `packages/core/src/membership/root-grant.ts` (Rollen, Wurzelschlüssel verpacken und
-annehmen), `apps/server/src/account/members.ts` und in der Web-App in `apps/web/src/members/`.
+annehmen), `packages/core/src/membership/policy.ts` (Firmen-Richtlinie),
+`apps/server/src/account/members.ts`, `apps/server/src/account/policy.ts` und in der Web-App in
+`apps/web/src/members/` und `apps/web/src/policy/`.
 
 **Wehrt ab:** E-01, E-02, E-05, E-10.
 

@@ -89,7 +89,7 @@ export const server = (c: Awaited<ReturnType<typeof jonasCompany>>, rows: Row[])
       calls.push("state");
       return state.deps.writeState(...args);
     },
-    company: async () => ({ id: "weber", rootPublicKey: c.rootPublicKey }),
+    company: async () => ({ id: "weber", rootPublicKey: c.rootPublicKey, policy: null }),
     members: async () => rows,
     invite: async () => ({ token: "einmal", expiresAt: 1 }),
     certify: async (_token, certificate) => {
@@ -98,6 +98,7 @@ export const server = (c: Awaited<ReturnType<typeof jonasCompany>>, rows: Row[])
       return true;
     },
     rootGrant: async () => undefined,
+    savePolicy: async () => true,
     changeRole: async (_token, certificate, rootGrant) => {
       calls.push("role");
       roles.push({ certificate, rootGrant });

@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
-import { newDevice, setUpCompany, test } from "./account.ts";
+import { newDevice, setUpCompany, test, unlock } from "./account.ts";
 
 // K-304 part 2 (P-08): Jonas invites Anna from the members page, Anna accepts, Jonas confirms her
 test.use({ locale: "de-DE" });
@@ -122,5 +122,42 @@ test.describe("members", { tag: "@phone" }, () => {
     await expect(maxRow).toContainText("Bestätigt");
     // An admin gives no roles
     await expect(anna.getByRole("combobox")).toHaveCount(0);
+  });
+
+  test("Jonas sets the lock time to one minute; Kennwort then locks after a minute without use", async ({
+    page,
+    browser,
+  }) => {
+    await page.clock.install();
+    await setUpCompany(page);
+    await openMembers(page);
+    await expect(page.getByLabel("Sperren nach (Minuten)")).toHaveValue("10");
+    await page.getByLabel("Sperren nach (Minuten)").fill("1");
+    await page.getByRole("button", { name: "Speichern" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Gespeichert" })).toHaveText(
+      "Gespeichert. Die neue Zeit gilt auf allen Geräten.",
+    );
+    await axe(page);
+    await page.clock.fastForward("00:30");
+    await expect(heading(page, "Mitglieder")).toBeVisible();
+    await page.clock.fastForward("00:31");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Kennwort ist gesperrt" }),
+    ).toBeVisible();
+
+    // A member sees the time the company set, without a form to change it
+    await unlock(page);
+    await openMembers(page);
+    await page.getByLabel("Name").fill("Anna");
+    await page.getByRole("button", { name: "Einladen" }).click();
+    const anna = await newDevice(browser);
+    await acceptInvitation(
+      anna,
+      await page.getByLabel("Einladungslink").inputValue(),
+      "Anna Heizung Bad Fliese",
+    );
+    await openMembers(anna);
+    await expect(anna.getByText("Kennwort sperrt sich nach 1 Minute ohne Nutzung.")).toBeVisible();
+    await expect(anna.getByLabel("Sperren nach (Minuten)")).toHaveCount(0);
   });
 });

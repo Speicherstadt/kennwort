@@ -50,6 +50,7 @@ später).
 | Einladungsgeheimnis | Der Client des Einladenden hinterlegt das Einladungsgeheimnis versiegelt unter seinem eigenen AK auf dem Server; eine Einladung macht immer einen Mitarbeiter, eine höhere Rolle vergibt ein Inhaber eigens | So prüft der Einladende die Antwort auch Tage später und auf jedem seiner Geräte, ohne dass der Server das Geheimnis kennt; und kein Server kann einen Eingeladenen als Inhaber zertifizieren lassen |
 | Namen der Mitglieder | Der Einladende tippt einen Namen ein; der Server speichert ihn an der Einladung und zeigt ihn in der Mitgliederliste | Konten haben sonst keine Namen, bis OIDC oder SCIM sie liefern; der Name ist nur eine Beschriftung, Vertrauen kommt allein aus dem Zertifikat |
 | Wurzelschlüssel für Admins | Inhaber und Admins halten den privaten Wurzelschlüssel, verpackt an ihr Bündel; nur Inhaber vergeben Rollen, nie die eigene | Admins laden ein und müssen dafür zertifizieren können (P-08); ein Inhaber, der sich nicht selbst herabstufen kann, hält die Firma immer mit mindestens einem Inhaber |
+| Firmen-Richtlinie | Eine vom Wurzelschlüssel signierte Richtlinie mit Version (F-07); Clients merken sich die höchste Version und nehmen keine ältere | So kann der Server weder die Sperrzeit noch später die Firmen-Recovery heimlich ändern oder zurückdrehen |
 
 ## Stack
 

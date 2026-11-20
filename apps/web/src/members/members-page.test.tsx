@@ -97,7 +97,11 @@ describe("MembersPage", () => {
     const s = server(c, [ownerRow(c)]);
     const lying = {
       ...s.api,
-      company: async () => ({ id: "weber", rootPublicKey: ed25519KeyPair().publicKey }),
+      company: async () => ({
+        id: "weber",
+        rootPublicKey: ed25519KeyPair().publicKey,
+        policy: null,
+      }),
     };
     const root = await show(c, lying);
     expect(root.querySelector('[role="alert"]')?.textContent).toContain("Firmenschlüssel");
