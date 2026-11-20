@@ -28,9 +28,16 @@ export const replacedSecrets = (
     return replaced ? [{ fieldId: old.id, value: old.value, replacedAt: now }] : [];
   });
 
-/** The newest HISTORY_PER_FIELD values of every field, in the order the history had them */
-export const capHistory = (history: readonly HistoryItem[]): HistoryItem[] => {
-  const newestFirst = [...history].sort((a, b) => b.replacedAt - a.replacedAt);
+/**
+ * The newest HISTORY_PER_FIELD values of every field, in the order the history had them. The values
+ * a change just replaced (`fresh`, appended last) count as the newest whatever their time says: a
+ * device whose clock runs behind the one that stamped the history must not drop them at once.
+ */
+export const capHistory = (
+  history: readonly HistoryItem[],
+  fresh: readonly HistoryItem[] = [],
+): HistoryItem[] => {
+  const newestFirst = [...fresh, ...[...history].sort((a, b) => b.replacedAt - a.replacedAt)];
   const counts = new Map<string, number>();
   const kept = new Set(
     newestFirst.filter((item) => {
@@ -39,7 +46,7 @@ export const capHistory = (history: readonly HistoryItem[]): HistoryItem[] => {
       return count <= HISTORY_PER_FIELD;
     }),
   );
-  return history.filter((item) => kept.has(item));
+  return [...history, ...fresh].filter((item) => kept.has(item));
 };
 
 /** The history after a change: what it had, the values the change replaced, the newest only */
@@ -47,5 +54,4 @@ export const historyAfter = (
   before: EntryContent | undefined,
   after: readonly StoredField[],
   now: number,
-): HistoryItem[] =>
-  before ? capHistory([...before.history, ...replacedSecrets(before, after, now)]) : [];
+): HistoryItem[] => (before ? capHistory(before.history, replacedSecrets(before, after, now)) : []);
