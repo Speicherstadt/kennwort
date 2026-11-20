@@ -24,13 +24,22 @@ const toEvent = (block: string): SseEvent | undefined => {
   return data.length === 0 && event === "message" ? undefined : { event, data: data.join("\n") };
 };
 
+// A line ends in CR LF, CR or LF; two line ends make a blank line. A CR followed by LF is one line
+// end, so "\r\n" alone never counts as blank.
+const LINE_END = String.raw`(?:\r\n|\r(?!\n)|\n)`;
+const BLANK_LINE = new RegExp(LINE_END + LINE_END, "g");
+
+/**
+ * What follows the last blank line goes back unchanged: a CR LF cut by the chunking stays whole,
+ * and an LF left over from one only adds an empty line, which means nothing (review of K-204).
+ */
 export const parseSse = (text: string): { events: SseEvent[]; rest: string } => {
-  const normalized = text.replace(/\r\n?/g, "\n");
-  const end = normalized.lastIndexOf("\n\n");
-  if (end === -1) return { events: [], rest: normalized };
-  const blocks = normalized.slice(0, end).split("\n\n");
+  const ends = [...text.matchAll(BLANK_LINE)];
+  const last = ends.at(-1);
+  if (!last) return { events: [], rest: text };
+  const blocks = text.slice(0, last.index).split(BLANK_LINE);
   return {
-    events: blocks.flatMap((block) => toEvent(block) ?? []),
-    rest: normalized.slice(end + 2),
+    events: blocks.flatMap((block) => toEvent(block.replace(/\r\n?/g, "\n")) ?? []),
+    rest: text.slice(last.index + last[0].length),
   };
 };

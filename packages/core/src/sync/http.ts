@@ -73,14 +73,15 @@ export const watchVault = async (
   onEvent: (event: LiveEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> => {
-  const response = await connection.fetch(`${vaultUrl(connection, vaultId)}/events`, {
-    headers: { ...authorization(connection), accept: "text/event-stream" },
-    signal: signal ?? null,
-  });
-  if (!response.ok || !response.body) throw unexpected("watch", response.status);
-  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
-  let rest = "";
+  // Stopping counts as ending quietly whenever it happens, before or after the stream opened
   try {
+    const response = await connection.fetch(`${vaultUrl(connection, vaultId)}/events`, {
+      headers: { ...authorization(connection), accept: "text/event-stream" },
+      signal: signal ?? null,
+    });
+    if (!response.ok || !response.body) throw unexpected("watch", response.status);
+    const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+    let rest = "";
     for (;;) {
       const { done, value } = await reader.read();
       if (done) return;

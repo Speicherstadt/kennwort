@@ -46,10 +46,13 @@ describe("parseSse", () => {
     const event = fc.record({ event: fc.constantFrom("record", "ready", "ping"), data: line });
     fc.assert(
       fc.property(
+        fc.constantFrom("\n", "\r\n", "\r"),
         fc.array(event, { maxLength: 6 }),
         fc.array(fc.nat(), { maxLength: 8 }),
-        (events, cuts) => {
-          const text = events.map((e) => `event: ${e.event}\ndata: ${e.data}\n\n`).join("");
+        (end, events, cuts) => {
+          const text = events
+            .map((e) => `event: ${e.event}${end}data: ${e.data}${end}${end}`)
+            .join("");
           const points = [...new Set(cuts.map((cut) => cut % (text.length + 1)))].sort(
             (a, b) => a - b,
           );
