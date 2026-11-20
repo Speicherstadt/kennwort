@@ -1,0 +1,110 @@
+/** The other sections: generator (K-306 fills it), groups, settings, and a page that does not exist */
+import { getLocale, Icon, locales, m, setLocale } from "@kennwort/ui";
+import { Users } from "@kennwort/ui/icons";
+import type { JSX } from "@solidjs/web";
+import { createSignal, For } from "solid-js";
+import { groups } from "../demo.ts";
+import type { Navigation } from "../navigation.ts";
+import { applyTheme, readTheme, type Theme } from "../theme.ts";
+import { Link } from "./link.tsx";
+
+const Page = (props: { title: string; children: JSX.Element }) => (
+  <section aria-labelledby="page-title" class="min-h-0 flex-1 overflow-auto p-4 md:p-6">
+    <h1 id="page-title" class="mb-4 text-[28px] font-semibold md:text-lg">
+      {props.title}
+    </h1>
+    {props.children}
+  </section>
+);
+
+export const GeneratorPage = () => (
+  <Page title={m.nav_generator()}>
+    <p class="text-muted-foreground">{m.generator_intro()}</p>
+  </Page>
+);
+
+export const GroupsPage = () => (
+  <Page title={m.nav_groups()}>
+    <p class="mb-4 text-muted-foreground">{m.groups_intro()}</p>
+    <ul class="divide-y divide-border rounded-xl border border-border">
+      <For each={groups}>
+        {(group) => (
+          <li class="flex items-center gap-3 px-3.5 py-2.5">
+            <Icon icon={Users} />
+            <span class="flex-1">{group.name}</span>
+            <span class="text-xs text-muted-foreground">
+              {m.groups_members({ count: group.members })}
+            </span>
+          </li>
+        )}
+      </For>
+    </ul>
+  </Page>
+);
+
+const Choice = <T extends string>(props: {
+  legend: string;
+  name: string;
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (value: T) => void;
+}) => (
+  <fieldset class="grid gap-2">
+    <legend class="mb-1 text-xs font-medium">{props.legend}</legend>
+    <For each={props.options}>
+      {(option) => (
+        <label class="flex min-h-11 items-center gap-2 md:min-h-0">
+          <input
+            type="radio"
+            name={props.name}
+            value={option.value}
+            checked={props.value === option.value}
+            onChange={() => props.onChange(option.value)}
+          />
+          {option.label}
+        </label>
+      )}
+    </For>
+  </fieldset>
+);
+
+export const SettingsPage = () => {
+  const [theme, setTheme] = createSignal<Theme>(readTheme(globalThis.localStorage));
+  const chooseTheme = (next: Theme) => {
+    setTheme(next);
+    applyTheme(next, document.documentElement, globalThis.localStorage);
+  };
+  const languages = { de: m.language_de(), en: m.language_en() } as const;
+  return (
+    <Page title={m.nav_settings()}>
+      <div class="grid max-w-md gap-6">
+        <Choice
+          legend={m.settings_theme()}
+          name="theme"
+          value={theme()}
+          onChange={chooseTheme}
+          options={[
+            { value: "system", label: m.theme_system() },
+            { value: "light", label: m.theme_light() },
+            { value: "dark", label: m.theme_dark() },
+          ]}
+        />
+        <Choice
+          legend={m.settings_language()}
+          name="language"
+          value={getLocale()}
+          onChange={(locale) => setLocale(locale)}
+          options={locales.map((locale) => ({ value: locale, label: languages[locale] }))}
+        />
+      </div>
+    </Page>
+  );
+};
+
+export const NotFoundPage = (props: { nav: Navigation }) => (
+  <Page title={m.not_found_title()}>
+    <Link nav={props.nav} href="/entries" class="underline">
+      {m.not_found_back()}
+    </Link>
+  </Page>
+);

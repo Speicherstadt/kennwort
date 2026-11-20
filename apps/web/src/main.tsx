@@ -2,9 +2,14 @@ import "@kennwort/ui/styles.css";
 import { getLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { App } from "./app.tsx";
+import { createNavigation } from "./navigation.ts";
+import { applyTheme, readTheme } from "./theme.ts";
 
 const root = document.getElementById("root");
 if (root) {
   document.documentElement.lang = getLocale();
-  render(() => <App />, root);
+  applyTheme(readTheme(globalThis.localStorage), document.documentElement, globalThis.localStorage);
+  // Created once, outside JSX: a prop expression is a getter and would run on every read
+  const nav = createNavigation();
+  render(() => <App nav={nav} />, root);
 }
