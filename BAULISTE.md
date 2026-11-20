@@ -93,7 +93,7 @@ und die Schritte für Menschen am Ende erledigt sind.
 
 ## Phase 3 – Web-App und PWA
 
-- [ ] **K-301 UI-Paket** – `packages/ui` nach DESIGN.md: Button, Input, Dialog, Menü, Popover,
+- [x] **K-301 UI-Paket** – `packages/ui` nach DESIGN.md: Button, Input, Dialog, Menü, Popover,
   Tooltip, Toast, Combobox, Tabs, Badge, Liste; native Elemente, eigene `cn()` und `variants()`.
   Fertig, wenn: jede Komponente mit Tastatur bedienbar ist und axe keine Fehler findet.
 - [ ] **K-302 App-Rahmen** – Rail, Seitenleiste, Liste und Detail wie im Mockup; Handy mit einem

@@ -1,3 +1,4 @@
+import "@kennwort/ui/styles.css";
 import { getLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { App } from "./app.tsx";

@@ -34,6 +34,9 @@ Tailwind 4 mit Zinc als Grundpalette; alle Werte als CSS-Variablen, hell und dun
 | `--warning-surface` | `#fef3c7` | `#422006` | Badge „ändern“ |
 | `--danger` | `#b91c1c` | `#f87171` | Löschen, Fehler, Phishing-Warnung |
 
+Nebentext auf `--accent` (gewählte Zeile, aktiver Tab) steht in `--foreground`: `--muted-foreground`
+erreicht dort nur 4,4:1 statt 4,5:1. Flächen für Gruppen wie die Tab-Leiste sind `--muted`.
+
 Farben, die man unterscheiden muss, unterscheiden sich auch in der Helligkeit. Kein Rot/Grün als
 einziges Merkmal: dazu immer Text oder Icon.
 
@@ -47,7 +50,7 @@ einziges Merkmal: dazu immer Text oder Icon.
 - Abstände im 4-px-Raster; Zeilen in Listen 8 px innen, Karten 12–14 px innen.
 - Radien: 6 px Knöpfe und Zeilen, 7–8 px Eingabefelder und Icons, 10–12 px Karten und Menüs,
   rund für Avatare und Filter-Chips.
-- Icons: `lucide-solid`, 16 px am Desktop, 18–22 px am Handy, Strich 2.
+- Icons: lucide (die Daten aus `lucide`, gezeichnet von `Icon` in `packages/ui`, weil `lucide-solid` Solid 1 braucht), 16 px am Desktop, 18–22 px am Handy, Strich 2; neue Icons kommen über `@kennwort/ui/icons`.
 
 ## Aufbau
 
