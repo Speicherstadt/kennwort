@@ -120,6 +120,12 @@ describe("setting up the company", () => {
     expect((await setup.request("/auth/setup", { body: { ...body, companyId: "x" } })).status).toBe(
       400,
     );
+    // 22 characters, but not the canonical text of 16 bytes: one ID has only one spelling
+    // The last character of a canonical ID is A, Q, g or w; the next one in the alphabet is not
+    const last = body.accountId.at(-1) ?? "A";
+    const alias = `${body.accountId.slice(0, 21)}${String.fromCharCode(last.charCodeAt(0) + 1)}`;
+    const aliased = { ...body, code: CODE, accountId: alias };
+    expect((await setup.request("/auth/setup", { body: aliased })).status).toBe(400);
     const closed = await signInSetup({ empty: true });
     expect((await closed.request("/auth/setup", { body: { ...body, code: CODE } })).status).toBe(
       404,

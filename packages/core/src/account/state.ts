@@ -69,17 +69,21 @@ export const openState = (
   return parsed.success ? ok(parsed.data.value) : err("malformed");
 };
 
-/** Each log's state from the side that has seen more of it; on a tie the own one stays */
+/**
+ * Each log's state from the side that has seen more of it. The same place with another hash means
+ * the server showed the two devices different logs (E-08): an attack, not an update (P-06).
+ */
 const newerLogs = (mine: AccountState["logs"], theirs: AccountState["logs"]) => {
   const merged = { ...mine };
   for (const [key, value] of Object.entries(theirs)) {
     const own = merged[key];
     if (own === undefined || value.seq > own.seq) merged[key] = value;
+    else if (value.seq === own.seq && !constantTimeEqual(own.hash, value.hash)) return undefined;
   }
   return merged;
 };
 
-export type MergeError = "other-root" | "other-bundle";
+export type MergeError = "other-root" | "other-bundle" | "other-log";
 
 /** Both devices' knowledge, the higher of each; a different root or bundle for one account is refused */
 export const mergeStates = (
@@ -91,12 +95,14 @@ export const mergeStates = (
     const known = mine.bundles[id];
     if (known && !constantTimeEqual(known, fingerprint)) return err("other-bundle");
   }
+  const logs = newerLogs(mine.logs, theirs.logs);
+  if (!logs) return err("other-log");
   const rootSecretKey = mine.rootSecretKey ?? theirs.rootSecretKey;
   return ok({
     rootFingerprint: mine.rootFingerprint,
     ...(rootSecretKey ? { rootSecretKey } : {}),
     bundles: { ...theirs.bundles, ...mine.bundles },
-    logs: newerLogs(mine.logs, theirs.logs),
+    logs,
     versions: Object.fromEntries(
       [...new Set([...Object.keys(mine.versions), ...Object.keys(theirs.versions)])].map((id) => [
         id,

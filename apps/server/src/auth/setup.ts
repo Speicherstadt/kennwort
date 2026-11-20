@@ -4,7 +4,7 @@
  * which also makes the root key; the server gets only IDs, the sign-in key and the salt.
  */
 import { timingSafeEqual } from "node:crypto";
-import { bytes } from "@kennwort/core";
+import { bytes, encodeBytes } from "@kennwort/core";
 import { count, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -14,7 +14,7 @@ import type { Auth } from "./better-auth.ts";
 import type { ClientAddress, ClientEnv } from "./client-address.ts";
 import { enrol } from "./enrol.ts";
 
-const id = z.string().regex(/^[A-Za-z0-9_-]{22}$/);
+const id = bytes(16).transform((id) => encodeBytes(id));
 const SetupRequest = z.object({
   code: z.string().max(256),
   companyId: id,

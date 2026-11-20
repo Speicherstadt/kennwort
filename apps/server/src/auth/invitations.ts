@@ -26,7 +26,7 @@ const sameHash = (a: string, b: string) =>
 const AcceptRequest = z.object({
   token: z.string().min(1).max(128),
   // The device picks its account ID (16 random bytes), so it can derive its sign-in key for it first
-  accountId: z.string().regex(/^[A-Za-z0-9_-]{22}$/),
+  accountId: bytes(16).transform((id) => encodeBytes(id)),
   loginPublicKey: bytes(32),
   accountSalt: bytes(16),
 });

@@ -75,7 +75,7 @@ describe("account state", () => {
     expect(mergeStates(state, emptyState(root))).toEqual({ ok: true, value: state });
   });
 
-  it("takes the longer log and the higher version from either side; on a tie the own log stays", () => {
+  it("takes the longer log and the higher version from either side; the same place with another hash is refused", () => {
     const mine = { ...state, versions: { bank: 2, mail: 5 } };
     const theirs: AccountState = {
       ...emptyState(root),
@@ -91,7 +91,12 @@ describe("account state", () => {
       ...emptyState(root),
       logs: { buero: { seq: 3, hash: new Uint8Array(32).fill(9) } },
     });
-    expect(tie.ok && tie.value.logs).toEqual(state.logs);
+    expect(tie).toEqual({ ok: false, error: "other-log" });
+    const same = mergeStates(state, {
+      ...emptyState(root),
+      logs: { buero: { seq: 3, hash: new Uint8Array(32).fill(3) } },
+    });
+    expect(same.ok && same.value.logs).toEqual(state.logs);
   });
 
   it("refuses another root key or another bundle for a known account", () => {

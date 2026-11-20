@@ -291,8 +291,8 @@ Was ein Client sich merkt, um den Server zu prüfen, liegt im **Kontozustand**: 
 Firmen-Wurzelschlüssels, bekannte Schlüsselbündel, der letzte Stand jedes Mitgliedschafts-Logs und
 die höchste Version jedes Eintrags. Er ist ein F-01-Geheimtext unter AK (Zweck `account-state`,
 Kontext Konto-ID und ein Zähler) auf dem Server; jedes Gerät lädt ihn beim Entsperren, führt ihn
-mit seinem eigenen Stand zusammen (der höhere Stand gewinnt, ein anderer Wurzelschlüssel ist ein
-Angriff) und schreibt ihn mit höherem Zähler zurück. So kennt jedes Gerät eines Kontos, auch eines,
+mit seinem eigenen Stand zusammen (der höhere Stand gewinnt; ein anderer Wurzelschlüssel, ein anderes
+Bündel für ein bekanntes Konto oder ein anderer Hash an derselben Stelle eines Logs ist ein Angriff) und schreibt ihn mit höherem Zähler zurück. So kennt jedes Gerät eines Kontos, auch eines,
 das mit Passphrase oder Recovery-Kit entsperrt, was das erste Gerät geprüft hat. P-01 legt den
 ersten Kontozustand (Zähler 0) an, bevor das Konto benutzbar ist; fehlt er später, warnt der Client
 und behandelt das als Angriff, nicht als neues Konto. Spielt der Server einen älteren Kontozustand
