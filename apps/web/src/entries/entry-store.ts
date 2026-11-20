@@ -122,7 +122,8 @@ export const createEntryStore = (serverFor: ServerFor, session: Session) => {
     if (given && !given.success) return { ok: false, error: "unreachable" };
     const entryId = given?.data ?? randomBytes(16);
     const queued = edit(state.device, entryId, content);
-    update(vaultIdText, (s) => ({ ...s, device: edit(s.device, entryId, content) }));
+    // The very device that is sent: withSynced knows the ops it took by their identity
+    update(vaultIdText, (s) => ({ ...s, device: queued }));
     const synced = await sync(queued, server, ctx).catch(() => undefined);
     if (!synced) return { ok: false, error: "unreachable" };
     update(vaultIdText, (s) => ({ ...s, device: withSynced(s.device, queued, synced.device) }));
