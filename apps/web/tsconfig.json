@@ -7,5 +7,9 @@
     "types": ["vite/client"]
   },
   "include": ["src", "src/**/*.json", "showcase", "vite.config.ts"],
-  "references": [{ "path": "../../packages/ui" }]
+  "references": [
+    { "path": "../../packages/ui" },
+    { "path": "../../packages/core" },
+    { "path": "../../packages/crypto" }
+  ]
 }
