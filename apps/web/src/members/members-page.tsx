@@ -34,7 +34,9 @@ const confirmText = (error: ConfirmError) =>
     ? m.members_confirm_mismatch()
     : error === "used"
       ? m.members_confirm_used()
-      : m.members_confirm_failed();
+      : error === "other-keys"
+        ? m.members_confirm_other_keys()
+        : m.members_confirm_failed();
 
 const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
 

@@ -5,14 +5,17 @@
  * so one invitation makes one member even if the upload fails and is tried again.
  */
 import {
+  type AccountState,
+  type Certificate,
   certifyInvited,
   checkMembers,
   encodeBytes,
   type MemberView,
   newInvitation,
+  type PendingMember,
   trustedRoot,
 } from "@kennwort/core";
-import { bundleFingerprint } from "@kennwort/crypto";
+import { bundleFingerprint, constantTimeEqual } from "@kennwort/crypto";
 import type { MembersApi } from "../session/members-api.ts";
 import type { Opened, Session } from "../session/session.ts";
 import type { StateDeps } from "../session/state-sync.ts";
@@ -72,7 +75,53 @@ export const invite = async (api: MembersDeps, opened: Opened, label: string, or
     : undefined;
 };
 
-export type ConfirmError = "mac-mismatch" | "used" | "not-mine" | "no-root" | "failed";
+export type ConfirmError =
+  | "mac-mismatch"
+  | "used"
+  | "not-mine"
+  | "no-root"
+  | "other-keys"
+  | "failed";
+
+type Checked = { ok: true; value: Certificate } | { ok: false; error: ConfirmError };
+
+/**
+ * The check against the merged state, not this device's copy: another device of the same admin may
+ * have certified the invitation for someone else meanwhile, or know other keys for the account
+ * (review of K-304). A refusal writes nothing.
+ */
+const certifyAgainst = (
+  opened: Opened,
+  company: Uint8Array,
+  pending: PendingMember,
+  state: AccountState,
+): Checked => {
+  const known = state.bundles[encodeBytes(pending.accountId)];
+  const fingerprint = bundleFingerprint(pending.xwingPublicKey, pending.edPublicKey);
+  if (known && !constantTimeEqual(known, fingerprint)) return { ok: false, error: "other-keys" };
+  return certifyInvited(
+    {
+      accountKey: opened.accountKey,
+      accountId: opened.accountId,
+      companyId: company,
+      rootSecretKey: state.rootSecretKey,
+      certified: state.invitations,
+    },
+    pending,
+  );
+};
+
+const remembering = (state: AccountState, pending: PendingMember): AccountState => {
+  const member = encodeBytes(pending.accountId);
+  return {
+    ...state,
+    invitations: { ...state.invitations, [encodeBytes(pending.invitation.id)]: member },
+    bundles: {
+      ...state.bundles,
+      [member]: bundleFingerprint(pending.xwingPublicKey, pending.edPublicKey),
+    },
+  };
+};
 
 export const confirm = async (
   api: MembersDeps,
@@ -82,27 +131,16 @@ export const confirm = async (
 ): Promise<{ ok: true } | { ok: false; error: ConfirmError }> => {
   const opened = session.opened();
   const company = me?.certificate?.companyId;
-  if (!opened || !view.pending || !company) return { ok: false, error: "failed" };
-  const certified = certifyInvited(
-    {
-      accountKey: opened.accountKey,
-      accountId: opened.accountId,
-      companyId: company,
-      rootSecretKey: opened.state.rootSecretKey,
-      certified: opened.state.invitations,
-    },
-    view.pending,
-  );
-  if (!certified.ok) return certified;
-  const { invitation, accountId, xwingPublicKey, edPublicKey } = view.pending;
-  const member = encodeBytes(accountId);
-  const remembered = await session.updateState(api, (state) => ({
-    ...state,
-    invitations: { ...state.invitations, [encodeBytes(invitation.id)]: member },
-    bundles: { ...state.bundles, [member]: bundleFingerprint(xwingPublicKey, edPublicKey) },
-  }));
-  if (!remembered.ok) return { ok: false, error: "failed" };
-  return (await api.certify(opened.token, certified.value))
+  const pending = view.pending;
+  if (!opened || !pending || !company) return { ok: false, error: "failed" };
+  let checked: Checked | undefined;
+  const remembered = await session.updateState(api, (state) => {
+    checked = certifyAgainst(opened, company, pending, state);
+    return checked.ok ? remembering(state, pending) : undefined;
+  });
+  if (checked && !checked.ok) return checked;
+  if (!remembered.ok || !checked) return { ok: false, error: "failed" };
+  return (await api.certify(opened.token, checked.value))
     ? { ok: true }
     : { ok: false, error: "failed" };
 };

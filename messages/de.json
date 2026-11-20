@@ -150,5 +150,6 @@
   "members_confirm_failed": "Das Bestätigen hat nicht geklappt.",
   "members_root_mismatch": "Der Firmenschlüssel vom Server passt nicht zu deinem Konto. Kennwort zeigt deshalb keine Mitglieder an.",
   "members_load_failed": "Die Mitglieder konnten nicht geladen werden.",
-  "settings_members": "Mitglieder"
+  "settings_members": "Mitglieder",
+  "members_confirm_other_keys": "Für dieses Konto kennt dein Gerät andere Schlüssel. Kennwort bestätigt diese nicht."
 }

@@ -88,6 +88,18 @@ describe("saveState", () => {
     });
   });
 
+  it("writes nothing when the change refuses the merged state", async () => {
+    const server = stateServer(owner.upload);
+    const seen: unknown[] = [];
+    const refused = await saveState(server.deps, holder, (merged) => {
+      seen.push(merged.rootFingerprint);
+      return undefined;
+    });
+    expect(refused).toEqual({ ok: false, error: "refused" });
+    expect(seen).toEqual([owner.state.rootFingerprint]);
+    expect(server.writes).toEqual([]);
+  });
+
   it("never overwrites a state that does not open or does not merge", async () => {
     const server = stateServer(owner.upload);
     const wrongKey = { ...holder, accountKey: new Uint8Array(32) };

@@ -150,5 +150,6 @@
   "members_confirm_failed": "Confirming did not work.",
   "members_root_mismatch": "The company key from the server does not match your account. Kennwort therefore shows no members.",
   "members_load_failed": "The members could not be loaded.",
-  "settings_members": "Members"
+  "settings_members": "Members",
+  "members_confirm_other_keys": "Your device knows other keys for this account. Kennwort does not confirm these."
 }

@@ -564,8 +564,11 @@ Eingeladener kann sich so kein eigenes Zertifikat ablegen. Eine Einladung macht 
 gleich was der Server behauptet. Eine höhere Rolle vergibt nur ein Inhaber in einem eigenen Schritt.
 Zertifizieren kann nur, wer den Wurzelschlüssel hat. Eine Einladung zertifiziert genau ein Konto:
 Bevor der Client das Zertifikat hochlädt, merkt er sich Einladung und Konto im Kontozustand (und
-den Fingerabdruck des Bündels unter den bekannten Bündeln); zeigt der Server später ein zweites Konto
-mit derselben Einladung, etwa mit jemandem, der den Link gesehen hat, lehnt der Client ab. Zwei
+den Fingerabdruck des Bündels unter den bekannten Bündeln). Er prüft dabei gegen den Kontozustand,
+den er gerade mit dem des Servers zusammengeführt hat, also auch gegen das, was andere Geräte des
+Kontos gemerkt haben: Zeigt der Server ein zweites Konto mit derselben Einladung, etwa mit jemandem,
+der den Link gesehen hat, oder kennt der Kontozustand für das Konto ein anderes Bündel, lehnt der
+Client ab und schreibt nichts. Zwei
 Konten mit derselben Einladung in einer Liste nennt er nicht vertrauenswürdig. Der Name eines
 Mitglieds ist die Beschriftung, die der Einladende eingetippt hat; der Server sieht sie wie jede
 Kontoangabe, und sie bestätigt nichts.

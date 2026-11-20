@@ -134,6 +134,25 @@ describe("confirm", () => {
     });
   });
 
+  it("confirms nothing for an account whose keys the merged state knows otherwise", async () => {
+    const c = await jonasCompany();
+    const { row } = annaRow(c);
+    const s = server(c, [ownerRow(c), row]);
+    s.state.otherDeviceWrites(c.opened.accountKey, {
+      ...c.opened.state,
+      bundles: { [encodeBytes(row.id)]: new Uint8Array(32).fill(9) },
+    });
+    const loaded = await loadMembers(s.api, c.opened);
+    if (!loaded.ok) throw new Error(loaded.error);
+    const anna = loaded.value.views[1];
+    if (!anna) throw new Error("no anna");
+    expect(await confirm(s.api, c.session, anna, loaded.value.me)).toEqual({
+      ok: false,
+      error: "other-keys",
+    });
+    expect(s.calls).toEqual([]);
+  });
+
   it("confirms nothing for keys without the right MAC, and writes nothing", async () => {
     const c = await jonasCompany();
     const { row } = annaRow(c, new Uint8Array(32));

@@ -136,6 +136,17 @@ const createLock = (deps: SessionDeps) => {
   return { opened, setOpened, lock, touch, open };
 };
 
+/** The account state changed and written back; the open account sees the new one (state-sync.ts) */
+const stateUpdater =
+  (opened: () => Opened | undefined, setOpened: (value: Opened) => void) =>
+  async (api: StateDeps, change: (state: AccountState) => AccountState | undefined) => {
+    const current = opened();
+    if (!current) return { ok: false as const, error: "unreachable" as const };
+    const saved = await saveState(api, current, change);
+    if (saved.ok && opened() === current) setOpened({ ...current, state: saved.value });
+    return saved;
+  };
+
 export const createSession = (deps: SessionDeps) => {
   const { opened, setOpened, lock, touch, open } = createLock(deps);
   const [device, setDevice] = createSignal<DeviceAccount | undefined>(readDevice(deps.storage));
@@ -220,13 +231,7 @@ export const createSession = (deps: SessionDeps) => {
       open(value);
     },
     /** Changes the account state and writes it back merged with the server's (state-sync.ts) */
-    updateState: async (api: StateDeps, change: (state: AccountState) => AccountState) => {
-      const current = opened();
-      if (!current) return { ok: false as const, error: "unreachable" as const };
-      const saved = await saveState(api, current, change);
-      if (saved.ok && opened() === current) setOpened({ ...current, state: saved.value });
-      return saved;
-    },
+    updateState: stateUpdater(opened, setOpened),
     /** This device signed out (K-303, device list): locked, and it no longer knows the account */
     forget: () => {
       lock();
