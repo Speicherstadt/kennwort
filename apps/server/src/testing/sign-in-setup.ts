@@ -11,10 +11,10 @@ import { createLog } from "../log.ts";
 export const SECRET = "test-secret-of-at-least-thirty-two-chars";
 
 /** What a client sends to invite: an ID it picked and its sealed secret, here random bytes (P-08) */
-export const invitationBody = () => ({
+export const invitationBody = (label: string) => ({
   id: encodeBytes(crypto.getRandomValues(new Uint8Array(16))),
   sealedSecret: encodeBytes(crypto.getRandomValues(new Uint8Array(73))),
-  label: "invited-member",
+  label,
 });
 
 export const signInSetup = async (

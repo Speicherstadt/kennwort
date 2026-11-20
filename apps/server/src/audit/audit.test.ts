@@ -15,7 +15,7 @@ const history = async () => {
     await setup.request("/api/invitations", {
       method: "POST",
       token: jonas.token,
-      body: invitationBody(),
+      body: invitationBody("Anna"),
     })
   ).json()) as { id: string; token: string };
   const accepted = await setup.request(`/auth/invitations/${invite.id}/accept`, {

@@ -156,7 +156,7 @@ const cases: Record<string, () => Promise<void>> = {
     expect(list.map((account) => account.id).sort()).toEqual(["anna", "jonas"]);
   },
   "POST /api/invitations": async () => {
-    const response = await jonasSends("POST", "/api/invitations", invitationBody());
+    const response = await jonasSends("POST", "/api/invitations", invitationBody("Anna"));
     const { id } = (await response.json()) as { id: string };
     expect(
       app.db
