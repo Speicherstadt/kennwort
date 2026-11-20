@@ -20,7 +20,8 @@ import { type DeviceAccount, readDevice, rememberDevice } from "./device.ts";
 export const LOCK_AFTER_MS = 10 * 60 * 1000;
 
 export type Opened = Unlocked & { accountId: Uint8Array; token: string };
-export type NewKeys = { secretKey: Uint8Array; recoveryKey: Uint8Array };
+/** What the recovery kit shows: the account ID is needed to unlock on a device that does not know it */
+export type NewKeys = { accountId: Uint8Array; secretKey: Uint8Array; recoveryKey: Uint8Array };
 export type SessionError =
   | "wrong-code"
   | "invalid-invitation"
@@ -99,7 +100,8 @@ export const createSession = (deps: SessionDeps) => {
     if (!(await upload(token.value))) return { ok: false, error: "unexpected" };
     remember(account.accountId, account.secretKey);
     open({ ...account, accountId: account.accountId, token: token.value });
-    return { ok: true, value: { secretKey: account.secretKey, recoveryKey: account.recoveryKey } };
+    const { accountId, secretKey, recoveryKey } = account;
+    return { ok: true, value: { accountId, secretKey, recoveryKey } };
   };
 
   return {

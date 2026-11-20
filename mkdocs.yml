@@ -57,6 +57,7 @@ markdown_extensions:
       custom_checkbox: true
 nav:
   - Kennwort: index.md
+  - Konto und Entsperren: konto.md
   - Sicherheitsdesign: sicherheitsdesign.md
   - Entwicklung:
       - Projektplan: plan.md

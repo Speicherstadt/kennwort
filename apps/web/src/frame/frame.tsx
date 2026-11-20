@@ -2,7 +2,7 @@
  * The app frame (DESIGN.md, Aufbau): rail and, from lg, the sidebar on the desktop; list and
  * detail side by side from md; on a phone one screen at a time with the tab bar at the bottom
  */
-import { createToasts, Toaster } from "@kennwort/ui";
+import { createToasts, type Locale, Toaster } from "@kennwort/ui";
 import { Match, Switch } from "solid-js";
 import type { Navigation } from "../navigation.ts";
 import { EntryDetail } from "./entry-detail.tsx";
@@ -12,7 +12,11 @@ import { Rail } from "./rail.tsx";
 import { Sidebar } from "./sidebar.tsx";
 import { TabBar } from "./tab-bar.tsx";
 
-export const Frame = (props: { nav: Navigation; onLock: () => void }) => {
+export const Frame = (props: {
+  nav: Navigation;
+  onLock: () => void;
+  onLocale: (locale: Locale) => void;
+}) => {
   const toasts = createToasts();
   const route = () => props.nav.route();
   return (
@@ -52,7 +56,7 @@ export const Frame = (props: { nav: Navigation; onLock: () => void }) => {
         </Match>
         <Match when={route().page === "settings"}>
           <main class="flex min-h-0 flex-1">
-            <SettingsPage onLock={props.onLock} />
+            <SettingsPage onLock={props.onLock} onLocale={props.onLocale} />
           </main>
         </Match>
         <Match when={route().page === "not-found"}>

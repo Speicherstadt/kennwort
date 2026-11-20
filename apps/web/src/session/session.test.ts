@@ -76,6 +76,7 @@ describe("session", () => {
     expect(session.opened()?.state.rootSecretKey).toHaveLength(32);
     expect(readDevice(storage)?.accountId).toBe(session.accountIdText());
     if (result.ok) expect(readDevice(storage)?.secretKey).toEqual(result.value.secretKey);
+    if (result.ok) expect(readDevice(storage)?.accountId).toBe(encodeBytes(result.value.accountId));
   });
 
   it("locks, overwrites the account key and unlocks again with the passphrase", async () => {

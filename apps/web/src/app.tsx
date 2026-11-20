@@ -1,7 +1,9 @@
 /**
  * What the app shows: setting up a company and accepting an invitation are always reachable; the
- * rest only with an unlocked account, else the unlock screen, or the welcome on a new device (K-303)
+ * rest only with an unlocked account, else the unlock screen, or the welcome on a new device (K-303).
+ * Another language renders everything anew instead of reloading the page, which would lock it.
  */
+import { getLocale, type Locale, setLocale } from "@kennwort/ui";
 import { createSignal, Match, onCleanup, Show, Switch } from "solid-js";
 import { InvitePage } from "./account/invite-page.tsx";
 import { SetupPage } from "./account/setup-page.tsx";
@@ -12,6 +14,12 @@ import type { Session } from "./session/session.ts";
 
 export const App = (props: { nav: Navigation; session: Session; hash?: string }) => {
   const [otherAccount, setOtherAccount] = createSignal(false);
+  const [locale, setShownLocale] = createSignal(getLocale());
+  const changeLocale = (next: Locale) => {
+    setLocale(next, { reload: false });
+    document.documentElement.lang = next;
+    setShownLocale(next);
+  };
   const route = () => props.nav.route();
   // Every key press or click pushes the automatic lock back (P-03)
   const touch = () => props.session.touch();
@@ -26,31 +34,35 @@ export const App = (props: { nav: Navigation; session: Session; hash?: string })
     return r.page === "invite" ? r : undefined;
   };
   return (
-    <Switch>
-      <Match when={route().page === "setup"}>
-        <SetupPage nav={props.nav} session={props.session} />
-      </Match>
-      <Match when={invite()}>
-        {(r) => (
-          <InvitePage
-            nav={props.nav}
-            session={props.session}
-            id={r().id}
-            hash={props.hash ?? location.hash}
-          />
-        )}
-      </Match>
-      <Match when={!props.session.opened()}>
-        <Show
-          when={props.session.device() || otherAccount()}
-          fallback={<WelcomePage nav={props.nav} onUnlock={() => setOtherAccount(true)} />}
-        >
-          <UnlockPage session={props.session} />
-        </Show>
-      </Match>
-      <Match when={props.session.opened()}>
-        <Frame nav={props.nav} onLock={() => props.session.lock()} />
-      </Match>
-    </Switch>
+    <Show when={locale()} keyed>
+      {(_locale) => (
+        <Switch>
+          <Match when={route().page === "setup"}>
+            <SetupPage nav={props.nav} session={props.session} />
+          </Match>
+          <Match when={invite()}>
+            {(r) => (
+              <InvitePage
+                nav={props.nav}
+                session={props.session}
+                id={r().id}
+                hash={props.hash ?? location.hash}
+              />
+            )}
+          </Match>
+          <Match when={!props.session.opened()}>
+            <Show
+              when={props.session.device() || otherAccount()}
+              fallback={<WelcomePage nav={props.nav} onUnlock={() => setOtherAccount(true)} />}
+            >
+              <UnlockPage session={props.session} />
+            </Show>
+          </Match>
+          <Match when={props.session.opened()}>
+            <Frame nav={props.nav} onLock={() => props.session.lock()} onLocale={changeLocale} />
+          </Match>
+        </Switch>
+      )}
+    </Show>
   );
 };

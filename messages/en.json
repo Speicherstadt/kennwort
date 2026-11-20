@@ -69,7 +69,7 @@
   "invite_submit": "Create account",
   "invite_broken": "This invitation link is incomplete.",
   "kit_title": "Your recovery kit",
-  "kit_text": "These two keys get you into your account if you forget the passphrase or lose every device. Write them down or print them and keep them safe.",
+  "kit_text": "With the account ID, the Secret Key and your passphrase you unlock a new device; the Recovery Key gets you into your account if you forget the passphrase. Write them down or print them and keep them safe.",
   "kit_secret_key": "Secret Key",
   "kit_recovery_key": "Recovery Key",
   "kit_saved": "I have stored the recovery kit safely.",

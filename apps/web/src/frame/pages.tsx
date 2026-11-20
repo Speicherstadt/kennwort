@@ -1,5 +1,5 @@
 /** The other sections: generator (K-306 fills it), groups, settings, and a page that does not exist */
-import { Button, getLocale, Icon, locales, m, setLocale } from "@kennwort/ui";
+import { Button, getLocale, Icon, type Locale, locales, m } from "@kennwort/ui";
 import { Lock, Users } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { createSignal, For } from "solid-js";
@@ -68,7 +68,7 @@ const Choice = <T extends string>(props: {
   </fieldset>
 );
 
-export const SettingsPage = (props: { onLock: () => void }) => {
+export const SettingsPage = (props: { onLock: () => void; onLocale: (locale: Locale) => void }) => {
   const [theme, setTheme] = createSignal<Theme>(readTheme(globalThis.localStorage));
   const chooseTheme = (next: Theme) => {
     setTheme(next);
@@ -93,7 +93,7 @@ export const SettingsPage = (props: { onLock: () => void }) => {
           legend={m.settings_language()}
           name="language"
           value={getLocale()}
-          onChange={(locale) => setLocale(locale)}
+          onChange={(locale) => props.onLocale(locale)}
           options={locales.map((locale) => ({ value: locale, label: languages[locale] }))}
         />
         <Button class="w-fit" onClick={() => props.onLock()}>

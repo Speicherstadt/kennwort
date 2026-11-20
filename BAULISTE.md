@@ -104,8 +104,9 @@ und die Schritte für Menschen am Ende erledigt sind.
   In Teilen, je ein Pull Request; abgehakt wird K-303, wenn alle stehen:
   - [x] Teil 1: Konto anlegen (erster Inhaber mit Einrichtungs-Code, Eingeladene), Kontozustand,
     Entsperren mit Passphrase und Recovery Key – in `packages/core` und auf dem Server.
-  - [ ] Teil 2: Konto anlegen und Entsperren in der Web-App, automatisches Sperren.
-  - [ ] Teil 3: Recovery-Kit als PDF.
+  - [x] Teil 2: Konto anlegen und Entsperren in der Web-App, automatisches Sperren.
+  - [ ] Teil 3: Recovery-Kit als PDF; Entsperren mit dem Recovery Key in der Web-App, danach einen
+    neuen Recovery Key anlegen (P-12).
   - [ ] Teil 4: Neues Gerät per QR-Code, Geräteliste, Gerät abmelden.
 - [ ] **K-304 Firma, Rollen, Einladungen** – Inhaber, Admin, Mitarbeiter; Wurzelschlüssel;
   Richtlinien.

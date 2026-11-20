@@ -69,7 +69,7 @@
   "invite_submit": "Konto anlegen",
   "invite_broken": "Dieser Einladungslink ist unvollständig.",
   "kit_title": "Dein Recovery-Kit",
-  "kit_text": "Mit diesen beiden Schlüsseln kommst du an dein Konto, wenn du die Passphrase vergisst oder kein Gerät mehr hast. Schreib sie auf oder drucke sie aus und bewahre sie sicher auf.",
+  "kit_text": "Mit Konto-ID, Secret Key und Passphrase entsperrst du ein neues Gerät; mit dem Recovery Key kommst du an dein Konto, wenn du die Passphrase vergisst. Schreib alles auf oder drucke es aus und bewahre es sicher auf.",
   "kit_secret_key": "Secret Key",
   "kit_recovery_key": "Recovery Key",
   "kit_saved": "Ich habe das Recovery-Kit sicher aufbewahrt.",
