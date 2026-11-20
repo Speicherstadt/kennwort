@@ -1,7 +1,14 @@
 /** The sidebar from lg: company, the lists, vaults and groups, the note on encryption at the bottom */
 import { Badge, cn, Icon, m } from "@kennwort/ui";
 import type { IconNode } from "@kennwort/ui/icons";
-import { Archive, List, ShieldCheck, Star, TriangleExclamationPoint } from "@kennwort/ui/icons";
+import {
+  Archive,
+  List,
+  Share2,
+  ShieldCheck,
+  Star,
+  TriangleExclamationPoint,
+} from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { For, Show } from "solid-js";
 import { company, entries as demoEntries, groups, vaults } from "../demo.ts";
@@ -86,10 +93,19 @@ export const Sidebar = (props: {
         label={m.nav_to_change()}
         trailing={
           <Badge tone="warning">
-            {(props.entries ?? demoEntries).filter((entry) => entry.weak).length}
+            {(props.entries ?? demoEntries).filter((entry) => entry.weak && !entry.sharedBy).length}
           </Badge>
         }
       />
+      <Show when={props.entries?.some((entry) => entry.sharedBy !== undefined)}>
+        <Item
+          nav={props.nav}
+          href="/shared"
+          filter={{ kind: "shared" }}
+          icon={Share2}
+          label={m.nav_shared()}
+        />
+      </Show>
       <Heading>{m.nav_vaults()}</Heading>
       <For each={sidebarVaults(props.vaults)}>
         {(vault) => (

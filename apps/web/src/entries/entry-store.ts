@@ -5,11 +5,8 @@
  * memory; nothing here is written to storage.
  */
 import {
-  bytes,
   type Connection,
   type Device,
-  type EntryContent,
-  edit,
   emptyDevice,
   encodeBytes,
   httpServer,
@@ -21,12 +18,12 @@ import {
   sync,
   type Trust,
 } from "@kennwort/core";
-import { randomBytes } from "@kennwort/crypto";
 import { createSignal } from "solid-js";
 import type { Session } from "../session/session.ts";
 import type { Vault } from "../vaults/vaults.ts";
 import { withPulled, withSynced } from "./device-merge.ts";
 import type { StoredEntry } from "./entries.ts";
+import { entryWrites } from "./entry-writes.ts";
 
 export type ServerFor = (token: string, vaultId: Uint8Array) => SyncServer;
 
@@ -38,8 +35,14 @@ export const httpServerFor =
     return httpServer(connection, vaultId);
   };
 
-type VaultState = { vault: Vault; device: Device; refused: Refused[] };
+export type VaultState = { vault: Vault; device: Device; refused: Refused[] };
 export type SaveError = "locked" | "read-only" | "unreachable" | "not-saved";
+/** Queues a change to one entry and syncs it at once; gives the device as the sync left it */
+export type SyncChange = (
+  vaultIdText: string,
+  entryId: Uint8Array,
+  change: (device: Device) => Device,
+) => Promise<{ ok: true; value: Device } | { ok: false; error: SaveError }>;
 
 const contextOf = (session: Session, vault: Vault, trust: Trust): SyncContext | undefined => {
   const opened = session.opened();
@@ -106,22 +109,15 @@ export const createEntryStore = (serverFor: ServerFor, session: Session) => {
     }));
   };
 
-  /** A new entry (no ID) or a change, synced at once; it stays queued if the server failed */
-  const save = async (
-    vaultIdText: string,
-    content: EntryContent,
-    entryIdText?: string,
-  ): Promise<{ ok: true; value: string } | { ok: false; error: SaveError }> => {
+  /** Queues a change to one entry and syncs it at once; it stays queued if the server failed */
+  const syncChange: SyncChange = async (vaultIdText, entryId, change) => {
     const state = current(vaultIdText);
     if (!state || !trust) return { ok: false, error: "unreachable" };
     if (state.vault.role === "read") return { ok: false, error: "read-only" };
     const ctx = contextOf(session, state.vault, trust);
     const server = serverOf(state.vault);
     if (!ctx || !server) return { ok: false, error: "locked" };
-    const given = entryIdText === undefined ? undefined : bytes(16).safeParse(entryIdText);
-    if (given && !given.success) return { ok: false, error: "unreachable" };
-    const entryId = given?.data ?? randomBytes(16);
-    const queued = edit(state.device, entryId, content);
+    const queued = change(state.device);
     // The very device that is sent: withSynced knows the ops it took by their identity
     update(vaultIdText, (s) => ({ ...s, device: queued }));
     const synced = await sync(queued, server, ctx).catch(() => undefined);
@@ -131,9 +127,7 @@ export const createEntryStore = (serverFor: ServerFor, session: Session) => {
       device: withSynced(s.device, queued, synced.device, ctx.now),
     }));
     const stillQueued = synced.device.queue.some((op) => idKey(op.entryId) === idKey(entryId));
-    return stillQueued
-      ? { ok: false, error: "not-saved" }
-      : { ok: true, value: encodeBytes(entryId) };
+    return stillQueued ? { ok: false, error: "not-saved" } : { ok: true, value: synced.device };
   };
 
   const entries = (): StoredEntry[] =>
@@ -147,7 +141,7 @@ export const createEntryStore = (serverFor: ServerFor, session: Session) => {
       })),
     );
   const refused = () => states().flatMap((s) => s.refused);
-  return { load, save, entries, refused };
+  return { load, ...entryWrites(syncChange, current), entries, refused };
 };
 
 export type EntryStore = ReturnType<typeof createEntryStore>;

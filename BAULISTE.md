@@ -141,7 +141,7 @@ und die Schritte für Menschen am Ende erledigt sind.
     Inhabern nimmt, jeder Client eine ältere, unsignierte oder fremde Richtlinie ablehnt und die
     Sperrzeit auf allen Geräten gilt – als Playwright-Test desktop und `@phone`. Den Schalter für
     Firmen-Recovery bringt K-307 mit dessen Schlüssel; das Format trägt ihn schon.
-- [ ] **K-305 Tresore, Gruppen, Rechte** – persönlich und geteilt, lesen/bearbeiten/verwalten,
+- [x] **K-305 Tresore, Gruppen, Rechte** – persönlich und geteilt, lesen/bearbeiten/verwalten,
   Gruppen, Zugriff auf Zeit, Zugriff anfragen, einzelnen Eintrag teilen.
   In Teilen, je ein Pull Request; abgehakt wird K-305, wenn alle stehen:
   - [x] Teil 1: Tresor-Protokoll in Core und Server (P-05, P-06) – anlegen, aufnehmen, Rolle
@@ -168,7 +168,7 @@ und die Schritte für Menschen am Ende erledigt sind.
   - [x] Teil 6a: einzelnen Eintrag teilen (P-10), Protokoll in Crypto, Core und Server; EK bleibt
     über die Versionen gleich, sodass eine Freigabe auch künftige Versionen abdeckt. Fertig, wenn:
     der Empfänger nur diesen Eintrag entschlüsseln kann (Test gegen Server und Stand-in).
-  - [ ] Teil 6b: Teilen in der Web-App – Freigeben, „Mit mir geteilt“, Widerrufen mit neuem EK.
+  - [x] Teil 6b: Teilen in der Web-App – Freigeben, „Mit mir geteilt“, Widerrufen mit neuem EK.
     Fertig, wenn: Teilen und Widerrufen als Playwright-Test desktop und `@phone` laufen.
 - [ ] **K-306 Einträge** – alle Typen, Generator, TOTP mit QR-Scan, eigene Felder, frühere
   Passwörter, Suche, Favoriten, Tags.

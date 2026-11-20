@@ -23,11 +23,15 @@ import {
  * memory, so the next version keeps it and a share covers that version too (P-09, P-10)
  */
 export type Known = { entryId: Uint8Array; version: number; content: EntryContent; key?: EntryKey };
-/** A change; base is the version it started from, absent for a new entry */
+/**
+ * A change; base is the version it started from, absent for a new entry. rekey seals it under a
+ * new entry key, whatever key a pull brings meanwhile: revoking a share (P-10)
+ */
 export type Pending = {
   entryId: Uint8Array;
   base: { version: number; content: EntryContent } | undefined;
   content: EntryContent;
+  rekey?: true;
 };
 export type Device = { known: ReadonlyMap<string, Known>; queue: readonly Pending[] };
 export type SyncContext = {
@@ -60,6 +64,24 @@ export const edit = (device: Device, entryId: Uint8Array, content: EntryContent)
   const base = known && { version: known.version, content: known.content };
   const op = { entryId, base, content };
   return { ...device, queue: [...device.queue, op] };
+};
+
+/**
+ * Queues the entry's content unchanged, to be sealed under a new entry key: after a share is
+ * revoked, the recipient's key opens no later version (P-10). An entry the device does not know
+ * stays as it is.
+ */
+export const rekey = (device: Device, entryId: Uint8Array): Device => {
+  const queued = device.queue.find((op) => idKey(op.entryId) === idKey(entryId));
+  const content = queued?.content ?? device.known.get(idKey(entryId))?.content;
+  if (!content) return device;
+  const edited = edit(device, entryId, content);
+  return {
+    ...edited,
+    queue: edited.queue.map((op) =>
+      idKey(op.entryId) === idKey(entryId) ? { ...op, rekey: true as const } : op,
+    ),
+  };
 };
 
 /** Takes every record newer than what the device knows, if it passes the checks of P-09 */
@@ -132,7 +154,7 @@ const pushChange = async (
     const current = state.device.known.get(idKey(op.entryId));
     const content = contentFor(op, current, ctx.now);
     const version = (current?.version ?? 0) + 1;
-    const key = entryKeyFor(ctx.ring, current?.key);
+    const key = entryKeyFor(ctx.ring, op.rekey ? undefined : current?.key);
     const record = sealRecord(
       ctx.author,
       ctx.ring,

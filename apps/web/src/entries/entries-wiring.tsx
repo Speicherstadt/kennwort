@@ -63,6 +63,8 @@ export const createEntries = (serverFor: ServerFor, session: Session) => {
   return {
     load: store.load,
     entries,
+    /** The entry keys, for sharing an entry and revoking a share (P-10) */
+    keys: { keyOf: store.keyOf, rekey: store.rekey },
     editor,
     startNew: () => setEditing({ kind: "new" }),
     startChange: (entry: ShownEntry) => setEditing({ kind: "change", entry }),

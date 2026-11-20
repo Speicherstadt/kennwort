@@ -169,6 +169,7 @@ export {
 } from "./membership/vault-ops.ts";
 export {
   CLOCK_SKEW_SECONDS,
+  certificateOf,
   idKey,
   isMember,
   type LogError,
@@ -197,6 +198,7 @@ export {
   type Pulled,
   pull,
   type Refused,
+  rekey,
   type SyncContext,
   sync,
 } from "./sync/device.ts";
@@ -216,8 +218,10 @@ export {
   type VaultKeyring,
 } from "./sync/record.ts";
 export {
+  genuineShares,
   makeShare,
   openShared,
+  reshare,
   Share,
   type SharedError,
   type ShareReader,

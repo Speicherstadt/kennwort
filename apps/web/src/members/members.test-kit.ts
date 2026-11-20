@@ -75,7 +75,7 @@ export const annaRow = (c: Awaited<ReturnType<typeof jonasCompany>>, secret?: Ui
       mac: invitationMac(secret ?? invitation.secret, invitation.id, bundle),
     },
   };
-  return { row, invitation };
+  return { row, invitation, account: anna };
 };
 
 export const server = (c: Awaited<ReturnType<typeof jonasCompany>>, rows: Row[]) => {

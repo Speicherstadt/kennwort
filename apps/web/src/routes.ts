@@ -6,6 +6,7 @@ export type ListFilter =
   | { kind: "all" }
   | { kind: "favorites" }
   | { kind: "to-change" }
+  | { kind: "shared" }
   | { kind: "vault"; id: string };
 
 export type Route =
@@ -27,6 +28,7 @@ const lists: Record<string, ListFilter> = {
   entries: { kind: "all" },
   favorites: { kind: "favorites" },
   "to-change": { kind: "to-change" },
+  shared: { kind: "shared" },
 };
 
 const filterPath = (filter: ListFilter) =>

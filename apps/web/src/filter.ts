@@ -2,11 +2,15 @@
 import type { DemoEntry } from "./demo.ts";
 import type { ListFilter } from "./routes.ts";
 
+/** Entries shared with this account show under "Mit mir geteilt" only, apart from the vaults' own */
 const inFilter = (entry: DemoEntry, filter: ListFilter) =>
-  filter.kind === "all" ||
-  (filter.kind === "favorites" && entry.favorite) ||
-  (filter.kind === "to-change" && entry.weak) ||
-  (filter.kind === "vault" && entry.vault === filter.id);
+  filter.kind === "shared"
+    ? entry.sharedBy !== undefined
+    : entry.sharedBy === undefined &&
+      (filter.kind === "all" ||
+        (filter.kind === "favorites" && entry.favorite) ||
+        (filter.kind === "to-change" && entry.weak) ||
+        (filter.kind === "vault" && entry.vault === filter.id));
 
 const matches = (entry: DemoEntry, search: string) => {
   const needle = search.trim().toLocaleLowerCase();

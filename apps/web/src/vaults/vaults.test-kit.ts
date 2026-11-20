@@ -89,8 +89,11 @@ export const jonasWithVaults = async (
 };
 
 /** Anna, whose keys Jonas confirmed: a certified row of the members list */
-export const certifiedAnna = (c: Awaited<ReturnType<typeof jonasCompany>>): Row => {
-  const { row } = annaRow(c);
+export const certifiedAnna = (c: Awaited<ReturnType<typeof jonasCompany>>): Row =>
+  certifiedRow(c, annaRow(c).row);
+
+/** A row of the members list whose keys Jonas confirmed with the company root */
+export const certifiedRow = (c: Awaited<ReturnType<typeof jonasCompany>>, row: Row): Row => {
   const root = c.opened.state.rootSecretKey;
   if (!root || !row.xwingPublicKey || !row.edPublicKey) throw new Error("no root key or keys");
   const certificate = certify(root, {
