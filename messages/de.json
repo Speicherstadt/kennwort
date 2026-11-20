@@ -86,5 +86,11 @@
   "error_wrong_passphrase": "Passphrase oder Secret Key stimmt nicht.",
   "error_unexpected": "Das hat nicht geklappt. Versuch es noch einmal.",
   "error_passphrase_mismatch": "Die beiden Passphrasen sind nicht gleich.",
-  "error_passphrase_short": "Die Passphrase ist zu kurz."
+  "error_passphrase_short": "Die Passphrase ist zu kurz.",
+  "kit_download": "Als PDF speichern",
+  "kit_pdf_title": "Kennwort – Recovery-Kit",
+  "kit_server": "Server",
+  "kit_created": "Erstellt am",
+  "kit_qr": "Scanne diesen Code mit einem neuen Gerät: Er füllt Server, Konto-ID und Secret Key aus. Die Passphrase gibst du selbst ein; der Recovery Key steht nicht im Code.",
+  "kit_keep": "Bewahre dieses Blatt sicher auf, etwa im Tresor oder bei deinen Unterlagen. Wer es hat und deine Passphrase kennt, kommt an dein Konto. Niemand kann Passphrase oder Recovery Key für dich zurücksetzen."
 }

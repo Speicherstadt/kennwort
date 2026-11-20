@@ -7,7 +7,7 @@ import { getLocale, type Locale, setLocale } from "@kennwort/ui";
 import { createSignal, Match, onCleanup, Show, Switch } from "solid-js";
 import { InvitePage } from "./account/invite-page.tsx";
 import { SetupPage } from "./account/setup-page.tsx";
-import { UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
+import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
 import { Frame } from "./frame/frame.tsx";
 import type { Navigation } from "./navigation.ts";
 import type { Session } from "./session/session.ts";
@@ -37,6 +37,13 @@ export const App = (props: { nav: Navigation; session: Session; hash?: string })
     <Show when={locale()} keyed>
       {(_locale) => (
         <Switch>
+          <Match when={route().page === "unlock"}>
+            <UnlockPage
+              session={props.session}
+              link={readDeviceLink(props.hash ?? location.hash)}
+              onUnlocked={() => props.nav.replace("/entries")}
+            />
+          </Match>
           <Match when={route().page === "setup"}>
             <SetupPage nav={props.nav} session={props.session} />
           </Match>

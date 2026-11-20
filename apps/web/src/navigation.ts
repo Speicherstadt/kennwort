@@ -13,6 +13,11 @@ export const createNavigation = (win: Window = window) => {
       win.history.pushState(null, "", next);
       setPath(next);
     },
+    /** Replaces the current entry, so what it carried (a link's fragment) leaves the history */
+    replace: (next: string) => {
+      win.history.replaceState(null, "", next);
+      setPath(next);
+    },
     dispose: () => win.removeEventListener("popstate", onPop),
   };
 };

@@ -566,6 +566,13 @@ steht als `R1-` und 52 Zeichen Crockford-Base32 in Fünfergruppen mit einem Prü
 das jeden einzelnen Tippfehler erkennt. Es wird auf dem Gerät erzeugt und nie hochgeladen. Wer das Kit nutzt,
 legt danach einen neuen Recovery Key an.
 
+Der QR-Code enthält nur einen Link auf die Entsperr-Seite des Servers mit Konto-ID und Secret Key im
+Fragment (`/unlock#account=…&secret=…`), das der Browser nicht an den Server schickt; nach dem
+Entsperren ersetzt die App den Eintrag im Verlauf, sodass der Secret Key nicht dort bleibt. Der
+Recovery Key steht nie im QR-Code: Ein Foto des Codes allein öffnet kein Konto, es braucht weiter die
+Passphrase. Das PDF schreibt die Web-App selbst (`apps/web/src/kit/`), ohne PDF-Bibliothek; den
+QR-Code erzeugt `uqr`.
+
 **Wehrt ab:** E-01.
 
 ### P-13 Firmen-Recovery

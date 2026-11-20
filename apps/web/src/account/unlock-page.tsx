@@ -9,13 +9,28 @@ import type { Navigation } from "../navigation.ts";
 import type { Session } from "../session/session.ts";
 import { Card, errorText } from "./form.tsx";
 
-export const UnlockPage = (props: { session: Session }) => {
+/** Account ID and Secret Key from the fragment of the recovery kit's QR code (P-12) */
+export type DeviceLink = { accountId: string; secretKey: string };
+
+export const readDeviceLink = (hash: string): DeviceLink | undefined => {
+  const params = new URLSearchParams(hash.replace(/^#/, ""));
+  const accountId = params.get("account");
+  const secretKey = params.get("secret");
+  return accountId && secretKey ? { accountId, secretKey } : undefined;
+};
+
+export const UnlockPage = (props: {
+  session: Session;
+  link?: DeviceLink | undefined;
+  onUnlocked?: () => void;
+}) => {
   const [passphrase, setPassphrase] = createSignal("");
-  const [accountId, setAccountId] = createSignal("");
-  const [secretKey, setSecretKey] = createSignal("");
+  const [accountId, setAccountId] = createSignal(props.link?.accountId ?? "");
+  const [secretKey, setSecretKey] = createSignal(props.link?.secretKey ?? "");
   const [error, setError] = createSignal<string>();
   const [busy, setBusy] = createSignal(false);
-  const known = () => props.session.device() !== undefined;
+  // A link from the kit names an account, which may not be the one this device knows
+  const known = () => !props.link && props.session.device() !== undefined;
   const submit = async (event: SubmitEvent) => {
     event.preventDefault();
     const key = known() ? undefined : parseSecretKey(secretKey());
@@ -28,6 +43,7 @@ export const UnlockPage = (props: { session: Session }) => {
     );
     setBusy(false);
     if (!result.ok) setError(errorText(result.error));
+    else props.onUnlocked?.();
   };
   return (
     <Card title={m.unlock_title()} error={error()}>
@@ -35,11 +51,13 @@ export const UnlockPage = (props: { session: Session }) => {
         <Show when={!known()}>
           <Input
             label={m.unlock_account()}
+            value={accountId()}
             autocomplete="username"
             onInput={(event) => setAccountId(event.currentTarget.value)}
           />
           <Input
             label={m.unlock_secret_key()}
+            value={secretKey()}
             autocomplete="off"
             onInput={(event) => setSecretKey(event.currentTarget.value)}
           />
