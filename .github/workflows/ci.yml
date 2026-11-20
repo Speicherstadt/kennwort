@@ -43,7 +43,9 @@ jobs:
           # --no-renames: a moved file counts with its old and its new path
           changed="$(git -c core.quotePath=false diff --no-renames --name-only HEAD^1 HEAD)"
           printf '%s\n' "$changed"
-          other="$(grep -Ev '\.md$|^docs/|^LICENSE$' <<< "$changed" || true)"
+          # scripts/security-design.test.ts reads docs/plan.md and docs/sicherheitsdesign.md: they count as code
+          tested='^docs/(plan|sicherheitsdesign)\.md$'
+          other="$(grep -Ev '\.md$|^docs/|^LICENSE$' <<< "$changed" || true)$(grep -E "$tested" <<< "$changed" || true)"
           if [ -n "$changed" ] && [ -z "$other" ]; then code=false; else code=true; fi
           # The mutation tests of a package depend on its code, on crypto under core, on the dependencies (bun.lock,
           # package.json with the Stryker version) and on this workflow
