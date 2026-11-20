@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test";
 import {
   addMember,
   type Certificate,
+  CLOCK_SKEW_SECONDS,
   certify,
   changeAccess,
   createVault,
@@ -372,6 +373,47 @@ describe("vault log against what verifyLog rejects (review of K-305 part 1)", ()
     const checked = stateOf(w, vault.ring.vaultId, (await logOf(w, vaultId)) as never);
     expect({ status, ok: checked.ok }).toEqual({ status: 400, ok: true });
   });
+  it("adds a removed member again in the same epoch, with a newly wrapped key", async () => {
+    const w = await weber();
+    const { vault, vaultId, added } = await addAnna(w, { role: "edit", validUntil: 0 });
+    const s1 = stateOf(w, vault.ring.vaultId, [vault.genesis, added.entry]);
+    if (!s1.ok) throw new Error(s1.error);
+    const removed = removeMember(w.jonas.signer, s1.value, vault.ring.vaultId, w.annaId, NOW + 2);
+    expect((await post(w, vaultId, { entry: toWire(removed) })).status).toBe(201);
+    const s2 = stateOf(w, vault.ring.vaultId, [vault.genesis, added.entry, removed]);
+    if (!s2.ok) throw new Error(s2.error);
+    const back = addMember(
+      w.jonas.signer,
+      s2.value,
+      vault.ring,
+      w.annaCert,
+      { role: "read", validUntil: 0 },
+      NOW + 3,
+    );
+    const answer = await post(w, vaultId, {
+      entry: toWire(back.entry),
+      wrappedKey: encodeBytes(back.wrappedKey),
+    });
+    expect(answer.status).toBe(201);
+    expect(await logOf(w, vaultId, w.annaToken)).toHaveLength(4);
+  });
+  it("a manager whose access ran out cannot extend it with a backdated entry", async () => {
+    const w = await weber();
+    const { vault, vaultId, added } = await addAnna(w, { role: "manage", validUntil: NOW + 5 });
+    const s1 = stateOf(w, vault.ring.vaultId, [vault.genesis, added.entry]);
+    if (!s1.ok) throw new Error(s1.error);
+    // now is NOW + 600: Anna's access ended ten minutes ago; she signs as if it were NOW + 3
+    const annaSigner = { accountId: w.annaId, edSecretKey: w.annaEd.secretKey };
+    const forever = changeAccess(
+      annaSigner,
+      s1.value,
+      vault.ring.vaultId,
+      w.annaId,
+      { role: "manage", validUntil: 0 },
+      NOW + 3,
+    );
+    expect((await post(w, vaultId, { entry: toWire(forever) }, w.annaToken)).status).toBe(403);
+  });
 });
 
 describe("signed times against the server's clock", () => {
@@ -402,5 +444,34 @@ describe("signed times against the server's clock", () => {
 
   it("refuses one signed an hour ahead, which clients would reject until then", async () => {
     expect(await atTime(await weber(), serverNow() + 3600)).toBe(400);
+  });
+  it("stores no entry signed further ahead than clients take (CLOCK_SKEW_SECONDS)", async () => {
+    const w = await weber();
+    const { vault, vaultId, added } = await addAnna(w, { role: "edit", validUntil: 0 });
+    const s1 = stateOf(w, vault.ring.vaultId, [vault.genesis, added.entry]);
+    if (!s1.ok) throw new Error(s1.error);
+    const ahead = Math.floor(Date.now() / 1000) + CLOCK_SKEW_SECONDS + 60;
+    const change = changeAccess(
+      w.jonas.signer,
+      s1.value,
+      vault.ring.vaultId,
+      w.annaId,
+      { role: "read", validUntil: 0 },
+      ahead,
+    );
+    const status = (await post(w, vaultId, { entry: toWire(change) })).status;
+    const entries = (await logOf(w, vaultId)) as never;
+    const trust = {
+      rootPublicKey: w.o.company.rootPublicKey,
+      certificates: new Map([
+        [idKey(w.jonas.certificate.accountId), w.jonas.certificate],
+        [idKey(w.annaId), w.annaCert],
+      ]),
+      now: Math.floor(Date.now() / 1000),
+    };
+    expect({ status, ok: verifyLog(vault.ring.vaultId, entries, trust).ok }).toEqual({
+      status: 400,
+      ok: true,
+    });
   });
 });

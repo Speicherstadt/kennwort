@@ -18,9 +18,6 @@ import { eq } from "drizzle-orm";
 import type { Db } from "../db/database.ts";
 import { accountKeys, accounts, companies } from "../db/schema.ts";
 
-/** Clocks of devices and server differ a little; an entry may be signed this far ahead */
-export const CLOCK_SKEW_SECONDS = 300;
-
 type Member = { role: string; validUntil: number };
 
 /** Who is in the vault by the stored entries, each of which passed verifyLog when it came */
@@ -74,7 +71,8 @@ export const chainRefusal = (
   const trust = {
     rootPublicKey,
     certificates: certificatesOf(db, companyId),
-    now: now + CLOCK_SKEW_SECONDS,
+    // verifyLog allows the same clock skew (CLOCK_SKEW_SECONDS) as every client
+    now,
   };
   const checked = verifyLog(vaultId, entries, trust);
   if (checked.ok) return undefined;

@@ -149,6 +149,7 @@ export {
   type Signer,
 } from "./membership/vault-ops.ts";
 export {
+  CLOCK_SKEW_SECONDS,
   idKey,
   isMember,
   type LogError,

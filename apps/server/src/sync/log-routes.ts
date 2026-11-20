@@ -72,7 +72,14 @@ const refusal = (
     return "stale";
   // The key rotation comes with K-307, which also hands every member the new vault key
   if (entry.action === "rotate") return "invalid";
-  return chainRefusal(s.db, companyId, entry.vaultId, [...s.entriesOf(rows), entry], s.seconds());
+  // verifyLog counts rights at the entry's signed time; the server also wants a manager now, so
+  // no one whose access ran out appends with a backdated entry (review of K-305)
+  const entries = s.entriesOf(rows);
+  if (rows.length > 0) {
+    const signer = membersOf(entries).get(accountId);
+    if (signer?.role !== "manage" || !isCurrent(signer, s.seconds())) return "forbidden";
+  }
+  return chainRefusal(s.db, companyId, entry.vaultId, [...entries, entry], s.seconds());
 };
 
 const append = (s: Store, deps: Deps) => async (c: Context<TenantEnv>) => {
@@ -97,7 +104,7 @@ const append = (s: Store, deps: Deps) => async (c: Context<TenantEnv>) => {
         storedAt: deps.now(),
       })
       .run();
-    // add takes only accounts that are no members, so no key row of the epoch exists yet
+    // A member removed and added again in the same epoch gets the newly wrapped key
     if (wrappedKey)
       tx.insert(vaultKeys)
         .values({
@@ -105,6 +112,10 @@ const append = (s: Store, deps: Deps) => async (c: Context<TenantEnv>) => {
           accountId: encodeBytes(entry.accountId),
           epoch: entry.epoch,
           wrapped: Buffer.from(wrappedKey),
+        })
+        .onConflictDoUpdate({
+          target: [vaultKeys.vaultId, vaultKeys.accountId, vaultKeys.epoch],
+          set: { wrapped: Buffer.from(wrappedKey) },
         })
         .run();
     return { refused: undefined, seq: entry.seq };
