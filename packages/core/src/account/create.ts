@@ -12,6 +12,7 @@ import {
   newRecoveryKey,
   passphraseKeys,
   randomBytes,
+  recoveryLoginSeed,
   rootFingerprint,
   SECRET_KEY_LENGTH,
   sealAccountKey,
@@ -30,6 +31,8 @@ export type AccountUpload = {
   accountId: Uint8Array;
   accountSalt: Uint8Array;
   loginPublicKey: Uint8Array;
+  /** The sign-in key of the Recovery Key (P-12), for who forgot the passphrase */
+  recoveryLoginPublicKey: Uint8Array;
   xwingPublicKey: Uint8Array;
   edPublicKey: Uint8Array;
   keyBlock: Uint8Array;
@@ -73,6 +76,7 @@ export const createAccount = (
       accountId,
       accountSalt,
       loginPublicKey: ed25519KeyPair(derived.login).publicKey,
+      recoveryLoginPublicKey: ed25519KeyPair(recoveryLoginSeed(recoveryKey, accountId)).publicKey,
       xwingPublicKey: keyBlock.xwing.publicKey,
       edPublicKey: keyBlock.ed.publicKey,
       keyBlock: sealKeyBlock(accountKey, accountId, keyBlock),

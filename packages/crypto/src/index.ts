@@ -11,6 +11,7 @@ export {
   openAccountKey,
   openKeyBlock,
   passkeyUnlockKey,
+  recoveryLoginSeed,
   sealAccountKey,
   sealKeyBlock,
   type UnlockPath,

@@ -20,6 +20,7 @@ export const readDeviceLink = (hash: string): DeviceLink | undefined => {
 };
 
 export const UnlockPage = (props: {
+  nav: Navigation;
   session: Session;
   link?: DeviceLink | undefined;
   onUnlocked?: () => void;
@@ -72,6 +73,9 @@ export const UnlockPage = (props: {
           {busy() ? m.working() : m.unlock_submit()}
         </Button>
       </form>
+      <Button variant="ghost" class="w-fit" onClick={() => props.nav.go("/recover")}>
+        {m.unlock_forgot()}
+      </Button>
     </Card>
   );
 };

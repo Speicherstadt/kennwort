@@ -8,6 +8,7 @@ export {
   type NewAccount,
   type NewCompany,
 } from "./account/create.ts";
+export { type RenewDeps, renewUnlock, type UnlockUpload } from "./account/renew.ts";
 export {
   AccountState,
   emptyState,
@@ -46,11 +47,14 @@ export {
 } from "./audit/chain.ts";
 export {
   answerChallenge,
+  answerRecoveryChallenge,
   type Derive,
   loginKeyPair,
   type Post,
+  recoveryLoginKeyPair,
   type SignInResult,
   signInWithPassphrase,
+  signInWithRecoveryKey,
 } from "./auth/sign-in.ts";
 export {
   type Certificate,

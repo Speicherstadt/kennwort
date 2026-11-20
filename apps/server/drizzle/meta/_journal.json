@@ -43,6 +43,13 @@
       "when": 1795149453520,
       "tag": "0005_account",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1795157394460,
+      "tag": "0006_recovery_login",
+      "breakpoints": true
     }
   ]
 }

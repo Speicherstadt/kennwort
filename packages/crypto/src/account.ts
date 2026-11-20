@@ -78,6 +78,17 @@ export const openKeyBlock = (
 export const passkeyUnlockKey = (prf: Uint8Array, credSalt: Uint8Array, credentialId: Uint8Array) =>
   kdf(prf, credSalt, "kennwort/unlock-passkey/v1", credentialId);
 
+/**
+ * The seed of the sign-in key the Recovery Key gives (P-02, P-12): who forgot the passphrase lacks
+ * the passphrase's sign-in key (F-05), so the Recovery Key signs in on its own.
+ *   seed = kdf(recoveryKey, salt = empty, "kennwort/login-recovery/v1", accountId)
+ * The Recovery Key is 256 random bits, so HKDF needs no salt (RFC 5869, 3.1).
+ */
+export const recoveryLoginSeed = (recoveryKey: Uint8Array, accountId: Uint8Array) => {
+  assertLength(recoveryKey, 32, "recovery key");
+  return kdf(recoveryKey, new Uint8Array(), "kennwort/login-recovery/v1", accountId);
+};
+
 const accountKeyPlace = (accountId: Uint8Array, path: UnlockPath) => ({
   purpose: "account-key",
   context:

@@ -352,6 +352,12 @@ Geheimtexten.
 - **Notweg Passphrase**: Aus `anmelden` (F-05) wird ein Ed25519-Schlüssel; der Server kennt nur
   dessen öffentlichen Teil und schickt eine Herausforderung. Die Passphrase und `p₁` verlassen nie
   das Gerät; was der Server speichert, lässt sich ohne den Secret Key nicht raten.
+- **Notweg Recovery Key** ([P-12](#p-12-recovery-kit)): Wer die Passphrase vergessen hat, hat auch
+  den Schlüssel aus `anmelden` nicht. Darum gibt der Recovery Key einen eigenen Ed25519-Schlüssel:
+  `kdf(recoveryKey, salt = leer, "kennwort/login-recovery/v1", konto-ID)`. Der Server kennt seinen
+  öffentlichen Teil (hochgeladen mit den Geheimtexten); die Herausforderung nennt den Weg
+  (`recovery`), und die Signatur hat einen eigenen Zweck (`login-recovery`), sodass sie nie als
+  Anmeldung mit der Passphrase zählt und umgekehrt. Fehlversuche zählen für dieselbe Sperre.
 - Rate-Limits je Adresse für Herausforderung, Antwort, das Annehmen einer Einladung und Better Auths
   Endpunkte (Passkeys). Die Adresse
   ist die der Verbindung; hinter einem Reverse Proxy (`KENNWORT_BEHIND_PROXY=true`) die, die der
@@ -565,6 +571,17 @@ Ausdrucken mit Server-Adresse, Konto, Secret Key und Recovery Key und QR-Code. D
 steht als `R1-` und 52 Zeichen Crockford-Base32 in Fünfergruppen mit einem Prüfzeichen (mod 37) da,
 das jeden einzelnen Tippfehler erkennt. Es wird auf dem Gerät erzeugt und nie hochgeladen. Wer das Kit nutzt,
 legt danach einen neuen Recovery Key an.
+
+Passphrase vergessen: Das Gerät meldet sich mit dem Recovery Key an ([P-02](#p-02-anmelden)), lädt
+die Geheimtexte und öffnet AK mit dem Recovery Key. Dann wählt der Benutzer eine neue Passphrase,
+und das Gerät erzeugt ein neues Konto-Salt und einen neuen Recovery Key, verpackt AK unter beiden neu
+und ersetzt in einem Schritt (`PUT /api/account/unlock`) beide Geheimtexte, das Salt und beide
+Anmelde-Schlüssel. AK bleibt, also bleibt alles, was unter AK liegt; der alte Recovery Key und die
+alte Passphrase öffnen danach nichts mehr. Ein Gerät, das das Konto kennt, behält seinen Secret Key,
+sodass die übrigen Geräte weiter funktionieren; ein fremdes Gerät kennt ihn nicht und erzeugt einen
+neuen, den das neue Kit zeigt. Wer eine Sitzung des Kontos hat, kann so die Entsperr-Wege ersetzen;
+die Sitzung gibt es aber nur mit Passphrase, Recovery Key oder Passkey, und ohne AK lässt sich kein
+gültiger neuer Geheimtext bauen.
 
 Der QR-Code enthält nur einen Link auf die Entsperr-Seite des Servers mit Konto-ID und Secret Key im
 Fragment (`/unlock#account=…&secret=…`), das der Browser nicht an den Server schickt; die App liest

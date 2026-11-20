@@ -12,6 +12,7 @@ export const errorText = (
     "invalid-invitation": m.error_invalid_invitation(),
     "too-many-requests": m.error_too_many(),
     "wrong-passphrase": m.error_wrong_passphrase(),
+    "wrong-recovery-key": m.error_wrong_recovery_key(),
     unexpected: m.error_unexpected(),
     "passphrase-mismatch": m.error_passphrase_mismatch(),
     "passphrase-short": m.error_passphrase_short(),

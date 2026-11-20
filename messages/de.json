@@ -92,5 +92,10 @@
   "kit_server": "Server",
   "kit_created": "Erstellt am",
   "kit_qr": "Scanne diesen Code mit einem neuen Gerät: Er füllt Server, Konto-ID und Secret Key aus. Die Passphrase gibst du selbst ein; der Recovery Key steht nicht im Code.",
-  "kit_keep": "Bewahre dieses Blatt sicher auf, etwa im Tresor oder bei deinen Unterlagen. Wer es hat und deine Passphrase kennt, kommt an dein Konto. Niemand kann Passphrase oder Recovery Key für dich zurücksetzen."
+  "kit_keep": "Bewahre dieses Blatt sicher auf, etwa im Tresor oder bei deinen Unterlagen. Wer es hat und deine Passphrase kennt, kommt an dein Konto. Niemand kann Passphrase oder Recovery Key für dich zurücksetzen.",
+  "error_wrong_recovery_key": "Konto-ID oder Recovery Key stimmt nicht.",
+  "unlock_forgot": "Passphrase vergessen?",
+  "recover_title": "Passphrase vergessen",
+  "recover_text": "Mit dem Recovery Key aus deinem Recovery-Kit kommst du wieder an dein Konto. Danach wählst du eine neue Passphrase und bekommst ein neues Recovery-Kit; der alte Recovery Key gilt dann nicht mehr.",
+  "recover_submit": "Neue Passphrase festlegen"
 }

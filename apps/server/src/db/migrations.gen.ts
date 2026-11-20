@@ -37,5 +37,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795149453520,
     "breakpoints": true,
     "sql": "CREATE TABLE `account_keys` (\n\t`account_id` text PRIMARY KEY NOT NULL,\n\t`xwing_public_key` blob NOT NULL,\n\t`ed_public_key` blob NOT NULL,\n\t`key_block` blob NOT NULL,\n\t`unlock_passphrase` blob NOT NULL,\n\t`unlock_recovery` blob NOT NULL,\n\t`state` blob NOT NULL,\n\t`state_counter` integer NOT NULL,\n\t`certificate` text,\n\t`updated_at` integer NOT NULL,\n\tFOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action\n);\n"
+  },
+  {
+    "tag": "0006_recovery_login",
+    "when": 1795157394460,
+    "breakpoints": true,
+    "sql": "ALTER TABLE `login_challenges` ADD `way` text DEFAULT 'passphrase' NOT NULL;--> statement-breakpoint\nALTER TABLE `login_keys` ADD `recovery_public_key` text;"
   }
 ];

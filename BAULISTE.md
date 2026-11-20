@@ -106,7 +106,7 @@ und die Schritte für Menschen am Ende erledigt sind.
     Entsperren mit Passphrase und Recovery Key – in `packages/core` und auf dem Server.
   - [x] Teil 2: Konto anlegen und Entsperren in der Web-App, automatisches Sperren.
   - [x] Teil 3: Recovery-Kit als PDF mit QR-Code für ein neues Gerät (P-12).
-  - [ ] Teil 3b: Anmelden und Entsperren mit dem Recovery Key in der Web-App (eigener
+  - [x] Teil 3b: Anmelden und Entsperren mit dem Recovery Key in der Web-App (eigener
     Anmelde-Schlüssel aus dem Recovery Key, da der aus der Passphrase dann fehlt), danach neue
     Passphrase und neuen Recovery Key anlegen (P-12).
   - [ ] Teil 4: Neues Gerät per QR-Code, Geräteliste, Gerät abmelden.

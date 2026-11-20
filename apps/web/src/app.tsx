@@ -6,6 +6,7 @@
 import { getLocale, type Locale, setLocale } from "@kennwort/ui";
 import { createSignal, Match, onCleanup, Show, Switch } from "solid-js";
 import { InvitePage } from "./account/invite-page.tsx";
+import { RecoverPage } from "./account/recover-page.tsx";
 import { SetupPage } from "./account/setup-page.tsx";
 import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
 import { Frame } from "./frame/frame.tsx";
@@ -44,10 +45,14 @@ export const App = (props: { nav: Navigation; session: Session; hash?: string })
         <Switch>
           <Match when={route().page === "unlock"}>
             <UnlockPage
+              nav={props.nav}
               session={props.session}
               link={deviceLink}
               onUnlocked={() => props.nav.replace("/entries")}
             />
+          </Match>
+          <Match when={route().page === "recover"}>
+            <RecoverPage nav={props.nav} session={props.session} />
           </Match>
           <Match when={route().page === "setup"}>
             <SetupPage nav={props.nav} session={props.session} />
@@ -67,7 +72,7 @@ export const App = (props: { nav: Navigation; session: Session; hash?: string })
               when={props.session.device() || otherAccount()}
               fallback={<WelcomePage nav={props.nav} onUnlock={() => setOtherAccount(true)} />}
             >
-              <UnlockPage session={props.session} />
+              <UnlockPage nav={props.nav} session={props.session} />
             </Show>
           </Match>
           <Match when={props.session.opened()}>

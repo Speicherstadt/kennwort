@@ -1,6 +1,7 @@
 /**
  * The calls the web app makes for accounts (K-303): set up a company, accept an invitation,
- * upload and read the account's ciphertexts, sign in with the passphrase. Only IDs, public keys
+ * upload and read the account's ciphertexts, sign in with the passphrase or the Recovery Key and
+ * replace the unlock ways after it. Only IDs, public keys
  * and ciphertexts go out; every answer is parsed before it is used.
  */
 import {
@@ -13,7 +14,9 @@ import {
   type Stored,
   StoredWire,
   signInWithPassphrase,
+  signInWithRecoveryKey,
   toWire,
+  type UnlockUpload,
 } from "@kennwort/core";
 export type ApiError = "wrong-code" | "invalid-invitation" | "too-many-requests" | "unexpected";
 type Answer<T> = { ok: true; value: T } | { ok: false; error: ApiError };
@@ -41,6 +44,7 @@ const keysBody = (upload: AccountUpload, certificate?: Certificate) => ({
     passphrase: encodeBytes(upload.unlock.passphrase),
     recovery: encodeBytes(upload.unlock.recovery),
   },
+  recoveryLoginPublicKey: encodeBytes(upload.recoveryLoginPublicKey),
   state: encodeBytes(upload.state),
   stateCounter: upload.stateCounter,
   ...(certificate ? { certificate: toWire(certificate) } : {}),
@@ -93,6 +97,27 @@ export const createApi = (send: typeof fetch = fetch) => {
     },
     signIn: (accountId: Uint8Array, passphrase: string, secretKey: Uint8Array, derive?: Derive) =>
       signInWithPassphrase(post, accountId, passphrase, secretKey, derive),
+    /** Signing in with the Recovery Key alone (P-12) */
+    signInWithRecovery: (accountId: Uint8Array, recoveryKey: Uint8Array) =>
+      signInWithRecoveryKey(post, accountId, recoveryKey),
+    /** New passphrase and Recovery Key after the old Recovery Key was used */
+    replaceUnlock: async (token: string, upload: UnlockUpload) =>
+      (
+        await call(
+          "PUT",
+          "/api/account/unlock",
+          {
+            accountSalt: encodeBytes(upload.accountSalt),
+            loginPublicKey: encodeBytes(upload.loginPublicKey),
+            recoveryLoginPublicKey: encodeBytes(upload.recoveryLoginPublicKey),
+            unlock: {
+              passphrase: encodeBytes(upload.unlock.passphrase),
+              recovery: encodeBytes(upload.unlock.recovery),
+            },
+          },
+          token,
+        )
+      ).status === 200,
   };
 };
 
