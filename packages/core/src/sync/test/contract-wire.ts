@@ -17,6 +17,16 @@ const ask = (t: Target, method: string, path: string, body?: BodyInit) => {
     ...(body === undefined ? {} : { body }),
   });
 };
+const askAs = (t: Target, token: string, method: string, path: string, body?: BodyInit) => {
+  const c = t.connect(token);
+  return c.fetch(`${c.baseUrl}${path}`, {
+    method,
+    headers: { authorization: `Bearer ${c.token}`, "content-type": "application/json" },
+    ...(body === undefined ? {} : { body }),
+  });
+};
+const outcome = (r: Promise<Response>) =>
+  r.then(async (res) => [res.status, await res.json()]).catch((e: Error) => ["rejects", e.name]);
 const answer = async (r: Response) => [r.status, await r.json()];
 const own = () =>
   recordToWire(sealRecord(contextFor(jonas).author, ring, id(0xe1), 1, bank, new Uint8Array()));
@@ -67,5 +77,39 @@ export const wireContract = (target: () => Promise<Target>) =>
         new Promise((r) => setTimeout(() => r("still running"), 500)),
       ]);
       expect([ended, t.listening(vault)]).toEqual(["ended", 0]);
+    });
+    it("an oversized PUT to another company's vault answers like the server", async () => {
+      const t = await target();
+      await askAs(t, "t-jonas", "POST", "/api/vaults", JSON.stringify({ id: vault }));
+      const big = JSON.stringify({ padding: "x".repeat(1_200_000) });
+      expect([
+        await outcome(askAs(t, "t-petra", "PUT", `/api/vaults/${vault}/records`, big)),
+        await outcome(
+          askAs(t, "t-jonas", "PUT", `/api/vaults/${encodeBytes(id(0xb9))}/records`, big),
+        ),
+      ]).toEqual([
+        [413, { error: "too-large" }],
+        [413, { error: "too-large" }],
+      ]);
+    });
+
+    it("a GET with a body is refused as fetch refuses it", async () => {
+      const t = await target();
+      await askAs(t, "t-jonas", "POST", "/api/vaults", JSON.stringify({ id: vault }));
+      expect(
+        await outcome(askAs(t, "t-jonas", "GET", `/api/vaults/${vault}/records`, "{}")),
+      ).toEqual(["rejects", "TypeError"]);
+    });
+    it("limits the size only of records: a large body elsewhere is answered as usual", async () => {
+      const t = await target();
+      await askAs(t, "t-jonas", "POST", "/api/vaults", JSON.stringify({ id: vault }));
+      const big = JSON.stringify({ padding: "x".repeat(1_200_000) });
+      expect([
+        await outcome(askAs(t, "t-jonas", "POST", `/api/vaults/${vault}/records`, big)),
+        await outcome(askAs(t, "t-jonas", "PUT", `/api/vaults/${vault}/entries/x/versions`, big)),
+      ]).toEqual([
+        [404, { error: "not-found" }],
+        [404, { error: "not-found" }],
+      ]);
     });
   });

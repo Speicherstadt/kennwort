@@ -95,6 +95,12 @@ export const standIn = (sessions: Readonly<Record<string, StandInSession>>) => {
     const match = path.match(/^\/api\/vaults\/([^/]+)(\/.+)/);
     if (!match) return notFound();
     const [, vaultId, rest] = match as unknown as [string, string, string];
+    // The server's body limit is middleware: it answers before any vault is looked up
+    const tooLarge =
+      method === "PUT" &&
+      rest === "/records" &&
+      new TextEncoder().encode(body).length > MAX_RECORD_BYTES;
+    if (tooLarge) return json({ error: "too-large" }, 413);
     const vault = vaults.get(vaultId);
     if (vault?.companyId !== session.companyId) return notFound();
     const versions = rest.match(/^\/entries\/([^/]+)\/versions$/);
@@ -102,10 +108,7 @@ export const standIn = (sessions: Readonly<Record<string, StandInSession>>) => {
     if (call === "GET /records") return json(newest(vault));
     if (call === "GET /versions")
       return json((vault.entries.get(versions?.[1] as string) ?? []).map(recordToWire));
-    if (call === "PUT /records")
-      return new TextEncoder().encode(body).length > MAX_RECORD_BYTES
-        ? json({ error: "too-large" }, 413)
-        : pushRecord(session, vaultId, vault, body);
+    if (call === "PUT /records") return pushRecord(session, vaultId, vault, body);
     if (call === "GET /events") return events(vault, signal);
     return notFound();
   };
@@ -121,6 +124,8 @@ export const standIn = (sessions: Readonly<Record<string, StandInSession>>) => {
     const session = Object.hasOwn(sessions, token) ? sessions[token] : undefined;
     if (!session) return json({ error: "unauthenticated" }, 401);
     const method = (init.method ?? "GET").toUpperCase();
+    if ((method === "GET" || method === "HEAD") && init.body != null)
+      throw new TypeError("Request with GET/HEAD method cannot have body"); // i18n-ignore: as fetch says it
     const body = init.body == null ? "" : await new Response(init.body).text();
     if (`${method} ${url.pathname}` === "POST /api/vaults") return createVault(session, body);
     return inVault(session, method, url.pathname, body, init.signal);
