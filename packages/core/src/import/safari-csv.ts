@@ -7,7 +7,7 @@ import { tableParser } from "./table.ts";
 
 export const parseSafariCsv = tableParser({
   columns: {
-    title: "Title",
+    title: "Title", // i18n-ignore: column name in the vendor's export
     url: "URL",
     username: "Username",
     password: "Password",

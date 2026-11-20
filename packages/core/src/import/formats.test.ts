@@ -40,7 +40,7 @@ describe("import formats (K-502)", () => {
       ["enpass-json", "Enpass", "JSON"],
       ["chrome-csv", "Chrome / Edge", "CSV"],
       ["firefox-csv", "Firefox", "CSV"],
-      ["safari-csv", "Safari / Apple Passwörter", "CSV"],
+      ["safari-csv", "Safari", "CSV"],
     ]);
   });
 

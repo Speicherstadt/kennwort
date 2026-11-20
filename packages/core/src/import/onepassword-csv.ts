@@ -8,7 +8,7 @@ import { splitList, tableParser } from "./table.ts";
 
 export const parseOnePasswordCsv = tableParser({
   columns: {
-    title: "Title",
+    title: "Title", // i18n-ignore: column name in the vendor's export
     url: "Url",
     username: "Username",
     password: "Password",

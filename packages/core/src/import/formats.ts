@@ -19,6 +19,7 @@ import { parseProtonPassJson } from "./protonpass-json.ts";
 import { parseSafariCsv } from "./safari-csv.ts";
 import type { Parser } from "./types.ts";
 
+/** `vendor` is the product name only; the import flow says the rest in its own texts (Paraglide) */
 export type ImportFormat = { id: string; vendor: string; file: string; parse: Parser };
 
 export const IMPORT_FORMATS: readonly ImportFormat[] = [
@@ -37,5 +38,5 @@ export const IMPORT_FORMATS: readonly ImportFormat[] = [
   { id: "enpass-json", vendor: "Enpass", file: "JSON", parse: parseEnpassJson },
   { id: "chrome-csv", vendor: "Chrome / Edge", file: "CSV", parse: parseChromeCsv },
   { id: "firefox-csv", vendor: "Firefox", file: "CSV", parse: parseFirefoxCsv },
-  { id: "safari-csv", vendor: "Safari / Apple Passwörter", file: "CSV", parse: parseSafariCsv },
+  { id: "safari-csv", vendor: "Safari", file: "CSV", parse: parseSafariCsv },
 ];

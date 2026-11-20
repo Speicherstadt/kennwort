@@ -16,7 +16,7 @@ const belowRoot = (path: string) => path.split("/").slice(1);
 export const parseKeePassXcCsv = tableParser({
   columns: {
     folder: "Group",
-    title: "Title",
+    title: "Title", // i18n-ignore: column name in the vendor's export
     username: "Username",
     password: "Password",
     url: "URL",
@@ -30,7 +30,7 @@ export const parseKeePassXcCsv = tableParser({
 
 export const parseKeePassCsv = tableParser({
   columns: {
-    title: "Account",
+    title: "Account", // i18n-ignore: column name in the vendor's export
     username: "Login Name",
     password: "Password",
     url: "Web Site",

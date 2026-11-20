@@ -7,6 +7,6 @@
 import { tableParser } from "./table.ts";
 
 export const parseChromeCsv = tableParser({
-  columns: { title: "name", url: "url", username: "username", password: "password", notes: "note" },
+  columns: { title: "name", url: "url", username: "username", password: "password", notes: "note" }, // i18n-ignore: column name in the vendor's export
   required: ["name", "url", "username", "password"],
 });

@@ -7,7 +7,7 @@ import { tableParser } from "./table.ts";
 
 export const parsePassboltCsv = tableParser({
   columns: {
-    title: "Title",
+    title: "Title", // i18n-ignore: column name in the vendor's export
     username: "Username",
     url: "URL",
     password: "Password",
