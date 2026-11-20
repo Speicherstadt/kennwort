@@ -1,5 +1,6 @@
 // Every component of packages/ui on one page, for the end-to-end tests (keyboard, axe) and to look
-// at; built only with KENNWORT_SHOWCASE=1 (vite.config.ts). Texts come from the test data of Weber
+// at; built only with KENNWORT_SHOWCASE=1 (vite.config.ts), and kept outside src/ because it is no
+// part of the app. Texts come from the test data of Weber
 // Haustechnik (DESIGN.md, Testdaten), not from the app's messages.
 import "@kennwort/ui/styles.css";
 import {
