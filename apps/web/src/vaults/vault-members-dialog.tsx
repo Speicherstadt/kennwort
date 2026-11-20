@@ -7,13 +7,13 @@
 import type { Vault } from "@kennwort/client/vaults/vaults.ts";
 import type { Certificate, MemberView, VaultRole } from "@kennwort/core";
 import { idKey } from "@kennwort/core";
-import { Button, Dialog, Input, m } from "@kennwort/ui";
+import { Button, Dialog, Input, m, selectClass } from "@kennwort/ui";
 import { createSignal, For, Show } from "solid-js";
 import { linkGroup, outsideLinkedGroups, unlinkGroup } from "../groups/groups.ts";
 import type { Session } from "../session/session.ts";
 import { dateText, endOfDay, today } from "./day.ts";
 import { createDialogState, type DialogApi } from "./dialog-state.ts";
-import { RoleSelect, selectClass } from "./role-select.tsx";
+import { RoleSelect } from "./role-select.tsx";
 import { VaultGroups } from "./vault-groups.tsx";
 import {
   addToVault,

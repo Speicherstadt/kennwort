@@ -104,6 +104,8 @@
       "dependencies": {
         "@fontsource-variable/geist": "5.3.0",
         "@fontsource-variable/geist-mono": "5.3.0",
+        "@kennwort/core": "workspace:*",
+        "@kennwort/crypto": "workspace:*",
         "@solidjs/web": "2.0.3",
         "lucide": "1.74.0",
         "solid-js": "2.0.3",

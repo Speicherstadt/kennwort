@@ -1,6 +1,7 @@
 /**
- * What the generator makes, remembered per device in localStorage (K-306): the kind and the
- * options, nothing it made. A storage that throws or holds something else gives the defaults.
+ * What the generator makes, remembered per device (K-306; the web app in its local storage, the
+ * extension not at all): the kind and the options, nothing it made. A storage that throws or holds
+ * something else gives the defaults.
  */
 import {
   PASSPHRASE_WORDS,
@@ -23,6 +24,9 @@ export const DEFAULT_SETTINGS: GeneratorSettings = {
   passphrase: { words: PASSPHRASE_WORDS.initial, separator: "-", capitalize: false, digit: false },
 };
 const KEY = "kennwort-generator";
+
+/** The part of the Web Storage API the settings need */
+export type SettingsStorage = Pick<Storage, "getItem" | "setItem">;
 
 type Loose = Record<string, unknown>;
 const record = (value: unknown): Loose =>

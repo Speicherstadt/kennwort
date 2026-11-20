@@ -6,5 +6,6 @@
     "jsxImportSource": "@solidjs/web",
     "allowJs": false
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [{ "path": "../core" }, { "path": "../crypto" }]
 }

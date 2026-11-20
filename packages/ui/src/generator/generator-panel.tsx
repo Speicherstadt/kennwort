@@ -1,21 +1,27 @@
 /**
  * The generator (K-306): a password or a passphrase, made anew on every change of the options,
  * with its strength, to copy or to make again. The options are remembered on the device, what it
- * made is not. Shared by the generator page and, later, the extension's popup.
+ * made is not. Shared by the web app's generator page and the extension's popup; where they are
+ * remembered is the app's choice (the extension remembers nothing outside its session area).
  */
 
 import { PASSPHRASE_WORDS, PASSWORD_LENGTH, type Strength, strengthOf } from "@kennwort/core";
-import { Icon, IconButton, m, Tabs, type Toasts } from "@kennwort/ui";
-import { Copy, RefreshCw } from "@kennwort/ui/icons";
-import { createSignal, For } from "solid-js";
-import { copyText } from "../frame/secret-field.tsx";
-import { selectClass } from "../vaults/role-select.tsx";
+import { createSignal, For, untrack } from "solid-js";
+import { IconButton } from "../components/button.tsx";
+import { Icon } from "../components/icon.tsx";
+import { selectClass } from "../components/select.ts";
+import { Tabs } from "../components/tabs.tsx";
+import type { Toasts } from "../components/toast.tsx";
+import { Copy, RefreshCw } from "../icons.ts";
+import { copyText } from "../lib/copy.ts";
+import { m } from "../paraglide/messages.js";
 import { bitsOf, makeSecret } from "./make.ts";
 import {
   type GeneratorKind,
   type GeneratorSettings,
   readSettings,
   SEPARATORS,
+  type SettingsStorage,
   writeSettings,
 } from "./settings.ts";
 
@@ -24,8 +30,6 @@ const strengthText: Record<Strength, (bits: number) => string> = {
   good: (bits) => m.generator_strength_good({ bits }),
   strong: (bits) => m.generator_strength_strong({ bits }),
 };
-
-const storage = () => (typeof localStorage === "undefined" ? undefined : localStorage);
 
 const Check = (props: { label: string; checked: boolean; onChange: (on: boolean) => void }) => (
   <label class="flex min-h-11 items-center gap-2 text-[13px] md:min-h-8">
@@ -129,8 +133,14 @@ const PhraseOptionsForm = (props: OptionsProps) => {
   );
 };
 
-export const GeneratorPanel = (props: { toasts: Toasts }) => {
-  const remembered = readSettings(storage());
+export const GeneratorPanel = (props: {
+  toasts: Toasts;
+  /** Where the options are remembered; without one they hold until the panel goes */
+  storage?: SettingsStorage | undefined;
+}) => {
+  // Read once: the storage is the app's choice and does not change while the panel lives
+  const storage = untrack(() => props.storage);
+  const remembered = readSettings(storage);
   const [settings, setSettings] = createSignal(remembered);
   // A plain mirror: Solid 2 hands back the old value until the next flush, and two quick changes
   // must build on each other
@@ -146,7 +156,7 @@ export const GeneratorPanel = (props: { toasts: Toasts }) => {
   const change = (update: (now: GeneratorSettings) => GeneratorSettings) => {
     latest = update(latest);
     setSettings(latest);
-    writeSettings(storage(), latest);
+    writeSettings(storage, latest);
     void show(latest);
   };
   const kindLabel = () =>

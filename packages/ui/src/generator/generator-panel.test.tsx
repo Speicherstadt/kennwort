@@ -1,10 +1,11 @@
-import { createToasts, setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { flush } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createToasts, setLocale } from "../index.ts";
 import { GeneratorPanel } from "./generator-panel.tsx";
+import type { SettingsStorage } from "./settings.ts";
 
-// K-306 part 3: the generator page
+// K-306 part 3: the generator page; K-402: the same panel in the extension's popup, without storage
 let dispose = () => {};
 afterEach(() => {
   dispose();
@@ -17,12 +18,13 @@ const settle = async () => {
   flush();
 };
 
-const show = async () => {
+const show = async (remember: "remember" | "forget" = "remember") => {
+  const storage: SettingsStorage | undefined = remember === "remember" ? localStorage : undefined;
   setLocale("de", { reload: false });
   const root = document.createElement("div");
   document.body.append(root);
   const toasts = createToasts();
-  dispose = render(() => <GeneratorPanel toasts={toasts} />, root);
+  dispose = render(() => <GeneratorPanel toasts={toasts} storage={storage} />, root);
   flush();
   await settle();
   return { root, toasts };
@@ -109,5 +111,14 @@ describe("GeneratorPanel", () => {
     await settle();
     expect(writeText).toHaveBeenCalledWith(result(root));
     expect(toasts.toasts().map((t) => t.text)).toContain("Passwort kopiert");
+  });
+
+  it("remembers nothing without a storage, as in the extension, and still makes passwords", async () => {
+    const { root } = await show("forget");
+    expect(result(root)).toHaveLength(20);
+    tab(root, "Passphrase").click();
+    flush();
+    await vi.waitFor(() => expect(result(root).split("-").length).toBeGreaterThan(3));
+    expect(localStorage.getItem("kennwort-generator")).toBeNull();
   });
 });

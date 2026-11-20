@@ -8,11 +8,10 @@ import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import type { ShareApi } from "@kennwort/client/session/shares-api.ts";
 import type { Vault } from "@kennwort/client/vaults/vaults.ts";
 import { type Certificate, idKey, type MemberView, type Share, type Trust } from "@kennwort/core";
-import { Button, Dialog, Input, m } from "@kennwort/ui";
+import { Button, Dialog, Input, m, selectClass } from "@kennwort/ui";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import type { Session } from "../session/session.ts";
 import { dateText, endOfDay, today } from "../vaults/day.ts";
-import { selectClass } from "../vaults/role-select.tsx";
 import { candidates, hasExpired } from "../vaults/vault-members.ts";
 import {
   type EntryKeys,

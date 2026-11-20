@@ -1,5 +1,5 @@
 /** A field of the entry; a secret shows as dots until revealed, copy and reveal are own buttons (DESIGN.md) */
-import { cn, Icon, IconButton, m, type Toasts } from "@kennwort/ui";
+import { cn, copyText, Icon, IconButton, m, type Toasts } from "@kennwort/ui";
 import { Copy, Eye, EyeOff } from "@kennwort/ui/icons";
 import { createSignal, Show } from "solid-js";
 
@@ -11,15 +11,6 @@ export type FieldProps = {
   /** Long text (a note, an address, a key): shown whole, line breaks kept */
   multiline?: boolean;
   toasts: Toasts;
-};
-
-export const copyText = async (text: string, label: string, toasts: Toasts) => {
-  try {
-    await navigator.clipboard.writeText(text);
-    toasts.show(m.field_copied({ field: label }), "success");
-  } catch {
-    // No clipboard (insecure context or denied): the value stays on screen to copy by hand
-  }
 };
 
 export const Field = (props: FieldProps) => {

@@ -4,10 +4,9 @@
  * the code, never the key (DESIGN.md: Einmalcode 18 px, 22 px on a phone)
  */
 import { totpCode } from "@kennwort/core";
-import { Icon, IconButton, m, type Toasts } from "@kennwort/ui";
+import { copyText, Icon, IconButton, m, type Toasts } from "@kennwort/ui";
 import { Copy } from "@kennwort/ui/icons";
 import { createSignal, onSettled, Show } from "solid-js";
-import { copyText } from "./secret-field.tsx";
 
 /** "287082" as "287 082", "94287082" as "9428 7082" */
 const grouped = (code: string) => {

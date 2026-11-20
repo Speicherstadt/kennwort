@@ -1,10 +1,10 @@
 /** The other sections: generator, groups, settings, and a page that does not exist */
 import { Button, getLocale, Icon, type Locale, locales, m, type Toasts } from "@kennwort/ui";
+import { GeneratorPanel } from "@kennwort/ui/generator/generator-panel.tsx";
 import { Archive, Lock, Users } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { createSignal, For, Show } from "solid-js";
 import { groups } from "../demo.ts";
-import { GeneratorPanel } from "../generator/generator-panel.tsx";
 import type { Navigation } from "../navigation.ts";
 import { applyTheme, readTheme, type Theme } from "../theme.ts";
 import { Link } from "./link.tsx";
@@ -21,7 +21,7 @@ const Page = (props: { title: string; children: JSX.Element }) => (
 export const GeneratorPage = (props: { toasts: Toasts }) => (
   <Page title={m.nav_generator()}>
     <p class="mb-4 text-muted-foreground">{m.generator_intro()}</p>
-    <GeneratorPanel toasts={props.toasts} />
+    <GeneratorPanel toasts={props.toasts} storage={globalThis.localStorage} />
   </Page>
 );
 

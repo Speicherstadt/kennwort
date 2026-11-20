@@ -1,6 +1,6 @@
 /** A labelled select of the entry dialog: vault, type, a field's kind (K-306) */
+import { selectClass } from "@kennwort/ui";
 import { createUniqueId, For } from "solid-js";
-import { selectClass } from "../vaults/role-select.tsx";
 
 export const Choice = (props: {
   label: string;
