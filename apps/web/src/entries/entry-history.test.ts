@@ -74,4 +74,24 @@ describe("history cap", () => {
     expect(after[0]?.value).toBe("password-1");
     expect(historyAfter(undefined, login.fields, 100)).toEqual([]);
   });
+
+  it("keeps the value a change just replaced, even when the history's times lie ahead of this device's clock", () => {
+    // Another device with a clock ahead, or a merge in the same second, stamped the ten kept values
+    // at or after `now`; the password this change replaces must still show under „Frühere Passwörter“
+    const ahead = items("password", HISTORY_PER_FIELD).map((i) => ({
+      ...i,
+      replacedAt: 500 + i.replacedAt,
+    }));
+    const after = historyAfter({ ...login, history: ahead }, field("password", "neu"), 100);
+    expect(after).toHaveLength(HISTORY_PER_FIELD);
+    expect(after).toContainEqual({ fieldId: "password", value: "alt-1", replacedAt: 100 });
+    const same = items("password", HISTORY_PER_FIELD).map((i) => ({ ...i, replacedAt: 100 }));
+    expect(historyAfter({ ...login, history: same }, field("password", "neu"), 100)).toContainEqual(
+      {
+        fieldId: "password",
+        value: "alt-1",
+        replacedAt: 100,
+      },
+    );
+  });
 });
