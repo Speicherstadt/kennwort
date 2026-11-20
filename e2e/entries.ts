@@ -17,7 +17,7 @@ export const addEntry = async (page: Page, login: Login) => {
   const dialog = page.getByRole("dialog", { name: "Neuer Eintrag" });
   await dialog.getByLabel("Titel").fill(login.title);
   await dialog.getByLabel("Benutzername").fill(login.username ?? "");
-  await dialog.getByLabel("Passwort").fill(login.password ?? "");
+  await dialog.getByLabel("Passwort", { exact: true }).fill(login.password ?? "");
   await dialog.getByLabel("Website").fill(login.website ?? "");
   await dialog.getByRole("button", { name: "Speichern" }).click();
   await expect(dialog).toBeHidden();

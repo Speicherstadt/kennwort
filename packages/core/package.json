@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./testing": "./src/sync/test/fixtures.ts",
     "./adversary": "./src/adversary/index.ts",
-    "./contract": "./src/sync/test/contract.ts"
+    "./contract": "./src/sync/test/contract.ts",
+    "./words": "./src/generator/eff-large.ts"
   },
   "dependencies": {
     "@kennwort/crypto": "workspace:*",

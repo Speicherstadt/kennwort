@@ -178,7 +178,10 @@ und die Schritte für Menschen am Ende erledigt sind.
     zweiten Konto als Playwright-Test desktop und `@phone` laufen.
   - [ ] Teil 2: Alle Typen (Notiz, WLAN, Karte, SSH- und API-Schlüssel, Identität) und eigene
     Felder.
-  - [ ] Teil 3: Generator für Passwörter und Passphrasen.
+  - [x] Teil 3: Generator für Passwörter und Passphrasen. Fertig, wenn: jede Wahl gleich
+    wahrscheinlich ist (Verwerfungsstichprobe, Mutationstests), die Wortliste per Prüfsumme
+    feststeht und Erzeugen sowie Übernehmen in den Eintrag als Playwright-Test desktop und `@phone`
+    laufen.
   - [ ] Teil 4: TOTP mit QR-Scan.
   - [ ] Teil 5: Frühere Passwörter, Favoriten, Tags, Suche über alles, „Zum Ändern“ (schwache und
     doppelte Passwörter).

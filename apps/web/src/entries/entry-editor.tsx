@@ -1,15 +1,25 @@
 /**
- * A new login or a change to one (K-306 part 1), in a dialog: title, username, password and
- * website, and for a new entry the vault it goes into (only vaults this account may edit in)
+ * A new login or a change to one (K-306 part 1), in a dialog: title, username, password (typed or
+ * generated) and website, and for a new entry the vault it goes into (only vaults this account may
+ * edit in)
  */
-import { Button, Dialog, Input, m } from "@kennwort/ui";
+import { Button, Dialog, Icon, IconButton, Input, m } from "@kennwort/ui";
+import { WandSparkles } from "@kennwort/ui/icons";
 import { createSignal, For, Show } from "solid-js";
+import { makePassword } from "../generator/make.ts";
+import { readSettings } from "../generator/settings.ts";
 import { selectClass } from "../vaults/role-select.tsx";
 import type { LoginInput } from "./entries.ts";
 import type { SaveError } from "./entry-store.ts";
 
 export type EditorVault = { idText: string; name: string };
 type Saved = { ok: true; value: string } | { ok: false; error: SaveError };
+
+/** A password with the options last chosen in the generator, on this device */
+const generated = () =>
+  makePassword(
+    readSettings(typeof localStorage === "undefined" ? undefined : localStorage).password,
+  );
 
 const errorText = (error: SaveError) =>
   error === "read-only" ? m.entry_editor_read_only() : m.entry_editor_failed();
@@ -61,13 +71,24 @@ export const EntryEditor = (props: {
           onInput={set("title")}
         />
         <Input label={m.field_username()} value={input().username} onInput={set("username")} />
-        <Input
-          label={m.field_password()}
-          type="password"
-          autocomplete="new-password"
-          value={input().password}
-          onInput={set("password")}
-        />
+        <div class="flex items-end gap-2">
+          <div class="grid flex-1">
+            <Input
+              label={m.field_password()}
+              type="password"
+              autocomplete="new-password"
+              value={input().password}
+              onInput={set("password")}
+            />
+          </div>
+          <IconButton
+            type="button"
+            label={m.entry_editor_generate()}
+            onClick={() => setInput({ ...input(), password: generated() })}
+          >
+            <Icon icon={WandSparkles} />
+          </IconButton>
+        </div>
         <Input
           label={m.field_website()}
           type="url"

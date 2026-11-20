@@ -42,7 +42,7 @@ test.describe("entries", { tag: "@phone" }, () => {
     await editor.getByLabel("Tresor").selectOption({ label: "Büro" });
     await editor.getByLabel("Titel").fill("Sparkasse");
     await editor.getByLabel("Benutzername").fill("jonas@weber-haustechnik.de");
-    await editor.getByLabel("Passwort").fill("Rohr-Ventil-2026!");
+    await editor.getByLabel("Passwort", { exact: true }).fill("Rohr-Ventil-2026!");
     await editor.getByLabel("Website").fill("https://sparkasse.de");
     await axe(page);
     await editor.getByRole("button", { name: "Speichern" }).click();
@@ -52,7 +52,7 @@ test.describe("entries", { tag: "@phone" }, () => {
     await page.getByRole("button", { name: "Bearbeiten" }).click();
     const change = page.getByRole("dialog", { name: "Eintrag bearbeiten" });
     await expect(change.getByLabel("Titel")).toHaveValue("Sparkasse");
-    await change.getByLabel("Passwort").fill("Neu-2027!");
+    await change.getByLabel("Passwort", { exact: true }).fill("Neu-2027!");
     await change.getByRole("button", { name: "Speichern" }).click();
     await expect(change).toBeHidden();
     await page.getByRole("button", { name: "Passwort aufdecken" }).click();

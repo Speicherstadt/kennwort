@@ -83,6 +83,24 @@ export {
   signInWithRecoveryKey,
 } from "./auth/sign-in.ts";
 export {
+  DIGITS,
+  LOWER,
+  PASSPHRASE_WORDS,
+  PASSWORD_LENGTH,
+  type PassphraseOptions,
+  type PasswordOptions,
+  passphrase,
+  passphraseBits,
+  password,
+  passwordBits,
+  type RandomBelow,
+  randomBelow,
+  type Strength,
+  SYMBOLS,
+  strengthOf,
+  UPPER,
+} from "./generator/generator.ts";
+export {
   type Certificate,
   type CompanyRole,
   certificateFingerprint,
