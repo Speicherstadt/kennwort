@@ -103,5 +103,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795180998429,
     "breakpoints": true,
     "sql": "CREATE TABLE `group_members` (\n\t`group_id` text NOT NULL,\n\t`account_id` text NOT NULL,\n\tPRIMARY KEY(`group_id`, `account_id`),\n\tFOREIGN KEY (`group_id`) REFERENCES `groups`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE TABLE `groups` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`company_id` text NOT NULL,\n\t`name` text NOT NULL,\n\t`created_at` integer NOT NULL,\n\tFOREIGN KEY (`company_id`) REFERENCES `companies`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE INDEX `groups_company` ON `groups` (`company_id`);--> statement-breakpoint\nCREATE TABLE `vault_groups` (\n\t`vault_id` text NOT NULL,\n\t`group_id` text NOT NULL,\n\t`role` text NOT NULL,\n\tPRIMARY KEY(`vault_id`, `group_id`),\n\tFOREIGN KEY (`vault_id`) REFERENCES `vaults`(`id`) ON UPDATE no action ON DELETE no action,\n\tFOREIGN KEY (`group_id`) REFERENCES `groups`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nALTER TABLE `vault_requests` ADD `via_group` text;"
+  },
+  {
+    "tag": "0017_vault_creator",
+    "when": 1795185046476,
+    "breakpoints": true,
+    "sql": "ALTER TABLE `vaults` ADD `created_by` text;--> statement-breakpoint\nUPDATE `vaults` SET `created_by` = (SELECT `actor` FROM `audit_events` WHERE `audit_events`.`action` = 'vault-created' AND `audit_events`.`subject` = `vaults`.`id` AND `audit_events`.`company_id` = `vaults`.`company_id` ORDER BY `audit_events`.`seq` LIMIT 1);\n"
   }
 ];

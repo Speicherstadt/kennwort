@@ -23,6 +23,8 @@ export type StandInCompany = {
 type Change = { entryId: string; version: number };
 type Vault = {
   companyId: string;
+  /** Only who created the vault writes the genesis of its log, as on the server */
+  createdBy: string;
   entries: Map<string, EntryRecord[]>;
   listeners: Set<(change: Change) => void>;
   log: LogEntry[];
@@ -115,8 +117,10 @@ const appendLog = (
   // The key rotation comes with K-307; refused where the server refuses it, after the stale check
   if (entry.action === "rotate") return json({ error: "invalid" }, 400);
   const now = company.now();
-  if (last && roleOf(vault, session.accountId, now) !== "manage")
-    return json({ error: "forbidden" }, 403);
+  const allowed = last
+    ? roleOf(vault, session.accountId, now) === "manage"
+    : vault.createdBy === session.accountId;
+  if (!allowed) return json({ error: "forbidden" }, 403);
   const trust = {
     ...company,
     certificates: new Map(company.certificates),
@@ -171,6 +175,7 @@ export const standIn = (
     if (vaults.has(id)) return json({ error: "taken" }, 409);
     vaults.set(id, {
       companyId: session.companyId,
+      createdBy: session.accountId,
       entries: new Map(),
       listeners: new Set(),
       log: [],

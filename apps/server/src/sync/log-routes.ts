@@ -78,6 +78,9 @@ const refusal = (
   if (rows.length > 0) {
     const signer = membersOf(entries).get(accountId);
     if (signer?.role !== "manage" || !isCurrent(signer, s.seconds())) return "forbidden";
+  } else if (s.vaultOf(companyId, encodeBytes(entry.vaultId))?.createdBy !== accountId) {
+    // Only who created the vault writes its genesis: no colleague takes a new vault over
+    return "forbidden";
   }
   return chainRefusal(s.db, companyId, entry.vaultId, [...entries, entry], s.seconds());
 };

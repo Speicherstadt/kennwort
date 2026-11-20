@@ -23,7 +23,11 @@ import {
   rotationOnAStalePlace,
   rotationSignedAsAnother,
 } from "./log-contract.ts";
-import { nonMemberCannotJoinHimself, removedMemberHearsNothing } from "./members-contract.ts";
+import {
+  nonMemberCannotJoinHimself,
+  noOneTakesANewVault,
+  removedMemberHearsNothing,
+} from "./members-contract.ts";
 
 export type Target = {
   connect: (token: string) => Connection;
@@ -247,6 +251,8 @@ export const syncContract = (name: string, target: () => Promise<Target>) =>
       membersOnly(await target()));
     it("lets no colleague make himself a member of a vault", async () =>
       nonMemberCannotJoinHimself(await target()));
+    it("takes a vault's genesis only from who created the vault", async () =>
+      noOneTakesANewVault(await target()));
     it("ends a member's stream once the member is removed, before naming another change", async () =>
       removedMemberHearsNothing(await target()));
     it("refuses a genesis for another vault", async () => genesisOfAnotherVault(await target()));

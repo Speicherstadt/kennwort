@@ -120,6 +120,13 @@
       "when": 1795180998429,
       "tag": "0016_groups",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1795185046476,
+      "tag": "0017_vault_creator",
+      "breakpoints": true
     }
   ]
 }

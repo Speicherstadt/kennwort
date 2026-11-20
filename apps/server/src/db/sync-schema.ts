@@ -12,6 +12,8 @@ export const vaults = sqliteTable(
       .notNull()
       .references(() => companies.id),
     createdAt: integer("created_at").notNull(),
+    /** Who created it: only this account writes the genesis of its log (review of the sync) */
+    createdBy: text("created_by"),
     /** The name sealed with the vault key of nameEpoch (P-05); only members read it */
     name: blob("name", { mode: "buffer" }),
     nameEpoch: integer("name_epoch"),
