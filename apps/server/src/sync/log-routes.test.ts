@@ -14,12 +14,14 @@ import {
   verifyLog,
 } from "@kennwort/core";
 import { ed25519KeyPair, xwingKeyPair } from "@kennwort/crypto";
+import { accountKeys } from "../db/schema.ts";
 import { ownerWithKeys } from "../testing/owner-with-keys.ts";
 import { invitationBody } from "../testing/sign-in-setup.ts";
 
 const CODE = "setup-code-of-weber-haustechnik";
 const PASSPHRASE = "Heizung-Wasser-Licht-Kupfer";
-const NOW = 1_800_000_000;
+/** The tests sign a little in the past: the server takes no entry signed ahead of its clock */
+const NOW = Math.floor(Date.now() / 1000) - 600;
 
 /** Jonas with his company; Anna accepted an invitation (her keys and certificate are made up here) */
 const weber = async () => {
@@ -53,6 +55,22 @@ const weber = async () => {
     edPublicKey: annaEd.publicKey,
     role: "member",
   });
+  // what PUT /api/members/:id/certificate leaves behind once Anna's keys are up
+  o.setup.db
+    .insert(accountKeys)
+    .values({
+      accountId: encodeBytes(annaId),
+      xwingPublicKey: Buffer.from(annaCert.xwingPublicKey),
+      edPublicKey: Buffer.from(annaCert.edPublicKey),
+      keyBlock: Buffer.alloc(1),
+      unlockPassphrase: Buffer.alloc(1),
+      unlockRecovery: Buffer.alloc(1),
+      state: Buffer.alloc(1),
+      stateCounter: 0,
+      certificate: JSON.stringify(toWire(annaCert)),
+      updatedAt: 0,
+    })
+    .run();
   return { o, jonas, annaId, annaToken, annaCert, annaEd };
 };
 type Weber = Awaited<ReturnType<typeof weber>>;
@@ -240,5 +258,149 @@ describe("vault log and keys (K-305 part 1)", () => {
     expect(await logOf(w, vaultId, w.annaToken)).toBe(404);
     expect(await logOf(w, encodeBytes(new Uint8Array(16).fill(9)))).toBe(404);
     expect((await post(w, encodeBytes(new Uint8Array(16).fill(9)), {})).status).toBe(404);
+  });
+});
+
+const addAnna = async (
+  w: Weber,
+  access: { role: "read" | "edit" | "manage"; validUntil: number },
+) => {
+  const { vault, vaultId } = await createBuero(w);
+  const s0 = stateOf(w, vault.ring.vaultId, [vault.genesis]);
+  if (!s0.ok) throw new Error(s0.error);
+  const added = addMember(w.jonas.signer, s0.value, vault.ring, w.annaCert, access, NOW + 1);
+  expect(
+    (
+      await post(w, vaultId, {
+        entry: toWire(added.entry),
+        wrappedKey: encodeBytes(added.wrappedKey),
+      })
+    ).status,
+  ).toBe(201);
+  return { vault, vaultId, added };
+};
+
+describe("vault log against what verifyLog rejects (review of K-305 part 1)", () => {
+  it("R1: a removed member no longer reads the vault's log", async () => {
+    const w = await weber();
+    const { vault, vaultId, added } = await addAnna(w, { role: "edit", validUntil: 0 });
+    const s1 = stateOf(w, vault.ring.vaultId, [vault.genesis, added.entry]);
+    if (!s1.ok) throw new Error(s1.error);
+    const removed = removeMember(w.jonas.signer, s1.value, vault.ring.vaultId, w.annaId, NOW + 2);
+    expect((await post(w, vaultId, { entry: toWire(removed) })).status).toBe(201);
+    expect(await logOf(w, vaultId, w.annaToken)).toBe(404);
+  });
+
+  it("R2: a member whose access ran out no longer reads the vault's log", async () => {
+    const w = await weber();
+    const { vaultId } = await addAnna(w, {
+      role: "edit",
+      validUntil: Math.floor(Date.now() / 1000) - 10,
+    });
+    const listed = (await (
+      await w.o.setup.request("/api/vaults", { token: w.annaToken })
+    ).json()) as {
+      vaults: string[];
+    };
+    expect(listed.vaults).toEqual([]);
+    expect(await logOf(w, vaultId, w.annaToken)).toBe(404);
+  });
+
+  it("R3: the server takes no entry signed earlier than the last one (verifyLog: bad-time)", async () => {
+    const w = await weber();
+    const { vault, vaultId, added } = await addAnna(w, { role: "edit", validUntil: 0 });
+    const s1 = stateOf(w, vault.ring.vaultId, [vault.genesis, added.entry]);
+    if (!s1.ok) throw new Error(s1.error);
+    // Jonas's second device runs a little behind the first
+    const change = changeAccess(
+      w.jonas.signer,
+      s1.value,
+      vault.ring.vaultId,
+      w.annaId,
+      { role: "read", validUntil: 0 },
+      NOW,
+    );
+    const status = (await post(w, vaultId, { entry: toWire(change) })).status;
+    const checked = stateOf(w, vault.ring.vaultId, (await logOf(w, vaultId)) as never);
+    expect({ status, ok: checked.ok }).toEqual({ status: 400, ok: true });
+  });
+
+  it("R4: adding a current member again neither enters the log nor replaces their key", async () => {
+    const w = await weber();
+    const { vault, vaultId, added } = await addAnna(w, { role: "edit", validUntil: 0 });
+    const s1 = stateOf(w, vault.ring.vaultId, [vault.genesis, added.entry]);
+    if (!s1.ok) throw new Error(s1.error);
+    const again = addMember(
+      w.jonas.signer,
+      s1.value,
+      vault.ring,
+      w.annaCert,
+      { role: "read", validUntil: 0 },
+      NOW + 2,
+    );
+    const status = (
+      await post(w, vaultId, {
+        entry: toWire(again.entry),
+        wrappedKey: encodeBytes(again.wrappedKey),
+      })
+    ).status;
+    const keys = (await (
+      await w.o.setup.request(`/api/vaults/${vaultId}/keys`, { token: w.annaToken })
+    ).json()) as { keys: { epoch: number; wrapped: string }[] };
+    const checked = stateOf(w, vault.ring.vaultId, (await logOf(w, vaultId)) as never);
+    expect({ status, ok: checked.ok, key: keys.keys[0]?.wrapped }).toEqual({
+      status: 400,
+      ok: true,
+      key: encodeBytes(added.wrappedKey),
+    });
+  });
+
+  it("R5: a role change for a non-member does not make them a member on the server", async () => {
+    const w = await weber();
+    const { vault, vaultId } = await createBuero(w);
+    const s0 = stateOf(w, vault.ring.vaultId, [vault.genesis]);
+    if (!s0.ok) throw new Error(s0.error);
+    const change = changeAccess(
+      w.jonas.signer,
+      s0.value,
+      vault.ring.vaultId,
+      w.annaId,
+      { role: "manage", validUntil: 0 },
+      NOW + 1,
+    );
+    const status = (await post(w, vaultId, { entry: toWire(change) })).status;
+    const checked = stateOf(w, vault.ring.vaultId, (await logOf(w, vaultId)) as never);
+    expect({ status, ok: checked.ok }).toEqual({ status: 400, ok: true });
+  });
+});
+
+describe("signed times against the server's clock", () => {
+  const atTime = async (w: Weber, time: number) => {
+    const { vault, vaultId } = await createBuero(w);
+    const s0 = stateOf(w, vault.ring.vaultId, [vault.genesis]);
+    if (!s0.ok) throw new Error(s0.error);
+    const added = addMember(
+      w.jonas.signer,
+      s0.value,
+      vault.ring,
+      w.annaCert,
+      { role: "read", validUntil: 0 },
+      time,
+    );
+    return (
+      await post(w, vaultId, {
+        entry: toWire(added.entry),
+        wrappedKey: encodeBytes(added.wrappedKey),
+      })
+    ).status;
+  };
+  const serverNow = () => Math.floor(Date.now() / 1000);
+
+  it("takes an entry from a device whose clock runs a minute ahead", async () => {
+    expect(await atTime(await weber(), serverNow() + 60)).toBe(201);
+  });
+
+  it("refuses one signed an hour ahead, which clients would reject until then", async () => {
+    expect(await atTime(await weber(), serverNow() + 3600)).toBe(400);
   });
 });

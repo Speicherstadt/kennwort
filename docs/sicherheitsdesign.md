@@ -480,8 +480,9 @@ signieren `rolle` und `entfernen`, `openVaultKey` entpackt VKₑ nur, wenn das L
 Server legt beides ab (`POST /api/vaults/:id/log` mit Eintrag und, genau bei `anlegen` und
 `aufnehmen`, dem verpackten Schlüssel); `GET /api/vaults` nennt die Tresore, in denen das Konto
 nach dem Log Mitglied ist, `GET /api/vaults/:id/log` und `/keys` geben Log und eigene Schlüssel
-nur an Konten, die einen Schlüssel des Tresors halten. Ein Entfernter hält seinen alten
-Schlüssel, bis der Schlüsselwechsel (K-307) ein neues VK verteilt.
+nur an Konten, die gerade Mitglied sind; wer entfernt wurde oder abgelaufen ist, sieht keinen
+neuen Eintrag mehr. Seinen alten Schlüssel behält er trotzdem, bis der Schlüsselwechsel (K-307)
+ein neues VK verteilt.
 
 **Wehrt ab:** E-02, E-05, E-06, E-16, E-27.
 
@@ -520,13 +521,16 @@ wieder etwas voneinander sehen.
 Umgesetzt in `packages/core/src/membership/` (`verifyLog`, Zertifikate nach F-06); wie
 `packages/crypto` mit Mutation-Tests bei einer Schwelle von 100 %.
 
-Der Server hält die Kette nur ganz, damit ein ehrlicher Server nichts Widersprüchliches
-speichert: Er nimmt einen Eintrag nur mit der nächsten `seq` und dem Hash des letzten, vom
-angemeldeten Konto unterzeichnet und mit dessen hinterlegtem Schlüssel gültig signiert; den
-Genesis-Eintrag nur vom Anlegenden selbst, jeden weiteren nur von einem Konto, das nach den
-gespeicherten Einträgen gerade Verwalter ist; `anlegen` und `schlüsselwechsel` nicht mitten in der
-Kette (den Schlüsselwechsel bringt K-307). Ob ein Eintrag gilt, entscheidet trotzdem jeder Client
-mit `verifyLog`, gleich, was der Server durchgelassen hat.
+Der Server hält die Kette nur ganz, damit ein ehrlicher Server nichts speichert, was ein Client
+verwirft: Er nimmt einen Eintrag nur vom angemeldeten Konto, mit der nächsten `seq` und dem Hash
+des letzten (sonst `409`), und nur, wenn `verifyLog` die gespeicherte Kette mit dem neuen Eintrag
+annimmt – mit dem Wurzelschlüssel der Firma und den Zertifikaten, die er hält. Damit gelten auf dem
+Server dieselben Regeln wie im Client: gültige Signatur, Verwalter zur signierten Zeit, `aufnehmen`
+nur für Nicht-Mitglieder, `rolle` und `entfernen` nur für Mitglieder, Zeiten, die nie zurückgehen.
+Weil die Uhren von Gerät und Server auseinandergehen, darf ein Eintrag bis zu fünf Minuten vor der
+Uhr des Servers liegen. Den `schlüsselwechsel` nimmt er erst mit K-307, das allen Mitgliedern das
+neue VK mitgibt. Ob ein Eintrag gilt, entscheidet trotzdem jeder Client mit `verifyLog`, gleich,
+was der Server durchgelassen hat.
 
 **Wehrt ab:** E-06, E-07, E-08, E-16, E-19.
 
