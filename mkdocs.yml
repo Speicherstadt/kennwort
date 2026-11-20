@@ -58,6 +58,7 @@ markdown_extensions:
 nav:
   - Kennwort: index.md
   - Konto und Entsperren: konto.md
+  - Tresore: tresore.md
   - Sicherheitsdesign: sicherheitsdesign.md
   - Entwicklung:
       - Projektplan: plan.md

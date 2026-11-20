@@ -172,5 +172,21 @@
   "policy_save": "Save",
   "policy_saved": "Saved. The new time applies on all devices.",
   "policy_failed": "The policies could not be saved.",
-  "policy_unreachable": "The policies could not be loaded. Kennwort keeps to the last valid ones."
+  "policy_unreachable": "The policies could not be loaded. Kennwort keeps to the last valid ones.",
+  "vaults_title": "Vaults",
+  "vaults_loading": "Loading vaults …",
+  "vaults_unreachable": "The vaults could not be loaded or checked.",
+  "vaults_unnamed": "Unnamed vault",
+  "vaults_refused": "A vault whose log does not add up – it stays closed.",
+  "vaults_create_title": "New vault",
+  "vaults_create_name": "Name",
+  "vaults_create": "Create vault",
+  "vaults_create_uncertified": "You can create a vault once your keys are confirmed.",
+  "vaults_create_failed": "The vault could not be created.",
+  "vaults_personal_name": "Personal",
+  "vaults_all": "All vaults",
+  "vault_role_read": "Read",
+  "vault_role_edit": "Edit",
+  "vault_role_manage": "Manage",
+  "settings_vaults": "Vaults"
 }

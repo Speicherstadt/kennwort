@@ -172,5 +172,21 @@
   "policy_save": "Speichern",
   "policy_saved": "Gespeichert. Die neue Zeit gilt auf allen Geräten.",
   "policy_failed": "Die Richtlinien konnten nicht gespeichert werden.",
-  "policy_unreachable": "Die Richtlinien konnten nicht geladen werden. Kennwort hält sich an die letzten gültigen."
+  "policy_unreachable": "Die Richtlinien konnten nicht geladen werden. Kennwort hält sich an die letzten gültigen.",
+  "vaults_title": "Tresore",
+  "vaults_loading": "Tresore werden geladen …",
+  "vaults_unreachable": "Die Tresore konnten nicht geladen oder nicht geprüft werden.",
+  "vaults_unnamed": "Tresor ohne Namen",
+  "vaults_refused": "Ein Tresor, dessen Protokoll nicht stimmt – er bleibt zu.",
+  "vaults_create_title": "Neuer Tresor",
+  "vaults_create_name": "Name",
+  "vaults_create": "Tresor anlegen",
+  "vaults_create_uncertified": "Erst wenn deine Schlüssel bestätigt sind, kannst du einen Tresor anlegen.",
+  "vaults_create_failed": "Der Tresor konnte nicht angelegt werden.",
+  "vaults_personal_name": "Persönlich",
+  "vaults_all": "Alle Tresore",
+  "vault_role_read": "Lesen",
+  "vault_role_edit": "Bearbeiten",
+  "vault_role_manage": "Verwalten",
+  "settings_vaults": "Tresore"
 }

@@ -11,14 +11,17 @@ import type { Navigation } from "../navigation.ts";
 import { type ListFilter, routePath } from "../routes.ts";
 import { Link } from "./link.tsx";
 
-export const listTitle = (filter: ListFilter) =>
+/** A vault the app loaded (K-305); the demo vaults stand in where there is none */
+export type ShownVault = { idText: string; name: string | undefined };
+
+export const listTitle = (filter: ListFilter, vaults: ShownVault[] = []) =>
   filter.kind === "all"
     ? m.nav_all()
     : filter.kind === "favorites"
       ? m.nav_favorites()
       : filter.kind === "to-change"
         ? m.nav_to_change()
-        : vaultName(filter.id);
+        : (vaults.find((v) => v.idText === filter.id)?.name ?? vaultName(filter.id));
 
 const chips = () => [
   { href: "/entries", kind: "all", label: m.chip_all() },
@@ -34,6 +37,7 @@ export const EntryList = (props: {
   nav: Navigation;
   filter: ListFilter;
   selected: string | undefined;
+  vaults?: ShownVault[] | undefined;
 }) => {
   const [search, setSearch] = createSignal("");
   const shown = createMemo(() => shownEntries(entries, props.filter, search()));
@@ -48,7 +52,7 @@ export const EntryList = (props: {
     >
       <div class="grid gap-3 p-4 pb-2 md:p-3">
         <h1 id="list-title" class="text-[28px] font-semibold md:text-[15px]">
-          {listTitle(props.filter)}
+          {listTitle(props.filter, props.vaults)}
         </h1>
         <SearchInput
           label={m.list_search()}
@@ -81,7 +85,7 @@ export const EntryList = (props: {
           fallback={<p class="p-4 text-muted-foreground">{m.list_empty()}</p>}
         >
           <List
-            label={listTitle(props.filter)}
+            label={listTitle(props.filter, props.vaults)}
             selected={props.selected}
             onSelect={(id) =>
               props.nav.go(routePath({ page: "entries", filter: props.filter, entry: id }))

@@ -17,6 +17,7 @@ describe("routes", () => {
       ["/groups", { page: "groups" }],
       ["/settings", { page: "settings" }],
       ["/members", { page: "members" }],
+      ["/vaults", { page: "vaults" }],
       ["/setup", { page: "setup" }],
       ["/unlock", { page: "unlock" }],
       ["/recover", { page: "recover" }],
@@ -39,7 +40,6 @@ describe("routes", () => {
     for (const path of [
       "/nope",
       "/entries/a/b",
-      "/vaults",
       "/vaults/x/y/z",
       "/settings/x",
       "/entries/%E0",

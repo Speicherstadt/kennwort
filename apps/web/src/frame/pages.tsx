@@ -1,6 +1,6 @@
 /** The other sections: generator (K-306 fills it), groups, settings, and a page that does not exist */
 import { Button, getLocale, Icon, type Locale, locales, m } from "@kennwort/ui";
-import { Lock, Users } from "@kennwort/ui/icons";
+import { Archive, Lock, Users } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { createSignal, For, Show } from "solid-js";
 import { groups } from "../demo.ts";
@@ -73,6 +73,7 @@ export const SettingsPage = (props: {
   onLocale: (locale: Locale) => void;
   onAddDevice: () => void;
   onMembers?: (() => void) | undefined;
+  onVaults?: (() => void) | undefined;
   devices?: (() => JSX.Element) | undefined;
 }) => {
   const [theme, setTheme] = createSignal<Theme>(readTheme(globalThis.localStorage));
@@ -106,6 +107,13 @@ export const SettingsPage = (props: {
           {(open) => (
             <Button class="w-fit" onClick={() => open()()}>
               <Icon icon={Users} /> {m.settings_members()}
+            </Button>
+          )}
+        </Show>
+        <Show when={props.onVaults}>
+          {(open) => (
+            <Button class="w-fit" onClick={() => open()()}>
+              <Icon icon={Archive} /> {m.settings_vaults()}
             </Button>
           )}
         </Show>

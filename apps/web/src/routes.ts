@@ -14,6 +14,7 @@ export type Route =
   | { page: "groups" }
   | { page: "settings" }
   | { page: "members" }
+  | { page: "vaults" }
   | { page: "setup" }
   | { page: "unlock" }
   | { page: "recover" }
@@ -61,6 +62,7 @@ export const parseRoute = (path: string): Route => {
   const parts = path.split("/").filter(Boolean);
   const [first = "entries", ...rest] = parts;
   if (first === "vaults") {
+    if (rest.length === 0) return { page: "vaults" };
     const id = decoded(rest[0]);
     return id
       ? entriesRoute({ kind: "vault", id }, rest[1], rest.length - 2)

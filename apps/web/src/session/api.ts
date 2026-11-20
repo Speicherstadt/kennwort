@@ -23,6 +23,7 @@ import { deviceCalls } from "./devices-api.ts";
 import { memberCalls } from "./members-api.ts";
 import { pairingCalls } from "./pairing-api.ts";
 import { policyCalls } from "./policy-api.ts";
+import { vaultCalls } from "./vaults-api.ts";
 export type ApiError = "wrong-code" | "invalid-invitation" | "too-many-requests" | "unexpected";
 type Answer<T> = { ok: true; value: T } | { ok: false; error: ApiError };
 
@@ -99,6 +100,7 @@ export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity)
     ...deviceCalls(call),
     ...memberCalls(call),
     ...policyCalls(call),
+    ...vaultCalls(call),
     /** The root key's public half goes along, for every member to check certificates (P-07) */
     setup: async (
       code: string,
@@ -171,4 +173,5 @@ export type AccountApi = Omit<
   | keyof ReturnType<typeof deviceCalls>
   | keyof ReturnType<typeof memberCalls>
   | keyof ReturnType<typeof policyCalls>
+  | keyof ReturnType<typeof vaultCalls>
 >;

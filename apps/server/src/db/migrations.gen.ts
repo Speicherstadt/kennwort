@@ -85,5 +85,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795176225019,
     "breakpoints": true,
     "sql": "CREATE TABLE `vault_keys` (\n\t`vault_id` text NOT NULL,\n\t`account_id` text NOT NULL,\n\t`epoch` integer NOT NULL,\n\t`wrapped` blob NOT NULL,\n\tPRIMARY KEY(`vault_id`, `account_id`, `epoch`),\n\tFOREIGN KEY (`vault_id`) REFERENCES `vaults`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE TABLE `vault_log` (\n\t`vault_id` text NOT NULL,\n\t`seq` integer NOT NULL,\n\t`entry` text NOT NULL,\n\t`hash` blob NOT NULL,\n\t`stored_at` integer NOT NULL,\n\tPRIMARY KEY(`vault_id`, `seq`),\n\tFOREIGN KEY (`vault_id`) REFERENCES `vaults`(`id`) ON UPDATE no action ON DELETE no action\n);\n"
+  },
+  {
+    "tag": "0014_vault_name",
+    "when": 1795176727524,
+    "breakpoints": true,
+    "sql": "ALTER TABLE `vaults` ADD `name` blob;--> statement-breakpoint\nALTER TABLE `vaults` ADD `name_epoch` integer;"
   }
 ];

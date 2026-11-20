@@ -19,8 +19,53 @@ import type { Navigation } from "./navigation.ts";
 import { ApplyPolicy } from "./policy/policy-section.tsx";
 import type { DevicesApi } from "./session/devices-api.ts";
 import type { Session } from "./session/session.ts";
+import type { VaultApi } from "./session/vaults-api.ts";
+import { createVaultStore, type VaultStore } from "./vaults/vault-store.ts";
+import { VaultsPage } from "./vaults/vaults-page.tsx";
 
-export type AppApi = PairDeps & DevicesApi & MembersDeps;
+export type AppApi = PairDeps & DevicesApi & MembersDeps & VaultApi;
+
+/** The vaults while the account is open: loaded when it opens, gone when it locks */
+const OpenedFrame = (props: {
+  nav: Navigation;
+  session: Session;
+  api: AppApi;
+  onLocale: (next: Locale) => void;
+}) => {
+  const store: VaultStore = createVaultStore(props.api, props.session);
+  void store.reload();
+  const shownVaults = () => {
+    const shown = store.shown();
+    return shown.state === "ready" ? shown.vaults : undefined;
+  };
+  return (
+    <Frame
+      nav={props.nav}
+      onLock={() => props.session.lock()}
+      onLocale={props.onLocale}
+      onAddDevice={() => props.nav.go("/link")}
+      members={() => (
+        <MembersPage session={props.session} api={props.api} origin={location.origin} />
+      )}
+      vaults={shownVaults}
+      vaultsPage={() => <VaultsPage nav={props.nav} store={store} />}
+      devices={() => (
+        <Show when={props.session.opened()?.token}>
+          {(token) => (
+            <DevicesSection
+              token={token()}
+              api={props.api}
+              onSignedOut={() => {
+                props.session.forget();
+                props.nav.replace("/entries");
+              }}
+            />
+          )}
+        </Show>
+      )}
+    />
+  );
+};
 
 export const App = (props: { nav: Navigation; session: Session; api: AppApi; hash?: string }) => {
   const [otherAccount, setOtherAccount] = createSignal(false);
@@ -100,28 +145,11 @@ export const App = (props: { nav: Navigation; session: Session; api: AppApi; has
           </Match>
           <Match when={props.session.opened()}>
             <ApplyPolicy session={props.session} api={props.api} />
-            <Frame
+            <OpenedFrame
               nav={props.nav}
-              onLock={() => props.session.lock()}
+              session={props.session}
+              api={props.api}
               onLocale={changeLocale}
-              onAddDevice={() => props.nav.go("/link")}
-              members={() => (
-                <MembersPage session={props.session} api={props.api} origin={location.origin} />
-              )}
-              devices={() => (
-                <Show when={props.session.opened()?.token}>
-                  {(token) => (
-                    <DevicesSection
-                      token={token()}
-                      api={props.api}
-                      onSignedOut={() => {
-                        props.session.forget();
-                        props.nav.replace("/entries");
-                      }}
-                    />
-                  )}
-                </Show>
-              )}
             />
           </Match>
         </Switch>

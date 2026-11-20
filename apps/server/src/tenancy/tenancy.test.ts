@@ -355,14 +355,18 @@ const cases: Record<string, () => Promise<void>> = {
     expect((await asJonas(`/api/vaults/${muellerVault}/events`)).status).toBe(404);
   },
   "GET /api/vaults": async () => {
-    const answer = (await (await asJonas("/api/vaults")).json()) as { vaults: string[] };
-    expect(answer.vaults).not.toContain(muellerVault);
+    const answer = (await (await asJonas("/api/vaults")).json()) as { vaults: { id: string }[] };
+    expect(answer.vaults.map((vault) => vault.id)).not.toContain(muellerVault);
   },
   "GET /api/vaults/:vaultId/log": async () => {
     expect((await asJonas(`/api/vaults/${muellerVault}/log`)).status).toBe(404);
   },
   "GET /api/vaults/:vaultId/keys": async () => {
     expect((await asJonas(`/api/vaults/${muellerVault}/keys`)).status).toBe(404);
+  },
+  "PUT /api/vaults/:vaultId/name": async () => {
+    const body = { epoch: 0, name: encodeBytes(new Uint8Array(42)) };
+    expect((await jonasSends("PUT", `/api/vaults/${muellerVault}/name`, body)).status).toBe(404);
   },
   "POST /api/vaults/:vaultId/log": async () => {
     expect((await jonasSends("POST", `/api/vaults/${muellerVault}/log`, {})).status).toBe(404);
