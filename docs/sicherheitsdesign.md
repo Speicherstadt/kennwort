@@ -1210,7 +1210,9 @@ Ablauf:
    des Servers mit dem eigenen aus `state` zusammen (`mergeStates`, der höhere Stand gewinnt) und
    speichert `keys` und `state`. Widersprechen sich beide (anderer Wurzelschlüssel, anderes Bündel,
    anderer Hash an derselben Stelle eines Logs), behält das Gerät seinen eigenen Stand; was dann nicht
-   zu ihm passt, lehnen die Prüfungen der Tresore ab.
+   zu ihm passt, lehnen die Prüfungen der Tresore ab. Ebenso beim Entsperren mit dem Recovery Key
+   ([P-12](#p-12-recovery-kit)). Einen Kontozustand mit kleinerem Zähler als dem in `state` legt das
+   Gerät nicht ab: Er ist älter, auch wenn sein Speichern erst nach einem neueren endet.
 2. **Entsperren ohne Server**: Bekommt die Anmeldung gar keine Antwort (nicht: eine Ablehnung), leitet
    das Gerät aus Passphrase und Secret Key wie in F-05 ab, öffnet AK aus `keys`, den Schlüsselblock
    und den Kontozustand aus `state`. Eine falsche Passphrase scheitert wie online an der AAD.

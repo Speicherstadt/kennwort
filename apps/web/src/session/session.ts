@@ -307,9 +307,11 @@ export const createSession = (deps: SessionDeps) => {
     ): Promise<Outcome<NewKeys>> => {
       const result = await recoverAccount(deps, device(), recoveryKey, passphrase, accountIdText);
       if (!result.ok) return result;
-      remember(result.value.keys.accountId, result.value.keys.secretKey);
-      openAndKeep(result.value.opened);
-      return { ok: true, value: result.value.keys };
+      const { keys, opened: served } = result.value;
+      remember(keys.accountId, keys.secretKey);
+      // The server's state, like at every unlock, with what this device kept merged in (E-07)
+      openAndKeep({ ...served, ...(await withKeptState(deps.copy, keys.accountId, served)) });
+      return { ok: true, value: keys };
     },
     /** A device joined by pairing (P-04): remember it and open the account it was given */
     adopt: (value: Opened, secretKey: Uint8Array) => {

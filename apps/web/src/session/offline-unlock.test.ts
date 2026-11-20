@@ -20,8 +20,7 @@ const idle = async (copy: ReturnType<typeof createLocalCopy>) => {
 const unreachable = { ok: false as const, error: "unreachable" as const };
 
 /** An account set up and unlocked once online, so the copy holds what it needs */
-const unlockedOnce = async () => {
-  const store = memoryKeyValue();
+const unlockedOnce = async (store = memoryKeyValue()) => {
   const copy = createLocalCopy(store);
   const server = fakeApi();
   let online = true;
@@ -167,6 +166,61 @@ describe("the highest account state this device saw", () => {
     expect(await session.unlock(PASSPHRASE)).toEqual({ ok: true, value: true });
     flush();
     expect(session.opened()?.state.logs.buero).toEqual(head);
+  });
+
+  it("is not rolled back by an older account state served while recovering (E-07)", async () => {
+    const { copy, session, server, made } = await unlockedOnce();
+    const opened = session.opened();
+    if (!opened) throw new Error("not open");
+    const upload = await server.keys(opened.token);
+    if (!upload) throw new Error("no keys");
+    const states = stateServer(upload);
+    const head = { seq: 5, hash: new Uint8Array(32).fill(5) };
+    await session.updateState(states.deps, (s) => ({ ...s, logs: { buero: head } }));
+    await idle(copy);
+    session.lock();
+    // The passphrase is forgotten; the server serves the state of counter 0 without the head
+    const recovered = await session.recover(made.recoveryKey, "neue Passphrase für Jonas 2026");
+    expect(recovered.ok).toBe(true);
+    flush();
+    const now = session.opened();
+    if (!now) throw new Error("not open");
+    expect(now.state.logs.buero).toEqual(head);
+    await idle(copy);
+    const kept = await copy.state(encodeBytes(now.accountId));
+    const openedKept = kept && openState(now.accountKey, now.accountId, kept.counter, kept.sealed);
+    expect(openedKept?.ok && openedKept.value.logs.buero).toEqual(head);
+  });
+
+  it("is not rolled back when an unlock's own keeping ends after a newer write (E-07)", async () => {
+    // IndexedDB answers in milliseconds, not microtasks: a write of the copy can take that long
+    const fast = memoryKeyValue();
+    let slow = false;
+    const set = async (key: string, value: string) => {
+      if (slow) await new Promise((resolve) => setTimeout(resolve, 5));
+      await fast.set(key, value);
+    };
+    const { copy, session, server } = await unlockedOnce({ ...fast, set });
+    const opened = session.opened();
+    if (!opened) throw new Error("not open");
+    const upload = await server.keys(opened.token);
+    if (!upload) throw new Error("no keys");
+    const states = stateServer(upload);
+    session.lock();
+    slow = true;
+    // Unlocked, and at once the vaults' checks write a new log head (counter 1) back
+    expect(await session.unlock(PASSPHRASE)).toEqual({ ok: true, value: true });
+    const head = { seq: 5, hash: new Uint8Array(32).fill(5) };
+    const saved = await session.updateState(states.deps, (s) => ({ ...s, logs: { buero: head } }));
+    expect(saved.ok).toBe(true);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    await copy.settled();
+    const now = session.opened();
+    if (!now) throw new Error("not open");
+    const kept = await copy.state(encodeBytes(now.accountId));
+    expect(kept?.counter).toBe(1);
+    const openedKept = kept && openState(now.accountKey, now.accountId, kept.counter, kept.sealed);
+    expect(openedKept?.ok && openedKept.value.logs.buero).toEqual(head);
   });
 
   it("keeps this device's state when the server's conflicts with it (another hash, E-08)", async () => {

@@ -84,14 +84,22 @@ const accountPart = (store: KeyValue, scope: ReturnType<typeof createCopyScope>)
         undefined,
       ),
     state: (id: string) => scope.forAccount(id, keptState, undefined),
+    /**
+     * Keeps a state unless the one kept has a higher counter: only the device seals what is kept,
+     * each under the counter of a state that opened under AK, so a lower one is older – an unlock
+     * whose keeping ends after a newer write, or a server that serves an older state (E-07)
+     */
     keepState: (id: string, kept: KeptState) =>
       scope.forAccount(
         id,
-        () =>
-          store.set(
+        async () => {
+          const known = await keptState();
+          if (known && known.counter > kept.counter) return;
+          await store.set(
             "state",
             JSON.stringify({ counter: kept.counter, sealed: encodeBytes(kept.sealed) }),
-          ),
+          );
+        },
         undefined,
       ),
   };
