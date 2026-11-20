@@ -464,8 +464,12 @@ Umgesetzt in `packages/crypto/src/device.ts` (Fingerabdruck, Vergleichscode),
 Link auf `/link` des Servers mit ID, Fingerabdruck und `r` im Fragment: Die Kamera-App des
 entsperrten Geräts öffnet ihn, die App liest das Fragment einmal vor dem ersten Rendern und entfernt
 es sofort aus Adresse, Verlauf und dem Zustand des Routers (`takeStartFragment` in
-`apps/web/src/navigation.ts`), ebenso beim Link des Notfall-Kits auf `/unlock`; der Link lässt sich
-auch einfügen. Das neue Gerät fragt alle vier Sekunden nach.
+`apps/web/src/navigation.ts`), ebenso beim Link des Notfall-Kits auf `/unlock` und bei der
+Einladung auf `/invite` ([P-08](#p-08-einladung)); der Link lässt sich auch einfügen. Öffnet jemand
+einen solchen Link in dem Tab, der schon auf derselben Seite steht, lädt der Browser die Seite nicht
+neu und ändert nur das Fragment: Die Navigation fängt das ab (`popstate` und `hashchange`), nimmt das
+Fragment auf dieselbe Weise heraus, bevor der Router die Adresse lädt, und gibt es der offenen Seite,
+die damit neu beginnt (`onFragment`). Das neue Gerät fragt alle vier Sekunden nach.
 
 **Wehrt ab:** E-09, E-10, E-25.
 
@@ -662,7 +666,11 @@ So ist es gebaut: Der Client des Verwalters wählt die Einladungs-ID (16 zufäll
 selbst und hinterlegt `s` auf dem Server versiegelt unter seinem eigenen AK (F-01, Zweck
 `invite-secret`, Kontext Konto-ID des Verwalters und Einladungs-ID). So kann er die Antwort auch
 später und auf einem anderen seiner Geräte prüfen; der Server kann `s` nicht öffnen. Der Link
-lautet `/invite/<id>#token=…&s=…&root=…`. Der Eingeladene schickt den MAC mit seinen Schlüsseln
+lautet `/invite/<id>#token=…&s=…&root=…`. Die App des Eingeladenen liest das Fragment einmal, bevor
+sie etwas anzeigt oder anfragt, und entfernt es sofort aus Adresse, Verlauf und dem Zustand des
+Routers, wie die Links von [P-04](#p-04-neues-gerat) und [P-12](#p-12-recovery-kit); so steht das
+Geheimnis weder in der Adresszeile noch im Verlauf, solange die Seite offen ist oder nachdem die
+Einladung angenommen ist. Der Eingeladene schickt den MAC mit seinen Schlüsseln
 (`PUT /api/account/keys`, Feld `inviteMac`). `GET /api/members` zeigt jedem Mitglied der Firma Rolle,
 öffentliche Schlüssel und Zertifikat jedes Kontos; die versiegelte Hinterlegung und den MAC bekommt
 nur der Verwalter, der die Einladung erstellt hat, solange das Konto kein Zertifikat hat. Sein Client
@@ -885,7 +893,8 @@ funktionieren; ein fremdes Gerät kennt ihn nicht und erzeugt einen neuen, den d
 Der QR-Code enthält nur einen Link auf die Entsperr-Seite des Servers mit Konto-ID und Secret Key im
 Fragment (`/unlock#account=…&secret=…`), das der Browser nicht an den Server schickt; die App liest
 es beim Öffnen und entfernt es sofort aus der Adresse und dem Eintrag im Verlauf, ob danach entsperrt
-wird oder nicht. Der
+wird oder nicht, auch wenn der Link in einem Tab aufgeht, der schon auf `/unlock` steht
+([P-04](#p-04-neues-gerat)). Der
 Recovery Key steht nie im QR-Code: Ein Foto des Codes allein öffnet kein Konto, es braucht weiter die
 Passphrase. Das PDF schreibt die Web-App selbst (`apps/web/src/kit/`), ohne PDF-Bibliothek; den
 QR-Code erzeugt `uqr`.
