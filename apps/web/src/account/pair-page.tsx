@@ -1,7 +1,8 @@
 /**
  * The new device (P-04): shows a QR code with the pairing link, polls, shows the comparison code
  * once the unlocked device answered, and joins the account when the user agrees and the other
- * device confirmed. A package it cannot open ends the pairing.
+ * device confirmed. A package it cannot open, or one whose code is not the one shown, ends the
+ * pairing; after the confirmation it stops polling, as the server then forgets the pairing.
  */
 import { Button, m } from "@kennwort/ui";
 import { createSignal, onCleanup, Show } from "solid-js";
@@ -32,12 +33,15 @@ export const PairPage = (props: {
 }) => {
   const [pairing, setPairing] = createSignal<NewDevicePairing>();
   const [state, setState] = createSignal<PollState>({ state: "waiting" });
-  const [agreed, setAgreed] = createSignal(false);
+  // The code the user agreed to: only the package behind it may join (review of K-303)
+  const [agreed, setAgreed] = createSignal<string>();
   const [error, setError] = createSignal<string>();
   let finished = false;
 
-  const finish = async (now: PollState) => {
-    if (finished || now.state !== "confirmed" || !agreed()) return;
+  // The agreed code is passed in from the click: a signal read right after its write still sees
+  // the old value until the next flush
+  const finish = async (now: PollState, agreedCode = agreed()) => {
+    if (finished || now.state !== "confirmed" || agreedCode !== now.code) return;
     finished = true;
     const joined = await joinAccount(props.api, now.content, now.token);
     if (!joined) return setError(m.pair_failed());
@@ -46,9 +50,13 @@ export const PairPage = (props: {
   };
   const check = async () => {
     const current = pairing();
-    if (!current || finished || error()) return;
+    const confirmed = () => state().state === "confirmed";
+    if (!current || finished || error() || confirmed()) return;
     const now = await poll(props.api, current);
+    if (finished || confirmed()) return;
     if (now.state === "failed") return setError(m.pair_failed());
+    const shown = code();
+    if (shown && now.state !== "waiting" && now.code !== shown) return setError(m.pair_failed());
     setState(now);
     await finish(now);
   };
@@ -107,8 +115,8 @@ export const PairPage = (props: {
                 <Button
                   variant="primary"
                   onClick={() => {
-                    setAgreed(true);
-                    void finish(state());
+                    setAgreed(shown());
+                    void finish(state(), shown());
                   }}
                 >
                   {m.pair_agree()}
