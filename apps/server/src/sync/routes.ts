@@ -97,9 +97,11 @@ export const syncRoutes = ({ db, hub, now, keepAliveMs = 20_000 }: SyncDeps) =>
       if (!roleIn(db, c, vaultId, now())) return c.json(notFound, 404);
       return streamSSE(c, async (stream) => {
         // Someone removed, or whose time ran out, hears nothing more: checked before every
-        // change and every ping, and then the stream ends (review of the members-only sync)
+        // change and every ping, and then the stream ends (review of the members-only sync).
+        // So does someone who left the company with the stream still open (review of K-307)
         const stillMember = () => {
-          if (roleIn(db, c, vaultId, now())) return true;
+          const stayed = c.var.scope.account(c.var.session.accountId)?.leftAt == null;
+          if (stayed && roleIn(db, c, vaultId, now())) return true;
           stream.abort();
           return false;
         };

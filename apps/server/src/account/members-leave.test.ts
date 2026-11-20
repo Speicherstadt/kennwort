@@ -1,7 +1,14 @@
 // K-307 part a (P-11): someone leaves the company. The server shuts them out at once; removing them
 // from the vaults and rotating the keys is the next manager client's (dueExits in packages/core)
 import { describe, expect, it } from "bun:test";
-import { encodeBytes, MembersWire } from "@kennwort/core";
+import {
+  addMember,
+  encodeBytes,
+  MembersWire,
+  recordToWire,
+  sealRecord,
+  toWire,
+} from "@kennwort/core";
 import { eq } from "drizzle-orm";
 import {
   accounts,
@@ -10,10 +17,12 @@ import {
   entryShares,
   groupMembers,
   groups,
+  invitations,
   rootGrants,
   vaultRequests,
 } from "../db/schema.ts";
-import { createBuero, type Weber, weber } from "../testing/weber-vaults.ts";
+import { invitationBody } from "../testing/sign-in-setup.ts";
+import { createBuero, NOW, post, stateOf, type Weber, weber } from "../testing/weber-vaults.ts";
 
 const remove = (w: Weber, id: string, token = w.o.token) =>
   w.o.setup.request(`/api/members/${id}`, { method: "DELETE", token });
@@ -126,5 +135,88 @@ describe("leaving the company (K-307, P-11)", () => {
     expect((await remove(w, encodeBytes(new Uint8Array(16).fill(9)))).status).toBe(404);
     // An owner may remove an admin
     expect((await remove(w, anna(w))).status).toBe(200);
+  });
+
+  it("ends a live stream she opened before: she hears of no change after she left", async () => {
+    const w = await weber();
+    const { vault, vaultId } = await createBuero(w);
+    const s0 = stateOf(w, vault.ring.vaultId, [vault.genesis]);
+    if (!s0.ok) throw new Error(s0.error);
+    const added = addMember(
+      w.jonas.signer,
+      s0.value,
+      vault.ring,
+      w.annaCert,
+      { role: "edit", validUntil: 0 },
+      NOW + 1,
+    );
+    await post(w, vaultId, {
+      entry: toWire(added.entry),
+      wrappedKey: encodeBytes(added.wrappedKey),
+    });
+    const stream = await w.o.setup.request(`/api/vaults/${vaultId}/events`, { token: w.annaToken });
+    const reader = (stream.body as ReadableStream<Uint8Array>).getReader();
+    const decoder = new TextDecoder();
+    let text = "";
+    const hear = async (part: string) => {
+      while (!text.includes(part)) {
+        const chunk = await reader.read();
+        if (chunk.done) return false;
+        text += decoder.decode(chunk.value, { stream: true });
+      }
+      return true;
+    };
+    expect(await hear("event: ready")).toBe(true);
+    expect((await remove(w, anna(w))).status).toBe(200);
+    const record = sealRecord(
+      { id: w.jonas.signer.accountId, edSecretKey: w.jonas.signer.edSecretKey },
+      { vaultId: vault.ring.vaultId, epoch: 0, vaultKey: vault.ring.vaultKey },
+      new Uint8Array(16).fill(0xe1),
+      1,
+      { type: "note", title: "Heizungsraum", fields: [], tags: [], favorite: false, history: [] },
+      new Uint8Array(),
+    );
+    const put = await w.o.setup.request(`/api/vaults/${vaultId}/records`, {
+      method: "PUT",
+      token: w.o.token,
+      body: recordToWire(record),
+    });
+    expect(put.status).toBe(200);
+    const heard = await Promise.race([hear("event: record"), Bun.sleep(1000).then(() => "silent")]);
+    await reader.cancel();
+    expect(heard).toBe(false);
+  });
+
+  it("drops the invitations she made and nobody accepted: no one joins on her link", async () => {
+    const w = await weber();
+    w.o.setup.db
+      .update(accounts)
+      .set({ role: "admin" })
+      .where(eq(accounts.id, anna(w)))
+      .run();
+    const made = await w.o.setup.request("/api/invitations", {
+      token: w.annaToken,
+      body: invitationBody("Komplize"),
+    });
+    expect(made.status).toBe(201);
+    const { id, token } = (await made.json()) as { id: string; token: string };
+    expect((await remove(w, anna(w))).status).toBe(200);
+    const accepted = await w.o.setup.request(`/auth/invitations/${id}/accept`, {
+      body: {
+        token,
+        accountId: encodeBytes(new Uint8Array(16).fill(0x51)),
+        loginPublicKey: encodeBytes(new Uint8Array(32).fill(2)),
+        accountSalt: encodeBytes(new Uint8Array(16)),
+      },
+    });
+    expect(accepted.status).toBe(410);
+    // The invitation Jonas made for Anna herself, accepted long ago, stays for the member list
+    expect(
+      w.o.setup.db
+        .select()
+        .from(invitations)
+        .where(eq(invitations.accountId, anna(w)))
+        .all(),
+    ).toHaveLength(1);
   });
 });

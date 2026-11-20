@@ -60,7 +60,8 @@ Konto; sein Gerät nimmt ihn beim nächsten Öffnen der Mitglieder an, wenn er z
 
 Verlässt jemand die Firma, entfernt ihn ein Inhaber (oder bei Mitarbeitern ein Admin) aus der
 Firma. Der Server sperrt das Konto sofort: Alle seine Geräte sind abgemeldet, und es kommt an
-nichts mehr heran, auch nicht mit einer Sitzung, die es noch hat. In der Mitgliederliste bleibt es
+nichts mehr heran, auch nicht mit einer Sitzung, die es noch hat. Einladungslinks, die es
+verschickt hat und die noch niemand angenommen hat, gelten nicht mehr. In der Mitgliederliste bleibt es
 mit dem Tag des Austritts stehen, denn seine Unterschriften in den Tresoren müssen prüfbar bleiben.
 Aus den Tresoren entfernt es danach das Gerät eines Verwalters, mit neuem Tresor-Schlüssel (siehe
 [Tresore](tresore.md)). Die Schaltfläche dafür bringt der nächste Teil von K-307.

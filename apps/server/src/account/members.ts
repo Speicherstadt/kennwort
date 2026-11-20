@@ -146,9 +146,10 @@ const removal = (me: Member | undefined, member: Member | undefined) => {
 
 /**
  * The account leaves the company (K-307, P-11): marked as left, every session gone, and what only it
- * could use dropped (requests, group memberships, shares to it, a wrapped root key). Its keys and
- * certificate stay: the vault logs it signed must still verify. The vaults it was in owe a removal
- * and a key rotation, which the next manager client signs; the server cannot.
+ * could use dropped (requests, group memberships, shares to it, a wrapped root key, the open
+ * invitations it made). Its keys and certificate stay: the vault logs it signed must still verify.
+ * The vaults it was in owe a removal and a key rotation, which the next manager client signs; the
+ * server cannot.
  */
 const leave = (db: Db, member: Member, at: number) =>
   db.transaction((tx) => {
@@ -159,6 +160,10 @@ const leave = (db: Db, member: Member, at: number) =>
     tx.delete(vaultRequests).where(eq(vaultRequests.accountId, id)).run();
     tx.delete(groupMembers).where(eq(groupMembers.accountId, id)).run();
     tx.delete(entryShares).where(eq(entryShares.recipient, id)).run();
+    // Nobody joins on a link they made: they know its token and secret (review of K-307)
+    tx.delete(invitations)
+      .where(and(eq(invitations.createdBy, id), isNull(invitations.acceptedAt)))
+      .run();
   });
 
 const REMOVAL_STATUS = { forbidden: 403, "not-found": 404, "own-account": 409, left: 409 } as const;
