@@ -32,6 +32,7 @@ const keysOf = (upload: ReturnType<typeof createAccount>["upload"]) => ({
     passphrase: encodeBytes(upload.unlock.passphrase),
     recovery: encodeBytes(upload.unlock.recovery),
   },
+  recoveryLoginPublicKey: encodeBytes(upload.recoveryLoginPublicKey),
   state: encodeBytes(upload.state),
   stateCounter: 0,
 });

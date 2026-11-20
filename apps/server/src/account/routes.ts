@@ -2,8 +2,19 @@
  * The account's own ciphertexts (K-303, P-01 and P-03): uploaded once after the account is made,
  * read when a device unlocks, and the account state written back only with the next counter, so a
  * device never overwrites a newer state it has not seen. Each session reaches only its own account.
+ * After the Recovery Key was used (P-12) the device replaces the unlock ways: salt, both sign-in
+ * keys and the two boxes of AK, in one transaction, and only with a signature by the account's
+ * current recovery sign-in key over all of them: a session alone changes nothing (review of K-303).
  */
-import { bytes, CertificateWire, encodeBytes, toWire } from "@kennwort/core";
+import {
+  bytes,
+  CertificateWire,
+  encodeBytes,
+  RENEWAL_PURPOSE,
+  renewalFields,
+  toWire,
+} from "@kennwort/core";
+import { verify } from "@kennwort/crypto";
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -16,13 +27,94 @@ const KeysUpload = z.object({
   edPublicKey: bytes(32),
   keyBlock: bytes(),
   unlock: z.object({ passphrase: bytes(), recovery: bytes() }),
+  recoveryLoginPublicKey: bytes(32),
   state: bytes(),
   stateCounter: z.literal(0),
   certificate: CertificateWire.optional(),
 });
+// A sealed AK: version, nonce, 32 bytes and the tag (F-01)
+const SEALED_ACCOUNT_KEY = 1 + 24 + 32 + 16;
+const UnlockUpdate = z.object({
+  accountSalt: bytes(16),
+  loginPublicKey: bytes(32),
+  recoveryLoginPublicKey: bytes(32),
+  unlock: z.object({ passphrase: bytes(SEALED_ACCOUNT_KEY), recovery: bytes(SEALED_ACCOUNT_KEY) }),
+  proof: bytes(65),
+});
+
+/** True when the account's current recovery sign-in key signed exactly these new values */
+const provenRenewal = (db: Db, accountId: string, update: z.infer<typeof UnlockUpdate>) => {
+  const key = db.select().from(loginKeys).where(eq(loginKeys.accountId, accountId)).get();
+  if (!key?.recoveryPublicKey) return false;
+  const { proof, ...values } = update;
+  return verify(
+    bytes(32).parse(key.recoveryPublicKey),
+    proof,
+    RENEWAL_PURPOSE,
+    ...renewalFields(accountId, values),
+  );
+};
 const StateUpdate = z.object({ state: bytes(), stateCounter: z.number().int().positive() });
 
 const same = (a: Uint8Array, b: Uint8Array) => encodeBytes(a) === encodeBytes(b);
+
+/** The keys once, and the Recovery Key's sign-in key with them; undefined when they exist */
+const storeKeys = (db: Db, at: number, accountId: string, upload: z.infer<typeof KeysUpload>) =>
+  db.transaction((tx) => {
+    const row = tx
+      .insert(accountKeys)
+      .values({
+        accountId,
+        xwingPublicKey: Buffer.from(upload.xwingPublicKey),
+        edPublicKey: Buffer.from(upload.edPublicKey),
+        keyBlock: Buffer.from(upload.keyBlock),
+        unlockPassphrase: Buffer.from(upload.unlock.passphrase),
+        unlockRecovery: Buffer.from(upload.unlock.recovery),
+        state: Buffer.from(upload.state),
+        stateCounter: 0,
+        certificate: upload.certificate ? JSON.stringify(toWire(upload.certificate)) : null,
+        updatedAt: at,
+      })
+      .onConflictDoNothing()
+      .returning()
+      .get();
+    if (row)
+      tx.update(loginKeys)
+        .set({ recoveryPublicKey: encodeBytes(upload.recoveryLoginPublicKey) })
+        .where(eq(loginKeys.accountId, accountId))
+        .run();
+    return row;
+  });
+
+/** Both boxes of AK, the salt and both sign-in keys at once; false for an account without keys */
+const replaceUnlock = (
+  db: Db,
+  at: number,
+  accountId: string,
+  update: z.infer<typeof UnlockUpdate>,
+) =>
+  db.transaction((tx) => {
+    const keys = tx
+      .update(accountKeys)
+      .set({
+        unlockPassphrase: Buffer.from(update.unlock.passphrase),
+        unlockRecovery: Buffer.from(update.unlock.recovery),
+        updatedAt: at,
+      })
+      .where(eq(accountKeys.accountId, accountId))
+      .returning()
+      .get();
+    if (!keys) return false;
+    tx.update(loginKeys)
+      .set({
+        publicKey: encodeBytes(update.loginPublicKey),
+        accountSalt: encodeBytes(update.accountSalt),
+        recoveryPublicKey: encodeBytes(update.recoveryLoginPublicKey),
+      })
+      .where(eq(loginKeys.accountId, accountId))
+      .run();
+    return true;
+  });
 
 export const accountRoutes = ({ db, now }: { db: Db; now: () => number }) =>
   new Hono<TenantEnv>()
@@ -61,24 +153,16 @@ export const accountRoutes = ({ db, now }: { db: Db; now: () => number }) =>
           !same(certificate.edPublicKey, upload.edPublicKey))
       )
         return c.json({ error: "invalid" }, 400);
-      const inserted = db
-        .insert(accountKeys)
-        .values({
-          accountId: session.accountId,
-          xwingPublicKey: Buffer.from(upload.xwingPublicKey),
-          edPublicKey: Buffer.from(upload.edPublicKey),
-          keyBlock: Buffer.from(upload.keyBlock),
-          unlockPassphrase: Buffer.from(upload.unlock.passphrase),
-          unlockRecovery: Buffer.from(upload.unlock.recovery),
-          state: Buffer.from(upload.state),
-          stateCounter: 0,
-          certificate: certificate ? JSON.stringify(toWire(certificate)) : null,
-          updatedAt: now(),
-        })
-        .onConflictDoNothing()
-        .returning()
-        .get();
+      const inserted = storeKeys(db, now(), session.accountId, upload);
       return inserted ? c.json({ stored: true }, 201) : c.json({ error: "exists" }, 409);
+    })
+    .put("/account/unlock", async (c) => {
+      const parsed = UnlockUpdate.safeParse(await c.req.json().catch(() => undefined));
+      if (!parsed.success) return c.json({ error: "invalid" }, 400);
+      const { accountId } = c.var.session;
+      if (!provenRenewal(db, accountId, parsed.data)) return c.json({ error: "not-proven" }, 403);
+      const replaced = replaceUnlock(db, now(), accountId, parsed.data);
+      return replaced ? c.json({ stored: true }) : c.json({ error: "not-found" }, 404);
     })
     .put("/account/state", async (c) => {
       const parsed = StateUpdate.safeParse(await c.req.json().catch(() => undefined));

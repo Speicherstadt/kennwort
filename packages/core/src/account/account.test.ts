@@ -173,6 +173,7 @@ describe("creating and unlocking an account", () => {
         "edPublicKey",
         "keyBlock",
         "loginPublicKey",
+        "recoveryLoginPublicKey",
         "state",
         "stateCounter",
         "unlock",

@@ -146,7 +146,10 @@ describe("signInWithPassphrase", () => {
       secretKey,
       quick,
     );
-    expect(sent[0]).toEqual(["/auth/login-key/challenge", { accountId: encodeBytes(anna) }]);
+    expect(sent[0]).toEqual([
+      "/auth/login-key/challenge",
+      { accountId: encodeBytes(anna), way: "passphrase" },
+    ]);
     expect(Object.keys((sent[1] as [string, object])[1]).sort()).toEqual([
       "challengeId",
       "signature",

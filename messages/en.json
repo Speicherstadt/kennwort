@@ -92,5 +92,10 @@
   "kit_server": "Server",
   "kit_created": "Created on",
   "kit_qr": "Scan this code with a new device: it fills in server, account ID and Secret Key. You type the passphrase yourself; the Recovery Key is not in the code.",
-  "kit_keep": "Keep this sheet safe, in a safe or with your documents. Whoever has it and knows your passphrase can get into your account. Nobody can reset your passphrase or Recovery Key for you."
+  "kit_keep": "Keep this sheet safe, in a safe or with your documents. Whoever has it and knows your passphrase can get into your account. Nobody can reset your passphrase or Recovery Key for you.",
+  "error_wrong_recovery_key": "The account ID or Recovery Key is wrong.",
+  "unlock_forgot": "Forgot your passphrase?",
+  "recover_title": "Forgot your passphrase",
+  "recover_text": "The Recovery Key from your Recovery Kit gets you back into your account. Then you choose a new passphrase and get a new Recovery Kit; nobody can sign in with the old Recovery Key after that.",
+  "recover_submit": "Set new passphrase"
 }

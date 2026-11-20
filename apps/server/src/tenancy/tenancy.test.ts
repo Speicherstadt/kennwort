@@ -10,6 +10,7 @@ import {
   auditEvents,
   companies,
   invitations,
+  loginKeys,
   vaults,
 } from "../db/schema.ts";
 import { createLog } from "../log.ts";
@@ -125,12 +126,29 @@ const cases: Record<string, () => Promise<void>> = {
       edPublicKey: encodeBytes(new Uint8Array(32)),
       keyBlock: "AAAA",
       unlock: { passphrase: "AAAA", recovery: "AAAA" },
+      recoveryLoginPublicKey: encodeBytes(new Uint8Array(32)),
       state: "AAAA",
       stateCounter: 0,
     };
     expect((await jonasSends("PUT", "/api/account/keys", keys)).status).toBe(201);
     const rows = app.db.select().from(accountKeys).all();
     expect(rows.find((row) => row.accountId === "jonas")?.stateCounter).toBe(0);
+  },
+  "PUT /api/account/unlock": async () => {
+    // Replaces only Jonas's own sign-in keys; Max's (Müller Elektro) stay as they are
+    app.db
+      .insert(loginKeys)
+      .values({ accountId: "max", publicKey: "max-key", accountSalt: "max-salt", createdAt: 1 })
+      .onConflictDoNothing()
+      .run();
+    await jonasSends("PUT", "/api/account/unlock", {
+      accountSalt: encodeBytes(new Uint8Array(16)),
+      loginPublicKey: encodeBytes(new Uint8Array(32)),
+      recoveryLoginPublicKey: encodeBytes(new Uint8Array(32)),
+      unlock: { passphrase: "AAAA", recovery: "AAAA" },
+    });
+    const max = app.db.select().from(loginKeys).where(eq(loginKeys.accountId, "max")).get();
+    expect(max?.publicKey).toBe("max-key");
   },
   "PUT /api/account/state": async () => {
     // Writes only Jonas's own state; Max's stays at counter 0

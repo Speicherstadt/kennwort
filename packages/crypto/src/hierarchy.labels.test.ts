@@ -1,7 +1,7 @@
 import { hkdfSync } from "node:crypto";
 import sodium from "libsodium-wrappers-sumo";
 import { beforeAll, describe, expect, it } from "vitest";
-import { openAccountKey, openKeyBlock, passkeyUnlockKey } from "./account.ts";
+import { openAccountKey, openKeyBlock, passkeyUnlockKey, recoveryLoginSeed } from "./account.ts";
 import { encode, type Part } from "./encoding.ts";
 import { hex } from "./test-helpers.ts";
 import { openEntry, openEntryKey, pad, vaultKeyCommitment } from "./vault.ts";
@@ -37,6 +37,13 @@ describe("labels of the key hierarchy", () => {
     const salt = new Uint8Array(32).fill(4);
     expect(hex(passkeyUnlockKey(prf, salt, id(5)))).toBe(
       nodeKdf(prf, salt, "kennwort/unlock-passkey/v1", id(5)),
+    );
+  });
+
+  it("recovery sign-in seed: kennwort/login-recovery/v1 with the account, no salt", () => {
+    const recovery = new Uint8Array(32).fill(3);
+    expect(hex(recoveryLoginSeed(recovery, account))).toBe(
+      nodeKdf(recovery, new Uint8Array(), "kennwort/login-recovery/v1", account),
     );
   });
 

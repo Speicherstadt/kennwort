@@ -1,55 +1,10 @@
-import { type AccountUpload, encodeBytes, loginKeyPair, type Stored } from "@kennwort/core";
-import { passphraseKeysWith } from "@kennwort/crypto";
+import { encodeBytes } from "@kennwort/core";
 import { flush } from "solid-js";
 import { describe, expect, it } from "vitest";
 import type { Api } from "./api.ts";
 import { readDevice } from "./device.ts";
+import { derive, fakeApi, memory, PASSPHRASE } from "./session.test-kit.ts";
 import { createSession } from "./session.ts";
-
-const derive = (p: string, salt: Uint8Array, key: Uint8Array, account: Uint8Array) =>
-  passphraseKeysWith({ m: 8, t: 1, p: 1 }, p, salt, key, account);
-const PASSPHRASE = "Heizung Wasser Licht Kupfer";
-
-/** A server in memory: stores the upload, signs in only with the right sign-in key */
-const fakeApi = (overrides: Partial<Api> = {}) => {
-  const accounts = new Map<string, AccountUpload>();
-  const api: Api = {
-    setup: async (code, _companyId, upload) => {
-      if (code !== "richtiger-code") return { ok: false, error: "wrong-code" };
-      accounts.set(encodeBytes(upload.accountId), upload);
-      return { ok: true, value: "token-1" };
-    },
-    accept: async (_id, token, upload) => {
-      if (token !== "einladung") return { ok: false, error: "invalid-invitation" };
-      accounts.set(encodeBytes(upload.accountId), upload);
-      return { ok: true, value: "token-2" };
-    },
-    uploadKeys: async () => true,
-    keys: async (token): Promise<Stored | undefined> => {
-      const upload = [...accounts.values()].find((_, i) => token === `signed-in-${i}`);
-      return upload;
-    },
-    signIn: async (accountId, passphrase, secretKey, d) => {
-      const upload = accounts.get(encodeBytes(accountId));
-      if (!upload) return { ok: false, error: "denied" };
-      const keys = loginKeyPair(passphrase, upload.accountSalt, secretKey, accountId, d);
-      const ok = encodeBytes(keys.publicKey) === encodeBytes(upload.loginPublicKey);
-      const index = [...accounts.keys()].indexOf(encodeBytes(accountId));
-      return ok ? { ok: true, token: `signed-in-${index}` } : { ok: false, error: "denied" };
-    },
-    ...overrides,
-  };
-  return api;
-};
-
-const memory = () => {
-  const data = new Map<string, string>();
-  return {
-    getItem: (k: string) => data.get(k) ?? null,
-    setItem: (k: string, v: string) => void data.set(k, v),
-    removeItem: (k: string) => void data.delete(k),
-  };
-};
 
 const timers = () => {
   const pending: (() => void)[] = [];

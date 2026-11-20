@@ -16,6 +16,7 @@ import {
 import { createSignal } from "solid-js";
 import type { Api } from "./api.ts";
 import { type DeviceAccount, readDevice, rememberDevice } from "./device.ts";
+import { recoverAccount } from "./recover.ts";
 
 export const LOCK_AFTER_MS = 10 * 60 * 1000;
 
@@ -27,8 +28,9 @@ export type SessionError =
   | "invalid-invitation"
   | "too-many-requests"
   | "wrong-passphrase"
+  | "wrong-recovery-key"
   | "unexpected";
-type Outcome<T> = { ok: true; value: T } | { ok: false; error: SessionError };
+export type Outcome<T> = { ok: true; value: T } | { ok: false; error: SessionError };
 
 export type SessionDeps = {
   api: Api;
@@ -37,10 +39,12 @@ export type SessionDeps = {
   schedule?: (run: () => void, ms: number) => unknown;
   /** Argon2id as F-05 fixes it; only tests pass a lighter one */
   derive?: Derive;
+  /** Random bytes for a new Secret Key; only tests pass fixed ones */
+  random?: (length: number) => Uint8Array;
   cancel?: (timer: unknown) => void;
 };
 
-const signInError = (error: string): SessionError =>
+export const signInError = (error: string): SessionError =>
   error === "denied"
     ? "wrong-passphrase"
     : error === "too-many-requests" || error === "locked"
@@ -65,13 +69,28 @@ const signInAndUnlock = async (
   return { ok: true, value: { ...unlocked.value, accountId, token: signedIn.token } };
 };
 
+/** After setup or invitation: the keys uploaded, the device remembered, the account open */
+const finishEnrolment = async (
+  account: ReturnType<typeof createAccount>,
+  token: Outcome<string> | { ok: false; error: SessionError },
+  upload: (token: string) => Promise<boolean>,
+  remember: (accountId: Uint8Array, secretKey: Uint8Array) => void,
+  open: (value: Opened) => void,
+): Promise<Outcome<NewKeys>> => {
+  if (!token.ok) return token;
+  if (!(await upload(token.value))) return { ok: false, error: "unexpected" };
+  remember(account.accountId, account.secretKey);
+  open({ ...account, accountId: account.accountId, token: token.value });
+  const { accountId, secretKey, recoveryKey } = account;
+  return { ok: true, value: { accountId, secretKey, recoveryKey } };
+};
+
 export const createSession = (deps: SessionDeps) => {
   const [opened, setOpened] = createSignal<Opened>();
   const [device, setDevice] = createSignal<DeviceAccount | undefined>(readDevice(deps.storage));
   const schedule = deps.schedule ?? ((run, ms) => setTimeout(run, ms));
   const cancel = deps.cancel ?? ((timer) => clearTimeout(timer as number));
   let timer: unknown;
-
   const lock = () => {
     cancel(timer);
     opened()?.accountKey.fill(0);
@@ -93,18 +112,11 @@ export const createSession = (deps: SessionDeps) => {
     rememberDevice(deps.storage, accountId, secretKey);
     setDevice(readDevice(deps.storage));
   };
-  const enrolled = async (
+  const enrolled = (
     account: ReturnType<typeof createAccount>,
     token: Outcome<string> | { ok: false; error: SessionError },
     upload: (token: string) => Promise<boolean>,
-  ): Promise<Outcome<NewKeys>> => {
-    if (!token.ok) return token;
-    if (!(await upload(token.value))) return { ok: false, error: "unexpected" };
-    remember(account.accountId, account.secretKey);
-    open({ ...account, accountId: account.accountId, token: token.value });
-    const { accountId, secretKey, recoveryKey } = account;
-    return { ok: true, value: { accountId, secretKey, recoveryKey } };
-  };
+  ) => finishEnrolment(account, token, upload, remember, open);
 
   return {
     opened,
@@ -148,6 +160,18 @@ export const createSession = (deps: SessionDeps) => {
       remember(id.data, key);
       open(result.value);
       return { ok: true, value: true };
+    },
+    /** The passphrase is forgotten: the Recovery Key opens the account and is renewed (recover.ts) */
+    recover: async (
+      recoveryKey: Uint8Array,
+      passphrase: string,
+      accountIdText?: string,
+    ): Promise<Outcome<NewKeys>> => {
+      const result = await recoverAccount(deps, device(), recoveryKey, passphrase, accountIdText);
+      if (!result.ok) return result;
+      remember(result.value.keys.accountId, result.value.keys.secretKey);
+      open(result.value.opened);
+      return { ok: true, value: result.value.keys };
     },
     accountIdText: () => {
       const value = opened();

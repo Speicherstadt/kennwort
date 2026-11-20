@@ -55,6 +55,23 @@ die Passphrase. Auf einem neuen Gerät wählst du **Anderes Konto** und gibst Ko
 Passphrase ein, oder du scannst den QR-Code auf dem Recovery-Kit; danach kennt auch dieses Gerät
 dein Konto.
 
+## Passphrase vergessen
+
+Auf der Entsperr-Seite führt **Passphrase vergessen?** zum Recovery Key: Konto-ID (auf einem
+bekannten Gerät schon ausgefüllt) und Recovery Key aus dem Recovery-Kit eingeben, eine neue
+Passphrase wählen. Danach zeigt Kennwort ein neues Recovery-Kit; mit dem alten Recovery Key und der
+alten Passphrase meldet sich niemand mehr an. Speichere das neue Kit wieder als PDF und bewahre es
+sicher auf.
+
+!!! warning "Wenn das Kit in fremde Hände geraten ist"
+    Der neue Recovery Key sperrt die Anmeldung mit dem alten. Wer aber früher eine Kopie der
+    verschlüsselten Daten deines Kontos bekommen hat, kann sie mit dem alten Recovery Key weiter
+    öffnen. Davor schützt erst ein Schlüsselwechsel, den Kennwort mit dem Austritt (K-307) bringt.
+
+Auf deinem bekannten Gerät bleibt der Secret Key gleich, deine anderen Geräte entsperren also mit
+der neuen Passphrase weiter. Auf einem fremden Gerät bekommst du einen neuen Secret Key; deine
+anderen Geräte brauchen ihn dann zusammen mit der neuen Passphrase.
+
 ## Automatisch sperren
 
 Kennwort sperrt sich nach zehn Minuten ohne Tastendruck oder Klick, und sofort mit **Sperren** in der

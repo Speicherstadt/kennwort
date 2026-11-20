@@ -16,6 +16,8 @@ const api: Api = {
   uploadKeys: async () => true,
   keys: async () => undefined,
   signIn: async () => ({ ok: false, error: "denied" }),
+  signInWithRecovery: async () => ({ ok: false, error: "denied" }),
+  replaceUnlock: async () => false,
 };
 
 describe("session replaced by another account", () => {

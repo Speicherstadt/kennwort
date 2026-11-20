@@ -15,6 +15,7 @@ export type Route =
   | { page: "settings" }
   | { page: "setup" }
   | { page: "unlock" }
+  | { page: "recover" }
   | { page: "invite"; id: string }
   | { page: "not-found" };
 
@@ -74,7 +75,8 @@ export const parseRoute = (path: string): Route => {
       first === "groups" ||
       first === "settings" ||
       first === "setup" ||
-      first === "unlock")
+      first === "unlock" ||
+      first === "recover")
   )
     return { page: first };
   return { page: "not-found" };

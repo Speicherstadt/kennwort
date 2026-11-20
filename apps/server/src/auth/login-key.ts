@@ -2,7 +2,9 @@
  * The notweg sign-in (docs/sicherheitsdesign.md, P-02): the device derives an Ed25519 key from
  * passphrase and Secret Key (F-05, "login"); the server keeps only its public key and the account
  * salt, sends a one-time challenge and checks the signature. Neither the passphrase nor anything
- * that lets one guess it without the Secret Key ever reaches the server.
+ * that lets one guess it without the Secret Key ever reaches the server. Who forgot the passphrase
+ * signs in the same way with the key the Recovery Key gives (P-12, way "recovery"); its signatures
+ * have a purpose of their own, so one never counts for the other.
  */
 import { createHmac } from "node:crypto";
 import { bytes, encodeBytes } from "@kennwort/core";
@@ -17,7 +19,17 @@ import type { ClientAddress, ClientEnv } from "./client-address.ts";
 import { clearFailures, isLocked, recordFailure } from "./limits.ts";
 
 const CHALLENGE_MS = 2 * 60 * 1000;
-const ChallengeRequest = z.object({ accountId: z.string().min(1).max(64) });
+const Way = z.enum(["passphrase", "recovery"]);
+type Way = z.infer<typeof Way>;
+const ChallengeRequest = z.object({
+  accountId: z.string().min(1).max(64),
+  way: Way.default("passphrase"),
+});
+/** The signature's purpose per way (F-03) */
+export const LOGIN_PURPOSE: Record<Way, string> = {
+  passphrase: "login",
+  recovery: "login-recovery",
+};
 const VerifyRequest = z.object({ challengeId: z.string().min(1).max(64), signature: bytes(65) });
 
 export type LoginKeyDeps = {
@@ -56,6 +68,7 @@ export const loginKeyRoutes = ({ db, secret, auth, now, random, allow, address }
         .values({
           id,
           accountId: parsed.data.accountId,
+          way: parsed.data.way,
           challenge,
           expiresAt: now() + CHALLENGE_MS,
         })
@@ -79,12 +92,14 @@ export const loginKeyRoutes = ({ db, secret, auth, now, random, allow, address }
       const { accountId } = challenge;
       if (isLocked(db, accountId, at)) return c.json({ error: "locked" }, 423);
       const key = db.select().from(loginKeys).where(eq(loginKeys.accountId, accountId)).get();
+      const publicKey = challenge.way === "recovery" ? key?.recoveryPublicKey : key?.publicKey;
       const signed =
-        key !== undefined &&
+        publicKey !== undefined &&
+        publicKey !== null &&
         verify(
-          bytes(32).parse(key.publicKey),
+          bytes(32).parse(publicKey),
           parsed.data.signature,
-          "login",
+          LOGIN_PURPOSE[challenge.way],
           accountId,
           bytes(32).parse(challenge.challenge),
         );

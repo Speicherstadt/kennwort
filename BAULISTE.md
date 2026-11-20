@@ -106,7 +106,7 @@ und die Schritte für Menschen am Ende erledigt sind.
     Entsperren mit Passphrase und Recovery Key – in `packages/core` und auf dem Server.
   - [x] Teil 2: Konto anlegen und Entsperren in der Web-App, automatisches Sperren.
   - [x] Teil 3: Recovery-Kit als PDF mit QR-Code für ein neues Gerät (P-12).
-  - [ ] Teil 3b: Anmelden und Entsperren mit dem Recovery Key in der Web-App (eigener
+  - [x] Teil 3b: Anmelden und Entsperren mit dem Recovery Key in der Web-App (eigener
     Anmelde-Schlüssel aus dem Recovery Key, da der aus der Passphrase dann fehlt), danach neue
     Passphrase und neuen Recovery Key anlegen (P-12).
   - [ ] Teil 4: Neues Gerät per QR-Code, Geräteliste, Gerät abmelden.
@@ -117,7 +117,8 @@ und die Schritte für Menschen am Ende erledigt sind.
 - [ ] **K-306 Einträge** – alle Typen, Generator, TOTP mit QR-Scan, eigene Felder, frühere
   Passwörter, Suche, Favoriten, Tags.
 - [ ] **K-307 Austritt und Recovery** – Schlüsselwechsel, Änderungs-Markierung, Austritts-Bericht,
-  Firmen-Recovery, Notfallzugriff mit Wartezeit.
+  Firmen-Recovery, Notfallzugriff mit Wartezeit, Wechsel des Account Key (AK), wenn ein
+  Recovery-Kit in fremde Hände geraten ist (P-12).
 - [ ] **K-308 PWA** – installierbar, offline lesbar, signiertes Release-Manifest, Service Worker
   prüft Hashes vor jedem Update.
   Fertig, wenn: ein Update mit falschem Hash nicht aktiv wird (Test).

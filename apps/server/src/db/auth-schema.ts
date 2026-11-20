@@ -84,19 +84,24 @@ export const authPasskey = sqliteTable(
 
 /**
  * The notweg sign-in key (P-02): an Ed25519 public key derived on the device from passphrase and
- * Secret Key; the server stores the key and the account salt, never anything to guess from
+ * Secret Key; the server stores the key and the account salt, never anything to guess from. Next
+ * to it the public key the Recovery Key gives (P-12), set when the account uploads its keys.
  */
 export const loginKeys = sqliteTable("login_keys", {
   accountId: text("account_id").primaryKey(),
   publicKey: text("public_key").notNull(),
   accountSalt: text("account_salt").notNull(),
+  recoveryPublicKey: text("recovery_public_key"),
   createdAt: integer("created_at").notNull(),
 });
 
-/** One-time challenges for the sign-in key, valid for two minutes */
+/** One-time challenges for a sign-in key, valid for two minutes; `way` names which key answers */
 export const loginChallenges = sqliteTable("login_challenges", {
   id: text("id").primaryKey(),
   accountId: text("account_id").notNull(),
+  way: text("way", { enum: ["passphrase", "recovery"] })
+    .notNull()
+    .default("passphrase"),
   challenge: text("challenge").notNull(),
   expiresAt: integer("expires_at").notNull(),
 });

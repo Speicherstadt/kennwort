@@ -92,6 +92,57 @@ test.describe("an account", { tag: "@phone" }, () => {
     expect(new URL(other.url()).pathname).toBe("/entries");
   });
 
+  test("a forgotten passphrase is replaced with the Recovery Key, and the old key no longer signs in", async ({
+    page,
+    browser,
+  }) => {
+    const owner = await setUpCompany(page);
+    const { accountId } = JSON.parse(owner.device) as { accountId: string };
+    const lock = page.getByRole("button", { name: "Sperren" }).filter({ visible: true });
+    if ((await lock.count()) === 0)
+      await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).click();
+    await lock.first().click();
+    await page.getByRole("button", { name: "Passphrase vergessen?" }).click();
+    await expect(heading(page, "Passphrase vergessen")).toBeVisible();
+    await expect(page.getByLabel("Konto-ID")).toHaveValue(accountId);
+    await axe(page);
+    await page.getByLabel("Recovery Key").fill(owner.recoveryKey);
+    await page.getByLabel("Passphrase", { exact: true }).fill("Rohr Zange Ventil Kessel");
+    await page.getByLabel("Passphrase wiederholen").fill("Rohr Zange Ventil Kessel");
+    await page.getByRole("button", { name: "Neue Passphrase festlegen" }).click();
+    await expect(heading(page, "Dein Recovery-Kit")).toBeVisible({ timeout: 20_000 });
+    // Same device, same Secret Key; a new Recovery Key
+    await expect(page.getByTestId("secret-key")).toHaveText(owner.secretKey);
+    const renewed = (await page.getByTestId("recovery-key").textContent()) ?? "";
+    expect(renewed).not.toBe(owner.recoveryKey);
+    await page.getByRole("checkbox").check();
+    await page.getByRole("button", { name: "Weiter" }).click();
+    await expect(heading(page, "Alle Einträge")).toBeVisible();
+
+    // The old passphrase and the old Recovery Key no longer open anything
+    const other = await newDevice(browser);
+    await other.goto("/entries");
+    await other.getByRole("button", { name: "Anderes Konto" }).click();
+    await other.getByLabel("Konto-ID").fill(accountId);
+    await other.getByLabel("Secret Key").fill(owner.secretKey);
+    await other.getByLabel("Passphrase").fill(PASSPHRASE);
+    await other.getByRole("button", { name: "Entsperren" }).click();
+    await expect(other.getByRole("alert")).toBeVisible({ timeout: 20_000 });
+    await other.getByLabel("Passphrase").fill("Rohr Zange Ventil Kessel");
+    await other.getByRole("button", { name: "Entsperren" }).click();
+    await expect(heading(other, "Alle Einträge")).toBeVisible({ timeout: 20_000 });
+    const third = await newDevice(browser);
+    await third.goto("/recover");
+    await third.getByLabel("Konto-ID").fill(accountId);
+    await third.getByLabel("Recovery Key").fill(owner.recoveryKey);
+    await third.getByLabel("Passphrase", { exact: true }).fill("Noch eine neue Passphrase");
+    await third.getByLabel("Passphrase wiederholen").fill("Noch eine neue Passphrase");
+    await third.getByRole("button", { name: "Neue Passphrase festlegen" }).click();
+    await expect(third.getByRole("alert")).toHaveText("Konto-ID oder Recovery Key stimmt nicht.", {
+      timeout: 20_000,
+    });
+  });
+
   test("a wrong setup code is refused", async ({ page }) => {
     await page.goto("/setup");
     await page.getByLabel("Einrichtungs-Code").fill("falscher-code-falscher-code");
