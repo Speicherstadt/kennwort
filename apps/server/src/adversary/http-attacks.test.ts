@@ -33,11 +33,7 @@ const onRecords =
     url.endsWith("/records") && method === "GET" ? change(body as Wire[]) : body;
 
 describe("attacks over HTTP", async () => {
-  await fetch(`${base}/api/vaults`, {
-    method: "POST",
-    headers: { authorization: "Bearer t-jonas", "content-type": "application/json" },
-    body: JSON.stringify({ id: vaultId }),
-  });
+  await setup.openBuero();
   let device = edit(emptyDevice(), id(0xe1), bank);
   device = edit(device, id(0xe2), withField(bank, "password", "Zweites-2026!"));
   await sync(device, httpServer(connect("t-jonas"), ring.vaultId), contextFor(jonas));

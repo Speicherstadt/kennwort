@@ -1,18 +1,22 @@
 /**
  * The sync API under /api (K-204, docs/sicherheitsdesign.md P-21): vaults, entry records with all
- * their versions, and a live stream (SSE) that names each new version. The server checks only
- * what it can without keys: the company, the next version number and that the session signed as
- * itself; signatures, roles and contents are the client's to check (P-09).
+ * their versions, and a live stream (SSE) that names each new version. The server checks what it
+ * can without keys: the company, that the session is a current member of the vault by its stored
+ * log (to read) and an editor or manager (to write), the next version number and that the session
+ * signed as itself; signatures, roles and contents are still the client's to check (P-09).
  */
 import { bytes, EntryRecord, encodeBytes, recordToWire } from "@kennwort/core";
+import type { Context } from "hono";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
+import type { Db } from "../db/database.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 import type { Hub } from "./hub.ts";
+import { currentMembers } from "./vault-chain.ts";
 
-export type SyncDeps = { hub: Hub; now: () => number; keepAliveMs?: number };
+export type SyncDeps = { db: Db; hub: Hub; now: () => number; keepAliveMs?: number };
 
 const VaultRequest = z.object({ id: bytes(16) });
 /** One record holds one entry; 1 MiB leaves room for attachments' keys, not for files */
@@ -20,7 +24,13 @@ const MAX_RECORD_BYTES = 1024 * 1024;
 
 const notFound = { error: "not-found" } as const;
 
-export const syncRoutes = ({ hub, now, keepAliveMs = 20_000 }: SyncDeps) =>
+/** The session's role in the vault by its stored log, if it is a current member (K-305) */
+const roleIn = (db: Db, c: Context<TenantEnv>, vaultId: string, now: number) =>
+  c.var.scope.vault(vaultId)
+    ? currentMembers(db, vaultId, Math.floor(now / 1000)).get(c.var.session.accountId)?.role
+    : undefined;
+
+export const syncRoutes = ({ db, hub, now, keepAliveMs = 20_000 }: SyncDeps) =>
   new Hono<TenantEnv>()
     .post("/vaults", async (c) => {
       const parsed = VaultRequest.safeParse(await c.req.json().catch(() => undefined));
@@ -38,10 +48,12 @@ export const syncRoutes = ({ hub, now, keepAliveMs = 20_000 }: SyncDeps) =>
       return c.json({ id }, 201);
     })
     .get("/vaults/:vaultId/records", (c) => {
+      if (!roleIn(db, c, c.req.param("vaultId"), now())) return c.json(notFound, 404);
       const records = c.var.scope.latest(c.req.param("vaultId"));
       return records ? c.json(records.map(recordToWire)) : c.json(notFound, 404);
     })
     .get("/vaults/:vaultId/entries/:entryId/versions", (c) => {
+      if (!roleIn(db, c, c.req.param("vaultId"), now())) return c.json(notFound, 404);
       const records = c.var.scope.versions(c.req.param("vaultId"), c.req.param("entryId"));
       return records ? c.json(records.map(recordToWire)) : c.json(notFound, 404);
     })
@@ -53,7 +65,10 @@ export const syncRoutes = ({ hub, now, keepAliveMs = 20_000 }: SyncDeps) =>
       }),
       async (c) => {
         const vaultId = c.req.param("vaultId");
-        if (!c.var.scope.vault(vaultId)) return c.json(notFound, 404);
+        const role = roleIn(db, c, vaultId, now());
+        if (!role) return c.json(notFound, 404);
+        // A reader or a non-member could only fill the history with versions clients refuse
+        if (role !== "edit" && role !== "manage") return c.json({ error: "forbidden" }, 403);
         const parsed = EntryRecord.safeParse(await c.req.json().catch(() => undefined));
         if (!parsed.success || encodeBytes(parsed.data.vaultId) !== vaultId)
           return c.json({ error: "invalid" }, 400);
@@ -73,17 +88,25 @@ export const syncRoutes = ({ hub, now, keepAliveMs = 20_000 }: SyncDeps) =>
     )
     .get("/vaults/:vaultId/events", (c) => {
       const vaultId = c.req.param("vaultId");
-      if (!c.var.scope.vault(vaultId)) return c.json(notFound, 404);
+      if (!roleIn(db, c, vaultId, now())) return c.json(notFound, 404);
       return streamSSE(c, async (stream) => {
+        // Someone removed, or whose time ran out, hears nothing more: checked before every
+        // change and every ping, and then the stream ends (review of the members-only sync)
+        const stillMember = () => {
+          if (roleIn(db, c, vaultId, now())) return true;
+          stream.abort();
+          return false;
+        };
         const unsubscribe = hub.subscribe(vaultId, (change) => {
-          void stream.writeSSE({ event: "record", data: JSON.stringify(change) });
+          if (stillMember())
+            void stream.writeSSE({ event: "record", data: JSON.stringify(change) });
         });
         stream.onAbort(unsubscribe);
         // "ready" once listening, so a client knows no change after this one is missed
         await stream.writeSSE({ event: "ready", data: "" });
         while (!stream.aborted) {
           await stream.sleep(keepAliveMs);
-          if (!stream.aborted) await stream.writeSSE({ event: "ping", data: "" });
+          if (!stream.aborted && stillMember()) await stream.writeSSE({ event: "ping", data: "" });
         }
       });
     });

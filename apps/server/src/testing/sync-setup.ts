@@ -1,10 +1,18 @@
 // A server for the sync tests: Weber Haustechnik (Jonas, Anna, Max as in packages/core's fixtures)
 // and Müller Elektro (Petra); sessions are bearer tokens named after the person
-import { encodeBytes } from "@kennwort/core";
-import { anna, contextFor, jonas, max } from "@kennwort/core/testing";
+import { encodeBytes, toWire } from "@kennwort/core";
+import {
+  anna,
+  certificate,
+  contextFor,
+  jonas,
+  logEntries,
+  max,
+  root,
+} from "@kennwort/core/testing";
 import { createApp } from "../app.ts";
 import { migrate, openDatabase } from "../db/database.ts";
-import { accounts, companies } from "../db/schema.ts";
+import { accountKeys, accounts, companies } from "../db/schema.ts";
 import { createLog } from "../log.ts";
 import type { Session } from "../tenancy/session.ts";
 
@@ -21,7 +29,8 @@ export const syncSetup = (options: { keepAliveMs?: number } = {}) => {
   migrate(db);
   db.insert(companies)
     .values([
-      { id: "weber", createdAt: 1 },
+      // the company root of the fixtures, so the server checks the vault's log as clients do
+      { id: "weber", createdAt: 1, rootPublicKey: encodeBytes(root.publicKey) },
       { id: "mueller", createdAt: 2 },
     ])
     .run();
@@ -32,6 +41,23 @@ export const syncSetup = (options: { keepAliveMs?: number } = {}) => {
       { id: ids.max, companyId: "weber", createdAt: 1 },
       { id: ids.petra, companyId: "mueller", role: "owner", createdAt: 1 },
     ])
+    .run();
+  const bundle = Buffer.alloc(1);
+  db.insert(accountKeys)
+    .values(
+      [jonas, anna, max].map((p) => ({
+        accountId: encodeBytes(p.id),
+        xwingPublicKey: Buffer.from(p.xwing.publicKey),
+        edPublicKey: Buffer.from(p.ed.publicKey),
+        keyBlock: bundle,
+        unlockPassphrase: bundle,
+        unlockRecovery: bundle,
+        state: bundle,
+        stateCounter: 0,
+        certificate: JSON.stringify(toWire(certificate(p))),
+        updatedAt: 1,
+      })),
+    )
     .run();
   const sessions: Record<string, Session> = {
     "t-jonas": { accountId: ids.jonas, companyId: "weber" },
@@ -57,5 +83,14 @@ export const syncSetup = (options: { keepAliveMs?: number } = {}) => {
         ? {}
         : { body: typeof init.body === "string" ? init.body : JSON.stringify(init.body) }),
     });
-  return { app, db, request };
+  /** Büro with its signed log (Jonas manages, Anna edits, Max reads): records are for members */
+  const openBuero = async () => {
+    const created = await request("/api/vaults", "t-jonas", { body: { id: vaultId } });
+    for (const entry of logEntries)
+      await request(`/api/vaults/${vaultId}/log`, "t-jonas", {
+        body: { entry: toWire(entry), wrappedKey: encodeBytes(new Uint8Array(1194)) },
+      });
+    return created.status;
+  };
+  return { app, db, request, openBuero };
 };

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import type { LogEntry } from "../membership/log-entry.ts";
 import { encodeBytes } from "../sync/bytes.ts";
 import { syncContract } from "../sync/test/contract.ts";
-import { anna, jonas, max } from "../sync/test/fixtures.ts";
+import { anna, jonas, logEntries, max, standInCompany, vaultId } from "../sync/test/fixtures.ts";
+import { toWire } from "../sync/wire.ts";
 import { standIn } from "./stand-in.ts";
 
 const sessions = {
@@ -12,7 +14,7 @@ const sessions = {
 };
 
 syncContract("stand-in", async () => {
-  const server = standIn(sessions);
+  const server = standIn(sessions, standInCompany());
   return {
     connect: (token) => ({ fetch: server.fetch, baseUrl: "https://demo.kennwort.test", token }),
     listening: server.listening,
@@ -21,7 +23,7 @@ syncContract("stand-in", async () => {
 
 describe("stand-in", () => {
   it("knows only its own sessions, not keys every object has (review of K-207)", async () => {
-    const server = standIn(sessions);
+    const server = standIn(sessions, standInCompany());
     for (const token of ["constructor", "toString", "__proto__"]) {
       const response = await server
         .fetch(`https://demo.kennwort.test/api/vaults/${encodeBytes(new Uint8Array(16))}/records`, {
@@ -33,13 +35,22 @@ describe("stand-in", () => {
   });
 
   it("writes the live stream as SSE and lets a reader go that cancels without a signal", async () => {
-    const server = standIn(sessions);
-    const vault = encodeBytes(new Uint8Array(16).fill(7));
+    const server = standIn(sessions, standInCompany());
+    const vault = encodeBytes(vaultId);
     const auth = { authorization: "Bearer t-jonas" };
     await server.fetch("https://demo.kennwort.test/api/vaults", {
       method: "POST",
       headers: auth,
       body: JSON.stringify({ id: vault }),
+    });
+    // the stream is for the vault's members: Jonas's genesis makes him one
+    await server.fetch(`https://demo.kennwort.test/api/vaults/${vault}/log`, {
+      method: "POST",
+      headers: auth,
+      body: JSON.stringify({
+        entry: toWire(logEntries[0] as LogEntry),
+        wrappedKey: encodeBytes(new Uint8Array(1194)),
+      }),
     });
     const response = await server.fetch(`https://demo.kennwort.test/api/vaults/${vault}/events`, {
       headers: auth,
@@ -63,7 +74,7 @@ describe("stand-in", () => {
   });
 
   it("answers routes it does not know with 404, like the server", async () => {
-    const server = standIn(sessions);
+    const server = standIn(sessions, standInCompany());
     const ask = (method: string, path: string) =>
       server.fetch(`https://demo.kennwort.test${path}`, {
         method,

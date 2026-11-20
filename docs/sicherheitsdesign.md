@@ -923,6 +923,18 @@ Warteschlange hält Änderungen, solange das Gerät offline ist. Jede Antwort de
 [P-06](#p-06-mitgliedschafts-log) und [P-09](#p-09-eintrage-speichern-und-lesen) geprüft, bevor sie
 den lokalen Stand ändert.
 
+Einträge, ihre Versionen und den Live-Strom gibt der Server nur an Konten, die nach dem
+gespeicherten Mitgliedschafts-Log gerade Mitglied des Tresors sind; neue Versionen nimmt er nur von
+Mitgliedern mit der Rolle „bearbeiten“ oder „verwalten“. Sonst könnten Kollegen ohne Zugriff
+sehen, wie viele Einträge ein Tresor hat und wann sie sich ändern, oder mit Versionen, die jeder
+Client verwirft, die nächste echte Änderung blockieren. Ein offener Live-Strom prüft die
+Mitgliedschaft vor jeder Meldung und jedem Ping erneut und endet, sobald jemand entfernt wurde oder
+seine Zeit abgelaufen ist. Der Stand-in (`packages/core/src/standin/`) prüft dasselbe und nimmt
+Log-Einträge wie der Server: Er läuft `verifyLog` mit dem Wurzelschlüssel, den Zertifikaten und der
+Uhr der Firma, die man ihm gibt, will nach der Genesis einen Verwalter nach seiner Uhr und nimmt
+keinen Schlüsselwechsel vor K-307; der gemeinsame Vertrag (`sync/test/contract.ts`) hält beide
+gleich.
+
 Zusammenführen heißt dreiseitig gegen den Stand, von dem die Änderung ausging: Was nur eine Seite
 geändert hat, gilt; haben beide dasselbe Feld unterschiedlich geändert, bleibt der Wert, der schon
 auf dem Server liegt, und der eigene kommt in die früheren Werte des Eintrags. Hat die eigene Seite

@@ -99,3 +99,10 @@ export const withField = (content: EntryContent, fieldId: string, value: string)
   ...content,
   fields: content.fields.map((field) => (field.id === fieldId ? { ...field, value } : field)),
 });
+
+/** Weber Haustechnik for the stand-in: root and certificates of the fixtures, the tests' clock */
+export const standInCompany = (now: () => number = () => 1_800_000_000_000) => ({
+  rootPublicKey: root.publicKey,
+  certificates: trust.certificates,
+  now,
+});

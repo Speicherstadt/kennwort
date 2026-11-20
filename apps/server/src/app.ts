@@ -104,7 +104,7 @@ export const createApp = ({
   api.route("/", logRoutes({ db, now }));
   api.route("/", requestRoutes({ db, now }));
   api.route("/", groupRoutes({ db, now }));
-  api.route("/", syncRoutes({ hub, now, ...(keepAliveMs ? { keepAliveMs } : {}) }));
+  api.route("/", syncRoutes({ db, hub, now, ...(keepAliveMs ? { keepAliveMs } : {}) }));
   if (signIn) {
     const deps = { db, ...signIn };
     api.route("/", createInvitationRoute(deps));
