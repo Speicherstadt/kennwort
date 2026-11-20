@@ -4,6 +4,7 @@ import { setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { flush } from "solid-js";
 import { afterEach, describe, expect, it } from "vitest";
+import { withQueries } from "../queries.test-kit.tsx";
 import { annaRow, jonasCompany, ownerRow, server } from "./members.test-kit.ts";
 import type { MembersDeps } from "./members.ts";
 import { MembersPage } from "./members-page.tsx";
@@ -25,7 +26,7 @@ const show = async (c: Awaited<ReturnType<typeof jonasCompany>>, api: MembersDep
   const root = document.createElement("div");
   document.body.append(root);
   dispose = render(
-    () => <MembersPage session={c.session} api={api} origin="https://k.test" />,
+    () => withQueries(() => <MembersPage session={c.session} api={api} origin="https://k.test" />),
     root,
   );
   flush();

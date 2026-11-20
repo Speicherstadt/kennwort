@@ -1,5 +1,9 @@
+import { createMemoryHistory } from "@tanstack/solid-router";
 import { describe, expect, it } from "vitest";
-import { parseRoute, type Route, routePath } from "./routes.ts";
+import { createAppRouter } from "./router.ts";
+import { type Route, routePath } from "./routes.ts";
+
+const { routeAt: parseRoute } = createAppRouter(createMemoryHistory());
 
 describe("routes", () => {
   it("reads every page from its path and writes it back", () => {
@@ -54,6 +58,9 @@ describe("routes", () => {
       "/recover/x",
       "/pair/x",
       "/link/x",
+      // As case-sensitive as the paths always were
+      "/Entries",
+      "/SETTINGS",
     ])
       expect(parseRoute(path)).toEqual({ page: "not-found" });
     expect(routePath({ page: "not-found" })).toBe("/");

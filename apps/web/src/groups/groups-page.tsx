@@ -6,7 +6,9 @@
 import { idKey, type MemberView } from "@kennwort/core";
 import { Button, Icon, Input, m } from "@kennwort/ui";
 import { Users } from "@kennwort/ui/icons";
-import { createSignal, For, onSettled, Show } from "solid-js";
+import { useQuery, useQueryClient } from "@tanstack/solid-query";
+import { createSignal, For, Loading, Show } from "solid-js";
+import { queryKeys } from "../queries.ts";
 import type { GroupApi } from "../session/groups-api.ts";
 import type { Session } from "../session/session.ts";
 import { selectClass } from "../vaults/role-select.tsx";
@@ -134,20 +136,19 @@ export const GroupsPage = (props: {
   session: Session;
   people: () => MemberView[] | undefined;
 }) => {
-  const [groups, setGroups] = createSignal<Group[]>();
-  const [failed, setFailed] = createSignal(false);
+  const client = useQueryClient();
+  // null for groups that did not load: a query holds a value, never undefined
+  const groups = useQuery(() => ({
+    queryKey: queryKeys.groups,
+    queryFn: async () => (await loadGroups(props.api, props.session)) ?? null,
+  }));
+  const [changeFailed, setChangeFailed] = createSignal(false);
   const [busy, setBusy] = createSignal(false);
-  const reload = async () => {
-    const loaded = await loadGroups(props.api, props.session);
-    setFailed(!loaded);
-    setGroups(loaded ?? []);
-  };
-  onSettled(() => void reload());
   const run = async (change: () => Promise<{ ok: boolean }>) => {
     setBusy(true);
     const result = await change();
-    await reload();
-    setFailed(!result.ok);
+    await client.invalidateQueries({ queryKey: queryKeys.groups });
+    setChangeFailed(!result.ok);
     setBusy(false);
   };
   const people = () => props.people() ?? [];
@@ -162,26 +163,28 @@ export const GroupsPage = (props: {
         {m.nav_groups()}
       </h1>
       <p class="mb-4 max-w-prose text-muted-foreground">{m.groups_intro_real()}</p>
-      <Show when={failed()}>
-        <p class={alertClass} role="alert">
-          {m.groups_failed()}
-        </p>
-      </Show>
-      <ul class="grid gap-3">
-        <For each={groups()}>
-          {(group) => (
-            <GroupCard
-              group={group}
-              people={people()}
-              keeper={keeper()}
-              busy={busy()}
-              onAdd={(accountId) => run(() => joinGroup(api, session, group.id, accountId))}
-              onRemove={(accountId) => run(() => leaveGroup(api, session, group.id, accountId))}
-              onDelete={() => run(() => deleteGroup(api, session, group.id))}
-            />
-          )}
-        </For>
-      </ul>
+      <Loading>
+        <Show when={changeFailed() || groups.data === null}>
+          <p class={alertClass} role="alert">
+            {m.groups_failed()}
+          </p>
+        </Show>
+        <ul class="grid gap-3">
+          <For each={groups.data ?? []}>
+            {(group) => (
+              <GroupCard
+                group={group}
+                people={people()}
+                keeper={keeper()}
+                busy={busy()}
+                onAdd={(accountId) => run(() => joinGroup(api, session, group.id, accountId))}
+                onRemove={(accountId) => run(() => leaveGroup(api, session, group.id, accountId))}
+                onDelete={() => run(() => deleteGroup(api, session, group.id))}
+              />
+            )}
+          </For>
+        </ul>
+      </Loading>
       <Show when={keeper()}>
         <CreateGroup
           busy={busy()}

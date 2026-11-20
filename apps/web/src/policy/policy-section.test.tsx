@@ -5,6 +5,7 @@ import { render } from "@solidjs/web";
 import { flush } from "solid-js";
 import { afterEach, describe, expect, it } from "vitest";
 import { jonasCompany, server } from "../members/members.test-kit.ts";
+import { withQueries } from "../queries.test-kit.tsx";
 import { PolicySection } from "./policy-section.tsx";
 
 // K-304 part 4: the company policy on the members page, in German
@@ -36,7 +37,10 @@ const show = async (canEdit: boolean, policy: (root: Uint8Array) => Policy | nul
   };
   const root = document.createElement("div");
   document.body.append(root);
-  dispose = render(() => <PolicySection session={c.session} api={api} canEdit={canEdit} />, root);
+  dispose = render(
+    () => withQueries(() => <PolicySection session={c.session} api={api} canEdit={canEdit} />),
+    root,
+  );
   flush();
   await settle();
   return { root, saved };

@@ -4,10 +4,12 @@
  */
 import type { DeviceEntry } from "@kennwort/core";
 import { Button, m } from "@kennwort/ui";
-import { createEffect, createSignal, For, Show } from "solid-js";
+import { useQuery, useQueryClient } from "@tanstack/solid-query";
+import { createEffect, createSignal, For, Loading, Show } from "solid-js";
+import { queryKeys } from "../queries.ts";
 import type { DevicesApi } from "../session/devices-api.ts";
 
-type Load = { state: "loading" } | { state: "failed" } | { state: "ready"; devices: DeviceEntry[] };
+const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
 
 const formatTime = (time: number) =>
   new Intl.DateTimeFormat(document.documentElement.lang || undefined, {
@@ -42,17 +44,24 @@ export const DevicesSection = (props: {
   /** This device was signed out: the app forgets the account */
   onSignedOut: () => void;
 }) => {
-  const [load, setLoad] = createSignal<Load>({ state: "loading" });
+  const client = useQueryClient();
+  // null for a list that did not load: a query holds a value, never undefined
+  const devices = useQuery(() => {
+    const token = props.token;
+    return {
+      queryKey: queryKeys.devices,
+      queryFn: async () => (await props.api.devices(token)) ?? null,
+    };
+  });
   const [busy, setBusy] = createSignal(false);
   const [failed, setFailed] = createSignal(false);
-  const refresh = async (token: string) => {
-    const devices = await props.api.devices(token);
-    setLoad(devices ? { state: "ready", devices } : { state: "failed" });
-  };
-  // The list belongs to the token it was loaded with: another sign-in loads it anew
+  const reload = () => client.invalidateQueries({ queryKey: queryKeys.devices });
+  // The list belongs to the token it was loaded with: another sign-in loads it anew. The token
+  // stays out of the query key, so the list is loaded anew by hand
   createEffect(
     () => props.token,
-    (token) => void refresh(token),
+    () => void reload(),
+    { defer: true },
   );
   const remove = async (device: DeviceEntry) => {
     setBusy(true);
@@ -61,35 +70,35 @@ export const DevicesSection = (props: {
     setBusy(false);
     if (!removed) return setFailed(true);
     if (device.current) return props.onSignedOut();
-    await refresh(props.token);
-  };
-  const ready = () => {
-    const value = load();
-    return value.state === "ready" ? value.devices : undefined;
+    await reload();
   };
   return (
     <section aria-labelledby="devices-title" class="grid gap-2">
       <h2 id="devices-title" class="text-xs font-medium">
         {m.devices_title()}
       </h2>
-      <Show when={load().state === "failed"}>
-        <p role="alert" class="rounded-lg border border-danger px-3 py-2 text-[13px] text-danger">
-          {m.devices_load_failed()}
-        </p>
-      </Show>
-      <Show when={ready()}>
-        {(devices) => (
-          <ul class="divide-y divide-border rounded-xl border border-border">
-            <For each={devices()}>
-              {(device) => (
-                <DeviceRow device={device} busy={busy()} onRemove={() => remove(device)} />
-              )}
-            </For>
-          </ul>
-        )}
-      </Show>
+      <Loading>
+        <Show
+          when={devices.data}
+          fallback={
+            <p role="alert" class={alertClass}>
+              {m.devices_load_failed()}
+            </p>
+          }
+        >
+          {(list) => (
+            <ul class="divide-y divide-border rounded-xl border border-border">
+              <For each={list()}>
+                {(device) => (
+                  <DeviceRow device={device} busy={busy()} onRemove={() => remove(device)} />
+                )}
+              </For>
+            </ul>
+          )}
+        </Show>
+      </Loading>
       <Show when={failed()}>
-        <p role="alert" class="rounded-lg border border-danger px-3 py-2 text-[13px] text-danger">
+        <p role="alert" class={alertClass}>
           {m.devices_remove_failed()}
         </p>
       </Show>

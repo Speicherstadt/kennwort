@@ -1,8 +1,10 @@
 import type { DeviceEntry } from "@kennwort/core";
 import { setLocale } from "@kennwort/ui";
+import type { JSX } from "@solidjs/web";
 import { render } from "@solidjs/web";
 import { createSignal, flush } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { withQueries } from "../queries.test-kit.tsx";
 import type { DevicesApi } from "../session/devices-api.ts";
 import { DevicesSection } from "./devices-section.tsx";
 
@@ -27,15 +29,17 @@ const settle = async () => {
   flush();
 };
 
-const show = async (api: DevicesApi, onSignedOut = () => {}) => {
+const mount = async (view: () => JSX.Element) => {
   setLocale("de", { reload: false });
   const root = document.createElement("div");
   document.body.append(root);
-  dispose = render(() => <DevicesSection token="tok" api={api} onSignedOut={onSignedOut} />, root);
+  dispose = render(() => withQueries(view), root);
   flush();
   await settle();
   return root;
 };
+const show = (api: DevicesApi, onSignedOut = () => {}) =>
+  mount(() => <DevicesSection token="tok" api={api} onSignedOut={onSignedOut} />);
 const buttons = (root: ParentNode) => [...root.querySelectorAll("button")];
 const rows = (root: ParentNode) => [...root.querySelectorAll("li")].map((li) => li.textContent);
 
@@ -112,23 +116,15 @@ describe("DevicesSection", () => {
   });
 
   it("loads the list anew for another sign-in's token", async () => {
-    setLocale("de", { reload: false });
     const devices = vi.fn(async (token: string) => (token === "tok" ? [here, phone] : [here]));
     const [token, setToken] = createSignal("tok");
-    const root = document.createElement("div");
-    document.body.append(root);
-    dispose = render(
-      () => (
-        <DevicesSection
-          token={token()}
-          api={{ devices, removeDevice: async () => true }}
-          onSignedOut={() => {}}
-        />
-      ),
-      root,
-    );
-    flush();
-    await settle();
+    const root = await mount(() => (
+      <DevicesSection
+        token={token()}
+        api={{ devices, removeDevice: async () => true }}
+        onSignedOut={() => {}}
+      />
+    ));
     expect(rows(root)).toHaveLength(2);
     setToken("tok-2");
     flush();

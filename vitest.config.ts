@@ -21,6 +21,9 @@ export default defineConfig({
           include: tests(interfaces),
           environment: "happy-dom",
           setupFiles: ["./vitest.solid-diagnostics.ts"],
+          // TanStack's Solid packages ship JSX source with extensionless imports (the "solid"
+          // export condition): compiled by Vite like the app instead of loaded by Node
+          server: { deps: { inline: [/@tanstack\/solid-/] } },
         },
       },
     ],

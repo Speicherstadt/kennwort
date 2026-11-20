@@ -3,6 +3,7 @@ import { setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { flush } from "solid-js";
 import { afterEach, describe, expect, it } from "vitest";
+import { withQueries } from "../queries.test-kit.tsx";
 import { derive, fakeApi, memory, PASSPHRASE } from "../session/session.test-kit.ts";
 import { createSession } from "../session/session.ts";
 import { stateServer } from "../session/state-server.test-kit.ts";
@@ -73,7 +74,7 @@ describe("MembersPage adopting the root key", () => {
     const host = document.createElement("div");
     document.body.append(host);
     dispose = render(
-      () => <MembersPage session={session} api={api} origin="https://k.test" />,
+      () => withQueries(() => <MembersPage session={session} api={api} origin="https://k.test" />),
       host,
     );
     flush();
