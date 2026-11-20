@@ -132,13 +132,17 @@ describe("the gate", () => {
     expect(readDeviceLink("")).toBeUndefined();
   });
 
-  it("reads token and root fingerprint from the link's fragment", () => {
+  it("reads token, secret and root fingerprint from the link's fragment", () => {
     const root = "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE";
-    expect(readInvitation(`#token=geheim&root=${root}`)).toEqual({
+    const s = "AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI";
+    expect(readInvitation(`#token=geheim&s=${s}&root=${root}`)).toEqual({
       token: "geheim",
+      secret: new Uint8Array(32).fill(2),
       rootFingerprint: new Uint8Array(32).fill(1),
     });
-    expect(readInvitation(`#root=${root}`)).toBeUndefined();
-    expect(readInvitation("#token=geheim&root=kurz")).toBeUndefined();
+    expect(readInvitation(`#s=${s}&root=${root}`)).toBeUndefined();
+    expect(readInvitation(`#token=geheim&root=${root}`)).toBeUndefined();
+    expect(readInvitation(`#token=geheim&s=kurz&root=${root}`)).toBeUndefined();
+    expect(readInvitation(`#token=geheim&s=${s}&root=kurz`)).toBeUndefined();
   });
 });

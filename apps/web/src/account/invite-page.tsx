@@ -1,6 +1,7 @@
 /**
- * Accepting an invitation (P-08): the link's fragment (#token=…&root=…) never reaches the server;
- * the root fingerprint in it is pinned in the new account, so no server can slip in another root.
+ * Accepting an invitation (P-08): the link's fragment (#token=…&s=…&root=…) never reaches the
+ * server; the root fingerprint in it is pinned in the new account, so no server can slip in another
+ * root, and the secret `s` binds the new bundle to this invitation, so the server cannot swap it.
  */
 import { bytes } from "@kennwort/core";
 import { Button, m } from "@kennwort/ui";
@@ -11,12 +12,15 @@ import { Card, errorText, passphraseProblem } from "./form.tsx";
 import { Kit } from "./kit.tsx";
 import { PassphraseFields } from "./setup-page.tsx";
 
-/** Token and root fingerprint from the fragment; undefined when either is missing or malformed */
+/** Token, secret and root fingerprint from the fragment; undefined when any is missing or malformed */
 export const readInvitation = (hash: string) => {
   const params = new URLSearchParams(hash.replace(/^#/, ""));
   const token = params.get("token");
+  const secret = bytes(32).safeParse(params.get("s"));
   const root = bytes(32).safeParse(params.get("root"));
-  return token && root.success ? { token, rootFingerprint: root.data } : undefined;
+  return token && secret.success && root.success
+    ? { token, secret: secret.data, rootFingerprint: root.data }
+    : undefined;
 };
 
 export const InvitePage = (props: {
@@ -39,6 +43,7 @@ export const InvitePage = (props: {
       props.id,
       invitation.token,
       invitation.rootFingerprint,
+      invitation.secret,
       passphrase().value,
     );
     setBusy(false);

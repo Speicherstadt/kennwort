@@ -19,7 +19,7 @@ import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { Db } from "../db/database.ts";
-import { accountKeys, loginKeys } from "../db/schema.ts";
+import { accountKeys, accounts, invitations, loginKeys } from "../db/schema.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 
 const KeysUpload = z.object({
@@ -31,6 +31,8 @@ const KeysUpload = z.object({
   state: bytes(),
   stateCounter: z.literal(0),
   certificate: CertificateWire.optional(),
+  /** An invited member's MAC over its bundle (P-08), for the inviting admin's client to check */
+  inviteMac: bytes(64).optional(),
 });
 // A sealed AK: version, nonce, 32 bytes and the tag (F-01)
 const SEALED_ACCOUNT_KEY = 1 + 24 + 32 + 16;
@@ -58,6 +60,13 @@ const StateUpdate = z.object({ state: bytes(), stateCounter: z.number().int().po
 
 const same = (a: Uint8Array, b: Uint8Array) => encodeBytes(a) === encodeBytes(b);
 
+/** The company's first owner, set up with a code and not invited, certifying itself as owner */
+const selfCertifies = (db: Db, accountId: string, role: string) => {
+  const account = db.select().from(accounts).where(eq(accounts.id, accountId)).get();
+  const invited = db.select().from(invitations).where(eq(invitations.accountId, accountId)).get();
+  return account?.role === "owner" && role === "owner" && !invited;
+};
+
 /** The keys once, and the Recovery Key's sign-in key with them; undefined when they exist */
 const storeKeys = (db: Db, at: number, accountId: string, upload: z.infer<typeof KeysUpload>) =>
   db.transaction((tx) => {
@@ -73,6 +82,7 @@ const storeKeys = (db: Db, at: number, accountId: string, upload: z.infer<typeof
         state: Buffer.from(upload.state),
         stateCounter: 0,
         certificate: upload.certificate ? JSON.stringify(toWire(upload.certificate)) : null,
+        inviteMac: upload.inviteMac ? Buffer.from(upload.inviteMac) : null,
         updatedAt: at,
       })
       .onConflictDoNothing()
@@ -144,7 +154,11 @@ export const accountRoutes = ({ db, now }: { db: Db; now: () => number }) =>
       const { session } = c.var;
       const upload = parsed.data;
       const certificate = upload.certificate;
-      // A certificate is accepted only for this account, this company and the uploaded keys
+      // A certificate comes with the keys only from the first owner, who made the root key at
+      // setup; an invited member's comes from an admin's client (P-08, review of K-304)
+      if (certificate && !selfCertifies(db, session.accountId, certificate.role))
+        return c.json({ error: "invalid" }, 400);
+      // ... and only for this account, this company and the uploaded keys
       if (
         certificate &&
         (encodeBytes(certificate.accountId) !== session.accountId ||

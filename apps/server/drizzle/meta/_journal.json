@@ -64,6 +64,13 @@
       "when": 1795165855342,
       "tag": "0008_device_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1795166819071,
+      "tag": "0009_invitation_mac",
+      "breakpoints": true
     }
   ]
 }

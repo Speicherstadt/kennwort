@@ -87,6 +87,15 @@ export {
   isCertified,
 } from "./membership/certificate.ts";
 export {
+  type Certifier,
+  type CertifyError,
+  certifyInvited,
+  invitationMac,
+  type NewInvitation,
+  newInvitation,
+  type PendingMember,
+} from "./membership/invitation.ts";
+export {
   type Action,
   entryHash,
   GENESIS_HASH,

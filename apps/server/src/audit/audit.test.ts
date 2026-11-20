@@ -3,7 +3,7 @@ import { describe, expect, it } from "bun:test";
 import { AuditExport, type AuditHead, encodeBytes, signAudit, verifyAudit } from "@kennwort/core";
 import { ed25519KeyPair } from "@kennwort/crypto";
 import { sql } from "drizzle-orm";
-import { signInSetup } from "../testing/sign-in-setup.ts";
+import { invitationBody, signInSetup } from "../testing/sign-in-setup.ts";
 
 const jonasKeys = ed25519KeyPair(new Uint8Array(32).fill(0x10));
 
@@ -12,7 +12,11 @@ const history = async () => {
   const setup = await signInSetup();
   const jonas = await setup.member("weber", "owner");
   const invite = (await (
-    await setup.request("/api/invitations", { method: "POST", token: jonas.token })
+    await setup.request("/api/invitations", {
+      method: "POST",
+      token: jonas.token,
+      body: invitationBody(),
+    })
   ).json()) as { id: string; token: string };
   const accepted = await setup.request(`/auth/invitations/${invite.id}/accept`, {
     body: {

@@ -126,6 +126,8 @@ export const invitations = sqliteTable("invitations", {
   expiresAt: integer("expires_at").notNull(),
   acceptedAt: integer("accepted_at"),
   accountId: text("account_id"),
+  /** The invitation secret sealed under the creator's AK (P-08); the server cannot open it */
+  sealedSecret: blob("sealed_secret", { mode: "buffer" }),
 });
 
 /**

@@ -15,6 +15,7 @@ import { bytes } from "../sync/bytes.ts";
 export const SERVER_ACTIONS = [
   "invitation-created",
   "invitation-accepted",
+  "member-certified",
   "signed-in",
   "vault-created",
 ] as const;

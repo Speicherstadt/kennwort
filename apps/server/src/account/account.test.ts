@@ -16,7 +16,7 @@ import {
 import { passphraseKeysWith } from "@kennwort/crypto";
 import { sql } from "drizzle-orm";
 import { companies } from "../db/schema.ts";
-import { signInSetup } from "../testing/sign-in-setup.ts";
+import { invitationBody, signInSetup } from "../testing/sign-in-setup.ts";
 
 const quick = (p: string, salt: Uint8Array, key: Uint8Array, account: Uint8Array) =>
   passphraseKeysWith({ m: 8, t: 1, p: 1 }, p, salt, key, account);
@@ -157,7 +157,11 @@ describe("an invited member", () => {
     const setup = await signInSetup();
     const jonas = await setup.member("weber", "owner");
     const invite = (await (
-      await setup.request("/api/invitations", { method: "POST", token: jonas.token })
+      await setup.request("/api/invitations", {
+        method: "POST",
+        token: jonas.token,
+        body: invitationBody(),
+      })
     ).json()) as {
       id: string;
       token: string;

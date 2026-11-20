@@ -31,6 +31,13 @@ export { DIGEST_LENGTH, digest } from "./digest.ts";
 export { decode, encode, type Part } from "./encoding.ts";
 export { bundleFingerprint, recoveryFingerprint, rootFingerprint } from "./fingerprint.ts";
 export {
+  INVITE_MAC_LENGTH,
+  INVITE_SECRET_LENGTH,
+  type InvitedBundle,
+  inviteMac,
+  verifyInviteMac,
+} from "./invite.ts";
+export {
   ACCOUNT_SALT_LENGTH,
   PASSPHRASE_V1,
   type PassphraseKeys,

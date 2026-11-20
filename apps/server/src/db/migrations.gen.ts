@@ -55,5 +55,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795165855342,
     "breakpoints": true,
     "sql": "CREATE TABLE `device_sessions` (\n\t`session_id` text PRIMARY KEY NOT NULL,\n\t`account_id` text NOT NULL,\n\t`device_id` text NOT NULL,\n\t`name` text NOT NULL,\n\t`created_at` integer NOT NULL,\n\t`last_seen_at` integer NOT NULL,\n\tFOREIGN KEY (`session_id`) REFERENCES `auth_session`(`id`) ON UPDATE no action ON DELETE cascade\n);\n--> statement-breakpoint\nCREATE INDEX `device_sessions_device` ON `device_sessions` (`account_id`,`device_id`);"
+  },
+  {
+    "tag": "0009_invitation_mac",
+    "when": 1795166819071,
+    "breakpoints": true,
+    "sql": "ALTER TABLE `account_keys` ADD `invite_mac` blob;--> statement-breakpoint\nALTER TABLE `invitations` ADD `sealed_secret` blob;"
   }
 ];

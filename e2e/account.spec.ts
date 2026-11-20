@@ -181,15 +181,21 @@ test.describe("an account", { tag: "@phone" }, () => {
 
   test("an invited member accepts the link and gets a kit", async ({ page, browser, request }) => {
     const owner = await setUpCompany(page);
+    // The owner's screen for inviting (K-304 part 2) makes ID, secret and its sealed copy and puts
+    // the root fingerprint in the link; here any will do, the server cannot tell
+    // A new ID each run: desktop and phone share one server
+    const id = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString("base64url");
     const made = await request.post("/api/invitations", {
       headers: { authorization: `Bearer ${owner.token}` },
+      data: { id, sealedSecret: "A".repeat(98) },
     });
     expect(made.status()).toBe(201);
-    const { id, token } = (await made.json()) as { id: string; token: string };
-    // The owner's screen for inviting (K-304) puts the root fingerprint in the link; here any will do
+    const { token } = (await made.json()) as { token: string };
     const root = "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE";
+    const secret = "AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI";
+    const link = `/invite/${id}#token=${token}&s=${secret}&root=${root}`;
     const member = await newDevice(browser);
-    await member.goto(`/invite/${id}#token=${token}&root=${root}`);
+    await member.goto(link);
     await expect(heading(member, "Einladung annehmen")).toBeVisible();
     await axe(member);
     await member.getByLabel("Passphrase", { exact: true }).fill("Anna Heizung Bad Fliese");
@@ -201,7 +207,7 @@ test.describe("an account", { tag: "@phone" }, () => {
     await expect(heading(member, "Alle Einträge")).toBeVisible();
     // The link is used up
     const again = await newDevice(browser);
-    await again.goto(`/invite/${id}#token=${token}&root=${root}`);
+    await again.goto(link);
     await again.getByLabel("Passphrase", { exact: true }).fill("Max Werkstatt Rohr Zange");
     await again.getByLabel("Passphrase wiederholen").fill("Max Werkstatt Rohr Zange");
     await again.getByRole("button", { name: "Konto anlegen" }).click();

@@ -6,6 +6,7 @@
 import { digest, encode, sign } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
 import { certify } from "../membership/certificate.ts";
+import { certifyInvited, invitationMac, newInvitation } from "../membership/invitation.ts";
 import { entryHash, type LogEntry, signEntry } from "../membership/log-entry.ts";
 import { idKey, remember, type Trust, verifyLog } from "../membership/verify-log.ts";
 import { edit, emptyDevice, pull, type Refused, sync } from "../sync/device.ts";
@@ -20,6 +21,7 @@ import {
   jonas,
   logEntries,
   max,
+  type Person,
   person,
   root,
   trust,
@@ -49,6 +51,56 @@ const swapField = <K extends keyof EntryRecord>(records: EntryRecord[], field: K
     { ...b, [field]: a[field] },
   ];
 };
+
+describe("E-02 the server enrols an account of its own through an invitation (P-08)", () => {
+  const jonasAk = new Uint8Array(32).fill(0x11);
+  const bundle = (p: Person) => ({
+    accountId: p.id,
+    xwingPublicKey: p.xwing.publicKey,
+    edPublicKey: p.ed.publicKey,
+  });
+  const certifier = {
+    accountKey: jonasAk,
+    accountId: jonas.id,
+    companyId: id(0xc0),
+    rootSecretKey: root.secretKey,
+  };
+  /** Jonas invited Anna; the server holds the sealed secret, Anna's bundle and her MAC */
+  const invited = () => {
+    const invitation = newInvitation(jonasAk, jonas.id);
+    const mac = invitationMac(invitation.secret, invitation.id, bundle(anna));
+    return {
+      invitation,
+      served: { id: invitation.id, sealedSecret: invitation.sealedSecret, mac },
+    };
+  };
+
+  it("does not get its own bundle certified in place of the invitee's", () => {
+    const { served } = invited();
+    const result = certifyInvited(certifier, { ...bundle(mallory), invitation: served });
+    expect(result).toEqual({ ok: false, error: "mac-mismatch" });
+  });
+
+  it("cannot make a MAC for its bundle without the secret from the link", () => {
+    const { served } = invited();
+    const forged = invitationMac(new Uint8Array(32), served.id, bundle(mallory));
+    const result = certifyInvited(certifier, {
+      ...bundle(mallory),
+      invitation: { ...served, mac: forged },
+    });
+    expect(result).toEqual({ ok: false, error: "mac-mismatch" });
+  });
+
+  it("cannot reuse Anna's answer for a second invitation it made up", () => {
+    const { served } = invited();
+    const other = newInvitation(jonasAk, jonas.id);
+    const result = certifyInvited(certifier, {
+      ...bundle(anna),
+      invitation: { ...served, id: other.id, sealedSecret: other.sealedSecret },
+    });
+    expect(result).toEqual({ ok: false, error: "mac-mismatch" });
+  });
+});
 
 describe("E-05 the server swaps a member's public key", () => {
   it("refuses a record signed under a certificate the company root never signed", async () => {

@@ -28,7 +28,10 @@ Firma öffnet der Code nicht: In eine Firma kommt man nur mit einer Einladung.
 
 Ein Inhaber oder Admin schickt dir einen Einladungslink. Er gilt sieben Tage und nur einmal. Öffne
 ihn, wähle eine Passphrase und sichere dein Recovery-Kit. Der Teil des Links hinter `#` erreicht den
-Server nie; er enthält den Fingerabdruck des Firmenschlüssels, an dem dein Gerät die Firma erkennt.
+Server nie. Er enthält den Fingerabdruck des Firmenschlüssels, an dem dein Gerät die Firma erkennt,
+und ein Geheimnis, mit dem dein Gerät deine Schlüssel an diese Einladung bindet. Erst wenn das
+Gerät des Einladenden diese Bindung geprüft hat, bestätigt es deine Schlüssel für die Firma; einem
+Schlüssel, den der Server unterschiebt, fehlt sie.
 
 ## Das Recovery-Kit
 

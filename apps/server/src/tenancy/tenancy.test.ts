@@ -18,6 +18,7 @@ import {
   vaults,
 } from "../db/schema.ts";
 import { createLog } from "../log.ts";
+import { invitationBody } from "../testing/sign-in-setup.ts";
 import type { Session } from "./session.ts";
 
 // Two companies on one server: Weber Haustechnik (Jonas, Anna) and Müller Elektro (Max)
@@ -109,6 +110,24 @@ const maxSession = () => {
     .run();
 };
 
+/** Max's keys on the server, uncertified */
+const maxKeys = () =>
+  app.db
+    .insert(accountKeys)
+    .values({
+      accountId: "max",
+      xwingPublicKey: Buffer.alloc(1216),
+      edPublicKey: Buffer.alloc(32),
+      keyBlock: Buffer.alloc(8),
+      unlockPassphrase: Buffer.alloc(8),
+      unlockRecovery: Buffer.alloc(8),
+      state: Buffer.alloc(8),
+      stateCounter: 0,
+      updatedAt: 1,
+    })
+    .onConflictDoNothing()
+    .run();
+
 const asJonas = (path: string) =>
   app.request(path, { headers: { "x-test-session": "token-jonas" } });
 const jonasSends = (method: string, path: string, body: unknown) =>
@@ -133,10 +152,7 @@ const cases: Record<string, () => Promise<void>> = {
     expect(list.map((account) => account.id).sort()).toEqual(["anna", "jonas"]);
   },
   "POST /api/invitations": async () => {
-    const response = await app.request("/api/invitations", {
-      method: "POST",
-      headers: { "x-test-session": "token-jonas" },
-    });
+    const response = await jonasSends("POST", "/api/invitations", invitationBody());
     const { id } = (await response.json()) as { id: string };
     expect(
       app.db
@@ -201,6 +217,19 @@ const cases: Record<string, () => Promise<void>> = {
     expect((await jonasSends("POST", "/api/pairings/max-pairing/confirm", {})).status).toBe(404);
     const row = app.db.select().from(pairings).where(eq(pairings.id, "max-pairing")).get();
     expect(row?.confirmed).toBe(false);
+  },
+  "GET /api/members": async () => {
+    // Max (Müller Elektro) is not among Weber Haustechnik's members
+    const answer = (await (await asJonas("/api/members")).json()) as { members: { id: string }[] };
+    expect(answer.members.map((member) => member.id).sort()).toEqual(["anna", "jonas"]);
+  },
+  "PUT /api/members/:id/certificate": async () => {
+    // Jonas cannot certify Max, though Max has keys
+    maxKeys();
+    const response = await jonasSends("PUT", "/api/members/max/certificate", {});
+    expect(response.status).toBe(404);
+    const max = app.db.select().from(accountKeys).where(eq(accountKeys.accountId, "max")).get();
+    expect(max?.certificate).toBeNull();
   },
   "GET /api/devices": async () => {
     // Max's session is not among Jonas's devices

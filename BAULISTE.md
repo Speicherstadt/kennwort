@@ -119,6 +119,17 @@ und die Schritte für Menschen am Ende erledigt sind.
     abmelden“ das Konto auf dem Gerät vergisst – als Playwright-Test desktop und `@phone`.
 - [ ] **K-304 Firma, Rollen, Einladungen** – Inhaber, Admin, Mitarbeiter; Wurzelschlüssel;
   Richtlinien.
+  In Teilen, je ein Pull Request; abgehakt wird K-304, wenn alle stehen:
+  - [x] Teil 1: Einladung vollständig nach P-08 – Einladungsgeheimnis im Link, das der Server nie
+    sieht, MAC über das Bündel des Eingeladenen, der Client des Einladenden prüft ihn und
+    zertifiziert erst dann; Mitgliederliste auf dem Server. Fertig, wenn: ein Bündel, das der Server
+    unterschiebt oder austauscht, nicht zertifiziert wird (Test gegen den lügenden Server).
+  - [ ] Teil 2: Mitglieder und Einladen in der Web-App – Mitglieder-Seite mit Rolle und
+    Zertifikat, Einladungslink zeigen und kopieren, ausstehende Mitglieder bestätigen.
+  - [ ] Teil 3: Rollen ändern – Inhaber, Admin, Mitarbeiter; neues Zertifikat, der Wurzelschlüssel
+    an jeden Verwalter verpackt, immer mindestens ein Inhaber.
+  - [ ] Teil 4: Firmen-Richtlinien, vom Wurzelschlüssel signiert (automatisches Sperren,
+    Firmen-Recovery an oder aus mit dem Fingerabdruck ihres Schlüssels); jeder Client prüft sie.
 - [ ] **K-305 Tresore, Gruppen, Rechte** – persönlich und geteilt, lesen/bearbeiten/verwalten,
   Gruppen, Zugriff auf Zeit, Zugriff anfragen, einzelnen Eintrag teilen.
 - [ ] **K-306 Einträge** – alle Typen, Generator, TOTP mit QR-Scan, eigene Felder, frühere
