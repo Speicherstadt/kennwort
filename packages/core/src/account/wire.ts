@@ -43,3 +43,6 @@ export const InvitedWire = z.object({ token: z.string().min(1), expiresAt: z.num
 
 /** Another device wrote the account state first: its counter, to merge and try again */
 export const StaleWire = z.object({ error: z.literal("stale"), stateCounter: z.number().int() });
+
+/** The root key wrapped to this account (K-304 part 3), for its client to open and check */
+export const RootGrantWire = z.object({ rootGrant: bytes() });

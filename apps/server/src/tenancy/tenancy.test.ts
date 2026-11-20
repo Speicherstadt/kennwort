@@ -15,6 +15,7 @@ import {
   invitations,
   loginKeys,
   pairings,
+  rootGrants,
   vaults,
 } from "../db/schema.ts";
 import { createLog } from "../log.ts";
@@ -234,6 +235,22 @@ const cases: Record<string, () => Promise<void>> = {
     expect(response.status).toBe(404);
     const max = app.db.select().from(accountKeys).where(eq(accountKeys.accountId, "max")).get();
     expect(max?.certificate).toBeNull();
+  },
+  "PUT /api/members/:id/role": async () => {
+    // Jonas (owner of Weber Haustechnik) cannot give Max (Müller Elektro) a role
+    maxKeys();
+    const response = await jonasSends("PUT", "/api/members/max/role", {});
+    expect(response.status).toBe(404);
+    expect(app.db.select().from(accounts).where(eq(accounts.id, "max")).get()?.role).toBe("member");
+  },
+  "GET /api/account/root-grant": async () => {
+    // Only Jonas's own grant: Max's stays unseen
+    app.db
+      .insert(rootGrants)
+      .values({ accountId: "max", wrapped: Buffer.alloc(8), createdAt: 1 })
+      .onConflictDoNothing()
+      .run();
+    expect((await asJonas("/api/account/root-grant")).status).toBe(404);
   },
   "GET /api/devices": async () => {
     // Max's session is not among Jonas's devices

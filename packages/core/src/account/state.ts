@@ -26,6 +26,11 @@ export const AccountState = z.object({
    * certified: one invitation makes one member, whatever the server shows later (K-304)
    */
   invitations: z.record(z.string(), z.string()).default({}),
+  /**
+   * The newest certificate seen per account, as its issue time: an older one is a role the server
+   * plays back after an owner changed it (review of K-304)
+   */
+  certificates: z.record(z.string(), z.number().int().nonnegative()).default({}),
 });
 export type AccountState = z.infer<typeof AccountState>;
 
@@ -88,6 +93,15 @@ const newerLogs = (mine: AccountState["logs"], theirs: AccountState["logs"]) => 
   return merged;
 };
 
+/** The later issue time of each account's certificate from either side */
+export const newest = (mine: Record<string, number>, theirs: Record<string, number>) =>
+  Object.fromEntries(
+    [...new Set([...Object.keys(mine), ...Object.keys(theirs)])].map((id) => [
+      id,
+      Math.max(mine[id] ?? 0, theirs[id] ?? 0),
+    ]),
+  );
+
 export type MergeError = "other-root" | "other-bundle" | "other-log" | "other-invitation";
 
 /** Both devices' knowledge, the higher of each; a different root or bundle for one account is refused */
@@ -119,6 +133,7 @@ export const mergeStates = (
       ]),
     ),
     invitations: { ...theirs.invitations, ...mine.invitations },
+    certificates: newest(mine.certificates, theirs.certificates),
   });
 };
 
@@ -132,4 +147,5 @@ export const emptyState = (
   logs: {},
   versions: {},
   invitations: {},
+  certificates: {},
 });

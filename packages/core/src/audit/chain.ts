@@ -16,6 +16,7 @@ export const SERVER_ACTIONS = [
   "invitation-created",
   "invitation-accepted",
   "member-certified",
+  "role-changed",
   "signed-in",
   "vault-created",
 ] as const;

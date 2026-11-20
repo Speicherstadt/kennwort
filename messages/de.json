@@ -151,5 +151,9 @@
   "members_root_mismatch": "Der Firmenschlüssel vom Server passt nicht zu deinem Konto. Kennwort zeigt deshalb keine Mitglieder an.",
   "members_load_failed": "Die Mitglieder konnten nicht geladen werden.",
   "settings_members": "Mitglieder",
-  "members_confirm_other_keys": "Für dieses Konto kennt dein Gerät andere Schlüssel. Kennwort bestätigt diese nicht."
+  "members_confirm_other_keys": "Für dieses Konto kennt dein Gerät andere Schlüssel. Kennwort bestätigt diese nicht.",
+  "members_role_of": "Rolle von {name}",
+  "members_role_failed": "Die Rolle konnte nicht geändert werden.",
+  "members_root_grant_invalid": "Der Firmenschlüssel, den der Server dir gibt, ist nicht der deiner Firma. Kennwort nimmt ihn nicht an.",
+  "members_root_adopt_failed": "Der Firmenschlüssel konnte gerade nicht übernommen werden. Versuch es noch einmal."
 }

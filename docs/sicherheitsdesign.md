@@ -290,8 +290,8 @@ Umgesetzt in `packages/crypto/src/account.ts` (AK, Schlüsselblock, Entsperr-Weg
 
 Was ein Client sich merkt, um den Server zu prüfen, liegt im **Kontozustand**: Fingerabdruck des
 Firmen-Wurzelschlüssels, bekannte Schlüsselbündel, der letzte Stand jedes Mitgliedschafts-Logs,
-die höchste Version jedes Eintrags und die Einladungen, die das Konto zertifiziert hat, mit dem
-Konto dazu. Er ist ein F-01-Geheimtext unter AK (Zweck `account-state`,
+die höchste Version jedes Eintrags, die Einladungen, die das Konto zertifiziert hat, mit dem Konto
+dazu, und je Konto das Ausstellungsdatum des neuesten Zertifikats, das es gesehen hat. Er ist ein F-01-Geheimtext unter AK (Zweck `account-state`,
 Kontext Konto-ID und ein Zähler) auf dem Server; jedes Gerät lädt ihn beim Entsperren, führt ihn
 mit seinem eigenen Stand zusammen (der höhere Stand gewinnt; ein anderer Wurzelschlüssel, ein anderes
 Bündel für ein bekanntes Konto oder ein anderer Hash an derselben Stelle eines Logs ist ein Angriff) und schreibt ihn mit höherem Zähler zurück. So kennt jedes Gerät eines Kontos, auch eines,
@@ -504,7 +504,22 @@ Umgesetzt in `packages/core/src/membership/` (`verifyLog`, Zertifikate nach F-06
 ### P-07 Firmen-Wurzelschlüssel und Zertifikate
 
 - Beim Anlegen der Firma erzeugt der Inhaber einen Ed25519-Wurzelschlüssel; der private Teil liegt
-  an jeden Inhaber verpackt (F-02).
+  an jeden Inhaber und Admin verpackt (F-02). Der erste Inhaber hat ihn in seinem Kontozustand.
+  Gibt ein Inhaber einem anderen Konto eine Rolle (`PUT /api/members/:id/role`), signiert sein
+  Client ein neues Zertifikat mit dieser Rolle und verpackt für Inhaber und Admins den privaten
+  Wurzelschlüssel an das zertifizierte Bündel (F-02, Zweck `root-key`, Kontext Firmen-ID und
+  Konto-ID); ein Mitarbeiter bekommt keinen, und der Server löscht einen früheren. Der Client des
+  Empfängers holt ihn mit `GET /api/account/root-grant` und nimmt ihn nur, wenn sein öffentlicher
+  Teil den gemerkten Fingerabdruck hat; einen Schlüssel, den der Server selbst verpackt hat, lehnt er
+  ab. Danach steht er im Kontozustand, für jedes Gerät des Kontos. Rollen gibt nur ein Inhaber, und
+  nie sich selbst: So bleibt immer ein Inhaber; der Server prüft den Aufrufer dafür noch einmal in
+  derselben Transaktion, in der er schreibt. Ein neues Zertifikat ist immer später ausgestellt als
+  das, das es ersetzt, und jeder Client merkt sich je Konto das neueste, das er gesehen hat (im
+  Kontozustand); ein älteres, das der Server zurückspielt, gilt nicht mehr, auch nicht, um einen
+  Wurzelschlüssel anzunehmen. Ein Gerät, das die neuere Rolle nie gesehen hat, kann der Server so
+  noch täuschen; den lückenlosen Nachweis bringt erst ein signiertes Log der Firmenrollen. Wer zum Mitarbeiter wird, verliert den
+  Wurzelschlüssel auf dem Server, nicht aber eine Kopie, die er schon hat; davor schützt erst ein
+  neuer Wurzelschlüssel (K-307).
 - Der Wurzelschlüssel signiert die Schlüsselbündel der Mitarbeiter (F-06) und die
   Firmen-Richtlinien, darunter den Firmen-Recovery-Schlüssel und ob Firmen-Recovery an ist.
 - Clients merken sich den Fingerabdruck des Wurzelschlüssels beim ersten Kontakt (TOFU) und zeigen
@@ -575,7 +590,8 @@ Kontoangabe, und sie bestätigt nichts.
 
 Umgesetzt in `packages/crypto/src/invite.ts` (MAC), `packages/core/src/membership/invitation.ts`
 (Einladung, Prüfen und Zertifizieren), `packages/core/src/membership/members.ts` (Mitgliederliste
-prüfen), `apps/server/src/account/members.ts` und in der Web-App in `apps/web/src/members/`.
+prüfen), `packages/core/src/membership/root-grant.ts` (Rollen, Wurzelschlüssel verpacken und
+annehmen), `apps/server/src/account/members.ts` und in der Web-App in `apps/web/src/members/`.
 
 **Wehrt ab:** E-01, E-02, E-05, E-10.
 

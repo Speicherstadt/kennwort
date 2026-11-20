@@ -130,8 +130,11 @@ und die Schritte für Menschen am Ende erledigt sind.
     passt, „Bestätigt“ nur bei einem Zertifikat dieses Schlüssels steht, eine Einladung höchstens
     ein Konto zertifiziert (im Kontozustand gemerkt) und Einladen, Annehmen und Bestätigen als
     Playwright-Test desktop und `@phone` laufen.
-  - [ ] Teil 3: Rollen ändern – Inhaber, Admin, Mitarbeiter; neues Zertifikat, der Wurzelschlüssel
-    an jeden Verwalter verpackt, immer mindestens ein Inhaber.
+  - [x] Teil 3: Rollen ändern – Inhaber, Admin, Mitarbeiter; neues Zertifikat, der Wurzelschlüssel
+    an jeden Verwalter verpackt, immer mindestens ein Inhaber. Fertig, wenn: nur Inhaber Rollen
+    vergeben und nie die eigene, ein Admin den Wurzelschlüssel nur annimmt, wenn er zum gemerkten
+    Fingerabdruck passt, und danach selbst einlädt und bestätigt – als Playwright-Test desktop und
+    `@phone`.
   - [ ] Teil 4: Firmen-Richtlinien, vom Wurzelschlüssel signiert (automatisches Sperren,
     Firmen-Recovery an oder aus mit dem Fingerabdruck ihres Schlüssels); jeder Client prüft sie.
 - [ ] **K-305 Tresore, Gruppen, Rechte** – persönlich und geteilt, lesen/bearbeiten/verwalten,

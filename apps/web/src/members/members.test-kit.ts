@@ -82,6 +82,7 @@ export const server = (c: Awaited<ReturnType<typeof jonasCompany>>, rows: Row[])
   const state = stateServer(c.upload);
   const calls: string[] = [];
   const certified: Certificate[] = [];
+  const roles: { certificate: Certificate; rootGrant: Uint8Array | undefined }[] = [];
   const api: MembersDeps = {
     ...state.deps,
     writeState: async (...args) => {
@@ -96,6 +97,12 @@ export const server = (c: Awaited<ReturnType<typeof jonasCompany>>, rows: Row[])
       certified.push(certificate);
       return true;
     },
+    rootGrant: async () => undefined,
+    changeRole: async (_token, certificate, rootGrant) => {
+      calls.push("role");
+      roles.push({ certificate, rootGrant });
+      return true;
+    },
   };
-  return { api, calls, certified, state };
+  return { api, calls, certified, roles, state };
 };

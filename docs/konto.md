@@ -42,6 +42,19 @@ Als Inhaber oder Admin lädst du hier ein:
 Bestätigen kann, wer die Einladung erstellt hat. Eine Einladung macht immer einen Mitarbeiter und
 gilt für genau ein Konto, auch wenn der Server später ein zweites dafür zeigt.
 
+## Rollen
+
+Es gibt drei Rollen: **Inhaber**, **Admin** und **Mitarbeiter**. Inhaber und Admins laden ein und
+bestätigen; nur Inhaber vergeben Rollen. Als Inhaber wählst du in der Mitgliederliste bei einem
+bestätigten Mitglied eine andere Rolle; deine eigene änderst du nicht, so bleibt die Firma immer mit
+einem Inhaber. Wer Inhaber oder Admin wird, bekommt den Firmenschlüssel verschlüsselt auf sein
+Konto; sein Gerät nimmt ihn beim nächsten Öffnen der Mitglieder an, wenn er zur Firma passt.
+
+!!! note "Admin wieder zum Mitarbeiter machen"
+    Kennwort löscht dann den Firmenschlüssel auf dem Server für dieses Konto. Eine Kopie, die sein
+    Gerät schon hat, bleibt dort. Wer der Person nicht mehr traut, braucht einen neuen
+    Firmenschlüssel; das kommt mit dem Austritt.
+
 !!! warning "Wenn der Firmenschlüssel nicht passt"
     Zeigt Kennwort statt der Mitglieder den Hinweis, dass der Firmenschlüssel nicht zu deinem Konto
     passt, hat der Server einen anderen Schlüssel geliefert als den, den dein Gerät beim Anlegen oder

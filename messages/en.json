@@ -151,5 +151,9 @@
   "members_root_mismatch": "The company key from the server does not match your account. Kennwort therefore shows no members.",
   "members_load_failed": "The members could not be loaded.",
   "settings_members": "Members",
-  "members_confirm_other_keys": "Your device knows other keys for this account. Kennwort does not confirm these."
+  "members_confirm_other_keys": "Your device knows other keys for this account. Kennwort does not confirm these.",
+  "members_role_of": "Role of {name}",
+  "members_role_failed": "The role could not be changed.",
+  "members_root_grant_invalid": "The company key the server gives you is not your company's. Kennwort does not accept it.",
+  "members_root_adopt_failed": "The company key could not be taken over just now. Try again."
 }

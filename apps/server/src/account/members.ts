@@ -4,11 +4,19 @@
  * keeps and hands out; who trusts a key checks the certificate itself. The sealed invitation secret
  * and the MAC go only to the invitation's creator, whose client alone can open the secret.
  */
-import { bytes, CertificateWire, encodeBytes, toWire } from "@kennwort/core";
+import {
+  bytes,
+  type Certificate,
+  CertificateWire,
+  encodeBytes,
+  ROOT_GRANT_LENGTH,
+  toWire,
+} from "@kennwort/core";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { Hono } from "hono";
+import { z } from "zod";
 import type { Db } from "../db/database.ts";
-import { accountKeys, accounts, invitations } from "../db/schema.ts";
+import { accountKeys, accounts, invitations, rootGrants } from "../db/schema.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 
 type KeysRow = typeof accountKeys.$inferSelect;
@@ -59,6 +67,61 @@ const membersOf = (db: Db, companyId: string, me: string) => {
 
 const same = (a: Uint8Array, b: Uint8Array) => encodeBytes(a) === encodeBytes(b);
 
+const RoleChange = z.object({
+  certificate: CertificateWire,
+  rootGrant: bytes(ROOT_GRANT_LENGTH).optional(),
+});
+
+type Keys = typeof accountKeys.$inferSelect;
+type Member = typeof accounts.$inferSelect;
+
+/** A certificate only for this member, this company and its uploaded keys */
+const fitsKeys = (certificate: Certificate, member: Member, companyId: string, keys: Keys) =>
+  encodeBytes(certificate.accountId) === member.id &&
+  encodeBytes(certificate.companyId) === companyId &&
+  same(certificate.xwingPublicKey, keys.xwingPublicKey) &&
+  same(certificate.edPublicKey, keys.edPublicKey);
+
+/**
+ * Role, certificate and root key at once; a member keeps no root key on the server. The caller is
+ * checked again inside the transaction: it is an owner and never the member it changes, so one owner
+ * always remains, also when two owners demote each other at the same time (review of K-304)
+ */
+const storeRole = (
+  db: Db,
+  at: number,
+  callerId: string,
+  member: Member,
+  change: z.infer<typeof RoleChange>,
+) =>
+  db.transaction((tx) => {
+    const caller = tx.select().from(accounts).where(eq(accounts.id, callerId)).get();
+    if (caller?.role !== "owner") return false;
+    tx.update(accounts)
+      .set({ role: change.certificate.role })
+      .where(eq(accounts.id, member.id))
+      .run();
+    const owners = tx
+      .select()
+      .from(accounts)
+      .where(and(eq(accounts.companyId, member.companyId), eq(accounts.role, "owner")))
+      .all();
+    if (owners.length === 0) {
+      tx.rollback();
+      return false;
+    }
+    tx.update(accountKeys)
+      .set({ certificate: JSON.stringify(toWire(change.certificate)), updatedAt: at })
+      .where(eq(accountKeys.accountId, member.id))
+      .run();
+    tx.delete(rootGrants).where(eq(rootGrants.accountId, member.id)).run();
+    if (change.rootGrant)
+      tx.insert(rootGrants)
+        .values({ accountId: member.id, wrapped: Buffer.from(change.rootGrant), createdAt: at })
+        .run();
+    return true;
+  });
+
 export const memberRoutes = ({ db, now }: { db: Db; now: () => number }) =>
   new Hono<TenantEnv>()
     .get("/members", (c) =>
@@ -79,11 +142,8 @@ export const memberRoutes = ({ db, now }: { db: Db; now: () => number }) =>
       if (!keys) return c.json({ error: "no-keys" }, 409);
       // Only for this member, this company, its uploaded keys and the role it has
       if (
-        encodeBytes(certificate.accountId) !== member.id ||
-        encodeBytes(certificate.companyId) !== session.companyId ||
-        certificate.role !== member.role ||
-        !same(certificate.xwingPublicKey, bytes(1216).parse(encodeBytes(keys.xwingPublicKey))) ||
-        !same(certificate.edPublicKey, bytes(32).parse(encodeBytes(keys.edPublicKey)))
+        !fitsKeys(certificate, member, session.companyId, keys) ||
+        certificate.role !== member.role
       )
         return c.json({ error: "invalid" }, 400);
       const stored = db
@@ -105,4 +165,45 @@ export const memberRoutes = ({ db, now }: { db: Db; now: () => number }) =>
         signature: new Uint8Array(),
       });
       return c.json({ certified: true });
+    })
+    // An owner gives another account a new role (K-304 part 3): a new certificate by the root, and
+    // for owners and admins the root key wrapped to them. Never one's own role, so one owner stays
+    .put("/members/:id/role", async (c) => {
+      const { scope, session } = c.var;
+      const me = scope.account(session.accountId);
+      if (me?.role !== "owner") return c.json({ error: "forbidden" }, 403);
+      const member = scope.account(c.req.param("id"));
+      if (!member) return c.json({ error: "not-found" }, 404);
+      if (member.id === me.id) return c.json({ error: "own-role" }, 409);
+      const parsed = RoleChange.safeParse(await c.req.json().catch(() => undefined));
+      if (!parsed.success) return c.json({ error: "invalid" }, 400);
+      const keys = db.select().from(accountKeys).where(eq(accountKeys.accountId, member.id)).get();
+      if (!keys?.certificate) return c.json({ error: "not-certified" }, 409);
+      const { certificate, rootGrant } = parsed.data;
+      // The root key goes with an owner's or admin's role and with no other
+      if (
+        !fitsKeys(certificate, member, session.companyId, keys) ||
+        (certificate.role === "member") !== (rootGrant === undefined)
+      )
+        return c.json({ error: "invalid" }, 400);
+      if (!storeRole(db, now(), me.id, member, parsed.data))
+        return c.json({ error: "forbidden" }, 403);
+      scope.audit({
+        time: now(),
+        actor: me.id,
+        action: "role-changed",
+        subject: member.id,
+        signature: new Uint8Array(),
+      });
+      return c.json({ role: certificate.role });
+    })
+    .get("/account/root-grant", (c) => {
+      const grant = db
+        .select()
+        .from(rootGrants)
+        .where(eq(rootGrants.accountId, c.var.session.accountId))
+        .get();
+      return grant
+        ? c.json({ rootGrant: encodeBytes(grant.wrapped) })
+        : c.json({ error: "not-found" }, 404);
     });

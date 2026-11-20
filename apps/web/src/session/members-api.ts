@@ -6,6 +6,7 @@ import {
   InvitedWire,
   MembersWire,
   type NewInvitation,
+  RootGrantWire,
   StaleWire,
   toWire,
 } from "@kennwort/core";
@@ -41,6 +42,24 @@ export const memberCalls = (call: Call) => ({
         "PUT",
         `/api/members/${encodeBytes(certificate.accountId)}/certificate`,
         toWire(certificate),
+        token,
+      )
+    ).status === 200,
+  /** The root key wrapped to this account, once an owner made it owner or admin */
+  rootGrant: async (token: string) => {
+    const answer = await call("GET", "/api/account/root-grant", undefined, token);
+    const parsed = RootGrantWire.safeParse(answer.json);
+    return answer.status === 200 && parsed.success ? parsed.data.rootGrant : undefined;
+  },
+  changeRole: async (token: string, certificate: Certificate, rootGrant: Uint8Array | undefined) =>
+    (
+      await call(
+        "PUT",
+        `/api/members/${encodeBytes(certificate.accountId)}/role`,
+        {
+          certificate: toWire(certificate),
+          ...(rootGrant ? { rootGrant: encodeBytes(rootGrant) } : {}),
+        },
         token,
       )
     ).status === 200,

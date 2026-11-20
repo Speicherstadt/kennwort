@@ -12,6 +12,18 @@ const axe = async (page: Page) => {
   ).toEqual([]);
 };
 const heading = (page: Page, name: string) => page.getByRole("heading", { level: 1, name });
+/** A new device opens the link and makes its account; ends on the entries */
+const acceptInvitation = async (device: Page, link: string, passphrase: string) => {
+  await device.goto(link);
+  await expect(heading(device, "Einladung annehmen")).toBeVisible();
+  await device.getByLabel("Passphrase", { exact: true }).fill(passphrase);
+  await device.getByLabel("Passphrase wiederholen").fill(passphrase);
+  await device.getByRole("button", { name: "Konto anlegen" }).click();
+  await expect(heading(device, "Dein Recovery-Kit")).toBeVisible({ timeout: 20_000 });
+  await device.getByRole("checkbox").check();
+  await device.getByRole("button", { name: "Weiter" }).click();
+  await expect(heading(device, "Alle Einträge")).toBeVisible();
+};
 const openMembers = async (page: Page) => {
   await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).first().click();
   await page.getByRole("button", { name: "Mitglieder" }).click();
@@ -69,5 +81,46 @@ test.describe("members", { tag: "@phone" }, () => {
         .getByRole("listitem")
         .filter({ hasText: "Anna" }),
     ).toContainText("Bestätigt");
+  });
+
+  test("Jonas makes Anna an admin; Anna then invites and confirms Max herself", async ({
+    page,
+    browser,
+  }) => {
+    await setUpCompany(page);
+    await openMembers(page);
+    await page.getByLabel("Name").fill("Anna");
+    await page.getByRole("button", { name: "Einladen" }).click();
+    const link = await page.getByLabel("Einladungslink").inputValue();
+    const anna = await newDevice(browser);
+    await acceptInvitation(anna, link, "Anna Heizung Bad Fliese");
+    let members = await openMembers(page);
+    const annaRow = members.getByRole("listitem").filter({ hasText: "Anna" });
+    await annaRow.getByRole("button", { name: "Bestätigen" }).click();
+    await expect(annaRow).toContainText("Bestätigt");
+
+    // Jonas cannot change his own role, only Anna's
+    await expect(page.getByRole("combobox")).toHaveCount(1);
+    await page.getByLabel("Rolle von Anna").selectOption("admin");
+    members = await openMembers(page);
+    await expect(page.getByLabel("Rolle von Anna")).toHaveValue("admin");
+    await expect(members.getByRole("listitem").filter({ hasText: "Anna" })).toContainText(
+      "Bestätigt",
+    );
+    await axe(page);
+
+    // Anna's client takes the root key Jonas wrapped to her, so she can confirm whom she invites
+    await openMembers(anna);
+    await anna.getByLabel("Name").fill("Max");
+    await anna.getByRole("button", { name: "Einladen" }).click();
+    const maxLink = await anna.getByLabel("Einladungslink").inputValue();
+    const max = await newDevice(browser);
+    await acceptInvitation(max, maxLink, "Max Werkstatt Rohr Zange");
+    const seenByAnna = await openMembers(anna);
+    const maxRow = seenByAnna.getByRole("listitem").filter({ hasText: "Max" });
+    await maxRow.getByRole("button", { name: "Bestätigen" }).click();
+    await expect(maxRow).toContainText("Bestätigt");
+    // An admin gives no roles
+    await expect(anna.getByRole("combobox")).toHaveCount(0);
   });
 });

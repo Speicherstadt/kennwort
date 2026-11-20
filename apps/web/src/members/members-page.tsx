@@ -10,6 +10,7 @@ import { Copy, ShieldCheck } from "@kennwort/ui/icons";
 import { createSignal, For, Match, Show, Switch } from "solid-js";
 import type { Session } from "../session/session.ts";
 import {
+  adoptRoot,
   type ConfirmError,
   confirm,
   invite,
@@ -17,8 +18,11 @@ import {
   type Loaded,
   loadMembers,
   type MembersDeps,
+  mayChangeRoles,
   mayConfirm,
   mayInvite,
+  needsRoot,
+  setRole,
 } from "./members.ts";
 
 type Load =
@@ -134,26 +138,69 @@ const Status = (props: {
   </Switch>
 );
 
+const ROLES = ["owner", "admin", "member"] as const;
+
+/** An owner picks another confirmed member's role; everyone else reads it */
+const Role = (props: {
+  view: MemberView;
+  name: string;
+  editable: boolean;
+  busy: boolean;
+  onRole: (role: MemberView["role"]) => void;
+}) => (
+  <Show
+    when={props.editable}
+    fallback={<p class="text-xs text-muted-foreground">{roleText(props.view.role)}</p>}
+  >
+    <select
+      aria-label={m.members_role_of({ name: props.name })}
+      class="mt-1 h-11 rounded-md border border-border bg-background px-2 text-xs md:h-7"
+      disabled={props.busy}
+      value={props.view.role}
+      onChange={(event) => props.onRole(event.currentTarget.value as MemberView["role"])}
+    >
+      <For each={ROLES}>
+        {(role) => (
+          <option value={role} selected={role === props.view.role}>
+            {roleText(role)}
+          </option>
+        )}
+      </For>
+    </select>
+  </Show>
+);
+
 const MemberRow = (props: {
   view: MemberView;
   isMe: boolean;
   canConfirm: boolean;
+  canChangeRole: boolean;
   busy: boolean;
   onConfirm: () => void;
-}) => (
-  <li class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3.5 py-2.5">
-    <div class="min-w-0 flex-1">
-      <p class="font-medium">
-        {props.view.name ?? (props.isMe ? m.members_you() : m.members_unnamed())}
-        <Show when={props.isMe && props.view.name}>
-          <span class="ml-2 text-xs font-normal text-muted-foreground">{m.members_you()}</span>
-        </Show>
-      </p>
-      <p class="text-xs text-muted-foreground">{roleText(props.view.role)}</p>
-    </div>
-    <Status {...props} />
-  </li>
-);
+  onRole: (role: MemberView["role"]) => void;
+}) => {
+  const name = () => props.view.name ?? (props.isMe ? m.members_you() : m.members_unnamed());
+  return (
+    <li class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3.5 py-2.5">
+      <div class="min-w-0 flex-1">
+        <p class="font-medium">
+          {name()}
+          <Show when={props.isMe && props.view.name}>
+            <span class="ml-2 text-xs font-normal text-muted-foreground">{m.members_you()}</span>
+          </Show>
+        </p>
+        <Role
+          view={props.view}
+          name={name()}
+          editable={props.canChangeRole && !props.isMe && props.view.status === "certified"}
+          busy={props.busy}
+          onRole={props.onRole}
+        />
+      </div>
+      <Status {...props} />
+    </li>
+  );
+};
 
 export const MembersPage = (props: { session: Session; api: MembersDeps; origin: string }) => {
   const [load, setLoad] = createSignal<Load>({ state: "loading" });
@@ -168,7 +215,18 @@ export const MembersPage = (props: { session: Session; api: MembersDeps; origin:
       loaded.ok ? { state: "ready", ...loaded.value } : { state: "failed", error: loaded.error },
     );
   };
-  void refresh();
+  const loadAndAdopt = async () => {
+    await refresh();
+    const current = opened();
+    const list = ready();
+    if (!current || !list || !needsRoot(current, list.me)) return;
+    const adopted = await adoptRoot(props.api, props.session, list.me);
+    if (adopted.ok || adopted.error === "none") return;
+    setProblem(
+      adopted.error === "failed" ? m.members_root_adopt_failed() : m.members_root_grant_invalid(),
+    );
+  };
+  void loadAndAdopt();
   const ready = () => {
     const value = load();
     return value.state === "ready" ? value : undefined;
@@ -179,6 +237,16 @@ export const MembersPage = (props: { session: Session; api: MembersDeps; origin:
     const done = await confirm(props.api, props.session, view, me);
     setBusy(false);
     if (!done.ok) setProblem(confirmText(done.error));
+    await refresh();
+  };
+  const doRole = async (view: MemberView, role: MemberView["role"]) => {
+    const current = opened();
+    if (!current) return;
+    setBusy(true);
+    setProblem(undefined);
+    const changed = await setRole(props.api, props.session, view, role);
+    setBusy(false);
+    if (!changed) setProblem(m.members_role_failed());
     await refresh();
   };
   const doInvite = (label: string) => {
@@ -225,8 +293,13 @@ export const MembersPage = (props: { session: Session; api: MembersDeps; origin:
                         const current = opened();
                         return current !== undefined && mayConfirm(current, list().me);
                       })()}
+                      canChangeRole={(() => {
+                        const current = opened();
+                        return current !== undefined && mayChangeRoles(current, list().me);
+                      })()}
                       busy={busy()}
                       onConfirm={() => doConfirm(view, list().me)}
+                      onRole={(role) => doRole(view, role)}
                     />
                   )}
                 </For>
