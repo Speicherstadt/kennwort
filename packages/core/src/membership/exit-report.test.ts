@@ -14,7 +14,7 @@ import {
   trust,
   vaultId,
 } from "../sync/test/fixtures.ts";
-import { exitReport, exposureOf } from "./exit-report.ts";
+import { exitReport, exposureOf, pastExposures } from "./exit-report.ts";
 import type { LogEntry } from "./log-entry.ts";
 import { removeAndRotate } from "./rotation.ts";
 import { addMember, changeAccess } from "./vault-ops.ts";
@@ -103,6 +103,56 @@ describe("exposureOf", () => {
 
   it("knows nothing of someone never in the vault", () => {
     expect(exposureOf(afterExit(), id(0x77))).toBeUndefined();
+  });
+});
+
+describe("pastExposures", () => {
+  it("names everyone who left, with the time of leaving and the epochs they held", () => {
+    expect(pastExposures(afterExit())).toEqual([
+      { account: encodeBytes(max.id), at: 1_800_000_300, epochs: [0] },
+    ]);
+  });
+
+  it("names nobody while nobody left, and not who came back", () => {
+    expect(pastExposures(logEntries)).toEqual([]);
+    const entries = afterExit();
+    const back = addMember(
+      signer,
+      checked(entries),
+      ring1,
+      certificate(max),
+      { role: "read", validUntil: 0 },
+      1_800_000_600,
+    );
+    expect(pastExposures([...entries, back.entry])).toEqual([]);
+  });
+
+  it("names someone who left twice once, by the last time", () => {
+    const entries = afterExit();
+    const back = addMember(
+      signer,
+      checked(entries),
+      ring1,
+      certificate(max),
+      { role: "read", validUntil: 0 },
+      1_800_000_600,
+    );
+    const later = { ...trust, now: 1_800_001_000 };
+    const backState = verifyLog(vaultId, [...entries, back.entry], later);
+    if (!backState.ok) throw new Error(backState.error);
+    const again = removeAndRotate(
+      signer,
+      backState.value,
+      vaultId,
+      max.id,
+      later,
+      1_800_000_700,
+      new Uint8Array(32).fill(0x67),
+    );
+    if (!again.ok) throw new Error(again.error);
+    expect(pastExposures([...entries, back.entry, ...again.value.entries])).toEqual([
+      { account: encodeBytes(max.id), at: 1_800_000_700, epochs: [0, 1] },
+    ]);
   });
 });
 

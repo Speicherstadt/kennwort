@@ -53,6 +53,11 @@ export type MemberView = {
   status: MemberStatus;
   certificate?: Certificate;
   pending?: PendingMember;
+  /**
+   * When the account left the company (ms), by the server's word only: a manager's client then
+   * removes it from its vaults and rotates their keys (K-307, P-11); null while it is in
+   */
+  leftAt?: number | null;
 };
 
 /**
@@ -118,6 +123,7 @@ export const checkMembers = (
     accountId: member.id,
     name: member.name,
     role: member.role,
+    leftAt: member.leftAt ?? null,
     ...statusOf(root, member, shared(member), seen[encodeBytes(member.id)] ?? 0),
   }));
 };

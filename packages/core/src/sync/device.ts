@@ -50,6 +50,11 @@ export type SyncContext = {
   trust: Trust;
   lastSeen: Uint8Array;
   now: number;
+  /**
+   * Everyone who left the vault (pastExposures): a write that replaces a version of an epoch one of
+   * them held marks its secrets, also when the server hid the entry from the rotation (P-11)
+   */
+  exposures?: readonly Exposure[];
 };
 /**
  * A record the device would not take, ("missing") a known entry the server no longer shows (E-15),
@@ -126,9 +131,10 @@ export const rekey = (device: Device, entryId: Uint8Array): Device => {
 
 /**
  * Takes every record newer than what the device knows, if it passes the checks of P-09. blocked
- * says why nothing was pushed: the key in hand is not the current epoch's (P-11, E-26)
+ * says why nothing was pushed: the key in hand is not the current epoch's, or someone left and
+ * the rotation is still due, so whoever left holds the current key (P-11, E-26)
  */
-export type Pulled = { device: Device; refused: Refused[]; blocked?: "stale-key" };
+export type Pulled = { device: Device; refused: Refused[]; blocked?: "stale-key" | "rotation-due" };
 
 /** The key a record of this epoch was sealed under, if the device holds it; else the current one */
 const ringOf = (ctx: SyncContext, epoch: number) =>
@@ -188,15 +194,20 @@ const mergedFor = (op: Pending, current: Known | undefined, now: number) =>
     : op.content;
 
 /**
- * As merged, and marked "to change" if it replaces a version the person who left could read: the
- * secrets that still hold the value of that version
+ * As merged, and marked "to change" for everyone who left and could read the version it replaces
+ * (the rotation's exposure and the exits the context knows): the secrets that still hold the value
+ * of that version
  */
-const contentFor = (op: Pending, current: Known | undefined, now: number) => {
-  const content = mergedFor(op, current, now);
-  const exposed = op.exposedTo;
-  return exposed && current?.key && exposed.epochs.includes(current.key.epoch)
-    ? markForChange(content, exposed.account, exposed.at, current.content)
-    : content;
+const contentFor = (op: Pending, ctx: SyncContext, current: Known | undefined) => {
+  const exposures = [...(op.exposedTo ? [op.exposedTo] : []), ...(ctx.exposures ?? [])];
+  const epoch = current?.key?.epoch;
+  return exposures
+    .filter((exposed) => exposed.epochs.includes(epoch as number))
+    .reduce(
+      (content, exposed) =>
+        markForChange(content, exposed.account, exposed.at, (current as Known).content),
+      mergedFor(op, current, ctx.now),
+    );
 };
 
 /** Every refusal once, from all pulls of one sync: a server must not hide one behind a retry */
@@ -221,7 +232,7 @@ const pushChange = async (
   let state = start;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const current = state.device.known.get(idKey(op.entryId));
-    const content = contentFor(op, current, ctx.now);
+    const content = contentFor(op, ctx, current);
     const version = (current?.version ?? 0) + 1;
     const key = entryKeyFor(ctx.ring, op.rekey ? undefined : current?.key);
     const record = sealRecord(
@@ -257,6 +268,8 @@ export const sync = async (
   let state: Pulled = await pull(device, server, ctx);
   // Never a new version under a key the log has moved on from: whoever left may hold it (E-26)
   if (ctx.ring.epoch !== ctx.log.epoch) return { ...state, blocked: "stale-key" };
+  // Nor under the current key while a rotation is due: whoever left holds that one too (P-11)
+  if (ctx.log.rotationDue) return { ...state, blocked: "rotation-due" };
   const seen = [state.refused];
   const left: Pending[] = [];
   for (const op of state.device.queue) {

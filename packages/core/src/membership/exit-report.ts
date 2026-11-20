@@ -9,6 +9,7 @@
 import { encodeBytes } from "../sync/bytes.ts";
 import { secretFieldIds } from "../sync/change-marks.ts";
 import type { EntryContent } from "../sync/content.ts";
+import type { Exposure as Exit } from "../sync/device.ts";
 import type { LogEntry, VaultRole } from "./log-entry.ts";
 import { idKey } from "./verify-log.ts";
 
@@ -51,6 +52,20 @@ export const exposureOf = (
     if (member) epochs.add(entry.epoch);
   }
   return access && { ...access, epochs: [...epochs] };
+};
+
+/**
+ * Everyone who left the vault and is not back, with the time of their last removal and the epochs
+ * they held: what every write marks against (SyncContext.exposures), so an entry the server hid
+ * from the rotation still gets its mark when it is next written (P-11)
+ */
+export const pastExposures = (entries: readonly LogEntry[]): Exit[] => {
+  // Everyone a checked log names was added first, so each has an exposure; members have no end
+  const named = new Map(entries.map((entry) => [idKey(entry.accountId), entry.accountId]));
+  return [...named.values()].flatMap((accountId) => {
+    const { until, epochs } = exposureOf(entries, accountId) as Exposure;
+    return until === 0 ? [] : [{ account: encodeBytes(accountId), at: until, epochs }];
+  });
 };
 
 /** An entry as a device knows it: the epoch of its newest version and its content */

@@ -4,6 +4,7 @@ import { openEntryKey } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
 import { entryHash } from "../membership/log-entry.ts";
 import { removeAndRotate } from "../membership/rotation.ts";
+import { removeMember } from "../membership/vault-ops.ts";
 import { idKey, verifyLog } from "../membership/verify-log.ts";
 import { encodeBytes } from "./bytes.ts";
 import { type Device, edit, emptyDevice, pull, rotateEntries, sync } from "./device.ts";
@@ -232,5 +233,95 @@ describe("reading and writing around a rotation (E-26)", () => {
       true,
     );
     expect(encodeBytes(exit().hash)).not.toBe(encodeBytes(entryHash(logEntries[2] as never)));
+  });
+});
+
+describe("the exits a write knows (review of K-307 part a)", () => {
+  const sandraOut = { account: encodeBytes(id(0x77)), at: 1_800_000_350, epochs: [0] };
+
+  it("marks a version of an epoch the person held, though no rotation re-encrypted it", async () => {
+    const { server } = await before();
+    const knows = { ...after(anna), exposures: [exposure] };
+    const annas = (await pull(emptyDevice(), server, knows)).device;
+    const synced = await sync(edit(annas, e1, withField(bank, "user", "anna")), server, knows);
+    expect(contentOf(synced.device, e1)).toEqual({
+      ...withField(bank, "user", "anna"),
+      toChange: marked.toChange,
+    });
+    expect(server.pull().find((r) => idKey(r.entryId) === idKey(e1))?.epoch).toBe(1);
+  });
+
+  it("marks for everyone who held the epoch, each with their own time", async () => {
+    const { server } = await before();
+    const knows = { ...after(anna), exposures: [exposure, sandraOut] };
+    const annas = (await pull(emptyDevice(), server, knows)).device;
+    const synced = await sync(edit(annas, e1, withField(bank, "user", "anna")), server, knows);
+    expect(contentOf(synced.device, e1)?.toChange).toEqual([
+      ...marked.toChange,
+      { account: sandraOut.account, at: 1_800_000_350, fields: ["password"] },
+    ]);
+  });
+
+  it("marks nothing in an epoch the person never held, nor a new entry", async () => {
+    const { server } = await rotate();
+    const knows = { ...after(anna), exposures: [{ ...exposure, account: sandraOut.account }] };
+    const annas = (await pull(emptyDevice(), server, knows)).device;
+    const changed = withField(withField(bank, "user", "anna"), "password", "Neu-2027!");
+    let device = edit(annas, e1, changed);
+    device = edit(device, id(0xe3), bank);
+    const synced = await sync(device, server, knows);
+    expect(contentOf(synced.device, e1)).toEqual(changed);
+    expect(contentOf(synced.device, id(0xe3))).toEqual(bank);
+  });
+
+  it("marks nothing for a version whose entry key the device does not hold", async () => {
+    const { server } = await before();
+    const knows = { ...after(anna), exposures: [exposure] };
+    const keyless: Device = {
+      known: new Map([[idKey(e1), { entryId: e1, version: 1, content: bank }]]),
+      queue: [],
+    };
+    const synced = await sync(edit(keyless, e1, withField(bank, "user", "anna")), server, knows);
+    expect(contentOf(synced.device, e1)).toEqual(withField(bank, "user", "anna"));
+  });
+
+  it("does not mark a secret the write itself changes: the person never saw the new value", async () => {
+    const { server } = await before();
+    const knows = { ...after(anna), exposures: [exposure] };
+    const annas = (await pull(emptyDevice(), server, knows)).device;
+    const changed = withField(bank, "password", "Neu-2027!");
+    const synced = await sync(edit(annas, e1, changed), server, knows);
+    expect(contentOf(synced.device, e1)).toEqual(changed);
+  });
+});
+
+describe("a rotation still due (P-11)", () => {
+  const removed = () => {
+    const remove = removeMember(
+      { accountId: jonas.id, edSecretKey: jonas.ed.secretKey },
+      log,
+      vaultId,
+      max.id,
+      1_800_000_300,
+    );
+    const state = verifyLog(vaultId, [...logEntries, remove], trust);
+    if (!state.ok) throw new Error(state.error);
+    return state.value;
+  };
+
+  it("blocks every write: whoever left still holds the current key", async () => {
+    const { server } = await before();
+    const state = removed();
+    const due = { ...contextFor(anna), log: state, lastSeen: state.hash };
+    const synced = await sync(
+      edit(emptyDevice(), e1, withField(bank, "user", "anna")),
+      server,
+      due,
+    );
+    expect(synced.blocked).toBe("rotation-due");
+    expect(synced.device.queue).toHaveLength(1);
+    expect(server.pull().map((r) => r.version)).toEqual([1, 1]);
+    // It still pulls: reading stays possible
+    expect(synced.device.known.size).toBe(2);
   });
 });

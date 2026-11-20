@@ -6,6 +6,7 @@
 import { type KeyBlock, rootFingerprint, wrapVaultKey } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
 import { certificateFingerprint } from "../membership/certificate.ts";
+import { pastExposures } from "../membership/exit-report.ts";
 import type { LogEntry } from "../membership/log-entry.ts";
 import { dueExits, openRings, removeAndRotate } from "../membership/rotation.ts";
 import { idKey, remember, verifyLog } from "../membership/verify-log.ts";
@@ -201,5 +202,50 @@ describe("E-07 the server rolls the log back to before the exit", () => {
         { epoch: 1, wrapped: keyFor(anna) as Uint8Array },
       ]),
     ).toEqual({ ok: false, error: "no-epoch" });
+  });
+});
+
+describe("E-15 the server hides an entry from the rotating device (review of K-307 part a)", () => {
+  it("the entry stays in the old epoch, but the next write marks it all the same", async () => {
+    const made = removeAndRotate(
+      { accountId: jonas.id, edSecretKey: jonas.ed.secretKey },
+      log,
+      vaultId,
+      max.id,
+      trust,
+      1_800_000_300,
+      newKey,
+    );
+    if (!made.ok) throw new Error(made.error);
+    const entries: LogEntry[] = [...logEntries, ...made.value.entries];
+    const checked = verifyLog(vaultId, entries, trust);
+    if (!checked.ok) throw new Error(checked.error);
+    const state = checked.value;
+    const server = memoryServer();
+    // Anna saved the bank login in epoch 0, which Max could read
+    await sync(edit(emptyDevice(), id(0xe1), bank), server, contextFor(anna));
+    const ctx = (p: Person) => ({
+      ...contextFor(p),
+      ring: made.value.ring,
+      older: [ring0],
+      log: state,
+      lastSeen: state.hash,
+      exposures: pastExposures(entries),
+    });
+    // The server shows Jonas's rotating device nothing, so nothing is re-encrypted
+    const hiding = lyingServer(server, { pull: () => [] });
+    const exposure = { account: encodeBytes(max.id), at: 1_800_000_300, epochs: [0] };
+    const rotated = await sync(rotateEntries(emptyDevice(), exposure), hiding, ctx(jonas));
+    expect(rotated.device.known.size).toBe(0);
+    expect(server.pull().map((r) => r.epoch)).toEqual([0]);
+    // Later Anna sees it again and changes the user name: it moves to epoch 1 marked for Max
+    const annas = (await pull(emptyDevice(), server, ctx(anna))).device;
+    await sync(edit(annas, id(0xe1), withField(bank, "user", "anna")), server, ctx(anna));
+    const [record] = server.pull();
+    expect(record?.epoch).toBe(1);
+    const read = await pull(emptyDevice(), server, ctx(jonas));
+    expect(read.device.known.get(idKey(id(0xe1)))?.content.toChange).toEqual([
+      { account: encodeBytes(max.id), at: 1_800_000_300, fields: ["password"] },
+    ]);
   });
 });

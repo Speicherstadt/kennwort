@@ -88,6 +88,15 @@ describe("checkMembers", () => {
     expect(view?.certificate?.role).toBe("owner");
   });
 
+  it("passes on when a member left the company, as the server says (K-307)", () => {
+    const views = checkMembers(root.publicKey, [
+      row(jonas),
+      row(anna, { leftAt: 1_800_000_000_000 }),
+      row(person(0x30), { leftAt: null }),
+    ]);
+    expect(views.map((view) => view.leftAt)).toEqual([null, 1_800_000_000_000, null]);
+  });
+
   it("calls a certificate invalid when it does not fit what is listed", () => {
     const mallory = ed25519KeyPair(new Uint8Array(32).fill(0x66));
     const cases = [

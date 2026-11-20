@@ -113,6 +113,7 @@ export {
   type Exposure as VaultExposure,
   exitReport,
   exposureOf,
+  pastExposures,
   type ReportEntry,
   type ReportVault,
   type SeenEntry,
