@@ -2,7 +2,8 @@
 import { Button, cn, getLocale, Icon, m, type Toasts } from "@kennwort/ui";
 import { ArrowLeft, KeyRound, Pencil, Share2 } from "@kennwort/ui/icons";
 import { For, Show } from "solid-js";
-import { type DemoEntry, entries, vaultName } from "../demo.ts";
+import { entries as demoEntries, vaultName as demoVaultName } from "../demo.ts";
+import type { ShownEntry } from "../entries/entries.ts";
 import type { Navigation } from "../navigation.ts";
 import { type ListFilter, routePath } from "../routes.ts";
 import { Link } from "./link.tsx";
@@ -22,7 +23,12 @@ const Card = (props: { title: string; children: unknown }) => (
   </section>
 );
 
-const Detail = (props: { entry: DemoEntry; toasts: Toasts }) => (
+const Detail = (props: {
+  entry: ShownEntry;
+  toasts: Toasts;
+  vaultName: (id: string) => string;
+  onEdit?: (() => void) | undefined;
+}) => (
   <div class="grid gap-5 p-4 md:p-6 xl:grid-cols-[1fr_16rem]">
     <div class="grid content-start gap-5">
       <div class="flex flex-wrap items-center gap-3">
@@ -32,15 +38,18 @@ const Detail = (props: { entry: DemoEntry; toasts: Toasts }) => (
         <div class="grid min-w-0 flex-1">
           <h1 class="truncate text-[28px] font-semibold md:text-lg">{props.entry.title}</h1>
           <p class="text-xs text-muted-foreground">
-            {m.detail_in_vault({ name: vaultName(props.entry.vault) })} ·{" "}
-            {m.detail_changed({ date: date(props.entry.changedAt) })}
+            {m.detail_in_vault({ name: props.vaultName(props.entry.vault) })}
+            <Show when={props.entry.changedAt > 0}>
+              {" · "}
+              {m.detail_changed({ date: date(props.entry.changedAt) })}
+            </Show>
           </p>
         </div>
         <div class="flex gap-2">
           <Button>
             <Icon icon={Share2} /> {m.detail_share()}
           </Button>
-          <Button variant="primary">
+          <Button variant="primary" disabled={!props.onEdit} onClick={() => props.onEdit?.()}>
             <Icon icon={Pencil} /> {m.detail_edit()}
           </Button>
         </div>
@@ -58,16 +67,18 @@ const Detail = (props: { entry: DemoEntry; toasts: Toasts }) => (
         </Show>
       </Card>
     </div>
-    <div class="grid content-start gap-5">
-      <Card title={m.detail_access()}>
-        <For each={props.entry.access}>{(person) => <p class="px-3.5 py-2">{person}</p>}</For>
-      </Card>
-      <Card title={m.detail_history()}>
-        <p class="px-3.5 py-2 text-xs text-muted-foreground">
-          {m.detail_changed_by({ name: props.entry.changedBy })} · {date(props.entry.changedAt)}
-        </p>
-      </Card>
-    </div>
+    <Show when={props.entry.access.length > 0 || props.entry.changedAt > 0}>
+      <div class="grid content-start gap-5">
+        <Card title={m.detail_access()}>
+          <For each={props.entry.access}>{(person) => <p class="px-3.5 py-2">{person}</p>}</For>
+        </Card>
+        <Card title={m.detail_history()}>
+          <p class="px-3.5 py-2 text-xs text-muted-foreground">
+            {m.detail_changed_by({ name: props.entry.changedBy })} · {date(props.entry.changedAt)}
+          </p>
+        </Card>
+      </div>
+    </Show>
   </div>
 );
 
@@ -76,8 +87,13 @@ export const EntryDetail = (props: {
   filter: ListFilter;
   selected: string | undefined;
   toasts: Toasts;
+  /** The entries from the vaults (K-306), their vaults' names and how to change one */
+  entries?: ShownEntry[] | undefined;
+  vaultName?: ((id: string) => string) | undefined;
+  onEdit?: ((entry: ShownEntry) => void) | undefined;
 }) => {
-  const entry = () => entries.find((candidate) => candidate.id === props.selected);
+  const entry = () =>
+    (props.entries ?? demoEntries).find((candidate) => candidate.id === props.selected);
   return (
     <section class={cn("min-h-0 flex-1 overflow-auto", !props.selected && "hidden md:block")}>
       <Show when={props.selected}>
@@ -99,7 +115,16 @@ export const EntryDetail = (props: {
           </p>
         }
       >
-        {(found) => <Detail entry={found} toasts={props.toasts} />}
+        {(found) => (
+          <Detail
+            entry={found}
+            toasts={props.toasts}
+            vaultName={props.vaultName ?? demoVaultName}
+            onEdit={
+              props.onEdit && found.editable !== false ? () => props.onEdit?.(found) : undefined
+            }
+          />
+        )}
       </Show>
     </section>
   );

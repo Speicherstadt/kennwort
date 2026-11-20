@@ -3,7 +3,7 @@
  * rest only with an unlocked account, else the unlock screen, or the welcome on a new device (K-303).
  * Another language renders everything anew instead of reloading the page, which would lock it.
  */
-import { getLocale, type Locale, setLocale } from "@kennwort/ui";
+import { getLocale, type Locale, m, setLocale } from "@kennwort/ui";
 import { createSignal, Match, onCleanup, Show, Switch } from "solid-js";
 import { AddDevicePage } from "./account/add-device-page.tsx";
 import { InvitePage } from "./account/invite-page.tsx";
@@ -11,6 +11,8 @@ import { type PairDeps, PairPage } from "./account/pair-page.tsx";
 import { RecoverPage } from "./account/recover-page.tsx";
 import { SetupPage } from "./account/setup-page.tsx";
 import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
+import { createEntries } from "./entries/entries-wiring.tsx";
+import { httpServerFor } from "./entries/entry-store.ts";
 import { DevicesSection } from "./frame/devices-section.tsx";
 import { Frame } from "./frame/frame.tsx";
 import { GroupsPage } from "./groups/groups-page.tsx";
@@ -27,7 +29,11 @@ import { requestAccess, vaultIdOf } from "./vaults/vault-members.ts";
 import { createVaultStore, type VaultStore } from "./vaults/vault-store.ts";
 import { VaultsPage } from "./vaults/vaults-page.tsx";
 
-export type AppApi = PairDeps & DevicesApi & MembersDeps & VaultApi & GroupApi;
+export type AppApi = PairDeps &
+  DevicesApi &
+  MembersDeps &
+  VaultApi &
+  GroupApi & { syncFetch: typeof fetch };
 
 /** The vaults while the account is open: loaded when it opens, gone when it locks */
 const OpenedFrame = (props: {
@@ -36,61 +42,82 @@ const OpenedFrame = (props: {
   api: AppApi;
   onLocale: (next: Locale) => void;
 }) => {
-  const store: VaultStore = createVaultStore(props.api, props.session);
+  const entries = createEntries(httpServerFor(props.api.syncFetch), props.session);
+  const store: VaultStore = createVaultStore(props.api, props.session, (loaded) => {
+    void entries.load(loaded.vaults, loaded.trust);
+  });
   void store.reload();
+  /** A new entry needs a vault this account may write in, loaded */
+  const canWrite = () => {
+    const shown = store.shown();
+    return shown.state === "ready" && shown.vaults.some((v) => v.role !== "read");
+  };
+  const vaultName = (id: string) => {
+    const shown = store.shown();
+    const vault = shown.state === "ready" ? shown.vaults.find((v) => v.idText === id) : undefined;
+    return vault?.name ?? m.vaults_unnamed();
+  };
   const shownVaults = () => {
     const shown = store.shown();
     return shown.state === "ready" ? shown.vaults : undefined;
   };
+  const Editor = entries.editor;
   return (
-    <Frame
-      nav={props.nav}
-      onLock={() => props.session.lock()}
-      onLocale={props.onLocale}
-      onAddDevice={() => props.nav.go("/link")}
-      members={() => (
-        <MembersPage session={props.session} api={props.api} origin={location.origin} />
-      )}
-      vaults={shownVaults}
-      noAccess={(vaultId) => {
-        const shown = store.shown();
-        // A vault refused for any reason but a time run out is this account's: no "no access" then
-        const known =
-          shown.state !== "ready" ||
-          shown.vaults.some((v) => v.idText === vaultId) ||
-          shown.refused.some((r) => r.idText === vaultId && r.error !== "expired");
-        const id = vaultIdOf(vaultId);
-        if (known || !id) return undefined;
-        return <NoAccess onRequest={() => requestAccess(props.api, props.session, id)} />;
-      }}
-      groupsPage={() => (
-        <GroupsPage
-          api={props.api}
-          session={props.session}
-          people={() => {
-            const shown = store.shown();
-            return shown.state === "ready" ? shown.people : undefined;
-          }}
-        />
-      )}
-      vaultsPage={() => (
-        <VaultsPage nav={props.nav} store={store} api={props.api} session={props.session} />
-      )}
-      devices={() => (
-        <Show when={props.session.opened()?.token}>
-          {(token) => (
-            <DevicesSection
-              token={token()}
-              api={props.api}
-              onSignedOut={() => {
-                props.session.forget();
-                props.nav.replace("/entries");
-              }}
-            />
-          )}
-        </Show>
-      )}
-    />
+    <>
+      <Frame
+        nav={props.nav}
+        onLock={() => props.session.lock()}
+        onLocale={props.onLocale}
+        onAddDevice={() => props.nav.go("/link")}
+        members={() => (
+          <MembersPage session={props.session} api={props.api} origin={location.origin} />
+        )}
+        vaults={shownVaults}
+        entries={entries.entries}
+        vaultName={vaultName}
+        onNewEntry={canWrite() ? entries.startNew : undefined}
+        onEditEntry={entries.startChange}
+        noAccess={(vaultId) => {
+          const shown = store.shown();
+          // A vault refused for any reason but a time run out is this account's: no "no access" then
+          const known =
+            shown.state !== "ready" ||
+            shown.vaults.some((v) => v.idText === vaultId) ||
+            shown.refused.some((r) => r.idText === vaultId && r.error !== "expired");
+          const id = vaultIdOf(vaultId);
+          if (known || !id) return undefined;
+          return <NoAccess onRequest={() => requestAccess(props.api, props.session, id)} />;
+        }}
+        groupsPage={() => (
+          <GroupsPage
+            api={props.api}
+            session={props.session}
+            people={() => {
+              const shown = store.shown();
+              return shown.state === "ready" ? shown.people : undefined;
+            }}
+          />
+        )}
+        vaultsPage={() => (
+          <VaultsPage nav={props.nav} store={store} api={props.api} session={props.session} />
+        )}
+        devices={() => (
+          <Show when={props.session.opened()?.token}>
+            {(token) => (
+              <DevicesSection
+                token={token()}
+                api={props.api}
+                onSignedOut={() => {
+                  props.session.forget();
+                  props.nav.replace("/entries");
+                }}
+              />
+            )}
+          </Show>
+        )}
+      />
+      <Editor nav={props.nav} vaults={store} />
+    </>
   );
 };
 

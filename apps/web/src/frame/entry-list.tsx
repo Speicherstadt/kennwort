@@ -2,10 +2,11 @@
  * The list of entries: title of the list, search ("/"), on the phone the filter chips; choosing an
  * entry opens it in the URL, so the phone shows it on its own screen (DESIGN.md, Aufbau)
  */
-import { Badge, cn, Icon, List, m, SearchInput } from "@kennwort/ui";
-import { KeyRound } from "@kennwort/ui/icons";
+import { Badge, Button, cn, Icon, List, m, SearchInput } from "@kennwort/ui";
+import { KeyRound, Plus } from "@kennwort/ui/icons";
 import { createMemo, createSignal, For, Show } from "solid-js";
-import { entries, vaultName } from "../demo.ts";
+import { entries as demoEntries, vaultName } from "../demo.ts";
+import type { ShownEntry } from "../entries/entries.ts";
 import { shownEntries } from "../filter.ts";
 import type { Navigation } from "../navigation.ts";
 import { type ListFilter, routePath } from "../routes.ts";
@@ -23,7 +24,7 @@ export const listTitle = (filter: ListFilter, vaults: ShownVault[] = []) =>
         ? m.nav_to_change()
         : (vaults.find((v) => v.idText === filter.id)?.name ?? vaultName(filter.id));
 
-const chips = () => [
+const chips = (entries: readonly ShownEntry[]) => [
   { href: "/entries", kind: "all", label: m.chip_all() },
   { href: "/favorites", kind: "favorites", label: m.nav_favorites() },
   {
@@ -38,9 +39,13 @@ export const EntryList = (props: {
   filter: ListFilter;
   selected: string | undefined;
   vaults?: ShownVault[] | undefined;
+  /** The entries from the vaults (K-306); the demo's while the app gives none */
+  entries?: ShownEntry[] | undefined;
+  onNew?: (() => void) | undefined;
 }) => {
   const [search, setSearch] = createSignal("");
-  const shown = createMemo(() => shownEntries(entries, props.filter, search()));
+  const all = () => props.entries ?? demoEntries;
+  const shown = createMemo(() => shownEntries(all(), props.filter, search()));
   return (
     <section
       aria-labelledby="list-title"
@@ -51,9 +56,18 @@ export const EntryList = (props: {
       )}
     >
       <div class="grid gap-3 p-4 pb-2 md:p-3">
-        <h1 id="list-title" class="text-[28px] font-semibold md:text-[15px]">
-          {listTitle(props.filter, props.vaults)}
-        </h1>
+        <div class="flex items-center gap-2">
+          <h1 id="list-title" class="flex-1 text-[28px] font-semibold md:text-[15px]">
+            {listTitle(props.filter, props.vaults)}
+          </h1>
+          <Show when={props.onNew}>
+            {(onNew) => (
+              <Button onClick={() => onNew()()}>
+                <Icon icon={Plus} /> {m.entry_new()}
+              </Button>
+            )}
+          </Show>
+        </div>
         <SearchInput
           label={m.list_search()}
           placeholder={m.list_search_placeholder()}
@@ -62,7 +76,7 @@ export const EntryList = (props: {
           onInput={(event) => setSearch(event.currentTarget.value)}
         />
         <nav aria-label={m.list_filters()} class="flex gap-2 md:hidden">
-          <For each={chips()}>
+          <For each={chips(all())}>
             {(chip) => (
               <Link
                 nav={props.nav}

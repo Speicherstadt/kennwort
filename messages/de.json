@@ -238,5 +238,13 @@
   "vault_groups_unknown": "Unbekannte Gruppe",
   "vault_groups_hint": "Wer in einer verknüpften Gruppe ist oder ihr beitritt, erscheint unter „Anfragen“. Lösen nimmt niemandem den Zugriff.",
   "vault_groups_outside": "in keiner verknüpften Gruppe",
-  "groups_all": "Alle Gruppen"
+  "groups_all": "Alle Gruppen",
+  "entry_new": "Neu",
+  "entry_new_title": "Neuer Eintrag",
+  "entry_change_title": "Eintrag bearbeiten",
+  "entry_editor_vault": "Tresor",
+  "entry_editor_title": "Titel",
+  "entry_editor_save": "Speichern",
+  "entry_editor_read_only": "In diesem Tresor darfst du nur lesen.",
+  "entry_editor_failed": "Der Eintrag konnte nicht gespeichert werden. Er wartet auf diesem Gerät, bis der Server wieder antwortet."
 }

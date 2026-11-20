@@ -96,7 +96,14 @@ export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity)
       : { ok: false, error: errorOf(answer.status) };
   };
   const post: Post = (path, body) => call("POST", path, body);
+  /** fetch for the sync (K-306): every request names the device, as the API's own calls do */
+  const syncFetch: typeof fetch = (input, init = {}) =>
+    send(input, {
+      ...init,
+      headers: { ...Object.fromEntries(new Headers(init.headers)), ...identityHeaders(identity) },
+    });
   return {
+    syncFetch,
     ...pairingCalls(call),
     ...deviceCalls(call),
     ...memberCalls(call),
@@ -172,6 +179,7 @@ export type Api = ReturnType<typeof createApi>;
 /** What the session needs: everything but the pairing calls (P-04), which pairing/ uses */
 export type AccountApi = Omit<
   Api,
+  | "syncFetch"
   | keyof ReturnType<typeof pairingCalls>
   | keyof ReturnType<typeof deviceCalls>
   | keyof ReturnType<typeof memberCalls>

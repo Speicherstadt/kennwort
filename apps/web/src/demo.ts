@@ -3,20 +3,9 @@
  * in DESIGN.md, Testdaten. Data, not texts: it lives in demo.json, names stay as a company typed them.
  */
 import data from "./demo.json";
+import type { ShownEntry } from "./entries/entries.ts";
 
-export type DemoEntry = {
-  id: string;
-  title: string;
-  username: string;
-  password: string;
-  website: string;
-  vault: string;
-  favorite: boolean;
-  weak: boolean;
-  changedAt: number;
-  changedBy: string;
-  access: string[];
-};
+export type DemoEntry = ShownEntry;
 
 export const company: { name: string; user: string } = data.company;
 export const vaults: { id: string; name: string }[] = data.vaults;
