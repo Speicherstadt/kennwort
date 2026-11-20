@@ -53,18 +53,35 @@ const cases: Record<string, () => Promise<void>> = {
   },
 };
 
-const apiRoutes = () =>
+// Every route under /api, of any method; only the session middleware itself (ALL /api/*) is no endpoint
+const isApi = (path: string) => path === "/api" || path.startsWith("/api/");
+const isSessionMiddleware = (route: { method: string; path: string }) =>
+  route.method === "ALL" && route.path === "/api/*";
+export const apiRoutes = (routes: { method: string; path: string }[]) =>
   [
     ...new Set(
-      app.routes
-        .filter((route) => route.path.startsWith("/api/") && route.method !== "ALL")
+      routes
+        .filter((route) => isApi(route.path) && !isSessionMiddleware(route))
         .map((route) => `${route.method} ${route.path}`),
     ),
   ].sort();
 
+describe("apiRoutes", () => {
+  it("lists any-method routes and the /api root, and leaves out only the session middleware", () => {
+    const routes = [
+      { method: "ALL", path: "/api/*" },
+      { method: "ALL", path: "/api/everything" },
+      { method: "GET", path: "/api" },
+      { method: "GET", path: "/apis" },
+      { method: "GET", path: "/health" },
+    ];
+    expect(apiRoutes(routes)).toEqual(["ALL /api/everything", "GET /api"]);
+  });
+});
+
 describe("tenants (K-202)", () => {
   it("has a case for every route under /api", () => {
-    expect(apiRoutes()).toEqual(Object.keys(cases).sort());
+    expect(apiRoutes(app.routes)).toEqual(Object.keys(cases).sort());
   });
 
   it.each(Object.keys(cases))("%s gives no data of another company", async (route) => {
@@ -72,7 +89,7 @@ describe("tenants (K-202)", () => {
   });
 
   it.each(Object.keys(cases))("%s needs a session", async (route) => {
-    const path = route.split(" ")[1]?.replace(":accountId", "anna") ?? "";
+    const path = (route.split(" ")[1] ?? "").replace(/:\w+/g, "anna");
     expect((await app.request(path)).status).toBe(401);
     expect((await app.request(path, { headers: { "x-test-session": "forged" } })).status).toBe(401);
   });
