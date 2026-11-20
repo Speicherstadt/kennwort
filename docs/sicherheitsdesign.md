@@ -576,12 +576,18 @@ Passphrase vergessen: Das Gerät meldet sich mit dem Recovery Key an ([P-02](#p-
 die Geheimtexte und öffnet AK mit dem Recovery Key. Dann wählt der Benutzer eine neue Passphrase,
 und das Gerät erzeugt ein neues Konto-Salt und einen neuen Recovery Key, verpackt AK unter beiden neu
 und ersetzt in einem Schritt (`PUT /api/account/unlock`) beide Geheimtexte, das Salt und beide
-Anmelde-Schlüssel. AK bleibt, also bleibt alles, was unter AK liegt; der alte Recovery Key und die
-alte Passphrase öffnen danach nichts mehr. Ein Gerät, das das Konto kennt, behält seinen Secret Key,
-sodass die übrigen Geräte weiter funktionieren; ein fremdes Gerät kennt ihn nicht und erzeugt einen
-neuen, den das neue Kit zeigt. Wer eine Sitzung des Kontos hat, kann so die Entsperr-Wege ersetzen;
-die Sitzung gibt es aber nur mit Passphrase, Recovery Key oder Passkey, und ohne AK lässt sich kein
-gültiger neuer Geheimtext bauen.
+Anmelde-Schlüssel. Der Server nimmt das nur mit einer Signatur des bisherigen Recovery-Anmelde-
+Schlüssels über Konto und alle neuen Werte an (Zweck `unlock-renewal`) und nur mit Geheimtexten in
+der Größe eines verpackten AK: Eine Sitzung allein, etwa ein gestohlenes Token, ersetzt nichts.
+
+Danach melden die alte Passphrase und der alte Recovery Key nicht mehr an. AK bleibt aber derselbe,
+damit nichts anderes neu verpackt werden muss; wer den alten Recovery-Geheimtext aufbewahrt hat –
+der Server oder wer eine frühere Antwort mitgelesen hat –, öffnet AK mit dem alten Recovery Key
+weiterhin. Ist das Kit in fremde Hände geraten, schützt erst ein Wechsel von AK; der kommt mit dem
+Schlüsselwechsel (K-307).
+
+Ein Gerät, das das Konto kennt, behält seinen Secret Key, sodass die übrigen Geräte weiter
+funktionieren; ein fremdes Gerät kennt ihn nicht und erzeugt einen neuen, den das neue Kit zeigt.
 
 Der QR-Code enthält nur einen Link auf die Entsperr-Seite des Servers mit Konto-ID und Secret Key im
 Fragment (`/unlock#account=…&secret=…`), das der Browser nicht an den Server schickt; die App liest

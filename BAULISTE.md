@@ -117,7 +117,8 @@ und die Schritte für Menschen am Ende erledigt sind.
 - [ ] **K-306 Einträge** – alle Typen, Generator, TOTP mit QR-Scan, eigene Felder, frühere
   Passwörter, Suche, Favoriten, Tags.
 - [ ] **K-307 Austritt und Recovery** – Schlüsselwechsel, Änderungs-Markierung, Austritts-Bericht,
-  Firmen-Recovery, Notfallzugriff mit Wartezeit.
+  Firmen-Recovery, Notfallzugriff mit Wartezeit, Wechsel des Account Key (AK), wenn ein
+  Recovery-Kit in fremde Hände geraten ist (P-12).
 - [ ] **K-308 PWA** – installierbar, offline lesbar, signiertes Release-Manifest, Service Worker
   prüft Hashes vor jedem Update.
   Fertig, wenn: ein Update mit falschem Hash nicht aktiv wird (Test).

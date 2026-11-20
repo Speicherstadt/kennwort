@@ -1,6 +1,6 @@
 /**
  * The passphrase is forgotten (P-12): the Recovery Key from the kit opens the account, the user
- * chooses a new passphrase and gets a new kit; the old Recovery Key is spent.
+ * chooses a new passphrase and gets a new kit; the old Recovery Key no longer signs in.
  */
 import { parseRecoveryKey } from "@kennwort/crypto";
 import { Button, Input, m } from "@kennwort/ui";

@@ -96,6 +96,6 @@
   "error_wrong_recovery_key": "Konto-ID oder Recovery Key stimmt nicht.",
   "unlock_forgot": "Passphrase vergessen?",
   "recover_title": "Passphrase vergessen",
-  "recover_text": "Mit dem Recovery Key aus deinem Recovery-Kit kommst du wieder an dein Konto. Danach wählst du eine neue Passphrase und bekommst ein neues Recovery-Kit; der alte Recovery Key gilt dann nicht mehr.",
+  "recover_text": "Mit dem Recovery Key aus deinem Recovery-Kit kommst du wieder an dein Konto. Danach wählst du eine neue Passphrase und bekommst ein neues Recovery-Kit; mit dem alten Recovery Key meldet sich dann niemand mehr an.",
   "recover_submit": "Neue Passphrase festlegen"
 }

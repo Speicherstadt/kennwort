@@ -1,6 +1,6 @@
 /**
  * The passphrase is forgotten (P-12): sign in and open AK with the Recovery Key, then choose a new
- * passphrase and get a new Recovery Key; the old one is spent. A device that knows this account
+ * passphrase and get a new Recovery Key; the old one no longer signs in. A device that knows this account
  * keeps its Secret Key, so the account's other devices go on working; another device cannot know
  * it and makes a new one, which the new kit shows.
  */
@@ -43,8 +43,13 @@ export const recoverAccount = async (
       ? known.secretKey
       : (deps.random ?? randomBytes)(SECRET_KEY_LENGTH);
   const options = deps.derive ? { derive: deps.derive } : {};
-  const renewed = renewUnlock(unlocked.value.accountKey, accountId, passphrase, secretKey, options);
-  if (!(await deps.api.replaceUnlock(signedIn.token, renewed.upload))) return fail("unexpected");
+  const { accountKey } = unlocked.value;
+  const renewed = renewUnlock(accountKey, accountId, passphrase, secretKey, recoveryKey, options);
+  if (!(await deps.api.replaceUnlock(signedIn.token, renewed.upload))) {
+    // Not opened after all: AK does not linger in memory
+    accountKey.fill(0);
+    return fail("unexpected");
+  }
   return {
     ok: true,
     value: {

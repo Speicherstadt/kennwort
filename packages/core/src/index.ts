@@ -8,7 +8,13 @@ export {
   type NewAccount,
   type NewCompany,
 } from "./account/create.ts";
-export { type RenewDeps, renewUnlock, type UnlockUpload } from "./account/renew.ts";
+export {
+  RENEWAL_PURPOSE,
+  type RenewDeps,
+  renewalFields,
+  renewUnlock,
+  type UnlockUpload,
+} from "./account/renew.ts";
 export {
   AccountState,
   emptyState,

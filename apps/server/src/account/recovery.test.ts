@@ -90,7 +90,9 @@ describe("recovering an account with the Recovery Key", () => {
     const unlocked = unlockWithRecoveryKey(await storedOf(owner, signedIn.token), recoveryKey);
     expect(unlocked.ok && unlocked.value.accountKey).toEqual(accountKey);
 
-    const renewed = renewUnlock(accountKey, accountId, NEW, secretKey, { derive: quick });
+    const renewed = renewUnlock(accountKey, accountId, NEW, secretKey, recoveryKey, {
+      derive: quick,
+    });
     const u = renewed.upload;
     const replaced = await setup.request("/api/account/unlock", {
       method: "PUT",
@@ -103,6 +105,7 @@ describe("recovering an account with the Recovery Key", () => {
           passphrase: encodeBytes(u.unlock.passphrase),
           recovery: encodeBytes(u.unlock.recovery),
         },
+        proof: encodeBytes(u.proof),
       },
     });
     expect(replaced.status).toBe(200);
@@ -156,49 +159,66 @@ describe("recovering an account with the Recovery Key", () => {
     ).toBe(400);
   });
 
-  it("replaces the unlock ways only with a session, only for an account with keys, and only well-formed", async () => {
+  it("replaces the unlock ways only with a session, a proof by the current Recovery Key and boxes of AK's size", async () => {
     const owner = await ownerWithKeys();
-    const body = {
-      accountSalt: encodeBytes(new Uint8Array(16)),
-      loginPublicKey: encodeBytes(new Uint8Array(32)),
-      recoveryLoginPublicKey: encodeBytes(new Uint8Array(32)),
-      unlock: { passphrase: "AAAA", recovery: "AAAA" },
+    const { setup, post } = owner;
+    const { accountId, accountKey, secretKey, recoveryKey } = owner.owner;
+    const renewal = (spent: Uint8Array) => {
+      const u = renewUnlock(accountKey, accountId, NEW, secretKey, spent, { derive: quick }).upload;
+      return {
+        accountSalt: encodeBytes(u.accountSalt),
+        loginPublicKey: encodeBytes(u.loginPublicKey),
+        recoveryLoginPublicKey: encodeBytes(u.recoveryLoginPublicKey),
+        unlock: {
+          passphrase: encodeBytes(u.unlock.passphrase),
+          recovery: encodeBytes(u.unlock.recovery),
+        },
+        proof: encodeBytes(u.proof),
+      };
     };
-    expect((await owner.setup.request("/api/account/unlock", { method: "PUT", body })).status).toBe(
-      401,
-    );
-    const early = await ownerWithKeys(false);
-    const signedIn = await signInWithPassphrase(
-      early.post,
-      early.owner.accountId,
-      OLD,
-      early.owner.secretKey,
-      quick,
-    );
+    const body = renewal(recoveryKey);
+    const signedIn = await signInWithPassphrase(post, accountId, OLD, secretKey, quick);
     const token = signedIn.ok ? signedIn.token : "";
+    const put = (b: unknown, t: string | undefined = token) =>
+      setup.request("/api/account/unlock", { method: "PUT", body: b, ...(t ? { token: t } : {}) });
+    expect((await put(body, "")).status).toBe(401);
+    // Review of K-303: a session alone (a stolen token) cannot replace anything
+    expect((await put(renewal(new Uint8Array(32).fill(7)))).status).toBe(403);
     expect(
-      (await early.setup.request("/api/account/unlock", { method: "PUT", token, body })).status,
-    ).toBe(404);
-    expect(
-      (
-        await early.setup.request("/api/account/unlock", {
-          method: "PUT",
-          token,
-          body: { ...body, accountSalt: "AAAA" },
-        })
-      ).status,
-    ).toBe(400);
-    // The 404 changed nothing: the passphrase still signs in
-    expect(
-      (
-        await signInWithPassphrase(
-          early.post,
-          early.owner.accountId,
-          OLD,
-          early.owner.secretKey,
-          quick,
-        )
-      ).ok,
-    ).toBe(true);
+      (await put({ ...body, accountSalt: encodeBytes(new Uint8Array(16).fill(1)) })).status,
+    ).toBe(403);
+    expect((await put({ ...body, unlock: { passphrase: "", recovery: "" } })).status).toBe(400);
+    expect((await put({ ...body, proof: undefined })).status).toBe(400);
+    expect((await signInWithPassphrase(post, accountId, OLD, secretKey, quick)).ok).toBe(true);
+    expect((await signInWithRecoveryKey(post, accountId, recoveryKey)).ok).toBe(true);
+    // With the proof it works, from any session of the account
+    expect((await put(body)).status).toBe(200);
+  });
+
+  it("refuses a renewal for an account without keys or without a recovery sign-in key", async () => {
+    const early = await ownerWithKeys(false);
+    const { accountId, accountKey, secretKey, recoveryKey } = early.owner;
+    const signedIn = await signInWithPassphrase(early.post, accountId, OLD, secretKey, quick);
+    const u = renewUnlock(accountKey, accountId, NEW, secretKey, recoveryKey, {
+      derive: quick,
+    }).upload;
+    const response = await early.setup.request("/api/account/unlock", {
+      method: "PUT",
+      token: signedIn.ok ? signedIn.token : "",
+      body: {
+        accountSalt: encodeBytes(u.accountSalt),
+        loginPublicKey: encodeBytes(u.loginPublicKey),
+        recoveryLoginPublicKey: encodeBytes(u.recoveryLoginPublicKey),
+        unlock: {
+          passphrase: encodeBytes(u.unlock.passphrase),
+          recovery: encodeBytes(u.unlock.recovery),
+        },
+        proof: encodeBytes(u.proof),
+      },
+    });
+    expect(response.status).toBe(403);
+    expect((await signInWithPassphrase(early.post, accountId, OLD, secretKey, quick)).ok).toBe(
+      true,
+    );
   });
 });

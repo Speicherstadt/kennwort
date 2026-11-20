@@ -114,6 +114,7 @@ export const createApi = (send: typeof fetch = fetch) => {
               passphrase: encodeBytes(upload.unlock.passphrase),
               recovery: encodeBytes(upload.unlock.recovery),
             },
+            proof: encodeBytes(upload.proof),
           },
           token,
         )
