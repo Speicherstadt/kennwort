@@ -7,7 +7,12 @@ const setup = () => {
   const lines: string[] = [];
   const db = openDatabase(":memory:");
   migrate(db);
-  return { app: createApp({ db, log: createLog("debug", (line) => lines.push(line)) }), lines, db };
+  const authenticate = async () => undefined;
+  return {
+    app: createApp({ db, log: createLog("debug", (line) => lines.push(line)), authenticate }),
+    lines,
+    db,
+  };
 };
 
 describe("GET /health", () => {

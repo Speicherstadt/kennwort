@@ -3,8 +3,11 @@ import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Db } from "./db/database.ts";
 import type { Log } from "./log.ts";
+import { companyRoutes, type TenantEnv } from "./tenancy/routes.ts";
+import { companyScope } from "./tenancy/scope.ts";
+import type { Authenticate } from "./tenancy/session.ts";
 
-export type Deps = { db: Db; log: Log };
+export type Deps = { db: Db; log: Log; authenticate: Authenticate };
 
 const databaseReachable = (db: Db) => {
   try {
@@ -15,7 +18,7 @@ const databaseReachable = (db: Db) => {
   }
 };
 
-export const createApp = ({ db, log }: Deps) => {
+export const createApp = ({ db, log, authenticate }: Deps) => {
   const app = new Hono();
 
   // Method, path without query string, status and duration; nothing of headers or body
@@ -37,6 +40,18 @@ export const createApp = ({ db, log }: Deps) => {
       ok ? 200 : 503,
     );
   });
+
+  // Everything under /api needs a session; routes see only the session's company
+  const api = new Hono<TenantEnv>();
+  api.use(async (c, next) => {
+    const session = await authenticate(c.req.raw);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    c.set("session", session);
+    c.set("scope", companyScope(db, session.companyId));
+    await next();
+  });
+  api.route("/", companyRoutes());
+  app.route("/api", api);
 
   app.onError((error, c) => {
     log("error", "unhandled", { path: c.req.path, name: error.name });

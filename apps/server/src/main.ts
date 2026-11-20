@@ -19,5 +19,7 @@ const log = createLog(logLevel, (line) => console.log(line));
 if (database !== ":memory:") mkdirSync(dirname(database), { recursive: true });
 const db = openDatabase(database);
 migrate(db);
-const server = Bun.serve({ port, fetch: createApp({ db, log }).fetch });
+// Until K-203 brings sign-in, no request has a session: /api answers 401
+const authenticate = async () => undefined;
+const server = Bun.serve({ port, fetch: createApp({ db, log, authenticate }).fetch });
 log("info", "listening", { port: server.port });
