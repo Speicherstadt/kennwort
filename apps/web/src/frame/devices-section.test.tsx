@@ -1,7 +1,7 @@
 import type { DeviceEntry } from "@kennwort/core";
 import { setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
-import { flush } from "solid-js";
+import { createSignal, flush } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DevicesApi } from "../session/devices-api.ts";
 import { DevicesSection } from "./devices-section.tsx";
@@ -109,5 +109,31 @@ describe("DevicesSection", () => {
     );
     expect(onSignedOut).not.toHaveBeenCalled();
     expect(rows(root)).toHaveLength(2);
+  });
+
+  it("loads the list anew for another sign-in's token", async () => {
+    setLocale("de", { reload: false });
+    const devices = vi.fn(async (token: string) => (token === "tok" ? [here, phone] : [here]));
+    const [token, setToken] = createSignal("tok");
+    const root = document.createElement("div");
+    document.body.append(root);
+    dispose = render(
+      () => (
+        <DevicesSection
+          token={token()}
+          api={{ devices, removeDevice: async () => true }}
+          onSignedOut={() => {}}
+        />
+      ),
+      root,
+    );
+    flush();
+    await settle();
+    expect(rows(root)).toHaveLength(2);
+    setToken("tok-2");
+    flush();
+    await settle();
+    expect(devices).toHaveBeenLastCalledWith("tok-2");
+    expect(rows(root)).toHaveLength(1);
   });
 });

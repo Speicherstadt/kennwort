@@ -4,7 +4,7 @@
  */
 import { LOCK_MINUTES, type UnsignedPolicy } from "@kennwort/core";
 import { Button, Input, m } from "@kennwort/ui";
-import { createSignal, Show } from "solid-js";
+import { createSignal, onSettled, Show } from "solid-js";
 import type { Session } from "../session/session.ts";
 import { applyPolicy, loadPolicy, type PolicyDeps, saveLockTime } from "./policy.ts";
 
@@ -31,7 +31,8 @@ export const PolicySection = (props: { session: Session; api: PolicyDeps; canEdi
     setPolicy(loaded.value);
     setMinutes(String(loaded.value.lockAfterMinutes));
   };
-  void refresh();
+  // Once on screen, then after each save; the section lives only while the account is open
+  onSettled(() => void refresh());
   const save = async (event: SubmitEvent) => {
     event.preventDefault();
     const value = Number(minutes());
@@ -93,6 +94,6 @@ export const PolicySection = (props: { session: Session; api: PolicyDeps; canEdi
 
 /** Applies the company policy once the account is open (the lock time); renders nothing */
 export const ApplyPolicy = (props: { session: Session; api: PolicyDeps }) => {
-  void applyPolicy(props.api, props.session);
+  onSettled(() => void applyPolicy(props.api, props.session));
   return null;
 };

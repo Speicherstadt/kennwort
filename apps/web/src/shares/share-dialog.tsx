@@ -5,7 +5,7 @@
  */
 import { type Certificate, idKey, type MemberView, type Share, type Trust } from "@kennwort/core";
 import { Button, Dialog, Input, m } from "@kennwort/ui";
-import { createSignal, For, Show } from "solid-js";
+import { createSignal, For, onSettled, Show } from "solid-js";
 import type { ShownEntry } from "../entries/entries.ts";
 import type { Session } from "../session/session.ts";
 import type { ShareApi } from "../session/shares-api.ts";
@@ -118,7 +118,7 @@ export const ShareDialog = (props: ShareDialogProps) => {
     const loaded = await loadShares(api, session, keys, props.vault, props.entry.id, props.trust);
     setShares(loaded ?? []);
   };
-  void reload();
+  onSettled(() => void reload());
   const run = async (change: () => Promise<{ ok: true } | { ok: false; error: ShareError }>) => {
     setBusy(true);
     const done = await change();

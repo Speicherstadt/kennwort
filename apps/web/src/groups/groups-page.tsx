@@ -6,7 +6,7 @@
 import { idKey, type MemberView } from "@kennwort/core";
 import { Button, Icon, Input, m } from "@kennwort/ui";
 import { Users } from "@kennwort/ui/icons";
-import { createSignal, For, Show } from "solid-js";
+import { createSignal, For, onSettled, Show } from "solid-js";
 import type { GroupApi } from "../session/groups-api.ts";
 import type { Session } from "../session/session.ts";
 import { selectClass } from "../vaults/role-select.tsx";
@@ -142,7 +142,7 @@ export const GroupsPage = (props: {
     setFailed(!loaded);
     setGroups(loaded ?? []);
   };
-  void reload();
+  onSettled(() => void reload());
   const run = async (change: () => Promise<{ ok: boolean }>) => {
     setBusy(true);
     const result = await change();

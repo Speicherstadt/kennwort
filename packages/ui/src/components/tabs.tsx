@@ -3,7 +3,7 @@
  * Home and End move and show the tab's panel.
  */
 import type { JSX } from "@solidjs/web";
-import { createSignal, createUniqueId, For } from "solid-js";
+import { createMemo, createSignal, createUniqueId, For } from "solid-js";
 import { ariaBoolean } from "../lib/aria.ts";
 import { cn } from "../lib/cn.ts";
 import { nextIndex } from "../lib/keys.ts";
@@ -18,13 +18,17 @@ export type TabsProps = {
 
 export const Tabs = (props: TabsProps) => {
   const base = createUniqueId();
-  const [current, setCurrent] = createSignal(props.initial ?? props.tabs[0]?.id ?? "");
-  const buttons: HTMLButtonElement[] = [];
+  // Seeded from the props and set by the user; a new initial tab from the parent starts over. The
+  // memo passes on only another ID, so new labels or contents keep the tab the user chose
+  const seed = createMemo(() => props.initial ?? props.tabs[0]?.id ?? "");
+  const [current, setCurrent] = createSignal(() => seed());
+  // By the tab's ID, which a ref can read without tracking; the row's index is an accessor
+  const buttons = new Map<string, HTMLButtonElement>();
   const choose = (index: number) => {
     const tab = props.tabs[index];
     if (!tab) return;
     setCurrent(tab.id);
-    buttons[index]?.focus();
+    buttons.get(tab.id)?.focus();
     props.onChange?.(tab.id);
   };
   const onKeyDown = (event: KeyboardEvent, index: number) => {
@@ -44,7 +48,7 @@ export const Tabs = (props: TabsProps) => {
           {(tab, index) => (
             <button
               ref={(el) => {
-                buttons[index()] = el;
+                buttons.set(tab.id, el);
               }}
               type="button"
               role="tab"

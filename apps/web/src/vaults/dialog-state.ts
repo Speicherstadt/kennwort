@@ -3,7 +3,7 @@
  * company's groups and the vault's links, reloaded after every change, and whether a change runs
  */
 import type { MemberView } from "@kennwort/core";
-import { createSignal } from "solid-js";
+import { createSignal, onSettled } from "solid-js";
 import { type Group, type Link, loadGroups, loadLinks } from "../groups/groups.ts";
 import type { GroupApi } from "../session/groups-api.ts";
 import type { Session } from "../session/session.ts";
@@ -37,7 +37,8 @@ export const createDialogState = (props: {
     setGroups(g ?? []);
     setLinks(l ?? []);
   };
-  void reloadAround();
+  // Once the dialog is on screen, and after every change; called from the dialog's body
+  onSettled(() => void reloadAround());
   /** A change to the log, then the vault and what is around it anew */
   const run = async (change: () => Promise<Outcome>) => {
     setBusy(true);

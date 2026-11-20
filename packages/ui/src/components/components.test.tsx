@@ -9,6 +9,7 @@ import { Input, SearchInput } from "./input.tsx";
 import { List } from "./list.tsx";
 import { Tabs } from "./tabs.tsx";
 import { createToasts, TOAST_MS, Toaster } from "./toast.tsx";
+import { Tooltip } from "./tooltip.tsx";
 
 // happy-dom has no Popover API; Playwright checks the real one (e2e/components.spec.ts)
 HTMLElement.prototype.showPopover ??= function (this: HTMLElement) {
@@ -127,6 +128,33 @@ describe("List", () => {
     flush();
     expect(chosen(root)).toEqual(["WLAN Büro"]);
   });
+  it("renders what an option shows around its text once, not again when keys or clicks read the items", () => {
+    const made = vi.fn();
+    const [selected, setSelected] = createSignal("bank");
+    const root = mount(() => (
+      <List
+        label="Einträge"
+        items={items.map((item) => ({
+          ...item,
+          leading: () => {
+            made(item.id);
+            return <span class="lead">{item.id}</span>;
+          },
+          trailing: item.id === "mail" ? () => <b>ändern</b> : undefined,
+        }))}
+        selected={selected()}
+        onSelect={setSelected}
+      />
+    ));
+    expect(all(root, ".lead").map((el) => el.textContent)).toEqual(["bank", "mail", "wlan"]);
+    expect(all(root, "b").map((el) => el.textContent)).toEqual(["ändern"]);
+    made.mockClear();
+    key(root.querySelector('[role="listbox"]') as HTMLElement, "ArrowDown");
+    (all(root, '[role="option"]')[2] as HTMLElement).click();
+    flush();
+    expect(chosen(root)).toEqual(["wlanWLAN Büro"]);
+    expect(made).not.toHaveBeenCalled();
+  });
 });
 
 describe("Tabs", () => {
@@ -155,6 +183,47 @@ describe("Tabs", () => {
     expect(visible()).toEqual(["Felder"]);
     key(tabs[0] as Element, "Enter");
     expect(changes).toEqual(["access", "history", "fields"]);
+  });
+  it("opens on the initial tab and starts over when the parent gives another", () => {
+    const [initial, setInitial] = createSignal("access");
+    const root = mount(() => (
+      <Tabs
+        label="Eintrag"
+        initial={initial()}
+        tabs={[
+          { id: "fields", label: "Felder", content: () => <p>Felder</p> },
+          { id: "access", label: "Zugriff", content: () => <p>Zugriff</p> },
+        ]}
+      />
+    ));
+    const visible = () => all(root, '[role="tabpanel"]:not([hidden])').map((p) => p.textContent);
+    expect(visible()).toEqual(["Zugriff"]);
+    key(all(root, '[role="tab"]')[1] as Element, "Home");
+    expect(visible()).toEqual(["Felder"]);
+    setInitial("fields");
+    flush();
+    setInitial("access");
+    flush();
+    expect(visible()).toEqual(["Zugriff"]);
+  });
+  it("keeps the chosen tab when only the tabs' labels change", () => {
+    const [count, setCount] = createSignal(1);
+    const root = mount(() => (
+      <Tabs
+        label="Eintrag"
+        tabs={[
+          { id: "fields", label: "Felder", content: () => <p>Felder</p> },
+          { id: "history", label: `Verlauf (${count()})`, content: () => <p>Verlauf</p> },
+        ]}
+      />
+    ));
+    const visible = () => all(root, '[role="tabpanel"]:not([hidden])').map((p) => p.textContent);
+    key(all(root, '[role="tab"]')[0] as Element, "End");
+    expect(visible()).toEqual(["Verlauf"]);
+    setCount(2);
+    flush();
+    expect(all(root, '[role="tab"]')[1]?.textContent).toBe("Verlauf (2)");
+    expect(visible()).toEqual(["Verlauf"]);
   });
 });
 
@@ -231,5 +300,48 @@ describe("Toasts", () => {
     (root.querySelector('button[aria-label="Schließen"]') as HTMLButtonElement).click();
     flush();
     expect(toasts.toasts()).toEqual([]);
+  });
+});
+
+describe("Tooltip", () => {
+  it("stays open while the pointer rests on it and takes its Esc listener away when it goes", () => {
+    vi.useFakeTimers();
+    const shown = vi.fn();
+    const hidden = vi.fn();
+    vi.spyOn(HTMLElement.prototype, "showPopover").mockImplementation(shown);
+    vi.spyOn(HTMLElement.prototype, "hidePopover").mockImplementation(hidden);
+    let open = false;
+    shown.mockImplementation(() => {
+      open = true;
+    });
+    hidden.mockImplementation(() => {
+      open = false;
+    });
+    vi.spyOn(HTMLElement.prototype, "matches").mockImplementation(function (
+      this: HTMLElement,
+      selector: string,
+    ) {
+      return selector === ":popover-open" ? open : false;
+    });
+    const removed = vi.spyOn(document, "removeEventListener");
+    const root = mount(() => (
+      <Tooltip text="Kopieren">{(trigger) => <button type="button" {...trigger} />}</Tooltip>
+    ));
+    const button = root.querySelector("button") as HTMLElement;
+    const tip = root.querySelector('[role="tooltip"]') as HTMLElement;
+    button.dispatchEvent(new PointerEvent("pointerenter"));
+    button.dispatchEvent(new PointerEvent("pointerleave"));
+    tip.dispatchEvent(new PointerEvent("pointerenter"));
+    vi.advanceTimersByTime(500);
+    expect(open).toBe(true);
+    tip.dispatchEvent(new PointerEvent("pointerleave"));
+    vi.advanceTimersByTime(500);
+    expect(open).toBe(false);
+    button.dispatchEvent(new PointerEvent("pointerenter"));
+    removed.mockClear();
+    dispose();
+    dispose = () => {};
+    expect(removed).toHaveBeenCalledWith("keydown", expect.any(Function));
+    vi.useRealTimers();
   });
 });

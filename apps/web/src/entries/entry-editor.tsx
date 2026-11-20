@@ -56,7 +56,9 @@ export const EntryEditor = (props: {
   };
   const setField = (field: InputField) =>
     update((now) => ({ ...now, fields: now.fields.map((f) => (f.id === field.id ? field : f)) }));
-  const [vault, setVault] = createSignal(props.vaults?.[0]?.idText ?? "");
+  // Unset until chosen, so the first vault shows even when the vaults arrive after the dialog opened
+  const [chosenVault, setVault] = createSignal<string>();
+  const vault = () => chosenVault() ?? props.vaults?.[0]?.idText ?? "";
   const [error, setError] = createSignal<SaveError>();
   const [busy, setBusy] = createSignal(false);
   const submit = async (event: SubmitEvent) => {

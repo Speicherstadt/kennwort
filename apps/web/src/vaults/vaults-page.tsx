@@ -5,7 +5,7 @@
  */
 import { Button, Icon, Input, m } from "@kennwort/ui";
 import { Archive, TriangleExclamationPoint, Users } from "@kennwort/ui/icons";
-import { createSignal, For, Match, Show, Switch } from "solid-js";
+import { createSignal, For, Match, onSettled, Show, Switch } from "solid-js";
 import { Link } from "../frame/link.tsx";
 import type { Navigation } from "../navigation.ts";
 import type { Session } from "../session/session.ts";
@@ -66,7 +66,7 @@ export const VaultsPage = (props: {
   /** The vault whose members show: by ID, so the dialog stays open while the vaults load anew */
   const [membersOf, setMembersOf] = createSignal<string>();
   // Another device may have changed a vault: the page shows them as they are now
-  void props.store.reload();
+  onSettled(() => void props.store.reload());
   return (
     <section aria-labelledby="page-title" class="min-h-0 flex-1 overflow-auto p-4 md:p-6">
       <h1 id="page-title" class="mb-4 text-[28px] font-semibold md:text-lg">
