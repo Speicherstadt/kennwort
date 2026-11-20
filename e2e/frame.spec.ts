@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
+import { test } from "./account.ts";
 
 // K-302: every page opens on the desktop and on a phone, in light and dark, and axe finds nothing
 test.use({ locale: "de-DE" });
@@ -26,17 +27,17 @@ const axe = async (page: Page) => {
 test.describe("every page", { tag: "@phone" }, () => {
   for (const scheme of ["light", "dark"] as const)
     for (const { path, title } of pages)
-      test(`${path} opens in ${scheme} and axe finds nothing`, async ({ page }) => {
+      test(`${path} opens in ${scheme} and axe finds nothing`, async ({ page, open }) => {
         await page.emulateMedia({ colorScheme: scheme });
-        await page.goto(path);
+        await open(path);
         await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
         await axe(page);
       });
 });
 
-test("the desktop shows rail, sidebar, list and detail side by side", async ({ page }) => {
+test("the desktop shows rail, sidebar, list and detail side by side", async ({ page, open }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto("/entries/bank");
+  await open("/entries/bank");
   await expect(page.getByRole("navigation", { name: "Hauptnavigation" }).first()).toBeVisible();
   await expect(page.getByRole("complementary", { name: "Bereiche" })).toBeVisible();
   await expect(page.getByRole("listbox", { name: "Alle Einträge" })).toBeVisible();
@@ -48,10 +49,10 @@ test("the desktop shows rail, sidebar, list and detail side by side", async ({ p
   await expect(page.getByRole("heading", { level: 1, name: "Zum Ändern" })).toBeVisible();
 });
 
-test("a phone shows one screen at a time with the tab bar @phone", async ({ page }) => {
+test("a phone shows one screen at a time with the tab bar @phone", async ({ page, open }) => {
   // A phone's width in both projects, so the desktop run checks the narrow layout too
   await page.setViewportSize({ width: 412, height: 839 });
-  await page.goto("/entries");
+  await open("/entries");
   await expect(page.getByRole("complementary", { name: "Bereiche" })).toBeHidden();
   await page.getByRole("option", { name: /Sparkasse/ }).click();
   await expect(page).toHaveURL(/\/entries\/bank$/);
@@ -70,8 +71,8 @@ test("a phone shows one screen at a time with the tab bar @phone", async ({ page
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
-test("switching the language in the settings changes the texts", async ({ page }) => {
-  await page.goto("/settings");
+test("switching the language in the settings changes the texts", async ({ page, open }) => {
+  await open("/settings");
   await page.getByRole("radio", { name: "English" }).check();
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
 });

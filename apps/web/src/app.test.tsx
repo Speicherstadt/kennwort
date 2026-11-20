@@ -2,7 +2,7 @@ import { setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { flush } from "solid-js";
 import { afterEach, describe, expect, it } from "vitest";
-import { App } from "./app.tsx";
+import { Frame } from "./frame/frame.tsx";
 import { createNavigation, type Navigation } from "./navigation.ts";
 
 let dispose = () => {};
@@ -21,7 +21,7 @@ const open = (path: string, locale: "de" | "en" = "de") => {
   document.body.append(root);
   const navigation = createNavigation(window);
   nav = navigation;
-  dispose = render(() => <App nav={navigation} />, root);
+  dispose = render(() => <Frame nav={navigation} onLock={() => {}} onLocale={() => {}} />, root);
   flush();
   return root;
 };

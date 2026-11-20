@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test } from "./account.ts";
 
 // The app follows the browser's language and falls back to German, the base locale
 const cases = [
@@ -12,8 +13,8 @@ test.describe("start page", { tag: "@phone" }, () => {
     test.describe(`in a browser set to ${locale}`, () => {
       test.use({ locale });
 
-      test(`speaks ${lang}`, async ({ page }) => {
-        await page.goto("/");
+      test(`speaks ${lang}`, async ({ page, open }) => {
+        await open("/");
         await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
         await expect(page.getByRole("navigation", { name: nav }).first()).toBeAttached();
         await expect(page.locator("html")).toHaveAttribute("lang", lang);

@@ -13,6 +13,8 @@ export type Route =
   | { page: "generator" }
   | { page: "groups" }
   | { page: "settings" }
+  | { page: "setup" }
+  | { page: "invite"; id: string }
   | { page: "not-found" };
 
 const lists: Record<string, ListFilter> = {
@@ -29,6 +31,7 @@ const filterPath = (filter: ListFilter) =>
       : `/${filter.kind}`;
 
 export const routePath = (route: Route): string => {
+  if (route.page === "invite") return `/invite/${encodeURIComponent(route.id)}`;
   if (route.page !== "entries") return route.page === "not-found" ? "/" : `/${route.page}`;
   const base = filterPath(route.filter);
   return route.entry ? `${base}/${encodeURIComponent(route.entry)}` : base;
@@ -60,7 +63,14 @@ export const parseRoute = (path: string): Route => {
   }
   const filter = lists[first];
   if (filter) return entriesRoute(filter, rest[0], rest.length - 1);
-  if (rest.length === 0 && (first === "generator" || first === "groups" || first === "settings"))
+  if (first === "invite" && rest.length === 1) {
+    const id = decoded(rest[0]);
+    return id ? { page: "invite", id } : { page: "not-found" };
+  }
+  if (
+    rest.length === 0 &&
+    (first === "generator" || first === "groups" || first === "settings" || first === "setup")
+  )
     return { page: first };
   return { page: "not-found" };
 };

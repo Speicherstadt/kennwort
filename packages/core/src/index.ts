@@ -24,6 +24,7 @@ export {
   unlockWithPassphrase,
   unlockWithRecoveryKey,
 } from "./account/unlock.ts";
+export { SessionWire, StoredWire } from "./account/wire.ts";
 export {
   AUDIT_GENESIS,
   AuditAction,

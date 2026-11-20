@@ -46,6 +46,8 @@
       "name": "@kennwort/web",
       "version": "0.0.0",
       "dependencies": {
+        "@kennwort/core": "workspace:*",
+        "@kennwort/crypto": "workspace:*",
         "@kennwort/ui": "workspace:*",
         "@solidjs/web": "2.0.3",
         "solid-js": "2.0.3",

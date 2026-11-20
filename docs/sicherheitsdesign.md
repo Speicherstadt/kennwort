@@ -326,14 +326,17 @@ bleibt.
    ([P-02](#p-02-anmelden)).
 
 Die Firma legt der erste Inhaber an: mit dem Einrichtungs-Code, den der Betreiber in den
-Einstellungen des Servers setzt (`KENNWORT_SETUP_CODE`, mindestens 16 Zeichen, nie im Log), und nur
-solange es noch keine Firma gibt. Firmen-ID, Konto und Wurzelschlüssel entstehen auf dem Gerät; der
+Einstellungen des Servers setzt (`KENNWORT_SETUP_CODE`, mindestens 16 Zeichen, nie im Log). Der Code
+gilt für jede neue Firma, sodass ein Betreiber viele Firmen anlegen kann (Projektplan,
+Entscheidungen); eine bestehende Firma öffnet er nie: Eine Firmen-ID, die es schon gibt, lehnt der
+Server ab. Firmen-ID, Konto und Wurzelschlüssel entstehen auf dem Gerät; der
 private Wurzelschlüssel liegt im Kontozustand des Inhabers, weitere Inhaber bekommen ihn verpackt
 (K-304). Sein Zertifikat signiert der Inhaber selbst mit dem neuen Wurzelschlüssel. Der Server nimmt
 die Geheimtexte einmal an und den Kontozustand danach nur mit dem nächsten Zähler.
 
 Umgesetzt in `packages/core/src/account/` (anlegen, Kontozustand mit Zusammenführen, entsperren mit
-Passphrase und Recovery Key) und `apps/server/src/account/`, `apps/server/src/auth/setup.ts`.
+Passphrase und Recovery Key), `apps/server/src/account/`, `apps/server/src/auth/setup.ts` und in der
+Web-App in `apps/web/src/session/` und `apps/web/src/account/`.
 
 **Wehrt ab:** E-10, E-18, E-24.
 
@@ -376,7 +379,13 @@ Der Client lädt den passenden Geheimtext, leitet den Schlüssel ab und entschl�
 nennt Konto und Weg, ein Geheimtext eines anderen Kontos oder Wegs scheitert. Welche Wege es gibt,
 bestimmt der Client aus seinem letzten bekannten Stand: Ein neuer Weg, den der Server meldet, gilt
 erst, wenn ein entsperrtes Gerät ihn angelegt hat (E-01, E-03). Nach Leerlauf sperrt der Client
-und löscht alle Schlüssel aus dem Speicher.
+und löscht alle Schlüssel aus dem Speicher; die Web-App nach zehn Minuten ohne Tastendruck oder
+Klick, und beim Sperren überschreibt sie AK.
+
+Das Gerät merkt sich Konto-ID und Secret Key (in der Web-App im `localStorage`), nie die Passphrase
+und nie AK. Der Secret Key ist der zweite Faktor gegen einen Server, der Passphrasen errät: Wer nur
+die Daten des Servers hat, muss 128 Bit Secret Key mitraten. Wer das Gerät hat, braucht weiter die
+Passphrase.
 
 **Wehrt ab:** E-01, E-03, E-18.
 
