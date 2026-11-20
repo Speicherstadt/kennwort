@@ -55,6 +55,10 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.tasklist:
       custom_checkbox: true
+# The Solid 2.0 documentation is a copy for the agents (CLAUDE.md, "Solid 2.0"), English, with
+# links into the Solid repository: not part of the website
+exclude_docs: |
+  solid-2.0/
 nav:
   - Kennwort: index.md
   - Konto und Entsperren: konto.md

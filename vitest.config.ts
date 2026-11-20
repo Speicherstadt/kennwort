@@ -14,7 +14,14 @@ export default defineConfig({
       { test: { name: "logic", include: tests(logic) } },
       {
         plugins: [solid()],
-        test: { name: "interface", include: tests(interfaces), environment: "happy-dom" },
+        // Solid's dev build, whose diagnostics fail a test (vitest.solid-diagnostics.ts)
+        resolve: { conditions: ["development", "browser"] },
+        test: {
+          name: "interface",
+          include: tests(interfaces),
+          environment: "happy-dom",
+          setupFiles: ["./vitest.solid-diagnostics.ts"],
+        },
       },
     ],
   },
