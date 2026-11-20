@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/*.md", "!overrides"]
+    "includes": ["**", "!**/*.md", "!overrides", "!**/*.gen.ts"]
   },
   "formatter": {
     "indentStyle": "space",
@@ -19,7 +19,10 @@
       "complexity": {
         "noExcessiveLinesPerFunction": {
           "level": "info",
-          "options": { "maxLines": 80, "skipBlankLines": true }
+          "options": {
+            "maxLines": 80,
+            "skipBlankLines": true
+          }
         }
       }
     }
@@ -38,7 +41,13 @@
   "overrides": [
     {
       "includes": ["**/*.test.ts", "**/*.spec.ts", "e2e/**"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } }
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noExcessiveLinesPerFunction": "off"
+          }
+        }
+      }
     }
   ]
 }

@@ -69,7 +69,7 @@ und die Schritte für Menschen am Ende erledigt sind.
 
 ## Phase 2 – Server
 
-- [ ] **K-201 Server-Gerüst** – Bun, Hono, Drizzle/SQLite mit Migrationen, Zod an jeder Grenze,
+- [x] **K-201 Server-Gerüst** – Bun, Hono, Drizzle/SQLite mit Migrationen, Zod an jeder Grenze,
   Health-Endpunkt, Logs ohne Geheimnisse, `bun build --compile`.
   Fertig, wenn: der Server mit leerer Datenbank startet, migriert und `/health` antwortet.
 - [ ] **K-202 Mandanten** – mehrere Firmen auf einem Server, strikt getrennt.
