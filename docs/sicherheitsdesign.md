@@ -943,8 +943,9 @@ Ablauf:
    Navigation 503). Ein Tab, der mehrere Versionen zurückliegt, bekommt dann einen Fehler statt
    ungeprüftem Code und muss neu laden.
 3. **Pfade des Servers**: Anfragen der App an `/api` und `/auth` gehen unverändert an den Server.
-   Eine Navigation dorthin, etwa über einen Link in einer Mail, liefe sonst als Dokument des
-   Servers ungeprüft unter der Herkunft der App, mit Zugriff auf ihren Speicher und ihre Caches.
+   Eine Navigation dorthin, etwa über einen Link in einer Mail, und jede Navigation, die kein GET
+   ist, etwa ein Formular, das eine fremde Seite abschickt, liefe sonst als Dokument des Servers
+   ungeprüft unter der Herkunft der App, mit Zugriff auf ihren Speicher und ihre Caches.
    Der Service Worker gibt deshalb Weiterleitungen unverändert weiter, wie Anmeldeabläufe über
    `/auth` sie brauchen, und jede andere Antwort nur als Text in einer Sandbox
    (`Content-Type: text/plain`, `Content-Security-Policy: sandbox`, `nosniff`). Ein künftiger
@@ -979,6 +980,10 @@ Restrisiko:
   nicht verhindern; ein Server, der einen eigenen `sw.js` ausliefert, umgeht also die Prüfung. Die
   Prüfung schützt gegen veränderte Dateien der App, nicht gegen einen Server, der gezielt den
   Service Worker ersetzt. Dagegen soll die Extension helfen, die die Web-App prüft (oben).
+- Dokumente, die eine fremde Seite einbettet: Ein `<object>` oder `<embed>` auf eine Adresse des
+  Servers ist eine Anfrage der fremden Seite, die der Service Worker von Kennwort nie sieht. Ein
+  HTML-Dokument, das der Server darauf antwortet, liefe unter der Herkunft der App; verhindern
+  könnten das nur Kopfzeilen des Servers, dem Kennwort nicht vertraut.
 - Die PWA am Handy ohne Extension.
 
 **Wehrt ab:** E-22, E-17.

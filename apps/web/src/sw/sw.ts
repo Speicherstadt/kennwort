@@ -74,7 +74,7 @@ scope.addEventListener("activate", (event: ExtendableEvent) =>
 scope.addEventListener("fetch", (event: FetchEvent) => {
   const { request } = event;
   const asked = { url: request.url, method: request.method, mode: request.mode };
-  if (isServerNavigation(deps.origin, request.url, request.mode)) {
+  if (isServerNavigation(deps.origin, request.url, request.mode, request.method)) {
     event.respondWith(scope.fetch(request).then(asInertDocument));
     return;
   }

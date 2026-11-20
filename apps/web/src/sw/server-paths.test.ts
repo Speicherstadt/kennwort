@@ -12,11 +12,15 @@ describe("isServerPath", () => {
 
 describe("isServerNavigation", () => {
   it("is a navigation of the app's origin to a server path", () => {
-    expect(isServerNavigation(ORIGIN, `${ORIGIN}/api/x`, "navigate")).toBe(true);
-    expect(isServerNavigation(ORIGIN, `${ORIGIN}/auth/callback`, "navigate")).toBe(true);
-    expect(isServerNavigation(ORIGIN, `${ORIGIN}/api/x`, "cors")).toBe(false);
-    expect(isServerNavigation(ORIGIN, `${ORIGIN}/entries`, "navigate")).toBe(false);
-    expect(isServerNavigation(ORIGIN, "https://idp.test/api/x", "navigate")).toBe(false);
+    expect(isServerNavigation(ORIGIN, `${ORIGIN}/api/x`, "navigate", "GET")).toBe(true);
+    expect(isServerNavigation(ORIGIN, `${ORIGIN}/auth/callback`, "navigate", "GET")).toBe(true);
+    expect(isServerNavigation(ORIGIN, `${ORIGIN}/api/x`, "cors", "GET")).toBe(false);
+    expect(isServerNavigation(ORIGIN, `${ORIGIN}/entries`, "navigate", "GET")).toBe(false);
+    expect(isServerNavigation(ORIGIN, "https://idp.test/api/x", "navigate", "GET")).toBe(false);
+    // Any other method: no verified release has an answer to it, so only the server does
+    expect(isServerNavigation(ORIGIN, `${ORIGIN}/vault`, "navigate", "POST")).toBe(true);
+    expect(isServerNavigation(ORIGIN, `${ORIGIN}/vault`, "cors", "POST")).toBe(false);
+    expect(isServerNavigation(ORIGIN, "https://idp.test/vault", "navigate", "POST")).toBe(false);
   });
 });
 
