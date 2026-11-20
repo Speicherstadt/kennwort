@@ -120,7 +120,7 @@ und die Schritte für Menschen am Ende erledigt sind.
 - [ ] **K-304 Firma, Rollen, Einladungen** – Inhaber, Admin, Mitarbeiter; Wurzelschlüssel;
   Richtlinien.
   In Teilen, je ein Pull Request; abgehakt wird K-304, wenn alle stehen:
-  - [ ] Teil 1: Einladung vollständig nach P-08 – Einladungsgeheimnis im Link, das der Server nie
+  - [x] Teil 1: Einladung vollständig nach P-08 – Einladungsgeheimnis im Link, das der Server nie
     sieht, MAC über das Bündel des Eingeladenen, der Client des Einladenden prüft ihn und
     zertifiziert erst dann; Mitgliederliste auf dem Server. Fertig, wenn: ein Bündel, das der Server
     unterschiebt oder austauscht, nicht zertifiziert wird (Test gegen den lügenden Server).
