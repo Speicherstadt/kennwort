@@ -1,6 +1,5 @@
 /** The icon of each kind of entry, the same in list and detail (K-306 part 2) */
 
-import type { EntryType } from "@kennwort/client/entries/entry-types.ts";
 import {
   Braces,
   CreditCard,
@@ -11,6 +10,7 @@ import {
   StickyNote,
   Wifi,
 } from "@kennwort/ui/icons";
+import type { EntryType } from "./entry-types.ts";
 
 export const entryIcon: Record<EntryType, IconNode> = {
   login: KeyRound,

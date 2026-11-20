@@ -4,6 +4,7 @@
  */
 
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
+import { entryIcon } from "@kennwort/client/entries/entry-icon.ts";
 import { typeLabel } from "@kennwort/client/entries/entry-types.ts";
 import { Button, cn, getLocale, Icon, m, type Toasts } from "@kennwort/ui";
 import { ArrowLeft, Pencil, Share2 } from "@kennwort/ui/icons";
@@ -19,7 +20,6 @@ import {
   TagList,
   ToChangeNote,
 } from "./entry-detail-parts.tsx";
-import { entryIcon } from "./entry-icon.ts";
 import { Link } from "./link.tsx";
 import { Field } from "./secret-field.tsx";
 import { TotpField } from "./totp-field.tsx";
