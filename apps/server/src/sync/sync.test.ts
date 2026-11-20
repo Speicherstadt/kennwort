@@ -18,9 +18,7 @@ const records = `/api/vaults/${vaultId}/records`;
 
 const withVault = async () => {
   const setup = syncSetup();
-  expect((await setup.request("/api/vaults", "t-jonas", { body: { id: vaultId } })).status).toBe(
-    201,
-  );
+  expect(await setup.openBuero()).toBe(201);
   return setup;
 };
 const put = (setup: ReturnType<typeof syncSetup>, token: string, body: unknown, path = records) =>
@@ -134,7 +132,7 @@ describe("entry records", () => {
 describe("live events", () => {
   it("says ready, then names each stored version, and stops listening when the client goes", async () => {
     const setup = syncSetup({ keepAliveMs: 5 });
-    await setup.request("/api/vaults", "t-jonas", { body: { id: vaultId } });
+    await setup.openBuero();
     const controller = new AbortController();
     const response = await setup.app.request(`/api/vaults/${vaultId}/events`, {
       headers: { authorization: "Bearer t-anna" },

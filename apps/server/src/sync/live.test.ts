@@ -14,7 +14,7 @@ import {
 } from "@kennwort/core";
 import { anna, bank, contextFor, id, jonas, withField } from "@kennwort/core/testing";
 import { sql } from "drizzle-orm";
-import { syncSetup, vaultId } from "../testing/sync-setup.ts";
+import { syncSetup } from "../testing/sync-setup.ts";
 
 const setup = syncSetup();
 const server = Bun.serve({ port: 0, fetch: setup.app.fetch });
@@ -51,15 +51,7 @@ describe("live sync between two clients", () => {
   afterAll(() => stop.abort());
 
   it("shows Jonas's new entry to Anna and Anna's change to Jonas, as they happen", async () => {
-    expect(
-      (
-        await fetch(`http://localhost:${server.port}/api/vaults`, {
-          method: "POST",
-          headers: { authorization: "Bearer t-jonas", "content-type": "application/json" },
-          body: JSON.stringify({ id: vaultId }),
-        })
-      ).status,
-    ).toBe(201);
+    expect(await setup.openBuero()).toBe(201);
     const jonasHears = listen("t-jonas", stop.signal);
     const annaHears = listen("t-anna", stop.signal);
     await Promise.all([

@@ -8,8 +8,22 @@ import { encodeBytes } from "../bytes.ts";
 import { edit, emptyDevice, pull, sync } from "../device.ts";
 import { type Connection, httpServer, type LiveEvent, watchVault } from "../http.ts";
 import { EntryRecord, recordToWire, sealRecord } from "../record.ts";
+import { openBuero, postLogEntry } from "./buero.ts";
 import { wireContract } from "./contract-wire.ts";
-import { anna, bank, contextFor, id, jonas, withField } from "./fixtures.ts";
+import { anna, bank, contextFor, id, jonas, max as maxP, withField } from "./fixtures.ts";
+import {
+  addAfterAForeignState,
+  addAsItShouldBe,
+  addFromTheFuture,
+  addWithOtherCommitment,
+  addWithoutRole,
+  genesisAsReader,
+  genesisOfAnotherVault,
+  rotationNotYet,
+  rotationOnAStalePlace,
+  rotationSignedAsAnother,
+} from "./log-contract.ts";
+import { nonMemberCannotJoinHimself, removedMemberHearsNothing } from "./members-contract.ts";
 
 export type Target = {
   connect: (token: string) => Connection;
@@ -66,7 +80,8 @@ const vaultsStayInTheirCompany = async (t: Target) => {
 
 const unknownRoutesAreNotFound = async (t: Target) => {
   const jonasC = t.connect("t-jonas");
-  await call(jonasC, "POST", "/api/vaults", { id: vault });
+  // as a member, so the routes themselves answer, not the membership check
+  await openBuero(t);
   for (const [method, path] of [
     ["POST", `/api/vaults/${vault}/records`],
     ["DELETE", `/api/vaults/${vault}/records`],
@@ -90,7 +105,7 @@ const unknownRoutesAreNotFound = async (t: Target) => {
 };
 
 const devicesSyncWithVersions = async (t: Target) => {
-  await call(t.connect("t-jonas"), "POST", "/api/vaults", { id: vault });
+  await openBuero(t);
   const jonasServer = httpServer(t.connect("t-jonas"), ring.vaultId);
   const annaServer = httpServer(t.connect("t-anna"), ring.vaultId);
   let phone = (await sync(edit(emptyDevice(), id(0xe2), bank), jonasServer, contextFor(jonas)))
@@ -122,7 +137,7 @@ const devicesSyncWithVersions = async (t: Target) => {
 
 const onlyOwnSignedRecords = async (t: Target) => {
   const jonasC = t.connect("t-jonas");
-  await call(jonasC, "POST", "/api/vaults", { id: vault });
+  await openBuero(t);
   const byAnna = sealRecord(contextFor(anna).author, ring, id(0xe1), 1, bank, new Uint8Array());
   const put = async (body: unknown) =>
     answer(await call(jonasC, "PUT", `/api/vaults/${vault}/records`, body));
@@ -145,7 +160,7 @@ const onlyOwnSignedRecords = async (t: Target) => {
 };
 
 const listenersHearChanges = async (t: Target) => {
-  await call(t.connect("t-jonas"), "POST", "/api/vaults", { id: vault });
+  await openBuero(t);
   const stop = new AbortController();
   const events: LiveEvent[] = [];
   let notify = () => {};
@@ -187,6 +202,35 @@ const listenersHearChanges = async (t: Target) => {
   expect(t.listening(vault)).toBe(0);
 };
 
+/** Records and the stream go to the vault's members only; only editors and managers write */
+const membersOnly = async (t: Target) => {
+  await openBuero(t, 2);
+  const max = t.connect("t-max");
+  const records = `/api/vaults/${vault}/records`;
+  const byMax = recordToWire(
+    sealRecord(contextFor(maxP).author, ring, id(0xe1), 1, bank, new Uint8Array()),
+  );
+  // Max works at Weber Haustechnik but is no member of Büro yet
+  for (const [method, path, body] of [
+    ["GET", records, undefined],
+    ["GET", `/api/vaults/${vault}/entries/${encodeBytes(id(0xe1))}/versions`, undefined],
+    ["GET", `/api/vaults/${vault}/events`, undefined],
+    ["PUT", records, byMax],
+  ] as const)
+    expect([method, path, ...(await answer(await call(max, method, path, body)))]).toEqual([
+      method,
+      path,
+      ...notFound,
+    ]);
+  await postLogEntry(t, 2);
+  // as a reader Max reads, but writes nothing
+  expect(await answer(await call(max, "GET", records))).toEqual([200, []]);
+  expect(await answer(await call(max, "PUT", records, byMax))).toEqual([
+    403,
+    { error: "forbidden" },
+  ]);
+};
+
 export const syncContract = (name: string, target: () => Promise<Target>) =>
   describe(`sync contract: ${name}`, () => {
     it("creates a vault once and keeps it from other companies", async () =>
@@ -199,6 +243,27 @@ export const syncContract = (name: string, target: () => Promise<Target>) =>
       onlyOwnSignedRecords(await target()));
     it("tells a listener when it is ready and about each new version, and lets it go", async () =>
       listenersHearChanges(await target()));
+    it("gives records and changes only to the vault's members, and lets only editors write", async () =>
+      membersOnly(await target()));
+    it("lets no colleague make himself a member of a vault", async () =>
+      nonMemberCannotJoinHimself(await target()));
+    it("ends a member's stream once the member is removed, before naming another change", async () =>
+      removedMemberHearsNothing(await target()));
+    it("refuses a genesis for another vault", async () => genesisOfAnotherVault(await target()));
+    it("refuses a genesis that makes its creator only a reader", async () =>
+      genesisAsReader(await target()));
+    it("refuses a key rotation until K-307", async () => rotationNotYet(await target()));
+    it("takes an add of Anna right after the genesis", async () => addAsItShouldBe(await target()));
+    it("refuses an add without a role", async () => addWithoutRole(await target()));
+    it("refuses an add that commits to another vault key", async () =>
+      addWithOtherCommitment(await target()));
+    it("refuses an add after a state not in the chain (fork)", async () =>
+      addAfterAForeignState(await target()));
+    it("refuses an add signed years ahead", async () => addFromTheFuture(await target()));
+    it("answers a rotation signed as another as forbidden", async () =>
+      rotationSignedAsAnother(await target()));
+    it("answers a rotation on an old place as stale", async () =>
+      rotationOnAStalePlace(await target()));
     wireContract(target);
   });
 
