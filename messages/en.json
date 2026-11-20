@@ -176,13 +176,8 @@
   "policy_invalid": "The policies from the server are not validly signed. Kennwort keeps to the last valid ones.",
   "policy_lock_after": [
     {
-      "declarations": [
-        "input minutes",
-        "local count = minutes: plural"
-      ],
-      "selectors": [
-        "count"
-      ],
+      "declarations": ["input minutes", "local count = minutes: plural"],
+      "selectors": ["count"],
       "match": {
         "count=one": "Kennwort locks after 1 minute without use.",
         "count=*": "Kennwort locks after {minutes} minutes without use."
