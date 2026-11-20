@@ -6,6 +6,6 @@
     "jsxImportSource": "@solidjs/web",
     "types": ["vite/client"]
   },
-  "include": ["src", "showcase", "vite.config.ts"],
+  "include": ["src", "src/**/*.json", "showcase", "vite.config.ts"],
   "references": [{ "path": "../../packages/ui" }]
 }

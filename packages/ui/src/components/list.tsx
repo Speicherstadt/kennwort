@@ -18,7 +18,7 @@ export type ListItem = {
 export type ListProps = {
   label: string;
   items: ListItem[];
-  selected?: string;
+  selected?: string | undefined;
   onSelect: (id: string) => void;
 };
 
