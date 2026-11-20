@@ -138,7 +138,12 @@ for (const { locale, colorScheme, text } of cases) {
 
       // Keys only in chrome.storage.session, and no other store of the extension holds anything
       const areas = await storageAreas(context);
-      expect(Object.keys(areas.session).sort()).toEqual(["kennwort-device", "kennwort-keys"]);
+      // (kennwort-state: the account state, sealed under AK)
+      expect(Object.keys(areas.session).sort()).toEqual([
+        "kennwort-device",
+        "kennwort-keys",
+        "kennwort-state",
+      ]);
       expect(areas.local).toEqual({});
       expect(areas.sync).toEqual({});
       expect(
@@ -183,7 +188,10 @@ for (const { locale, colorScheme, text } of cases) {
       // Locking clears the keys from the session area and keeps the device
       await again.getByRole("button", { name: text.lock, exact: true }).click();
       await expect(again.getByRole("heading", { level: 1 })).toHaveText(text.lockedTitle);
-      expect(Object.keys((await storageAreas(context)).session)).toEqual(["kennwort-device"]);
+      expect(Object.keys((await storageAreas(context)).session).sort()).toEqual([
+        "kennwort-device",
+        "kennwort-state",
+      ]);
       await expectNoAxeViolations(again);
 
       // The passphrase alone unlocks again; the lock alarm clears the keys when it rings
@@ -198,8 +206,10 @@ for (const { locale, colorScheme, text } of cases) {
         }),
       );
       await expect
-        .poll(async () => Object.keys((await storageAreas(context)).session), { timeout: 15_000 })
-        .toEqual(["kennwort-device"]);
+        .poll(async () => Object.keys((await storageAreas(context)).session).sort(), {
+          timeout: 15_000,
+        })
+        .toEqual(["kennwort-device", "kennwort-state"]);
     } finally {
       await close();
     }

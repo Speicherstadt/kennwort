@@ -26,6 +26,11 @@ export type KeyError = "unavailable" | "storage-failed" | "malformed";
 export const KEYS_ITEM = "kennwort-keys";
 /** What the extension knows of its account (server, account ID, Secret Key); kept over a lock */
 export const DEVICE_ITEM = "kennwort-device";
+/**
+ * The account state as this device last saw or wrote it, sealed under AK (a ciphertext); kept over
+ * a lock so a server that plays back an older one cannot throw the device back (review of K-402)
+ */
+export const STATE_ITEM = "kennwort-state";
 
 /** The browser's session area, or undefined where there is none (a page, a test, an old browser) */
 export const browserSessionArea = (): SessionArea | undefined =>

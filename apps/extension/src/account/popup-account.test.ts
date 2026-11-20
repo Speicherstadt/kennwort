@@ -1,6 +1,6 @@
 import { flush } from "solid-js";
 import { describe, expect, it, vi } from "vitest";
-import { DEVICE_ITEM, KEYS_ITEM, type SessionArea } from "../session-keys.ts";
+import { DEVICE_ITEM, KEYS_ITEM, type SessionArea, STATE_ITEM } from "../session-keys.ts";
 import { LOCK_ALARM } from "./auto-lock.ts";
 import { accountServer, derive, fakeAlarms, memoryArea, PASSPHRASE } from "./popup.test-kit.ts";
 import { createPopupAccount, type PopupAccountDeps } from "./popup-account.ts";
@@ -65,7 +65,9 @@ describe("connecting and unlocking", () => {
   it("puts AK, token and device into the session area only, never the passphrase", async () => {
     const { account, input, area } = setup();
     await account.connect(input);
-    expect([...area.items.keys()].sort()).toEqual([DEVICE_ITEM, KEYS_ITEM]);
+    // The account state only sealed under AK (unlocked-store.ts)
+    expect([...area.items.keys()].sort()).toEqual([DEVICE_ITEM, KEYS_ITEM, STATE_ITEM]);
+    expect(Object.keys(area.items.get(STATE_ITEM) as object).sort()).toEqual(["counter", "sealed"]);
     expect(stored(area)).not.toContain(PASSPHRASE);
     const keys = area.items.get(KEYS_ITEM) as Record<string, number[]>;
     expect(Object.keys(keys).sort()).toEqual(["account-key", "token"]);
@@ -148,7 +150,7 @@ describe("locking", () => {
     flush();
     expect(account.phase()).toBe("locked");
     expect(account.opened()).toBeUndefined();
-    expect([...area.items.keys()]).toEqual([DEVICE_ITEM]);
+    expect([...area.items.keys()].sort()).toEqual([DEVICE_ITEM, STATE_ITEM]);
     expect(accountKey.every((byte) => byte === 0)).toBe(true);
     expect(alarms.alarms.has(LOCK_ALARM)).toBe(false);
   });
@@ -239,6 +241,44 @@ describe("opening the popup again", () => {
     flush();
     expect(again.phase()).toBe("locked");
     expect(area.items.has(KEYS_ITEM)).toBe(false);
+  });
+
+  it("keeps the account state it wrote when the server plays back an older one (review of K-402)", async () => {
+    // The server takes the write but serves the account state it had before: a popup that opened
+    // the state anew from the server alone would forget the policy, the logs and the versions this
+    // device checked, as the web app does not while it stays unlocked
+    const { account, input, reopen, server } = setup();
+    await account.connect(input);
+    const rollingBack = {
+      keys: server.api.keys,
+      writeState: async () => ({ ok: true as const }),
+    };
+    const written = await account.updateState(rollingBack, (state) => ({
+      ...state,
+      policy: 7,
+      policyLock: 3,
+    }));
+    expect(written.ok).toBe(true);
+    const again = reopen();
+    await again.restore();
+    flush();
+    expect(again.phase()).toBe("open");
+    expect(again.opened()?.state.policy).toBe(7);
+    expect(again.opened()?.state.policyLock).toBe(3);
+  });
+
+  it("keeps that state over a lock and an unlock with the passphrase", async () => {
+    const { account, input, server } = setup();
+    await account.connect(input);
+    await account.updateState(
+      { keys: server.api.keys, writeState: async () => ({ ok: true as const }) },
+      (state) => ({ ...state, policy: 4, policyLock: 5 }),
+    );
+    await account.lock();
+    expect(await account.unlock(PASSPHRASE)).toEqual({ ok: true });
+    flush();
+    expect(account.opened()?.state.policy).toBe(4);
+    expect(account.lockMinutes()).toBe(5);
   });
 
   it("asks to connect when the session area holds no device or a damaged one", async () => {

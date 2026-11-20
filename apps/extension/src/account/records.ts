@@ -4,6 +4,7 @@
  * app's local storage does, and the unlocked keys (AK, session token), which a lock clears. Both
  * are gone when the browser closes; nothing reaches the disk (docs/sicherheitsdesign.md, P-03).
  */
+import type { KeptState } from "@kennwort/client/session/state-sync.ts";
 import type { Keys } from "../session-keys.ts";
 
 export type DeviceRecord = {
@@ -55,4 +56,18 @@ export const unlockedFromKeys = (keys: Keys): UnlockedRecord | undefined => {
   const accountKey = sized(keys["account-key"], 32);
   const token = bytesToText(keys.token);
   return accountKey && token ? { accountKey, token } : undefined;
+};
+
+/** The kept account state: its counter as decimal text, and the ciphertext */
+export const keptToKeys = (kept: KeptState): Keys => ({
+  counter: text.encode(String(kept.counter)),
+  sealed: kept.sealed,
+});
+
+export const keptFromKeys = (keys: Keys): KeptState | undefined => {
+  const counter = bytesToText(keys.counter);
+  const sealed = keys.sealed;
+  return counter && /^\d{1,15}$/.test(counter) && sealed
+    ? { counter: Number(counter), sealed }
+    : undefined;
 };

@@ -420,7 +420,10 @@ In der Extension (K-402) lebt das Popup nur, solange es offen ist. Darum liegen 
 Sitzungs-Token in `chrome.storage.session` (nur für die Extension selbst, `TRUSTED_CONTEXTS`), und ein
 Alarm des Browsers trägt die Sperrzeit: Klingelt er, löscht der Service Worker beide. Ein neues Popup
 nimmt sie nur, solange der Alarm noch läuft, und öffnet mit AK den Schlüsselblock und den
-Kontozustand neu aus den Geheimtexten des Servers; beim Sperren überschreibt es AK im Speicher.
+Kontozustand neu aus den Geheimtexten des Servers. Den Kontozustand, den die Extension zuletzt
+gesehen oder geschrieben hat, hält sie unter AK versiegelt ebenfalls in `chrome.storage.session`, auch
+über das Sperren, und führt ihn in jeden ein, den der Server liefert: Ein älterer, den der Server
+zurückspielt, wirft sie nicht zurück (E-07, E-13). Beim Sperren überschreibt das Popup AK im Speicher.
 Entsperrt wird mit demselben Code wie in der Web-App (`packages/client/src/session/unlock.ts`).
 
 **Wehrt ab:** E-01, E-03, E-18.

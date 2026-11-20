@@ -4,7 +4,8 @@
  * lock alarm. The popup is closed and opened all the time, so what is open lives in
  * chrome.storage.session, never on the disk: AK and the session token (cleared on lock) and the
  * device (server, account ID, Secret Key; kept until the browser closes). Each time the popup
- * opens, AK opens the key block and the account state anew from the server's ciphertexts.
+ * opens, AK opens the key block and the account state anew from the server's ciphertexts, with the
+ * account state this device kept merged in (unlocked-store.ts).
  */
 import type { Api } from "@kennwort/client/session/api.ts";
 import { type Opened, stateUpdater } from "@kennwort/client/session/open-account.ts";
@@ -119,14 +120,15 @@ export const createPopupAccount = (deps: PopupAccountDeps) => {
       deps.derive,
     );
     if (!result.ok) return result;
-    const { opened: value } = result.value;
-    if (!(await store.keep(record, value, now()))) {
+    const { opened: value, stored } = result.value;
+    const kept = await store.keep(record, value, stored, now());
+    if (!kept) {
       value.accountKey.fill(0);
       await Promise.all([store.clearKeys(), timer.stop()]);
       return { ok: false, error: "storage-failed" };
     }
     setDevice(record);
-    open(value);
+    open(kept);
     return { ok: true };
   };
 
@@ -165,7 +167,10 @@ export const createPopupAccount = (deps: PopupAccountDeps) => {
     /** The company policy's lock time (K-304); it counts from now on */
     setLockAfter: (ms: number) => current && timer.start(ms),
     lockMinutes: timer.minutes,
-    updateState: stateUpdater(() => current, setOpened),
+    // What it writes is kept for the next popup, which merges it into what the server serves
+    updateState: stateUpdater(() => current, setOpened, {
+      keepState: (_accountId, kept) => store.keepState(kept),
+    }),
   };
 };
 

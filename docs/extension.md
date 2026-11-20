@@ -87,9 +87,12 @@ sobald der Browser schließt, und für Skripte auf Websites nicht erreichbar. Do
 | --- | --- | --- |
 | `kennwort-keys` | Account Key und Sitzungs-Token | beim Sperren, nach der Sperrzeit und beim Schließen des Browsers |
 | `kennwort-device` | Server, Konto-ID, Secret Key und die Geräte-ID für die Geräteliste | bei „Anderes Konto“ und beim Schließen des Browsers |
+| `kennwort-state` | der Kontozustand, wie die Extension ihn zuletzt gesehen oder geschrieben hat, verschlüsselt unter dem Account Key | bei „Anderes Konto“ und beim Schließen des Browsers |
 
 Öffnest du das Popup wieder, öffnet der Account Key den Schlüsselblock und den Kontozustand neu aus den
-Geheimtexten des Servers; entschlüsselte Einträge leben nur im Popup und sind weg, wenn es zugeht.
+Geheimtexten des Servers und führt den gemerkten Kontozustand hinein: Spielt der Server einen älteren
+zurück, vergisst die Extension nicht, was sie schon geprüft hat. Entschlüsselte Einträge leben nur im
+Popup und sind weg, wenn es zugeht.
 
 **Automatisches Sperren**: Nach der Sperrzeit der Firma (sonst zehn Minuten) ohne Klick oder
 Tastendruck im Popup sperrt die Extension. Weil das Popup meist zu ist, ist die Sperrzeit ein Alarm
