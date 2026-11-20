@@ -42,6 +42,12 @@ export type Trust = {
   now: number;
 };
 
+/**
+ * Clocks of devices and server differ a little: an entry may be signed this far ahead of the
+ * checker's clock. The server checks with the same rule, so it stores nothing a client rejects.
+ */
+export const CLOCK_SKEW_SECONDS = 300;
+
 export const idKey = (bytes: Uint8Array) =>
   Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 
@@ -146,8 +152,10 @@ const step = (
   if (!signer) return err("uncertified-signer");
   if (!verify(signer.edPublicKey, entry.signature, "log", entryBytes(entry)))
     return err("bad-signature");
-  // Signed times only move forward and never into the future; rights count at the entry's time
-  if (entry.time < state.time || entry.time > trust.now) return err("bad-time");
+  // Signed times only move forward and never into the future beyond the clock skew; rights count
+  // at the entry's time
+  if (entry.time < state.time || entry.time > trust.now + CLOCK_SKEW_SECONDS)
+    return err("bad-time");
   if (entry.action !== "create" && !isManager(state, entry.signerId, entry.time))
     return err("not-manager");
   return apply(state, entry, trust);

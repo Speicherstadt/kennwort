@@ -16,6 +16,7 @@ import {
   loginKeys,
   pairings,
   rootGrants,
+  vaultKeys,
   vaults,
 } from "../db/schema.ts";
 import { createLog } from "../log.ts";
@@ -139,6 +140,11 @@ const jonasSends = (method: string, path: string, body: unknown) =>
   });
 const muellerVault = encodeBytes(new Uint8Array(16).fill(0xa1));
 app.db.insert(vaults).values({ id: muellerVault, companyId: "mueller", createdAt: 3 }).run();
+// a key row naming Jonas in Müller Elektro's vault must not let him in
+app.db
+  .insert(vaultKeys)
+  .values({ vaultId: muellerVault, accountId: "jonas", epoch: 0, wrapped: Buffer.alloc(1) })
+  .run();
 
 /**
  * One case per route under /api: Jonas (Weber Haustechnik) asks for what belongs to Müller Elektro.
@@ -347,6 +353,19 @@ const cases: Record<string, () => Promise<void>> = {
   },
   "GET /api/vaults/:vaultId/events": async () => {
     expect((await asJonas(`/api/vaults/${muellerVault}/events`)).status).toBe(404);
+  },
+  "GET /api/vaults": async () => {
+    const answer = (await (await asJonas("/api/vaults")).json()) as { vaults: string[] };
+    expect(answer.vaults).not.toContain(muellerVault);
+  },
+  "GET /api/vaults/:vaultId/log": async () => {
+    expect((await asJonas(`/api/vaults/${muellerVault}/log`)).status).toBe(404);
+  },
+  "GET /api/vaults/:vaultId/keys": async () => {
+    expect((await asJonas(`/api/vaults/${muellerVault}/keys`)).status).toBe(404);
+  },
+  "POST /api/vaults/:vaultId/log": async () => {
+    expect((await jonasSends("POST", `/api/vaults/${muellerVault}/log`, {})).status).toBe(404);
   },
 };
 

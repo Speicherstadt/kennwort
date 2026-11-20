@@ -37,3 +37,35 @@ export const entryRecords = sqliteTable(
   },
   (table) => [primaryKey({ columns: [table.vaultId, table.entryId, table.version] })],
 );
+
+/**
+ * The membership log of a vault (P-06), entry by entry as the signer made it; the hash links the
+ * next entry. The server keeps the chain whole, the clients check it (verifyLog)
+ */
+export const vaultLog = sqliteTable(
+  "vault_log",
+  {
+    vaultId: text("vault_id")
+      .notNull()
+      .references(() => vaults.id),
+    seq: integer("seq").notNull(),
+    entry: text("entry").notNull(),
+    hash: bytes("hash"),
+    storedAt: integer("stored_at").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.vaultId, table.seq] })],
+);
+
+/** A vault key of one epoch wrapped to one member (P-05, F-02); only that member can open it */
+export const vaultKeys = sqliteTable(
+  "vault_keys",
+  {
+    vaultId: text("vault_id")
+      .notNull()
+      .references(() => vaults.id),
+    accountId: text("account_id").notNull(),
+    epoch: integer("epoch").notNull(),
+    wrapped: bytes("wrapped"),
+  },
+  (table) => [primaryKey({ columns: [table.vaultId, table.accountId, table.epoch] })],
+);

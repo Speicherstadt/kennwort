@@ -474,6 +474,16 @@ Verlauf; der Link lässt sich auch einfügen. Das neue Gerät fragt alle vier Se
 4. Zugriff anfragen und OIDC-Gruppen: Der Server legt nur eine Anfrage ab; erst ein Verwalter
    führt Schritt 2 aus.
 
+So ist es gebaut: `createVault` und `addMember` in `packages/core/src/membership/vault-ops.ts`
+erzeugen den Eintrag und das an das Mitglied verpackte VKₑ; `changeAccess` und `removeMember`
+signieren `rolle` und `entfernen`, `openVaultKey` entpackt VKₑ nur, wenn das Log es bindet. Der
+Server legt beides ab (`POST /api/vaults/:id/log` mit Eintrag und, genau bei `anlegen` und
+`aufnehmen`, dem verpackten Schlüssel); `GET /api/vaults` nennt die Tresore, in denen das Konto
+nach dem Log Mitglied ist, `GET /api/vaults/:id/log` und `/keys` geben Log und eigene Schlüssel
+nur an Konten, die gerade Mitglied sind; wer entfernt wurde oder abgelaufen ist, sieht keinen
+neuen Eintrag mehr. Seinen alten Schlüssel behält er trotzdem, bis der Schlüsselwechsel (K-307)
+ein neues VK verteilt.
+
 **Wehrt ab:** E-02, E-05, E-06, E-16, E-27.
 
 ### P-06 Mitgliedschafts-Log
@@ -495,7 +505,9 @@ Der Client prüft bei jedem Abruf die ganze Kette ab seinem letzten Stand:
   vertauscht, eingeschoben: E-07);
 - jede Signatur gültig, der Unterzeichner zu diesem Zeitpunkt Verwalter, sein Schlüssel und der des
   Mitglieds durch die Firma zertifiziert (unsigniert, fremd: E-06, E-07). „Zu diesem Zeitpunkt“
-  heißt zur signierten Zeit des Eintrags; diese Zeiten steigen nie und liegen nie in der Zukunft.
+  heißt zur signierten Zeit des Eintrags; diese Zeiten sinken nie und liegen höchstens fünf
+  Minuten vor der Uhr des Prüfenden (`CLOCK_SKEW_SECONDS`), weil die Uhren der Geräte
+  auseinandergehen.
   Restrisiko: Ein Verwalter, dessen Zugriff abgelaufen ist, kann noch Einträge mit einer Zeit vor
   dem Ablauf anhängen, solange niemand danach geschrieben hat;
 - jeder VKₑ, den der Client entpackt, passt zur `vk-bindung` des Eintrags `anlegen` bzw.
@@ -510,6 +522,20 @@ wieder etwas voneinander sehen.
 
 Umgesetzt in `packages/core/src/membership/` (`verifyLog`, Zertifikate nach F-06); wie
 `packages/crypto` mit Mutation-Tests bei einer Schwelle von 100 %.
+
+Der Server hält die Kette nur ganz, damit ein ehrlicher Server nichts speichert, was ein Client
+verwirft: Er nimmt einen Eintrag nur vom angemeldeten Konto, mit der nächsten `seq` und dem Hash
+des letzten (sonst `409`), und nur, wenn `verifyLog` die gespeicherte Kette mit dem neuen Eintrag
+annimmt – mit dem Wurzelschlüssel der Firma und den Zertifikaten, die er hält. Damit gelten auf dem
+Server dieselben Regeln wie im Client: gültige Signatur, Verwalter zur signierten Zeit, `aufnehmen`
+nur für Nicht-Mitglieder, `rolle` und `entfernen` nur für Mitglieder, Zeiten, die nie zurückgehen
+und höchstens fünf Minuten vor seiner Uhr liegen. Dazu muss der Unterzeichner nach der Uhr des
+Servers gerade Verwalter sein: Ein Verwalter, dessen Zugriff abgelaufen ist, hängt auch mit einer
+zurückdatierten Zeit nichts mehr an (das Restrisiko oben bleibt nur gegen einen bösartigen Server).
+Wer entfernt und wieder aufgenommen wird, bekommt den Schlüssel neu verpackt. Den
+`schlüsselwechsel` nimmt er erst mit K-307, das allen Mitgliedern das neue VK mitgibt. Ob ein
+Eintrag gilt, entscheidet trotzdem jeder Client mit `verifyLog`, gleich, was der Server
+durchgelassen hat.
 
 **Wehrt ab:** E-06, E-07, E-08, E-16, E-19.
 

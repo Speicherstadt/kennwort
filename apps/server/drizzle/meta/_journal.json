@@ -92,6 +92,13 @@
       "when": 1795174288117,
       "tag": "0012_company_policy",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1795176225019,
+      "tag": "0013_vault_log",
+      "breakpoints": true
     }
   ]
 }

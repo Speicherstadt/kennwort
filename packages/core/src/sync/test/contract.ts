@@ -79,7 +79,8 @@ const unknownRoutesAreNotFound = async (t: Target) => {
     ["GET", `/api/vaults/${vault}`],
     ["GET", `/api/vaults/${encodeBytes(id(0xb9))}/records`],
     ["GET", `/x/api/vaults/${vault}/records`],
-    ["GET", "/api/vaults"],
+    // GET /api/vaults lists the vaults of the session since K-305 (log-routes); no route deletes one
+    ["DELETE", "/api/vaults"],
   ] as const)
     expect([method, path, ...(await answer(await call(jonasC, method, path)))]).toEqual([
       method,

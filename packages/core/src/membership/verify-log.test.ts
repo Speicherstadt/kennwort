@@ -16,7 +16,14 @@ import {
   type LogFields,
   signEntry,
 } from "./log-entry.ts";
-import { idKey, isMember, remember, type Trust, verifyLog } from "./verify-log.ts";
+import {
+  CLOCK_SKEW_SECONDS,
+  idKey,
+  isMember,
+  remember,
+  type Trust,
+  verifyLog,
+} from "./verify-log.ts";
 
 // Weber Haustechnik: Jonas owns the company and its root key; Anna, Max and Sandra work there
 const id = (byte: number) => new Uint8Array(16).fill(byte);
@@ -379,7 +386,7 @@ describe("checks that need their own case", () => {
     });
   });
 
-  it("refuses signed times that go back or lie in the future", () => {
+  it("refuses signed times that go back or lie further ahead than the clocks may differ", () => {
     const back = chain([
       { action: "create", subject: jonas, signer: jonas, role: "manage" },
       { action: "add", subject: anna, signer: jonas, time: 1_799_999_999 },
@@ -390,8 +397,13 @@ describe("checks that need their own case", () => {
       { action: "add", subject: anna, signer: jonas, time: 1_800_000_000 },
     ]);
     expect(verifyLog(vault, same, trust()).ok).toBe(true);
-    expect(verifyLog(vault, log, trust(1_800_000_003))).toEqual({ ok: false, error: "bad-time" });
-    expect(verifyLog(vault, log, trust(1_800_000_004)).ok).toBe(true);
+    // the newest entry is signed at 1_800_000_004, by a device whose clock may run ahead
+    expect(CLOCK_SKEW_SECONDS).toBe(300);
+    expect(verifyLog(vault, log, trust(1_800_000_004 - 301))).toEqual({
+      ok: false,
+      error: "bad-time",
+    });
+    expect(verifyLog(vault, log, trust(1_800_000_004 - 300)).ok).toBe(true);
   });
 
   it("refuses a certificate filed under another account", () => {

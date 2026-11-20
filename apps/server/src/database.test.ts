@@ -36,6 +36,8 @@ describe("database", () => {
       "pairings",
       "root_grants",
       "sqlite_sequence",
+      "vault_keys",
+      "vault_log",
       "vaults",
     ]);
   });
