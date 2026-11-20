@@ -1,0 +1,119 @@
+/**
+ * The server stand-in (K-207): the sync API of apps/server as a fetch that keeps everything in
+ * memory, so client code runs without a server, in tests and later in the demo (K-706). A
+ * contract suite (sync/test/contract.ts) runs against both, so the stand-in cannot drift from
+ * the real server. Like the server it checks only what it can without keys.
+ */
+import { z } from "zod";
+import { bytes, encodeBytes } from "../sync/bytes.ts";
+import { EntryRecord, parseJson, recordToWire } from "../sync/record.ts";
+
+export type StandInSession = { accountId: string; companyId: string };
+type Change = { entryId: string; version: number };
+type Vault = {
+  companyId: string;
+  entries: Map<string, EntryRecord[]>;
+  listeners: Set<(change: Change) => void>;
+};
+
+/** A request body as the schema reads it; a body that is no JSON fails like a wrong one */
+const parsedBody = <T extends z.ZodType>(schema: T, init: RequestInit) =>
+  z.object({ ok: z.literal(true), value: schema }).safeParse(parseJson(String(init.body)));
+const VaultRequest = z.object({ id: bytes(16) });
+const json = (body: unknown, status = 200) => Response.json(body, { status });
+const notFound = () => json({ error: "not-found" }, 404);
+
+const newest = (vault: Vault) =>
+  [...vault.entries.keys()]
+    .sort()
+    .map((entryId) =>
+      recordToWire((vault.entries.get(entryId) as EntryRecord[]).at(-1) as EntryRecord),
+    );
+
+/** The live stream (SSE): "ready", then "record" for every new version, until either side stops */
+const events = (vault: Vault, signal: AbortSignal | null | undefined) => {
+  let controller: ReadableStreamDefaultController<Uint8Array>;
+  const send = (event: string, data: string) =>
+    controller.enqueue(new TextEncoder().encode(`event: ${event}\ndata: ${data}\n\n`));
+  const listener = (change: Change) => send("record", JSON.stringify(change));
+  const stop = () => {
+    vault.listeners.delete(listener);
+  };
+  const source: UnderlyingDefaultSource<Uint8Array> = {
+    start: (started) => {
+      controller = started;
+      vault.listeners.add(listener);
+      send("ready", "");
+    },
+    cancel: stop,
+  };
+  const stream = new ReadableStream(source);
+  signal?.addEventListener("abort", () => {
+    stop();
+    controller.error(signal.reason);
+  });
+  return new Response(stream, { headers: { "content-type": "text/event-stream" } });
+};
+
+export const standIn = (sessions: Readonly<Record<string, StandInSession>>) => {
+  const vaults = new Map<string, Vault>();
+
+  const createVault = (session: StandInSession, init: RequestInit) => {
+    const parsed = parsedBody(VaultRequest, init);
+    if (!parsed.success) return json({ error: "invalid" }, 400);
+    const id = encodeBytes(parsed.data.value.id);
+    if (vaults.has(id)) return json({ error: "taken" }, 409);
+    vaults.set(id, { companyId: session.companyId, entries: new Map(), listeners: new Set() });
+    return json({ id }, 201);
+  };
+
+  const pushRecord = (
+    session: StandInSession,
+    vaultId: string,
+    vault: Vault,
+    init: RequestInit,
+  ) => {
+    const parsed = parsedBody(EntryRecord, init);
+    if (!parsed.success || encodeBytes(parsed.data.value.vaultId) !== vaultId)
+      return json({ error: "invalid" }, 400);
+    const record = parsed.data.value;
+    if (encodeBytes(record.author) !== session.accountId) return json({ error: "forbidden" }, 403);
+    const entryId = encodeBytes(record.entryId);
+    const versions = vault.entries.get(entryId) ?? [];
+    const current = versions.at(-1);
+    if ((current?.version ?? 0) + 1 !== record.version)
+      return json({ current: current ? recordToWire(current) : null }, 409);
+    vault.entries.set(entryId, [...versions, record]);
+    for (const listener of vault.listeners) listener({ entryId, version: record.version });
+    return json({ stored: true });
+  };
+
+  const inVault = (session: StandInSession, method: string, path: string, init: RequestInit) => {
+    const match = path.match(/^\/api\/vaults\/([^/]+)(\/.+)/);
+    if (!match) return notFound();
+    const [, vaultId, rest] = match as unknown as [string, string, string];
+    const vault = vaults.get(vaultId);
+    if (vault?.companyId !== session.companyId) return notFound();
+    const versions = rest.match(/^\/entries\/([^/]+)\/versions$/);
+    const call = `${method} ${versions ? "/versions" : rest}`;
+    if (call === "GET /records") return json(newest(vault));
+    if (call === "GET /versions")
+      return json((vault.entries.get(versions?.[1] as string) ?? []).map(recordToWire));
+    if (call === "PUT /records") return pushRecord(session, vaultId, vault, init);
+    if (call === "GET /events") return events(vault, init.signal);
+    return notFound();
+  };
+
+  /** Called the way the client calls fetch: a URL and the request's options */
+  const fetch = (async (input: string | URL, init: RequestInit = {}) => {
+    const url = new URL(input);
+    const token = new Headers(init.headers).get("authorization")?.replace(/^Bearer /, "");
+    const session = sessions[token ?? ""];
+    if (!session) return json({ error: "unauthenticated" }, 401);
+    const method = init.method ?? "GET";
+    if (`${method} ${url.pathname}` === "POST /api/vaults") return createVault(session, init);
+    return inVault(session, method, url.pathname, init);
+  }) as typeof globalThis.fetch;
+
+  return { fetch, listening: (vaultId: string) => vaults.get(vaultId)?.listeners.size ?? 0 };
+};
