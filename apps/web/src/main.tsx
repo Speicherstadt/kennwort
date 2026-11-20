@@ -13,6 +13,7 @@ if (root) {
   applyTheme(readTheme(globalThis.localStorage), document.documentElement, globalThis.localStorage);
   // Created once, outside JSX: a prop expression is a getter and would run on every read
   const nav = createNavigation();
-  const session = createSession({ api: createApi(), storage: globalThis.localStorage });
-  render(() => <App nav={nav} session={session} />, root);
+  const api = createApi();
+  const session = createSession({ api, storage: globalThis.localStorage });
+  render(() => <App nav={nav} session={session} api={api} />, root);
 }

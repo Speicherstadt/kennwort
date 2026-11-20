@@ -16,6 +16,7 @@ export const Frame = (props: {
   nav: Navigation;
   onLock: () => void;
   onLocale: (locale: Locale) => void;
+  onAddDevice: () => void;
 }) => {
   const toasts = createToasts();
   const route = () => props.nav.route();
@@ -56,7 +57,11 @@ export const Frame = (props: {
         </Match>
         <Match when={route().page === "settings"}>
           <main class="flex min-h-0 flex-1">
-            <SettingsPage onLock={props.onLock} onLocale={props.onLocale} />
+            <SettingsPage
+              onLock={props.onLock}
+              onLocale={props.onLocale}
+              onAddDevice={props.onAddDevice}
+            />
           </main>
         </Match>
         <Match when={route().page === "not-found"}>

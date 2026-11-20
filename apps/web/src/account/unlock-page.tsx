@@ -87,6 +87,7 @@ export const WelcomePage = (props: { nav: Navigation; onUnlock: () => void }) =>
       <Button variant="primary" onClick={() => props.nav.go("/setup")}>
         {m.welcome_setup()}
       </Button>
+      <Button onClick={() => props.nav.go("/pair")}>{m.welcome_pair()}</Button>
       <Button onClick={() => props.onUnlock()}>{m.unlock_other()}</Button>
     </div>
   </Card>

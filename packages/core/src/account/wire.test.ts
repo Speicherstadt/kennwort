@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { encodeBytes } from "../sync/bytes.ts";
-import { SessionWire, StoredWire } from "./wire.ts";
+import { AnnouncedWire, PairingKeyWire, PollWire, SessionWire, StoredWire } from "./wire.ts";
 
 const b = (length: number, fill = 1) => encodeBytes(new Uint8Array(length).fill(fill));
 const stored = {
@@ -43,5 +43,35 @@ describe("SessionWire", () => {
     expect(SessionWire.safeParse({ accountId: "a", token: "" }).success).toBe(false);
     expect(SessionWire.safeParse({ token: "tok" }).success).toBe(false);
     expect(SessionWire.safeParse({ accountId: "a" }).success).toBe(false);
+  });
+});
+
+describe("the pairing answers", () => {
+  it("read what the server sends and refuse what it must not", () => {
+    expect(AnnouncedWire.parse({ id: "i", pollToken: "t" })).toEqual({ id: "i", pollToken: "t" });
+    for (const bad of [
+      { id: "", pollToken: "t" },
+      { id: "i", pollToken: "" },
+      { id: "i" },
+      { pollToken: "t" },
+    ])
+      expect(AnnouncedWire.safeParse(bad).success).toBe(false);
+    expect(PollWire.parse({ state: "waiting" })).toEqual({ state: "waiting" });
+    expect(PollWire.parse({ state: "package", package: b(3) })).toEqual({
+      state: "package",
+      package: new Uint8Array(3).fill(1),
+    });
+    expect(PollWire.parse({ state: "confirmed", package: b(3), token: "t" })).toMatchObject({
+      token: "t",
+    });
+    for (const bad of [
+      { state: "confirmed", package: b(3), token: "" },
+      { state: "confirmed", package: b(3) },
+      { state: "package" },
+      { state: "other" },
+    ])
+      expect(PollWire.safeParse(bad).success).toBe(false);
+    expect(PairingKeyWire.parse({ publicKey: b(1216) }).publicKey).toHaveLength(1216);
+    expect(PairingKeyWire.safeParse({ publicKey: b(1215) }).success).toBe(false);
   });
 });

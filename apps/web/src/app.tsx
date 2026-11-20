@@ -5,7 +5,9 @@
  */
 import { getLocale, type Locale, setLocale } from "@kennwort/ui";
 import { createSignal, Match, onCleanup, Show, Switch } from "solid-js";
+import { AddDevicePage } from "./account/add-device-page.tsx";
 import { InvitePage } from "./account/invite-page.tsx";
+import { type PairDeps, PairPage } from "./account/pair-page.tsx";
 import { RecoverPage } from "./account/recover-page.tsx";
 import { SetupPage } from "./account/setup-page.tsx";
 import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
@@ -13,7 +15,7 @@ import { Frame } from "./frame/frame.tsx";
 import type { Navigation } from "./navigation.ts";
 import type { Session } from "./session/session.ts";
 
-export const App = (props: { nav: Navigation; session: Session; hash?: string }) => {
+export const App = (props: { nav: Navigation; session: Session; api: PairDeps; hash?: string }) => {
   const [otherAccount, setOtherAccount] = createSignal(false);
   const [locale, setShownLocale] = createSignal(getLocale());
   const changeLocale = (next: Locale) => {
@@ -27,6 +29,9 @@ export const App = (props: { nav: Navigation; session: Session; hash?: string })
   const deviceLink =
     route().page === "unlock" ? readDeviceLink(props.hash ?? location.hash) : undefined;
   if (deviceLink) props.nav.dropFragment();
+  // The pairing link carries the pairing secret: read once, dropped at once too (P-04)
+  const pairingText = route().page === "link" ? (props.hash ?? location.hash) : "";
+  if (pairingText) props.nav.dropFragment();
   // Every key press or click pushes the automatic lock back (P-03)
   const touch = () => props.session.touch();
   document.addEventListener("pointerdown", touch);
@@ -54,6 +59,17 @@ export const App = (props: { nav: Navigation; session: Session; hash?: string })
           <Match when={route().page === "recover"}>
             <RecoverPage nav={props.nav} session={props.session} />
           </Match>
+          <Match when={route().page === "pair"}>
+            <PairPage nav={props.nav} session={props.session} api={props.api} />
+          </Match>
+          <Match when={route().page === "link" && props.session.opened()}>
+            <AddDevicePage
+              nav={props.nav}
+              session={props.session}
+              api={props.api}
+              link={pairingText || undefined}
+            />
+          </Match>
           <Match when={route().page === "setup"}>
             <SetupPage nav={props.nav} session={props.session} />
           </Match>
@@ -76,7 +92,12 @@ export const App = (props: { nav: Navigation; session: Session; hash?: string })
             </Show>
           </Match>
           <Match when={props.session.opened()}>
-            <Frame nav={props.nav} onLock={() => props.session.lock()} onLocale={changeLocale} />
+            <Frame
+              nav={props.nav}
+              onLock={() => props.session.lock()}
+              onLocale={changeLocale}
+              onAddDevice={() => props.nav.go("/link")}
+            />
           </Match>
         </Switch>
       )}

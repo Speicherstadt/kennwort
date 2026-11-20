@@ -14,7 +14,7 @@ import {
   unlockWithPassphrase,
 } from "@kennwort/core";
 import { createSignal } from "solid-js";
-import type { Api } from "./api.ts";
+import type { AccountApi } from "./api.ts";
 import { type DeviceAccount, readDevice, rememberDevice } from "./device.ts";
 import { recoverAccount } from "./recover.ts";
 
@@ -33,7 +33,7 @@ export type SessionError =
 export type Outcome<T> = { ok: true; value: T } | { ok: false; error: SessionError };
 
 export type SessionDeps = {
-  api: Api;
+  api: AccountApi;
   storage: Pick<Storage, "getItem" | "setItem" | "removeItem"> | undefined;
   lockAfterMs?: number;
   schedule?: (run: () => void, ms: number) => unknown;
@@ -53,7 +53,7 @@ export const signInError = (error: string): SessionError =>
 
 /** Signs in with the sign-in key (P-02), loads the ciphertexts and opens them (P-03) */
 const signInAndUnlock = async (
-  api: Api,
+  api: AccountApi,
   accountId: Uint8Array,
   passphrase: string,
   secretKey: Uint8Array,
@@ -172,6 +172,11 @@ export const createSession = (deps: SessionDeps) => {
       remember(result.value.keys.accountId, result.value.keys.secretKey);
       open(result.value.opened);
       return { ok: true, value: result.value.keys };
+    },
+    /** A device joined by pairing (P-04): remember it and open the account it was given */
+    adopt: (value: Opened, secretKey: Uint8Array) => {
+      remember(value.accountId, secretKey);
+      open(value);
     },
     accountIdText: () => {
       const value = opened();

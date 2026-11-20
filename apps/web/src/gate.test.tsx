@@ -6,7 +6,13 @@ import { readInvitation } from "./account/invite-page.tsx";
 import { readDeviceLink } from "./account/unlock-page.tsx";
 import { App } from "./app.tsx";
 import { createNavigation, type Navigation } from "./navigation.ts";
+import { createApi } from "./session/api.ts";
 import type { Session } from "./session/session.ts";
+
+// The gate tests never reach the server; a pairing page would see it as unreachable
+const unreachable = createApi(async () => {
+  throw new TypeError("offline");
+});
 
 let dispose = () => {};
 let nav: Navigation | undefined;
@@ -36,10 +42,15 @@ const open = (path: string, session: Session, hash = "") => {
   document.body.append(root);
   const navigation = createNavigation(window);
   nav = navigation;
-  dispose = render(() => <App nav={navigation} session={session} hash={hash} />, root);
+  dispose = render(
+    () => <App nav={navigation} session={session} api={unreachable} hash={hash} />,
+    root,
+  );
   flush();
   return root;
 };
+const button = (root: ParentNode, name: string) =>
+  [...root.querySelectorAll("button")].find((b) => b.textContent === name) as HTMLButtonElement;
 const heading = (root: ParentNode) => root.querySelector("h1")?.textContent;
 
 describe("the gate", () => {
@@ -51,9 +62,18 @@ describe("the gate", () => {
     );
   });
 
+  it("offers a new device to set up a company, to connect with another device or to unlock", () => {
+    const root = open("/entries", fakeSession({}).session);
+    const labels = [...root.querySelectorAll("button")].map((b) => b.textContent);
+    expect(labels).toEqual(["Firma anlegen", "Mit einem anderen Gerät verbinden", "Anderes Konto"]);
+    button(root, "Mit einem anderen Gerät verbinden").click();
+    flush();
+    expect(window.location.pathname).toBe("/pair");
+  });
+
   it("asks a new device for account ID and Secret Key when it unlocks another account", () => {
     const root = open("/entries", fakeSession({}).session);
-    (root.querySelectorAll("button")[1] as HTMLButtonElement).click();
+    button(root, "Anderes Konto").click();
     flush();
     expect(heading(root)).toBe("Kennwort ist gesperrt");
     expect(root.textContent).toContain("Konto-ID");

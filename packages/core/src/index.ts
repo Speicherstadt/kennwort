@@ -39,7 +39,14 @@ export {
   unlockWithPassphrase,
   unlockWithRecoveryKey,
 } from "./account/unlock.ts";
-export { SessionWire, StoredWire } from "./account/wire.ts";
+export {
+  AnnouncedWire,
+  PairingKeyWire,
+  type PollAnswer,
+  PollWire,
+  SessionWire,
+  StoredWire,
+} from "./account/wire.ts";
 export {
   AUDIT_GENESIS,
   AuditAction,

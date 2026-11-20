@@ -18,6 +18,7 @@ import {
   toWire,
   type UnlockUpload,
 } from "@kennwort/core";
+import { pairingCalls } from "./pairing-api.ts";
 export type ApiError = "wrong-code" | "invalid-invitation" | "too-many-requests" | "unexpected";
 type Answer<T> = { ok: true; value: T } | { ok: false; error: ApiError };
 
@@ -50,9 +51,16 @@ const keysBody = (upload: AccountUpload, certificate?: Certificate) => ({
   ...(certificate ? { certificate: toWire(certificate) } : {}),
 });
 
+export type Call = (
+  method: string,
+  path: string,
+  body?: unknown,
+  token?: string,
+) => Promise<{ status: number; json: unknown }>;
+
 export const createApi = (send: typeof fetch = fetch) => {
   /** Status 0 when the server cannot be reached: errors are values here too (review of K-303) */
-  const call = async (method: string, path: string, body?: unknown, token?: string) => {
+  const call: Call = async (method, path, body, token) => {
     const response = await send(path, {
       method,
       headers: {
@@ -72,6 +80,7 @@ export const createApi = (send: typeof fetch = fetch) => {
   };
   const post: Post = (path, body) => call("POST", path, body);
   return {
+    ...pairingCalls(call),
     setup: async (code: string, companyId: Uint8Array, upload: AccountUpload) =>
       session(
         await call("POST", "/auth/setup", {
@@ -123,3 +132,5 @@ export const createApi = (send: typeof fetch = fetch) => {
 };
 
 export type Api = ReturnType<typeof createApi>;
+/** What the session needs: everything but the pairing calls (P-04), which pairing/ uses */
+export type AccountApi = Omit<Api, keyof ReturnType<typeof pairingCalls>>;
