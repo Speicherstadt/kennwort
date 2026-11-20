@@ -109,6 +109,15 @@ export {
   isCertified,
 } from "./membership/certificate.ts";
 export {
+  type Exposure as VaultExposure,
+  exitReport,
+  exposureOf,
+  type ReportEntry,
+  type ReportVault,
+  type SeenEntry,
+  type SeenVault,
+} from "./membership/exit-report.ts";
+export {
   type Certifier,
   type CertifyError,
   certifyInvited,
@@ -155,6 +164,18 @@ export {
   ROOT_GRANT_LENGTH,
   type RootGrantError,
 } from "./membership/root-grant.ts";
+export {
+  dueExits,
+  type Exit,
+  openRings,
+  type Rings,
+  type RingsError,
+  type RotateError,
+  type Rotation,
+  removeAndRotate,
+  rotateVaultKey,
+  type WrappedKey,
+} from "./membership/rotation.ts";
 export { NAME_LENGTH, openVaultName, sealVaultName } from "./membership/vault-name.ts";
 export {
   type Access,
@@ -183,6 +204,15 @@ export {
 } from "./membership/verify-log.ts";
 export { bytes, encodeBytes } from "./sync/bytes.ts";
 export {
+  ChangeMark,
+  markForChange,
+  marksOf,
+  mergeMarks,
+  secretFieldIds,
+  settleMarks,
+  withMarks,
+} from "./sync/change-marks.ts";
+export {
   EntryContent,
   EntryType,
   Field,
@@ -192,6 +222,7 @@ export {
 } from "./sync/content.ts";
 export {
   type Device,
+  type Exposure,
   edit,
   emptyDevice,
   type Known,
@@ -200,6 +231,7 @@ export {
   pull,
   type Refused,
   rekey,
+  rotateEntries,
   type SyncContext,
   sync,
 } from "./sync/device.ts";

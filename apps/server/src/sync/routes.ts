@@ -14,7 +14,7 @@ import { z } from "zod";
 import type { Db } from "../db/database.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 import type { Hub } from "./hub.ts";
-import { currentMembers } from "./vault-chain.ts";
+import { currentEpoch, currentMembers } from "./vault-chain.ts";
 
 export type SyncDeps = { db: Db; hub: Hub; now: () => number; keepAliveMs?: number };
 
@@ -76,10 +76,15 @@ export const syncRoutes = ({ db, hub, now, keepAliveMs = 20_000 }: SyncDeps) =>
         // Signed as someone else: the client would refuse it anyway, the server does not store it
         if (encodeBytes(parsed.data.author) !== c.var.session.accountId)
           return c.json({ error: "forbidden" }, 403);
-        const appended = c.var.scope.append(parsed.data, now());
+        const appended = c.var.scope.append(parsed.data, now(), currentEpoch(db, vaultId));
         if (!appended) return c.json(notFound, 404);
-        if (!appended.stored)
-          return c.json({ current: appended.current ? recordToWire(appended.current) : null }, 409);
+        if (!appended.stored) {
+          const current = appended.current ? recordToWire(appended.current) : null;
+          // A record in another epoch than the log's: an older key may be with someone who left
+          return appended.epoch
+            ? c.json({ error: "epoch", current }, 409)
+            : c.json({ current }, 409);
+        }
         hub.publish(vaultId, {
           entryId: encodeBytes(parsed.data.entryId),
           version: parsed.data.version,
@@ -92,9 +97,11 @@ export const syncRoutes = ({ db, hub, now, keepAliveMs = 20_000 }: SyncDeps) =>
       if (!roleIn(db, c, vaultId, now())) return c.json(notFound, 404);
       return streamSSE(c, async (stream) => {
         // Someone removed, or whose time ran out, hears nothing more: checked before every
-        // change and every ping, and then the stream ends (review of the members-only sync)
+        // change and every ping, and then the stream ends (review of the members-only sync).
+        // So does someone who left the company with the stream still open (review of K-307)
         const stillMember = () => {
-          if (roleIn(db, c, vaultId, now())) return true;
+          const stayed = c.var.scope.account(c.var.session.accountId)?.leftAt == null;
+          if (stayed && roleIn(db, c, vaultId, now())) return true;
           stream.abort();
           return false;
         };

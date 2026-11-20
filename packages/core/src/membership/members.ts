@@ -31,6 +31,8 @@ export const MembersWire = z.object({
       edPublicKey: bytes(32).nullable(),
       certificate: CertificateWire.nullable(),
       invitation: z.object({ id: bytes(16), sealedSecret: bytes(), mac: bytes(64) }).nullable(),
+      /** When the account left the company (K-307), ms; its vaults owe a removal and a rotation */
+      leftAt: z.number().int().nonnegative().nullable().optional(),
     }),
   ),
 });

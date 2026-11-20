@@ -13,10 +13,19 @@ import {
   toWire,
 } from "@kennwort/core";
 import { and, eq, inArray, isNull } from "drizzle-orm";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { z } from "zod";
 import type { Db } from "../db/database.ts";
-import { accountKeys, accounts, invitations, rootGrants } from "../db/schema.ts";
+import {
+  accountKeys,
+  accounts,
+  authSession,
+  entryShares,
+  groupMembers,
+  invitations,
+  rootGrants,
+  vaultRequests,
+} from "../db/schema.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 
 type KeysRow = typeof accountKeys.$inferSelect;
@@ -61,6 +70,7 @@ const membersOf = (db: Db, companyId: string, me: string) => {
       edPublicKey: key ? encodeBytes(key.edPublicKey) : null,
       certificate: key?.certificate ? JSON.parse(key.certificate) : null,
       invitation: pending(me, key, invited.get(row.id)),
+      leftAt: row.leftAt,
     };
   });
 };
@@ -121,6 +131,60 @@ const storeRole = (
         .run();
     return true;
   });
+
+/**
+ * Who may remove whom from the company: owners anyone else, admins only members, nobody themselves
+ * (so an owner always stays), and nobody who left already
+ */
+const removal = (me: Member | undefined, member: Member | undefined) => {
+  if (!me || (me.role !== "owner" && me.role !== "admin")) return "forbidden" as const;
+  if (!member) return "not-found" as const;
+  if (member.id === me.id) return "own-account" as const;
+  if (member.leftAt !== null) return "left" as const;
+  return me.role === "admin" && member.role !== "member" ? ("forbidden" as const) : undefined;
+};
+
+/**
+ * The account leaves the company (K-307, P-11): marked as left, every session gone, and what only it
+ * could use dropped (requests, group memberships, shares to it, a wrapped root key, the open
+ * invitations it made). Its keys and certificate stay: the vault logs it signed must still verify.
+ * The vaults it was in owe a removal and a key rotation, which the next manager client signs; the
+ * server cannot.
+ */
+const leave = (db: Db, member: Member, at: number) =>
+  db.transaction((tx) => {
+    const id = member.id;
+    tx.update(accounts).set({ leftAt: at }).where(eq(accounts.id, id)).run();
+    tx.delete(authSession).where(eq(authSession.userId, id)).run();
+    tx.delete(rootGrants).where(eq(rootGrants.accountId, id)).run();
+    tx.delete(vaultRequests).where(eq(vaultRequests.accountId, id)).run();
+    tx.delete(groupMembers).where(eq(groupMembers.accountId, id)).run();
+    tx.delete(entryShares).where(eq(entryShares.recipient, id)).run();
+    // Nobody joins on a link they made: they know its token and secret (review of K-307)
+    tx.delete(invitations)
+      .where(and(eq(invitations.createdBy, id), isNull(invitations.acceptedAt)))
+      .run();
+  });
+
+const REMOVAL_STATUS = { forbidden: 403, "not-found": 404, "own-account": 409, left: 409 } as const;
+
+/** DELETE /api/members/:id: an owner or admin makes an account leave the company */
+const removeMember = (db: Db, now: () => number) => (c: Context<TenantEnv>) => {
+  const { scope, session } = c.var;
+  const member = scope.account(c.req.param("id") ?? "");
+  const refused = removal(scope.account(session.accountId), member);
+  if (refused) return c.json({ error: refused }, REMOVAL_STATUS[refused]);
+  const left = member as Member;
+  leave(db, left, now());
+  scope.audit({
+    time: now(),
+    actor: session.accountId,
+    action: "member-left",
+    subject: left.id,
+    signature: new Uint8Array(),
+  });
+  return c.json({ left: true });
+};
 
 export const memberRoutes = ({ db, now }: { db: Db; now: () => number }) =>
   new Hono<TenantEnv>()
@@ -197,6 +261,7 @@ export const memberRoutes = ({ db, now }: { db: Db; now: () => number }) =>
       });
       return c.json({ role: certificate.role });
     })
+    .delete("/members/:id", removeMember(db, now))
     .get("/account/root-grant", (c) => {
       const grant = db
         .select()

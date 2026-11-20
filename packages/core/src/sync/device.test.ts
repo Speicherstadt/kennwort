@@ -128,7 +128,13 @@ describe("the entry key (P-09, P-10)", () => {
     const ctx = contextFor(jonas);
     const device = (await sync(edit(emptyDevice(), e1, bank), server, ctx)).device;
     const old = device.known.get("e1".repeat(16))?.key;
-    const next = { ...ctx, ring: { ...ctx.ring, epoch: 1 } };
+    // The log moved to epoch 1; the old key still reads version 1
+    const next = {
+      ...ctx,
+      ring: { ...ctx.ring, epoch: 1 },
+      older: [ctx.ring],
+      log: { ...ctx.log, epoch: 1 },
+    };
     const synced = await sync(edit(device, e1, withField(bank, "user", "neu")), server, next);
     const key = synced.device.known.get("e1".repeat(16))?.key;
     expect(key?.epoch).toBe(1);

@@ -5,6 +5,7 @@
  * goes into the history, so nothing is lost.
  */
 import { z } from "zod";
+import { ChangeMark, mergeMarks, withMarks } from "./change-marks.ts";
 
 export const FieldKind = z.enum(["text", "secret", "url", "email", "totp", "note"]);
 export const EntryType = z.enum([
@@ -37,6 +38,8 @@ export const EntryContent = z.object({
   tags: z.array(z.string()),
   favorite: z.boolean(),
   history: z.array(HistoryItem),
+  /** Secrets someone who left could read, to be changed (P-11); absent when there are none */
+  toChange: z.array(ChangeMark).optional(),
 });
 
 export type Field = z.infer<typeof Field>;
@@ -118,7 +121,7 @@ export const mergeContent = (
   const type = mergeScalar(base.type, mine.type, theirs.type);
   lost.push(...lostScalar("title", base.title, mine.title, title, now));
   lost.push(...lostScalar("type", base.type, mine.type, type, now));
-  return {
+  const merged = {
     type,
     title,
     fields,
@@ -126,4 +129,5 @@ export const mergeContent = (
     favorite: mergeScalar(base.favorite, mine.favorite, theirs.favorite),
     history: mergeHistory([theirs.history, mine.history, lost]),
   };
+  return withMarks(merged, mergeMarks(base, mine, theirs, fields));
 };

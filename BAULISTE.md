@@ -204,6 +204,40 @@ und die Schritte für Menschen am Ende erledigt sind.
 - [ ] **K-307 Austritt und Recovery** – Schlüsselwechsel, Änderungs-Markierung, Austritts-Bericht,
   Firmen-Recovery, Notfallzugriff mit Wartezeit, Wechsel des Account Key (AK), wenn ein
   Recovery-Kit in fremde Hände geraten ist (P-12).
+  In Teilen, je ein Pull Request; abgehakt wird K-307, wenn alle stehen:
+  - [x] Teil a: Schlüsselwechsel beim Austritt in Core und Server (P-11) – `entfernen` und
+    `schlüsselwechsel` signiert, das neue VK an jedes verbleibende Mitglied verpackt, jeder Eintrag
+    neu verschlüsselt, Änderungs-Markierung im Inhalt, Austritts-Bericht als reine Funktion,
+    Austritt aus der Firma auf dem Server. Fertig, wenn: der Server einen Schlüsselwechsel nur mit
+    dem neuen Schlüssel für genau die Mitglieder des Logs und Versionen nur in der aktuellen Epoche
+    nimmt (Vertrag gegen Server und Stand-in), ein ausgetretenes Konto sofort keine Anfrage mehr
+    durchbekommt, ein Client nie unter einem überholten Schlüssel schreibt, jede Version, die die
+    Person lesen konnte, markiert wird und die Angriffe „Server hält den Wechsel zurück“, „Server
+    gibt dem Ausgetretenen den alten Schlüssel“ und „Server spielt das Log zurück“ als Tests gegen
+    den lügenden Server erkannt werden; Mutation-Tests in `packages/core` bei 100 %.
+  - [ ] Teil b: Austritt in der Web-App – „Aus der Firma entfernen“ und „Aus dem Tresor entfernen“
+    mit Schlüsselwechsel und Neuverschlüsseln, Freigaben neu verpackt (`reshare`), Markierte unter
+    „Zum Ändern“ mit Grund, Austritts-Bericht; ein Verwalter-Client holt ausstehende Wechsel nach
+    (`dueExits`), ein Eintrag aus einer Epoche vor einem Austritt bekommt beim Schreiben seine
+    Markierung, auch wenn der Server ihn vor dem Wechsel versteckt hat, andere Clients schreiben nicht, solange einer aussteht, und warnen. Fertig, wenn:
+    Entfernen aus Firma und Tresor, die Markierung und der Bericht als Playwright-Test desktop und
+    `@phone` laufen und die entfernte Person danach keinen neuen Eintrag öffnet.
+  - [ ] Teil c: Firmen-Recovery (P-13) – Schlüssel anlegen und an Inhaber verpacken, Schalter in
+    der Richtlinie (F-07), Hinterlegung jedes Kontos, Wiederherstellen über ein neues Gerät, neuer
+    Schlüssel, wenn ein Inhaber geht. Fertig, wenn: eine Hinterlegung an einen Schlüssel, den die
+    Richtlinie nicht nennt, nie entsteht, ein vom Server verpackter AK abgelehnt wird (Test gegen
+    den lügenden Server) und Wiederherstellen als Playwright-Test desktop und `@phone` läuft.
+  - [ ] Teil d: Notfallzugriff mit Wartezeit (P-14). Fertig, wenn: die Pakete erst nach Ablauf der
+    Wartezeit herauskommen, ein Widerspruch sie sperrt, ein Schlüssel ohne passende Bindung im Log
+    abgelehnt wird und Anlegen, Anfragen und Widersprechen als Playwright-Test desktop und `@phone`
+    laufen.
+  - [ ] Teil e: Wechsel von AK und Benutzer-Schlüsseln nach einem Recovery-Kit in fremden Händen
+    (P-12). Fertig, wenn: der alte Recovery Key und alte Geheimtexte nichts mehr öffnen, was danach
+    geschrieben wird, das neue Bündel erst mit neuem Zertifikat gilt und der Ablauf als
+    Playwright-Test desktop und `@phone` läuft.
+  - [ ] Teil f: neuer Firmen-Wurzelschlüssel, wenn ein Inhaber oder Admin geht (P-07). Fertig,
+    wenn: ein Client den Wechsel nur nach Bestätigung nimmt, keinen zweiten vom alten Schlüssel
+    annimmt und Zertifikate des alten Schlüssels danach nicht mehr gelten.
 - [x] **K-308 PWA** – installierbar, offline lesbar, signiertes Release-Manifest, Service Worker
   prüft Hashes vor jedem Update.
   In Teilen, je ein Pull Request; abgehakt wird K-308, wenn beide stehen:

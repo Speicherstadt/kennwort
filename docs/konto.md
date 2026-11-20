@@ -54,7 +54,17 @@ Konto; sein Gerät nimmt ihn beim nächsten Öffnen der Mitglieder an, wenn er z
 !!! note "Admin wieder zum Mitarbeiter machen"
     Kennwort löscht dann den Firmenschlüssel auf dem Server für dieses Konto. Eine Kopie, die sein
     Gerät schon hat, bleibt dort. Wer der Person nicht mehr traut, braucht einen neuen
-    Firmenschlüssel; das kommt mit dem Austritt.
+    Firmenschlüssel; das kommt mit einem späteren Teil des Austritts (K-307).
+
+## Austritt aus der Firma
+
+Verlässt jemand die Firma, entfernt ihn ein Inhaber (oder bei Mitarbeitern ein Admin) aus der
+Firma. Der Server sperrt das Konto sofort: Alle seine Geräte sind abgemeldet, und es kommt an
+nichts mehr heran, auch nicht mit einer Sitzung, die es noch hat. Einladungslinks, die es
+verschickt hat und die noch niemand angenommen hat, gelten nicht mehr. In der Mitgliederliste bleibt es
+mit dem Tag des Austritts stehen, denn seine Unterschriften in den Tresoren müssen prüfbar bleiben.
+Aus den Tresoren entfernt es danach das Gerät eines Verwalters, mit neuem Tresor-Schlüssel (siehe
+[Tresore](tresore.md)). Die Schaltfläche dafür bringt der nächste Teil von K-307.
 
 !!! warning "Wenn der Firmenschlüssel nicht passt"
     Zeigt Kennwort statt der Mitglieder den Hinweis, dass der Firmenschlüssel nicht zu deinem Konto
@@ -132,7 +142,8 @@ sicher auf.
 !!! warning "Wenn das Kit in fremde Hände geraten ist"
     Der neue Recovery Key sperrt die Anmeldung mit dem alten. Wer aber früher eine Kopie der
     verschlüsselten Daten deines Kontos bekommen hat, kann sie mit dem alten Recovery Key weiter
-    öffnen. Davor schützt erst ein Schlüsselwechsel, den Kennwort mit dem Austritt (K-307) bringt.
+    öffnen. Davor schützt erst ein Wechsel deines Account Key und deiner Schlüssel, den ein späterer
+    Teil von K-307 bringt.
 
 Auf deinem bekannten Gerät bleibt der Secret Key gleich, deine anderen Geräte entsperren also mit
 der neuen Passphrase weiter. Auf einem fremden Gerät bekommst du einen neuen Secret Key; deine

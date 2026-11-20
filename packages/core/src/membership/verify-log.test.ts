@@ -116,6 +116,31 @@ describe("verifyLog: a valid log", () => {
   });
 });
 
+describe("verifyLog: a rotation is due after someone left (P-11, E-26)", () => {
+  const states = log.map((_, n) => {
+    const checked = verifyLog(vault, log.slice(0, n + 1), trust());
+    if (!checked.ok) throw new Error(checked.error);
+    return checked.value.rotationDue;
+  });
+
+  it("is due from a removal until the next rotation, and never before", () => {
+    // create, add, add, remove, rotate
+    expect(states).toEqual([false, false, false, true, false]);
+  });
+
+  it("stays due over later entries of the same epoch", () => {
+    const later = chain([
+      { action: "create", subject: jonas, signer: jonas, role: "manage" },
+      { action: "add", subject: max, signer: jonas },
+      { action: "remove", subject: max, signer: jonas },
+      { action: "add", subject: anna, signer: jonas },
+      { action: "role", subject: anna, signer: jonas, role: "read" },
+    ]);
+    const checked = verifyLog(vault, later, trust());
+    expect(checked.ok && checked.value.rotationDue).toBe(true);
+  });
+});
+
 describe("verifyLog: attacks of a malicious server (E-06, E-07)", () => {
   it("detects an omitted entry", () => {
     expect(verifyLog(vault, [log[0], log[1], log[3]] as LogEntry[], trust())).toEqual({

@@ -30,6 +30,8 @@ export const accounts = sqliteTable(
       .notNull()
       .default("member"),
     createdAt: integer("created_at").notNull(),
+    /** When the account left the company (K-307, P-11), ms; it signs in to nothing any more */
+    leftAt: integer("left_at"),
   },
   (table) => [index("accounts_company").on(table.companyId)],
 );

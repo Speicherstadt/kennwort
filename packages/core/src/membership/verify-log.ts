@@ -17,6 +17,11 @@ export type LogState = {
   epoch: number;
   members: Map<string, Member>;
   commitments: Map<number, Uint8Array>;
+  /**
+   * Someone left in this epoch and still holds its vault key: no new secret belongs under it until
+   * a rotation (P-11); a log that stops here may be a server withholding the rotation (E-26)
+   */
+  rotationDue: boolean;
 };
 export type Remembered = { seq: number; hash: Uint8Array };
 
@@ -73,6 +78,7 @@ const genesisState = (): LogState => ({
   epoch: 0,
   members: new Map(),
   commitments: new Map(),
+  rotationDue: false,
 });
 
 /** The state after one entry, or what is wrong with the entry's meaning */
@@ -128,13 +134,13 @@ const apply = (state: LogState, entry: LogEntry, trust: Trust): Result<LogState,
     }
     case "remove": {
       if (!members.delete(subject)) return err("bad-action");
-      return ok(next);
+      return ok({ ...next, rotationDue: true });
     }
     case "rotate": {
       if (entry.epoch !== state.epoch + 1 || entry.vkCommitment.length === 0)
         return err("bad-epoch");
       commitments.set(entry.epoch, entry.vkCommitment);
-      return ok({ ...next, epoch: entry.epoch });
+      return ok({ ...next, epoch: entry.epoch, rotationDue: false });
     }
   }
 };

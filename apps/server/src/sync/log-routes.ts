@@ -1,7 +1,8 @@
 /**
  * Vault membership on the server (K-305, P-05, P-06): the signed log and the wrapped vault keys.
  * An entry is stored only if it is the next link of the chain, signed by the session, and passes
- * the client's own check (vault-chain.ts); log and keys go only to current members.
+ * the client's own check (vault-chain.ts); log and keys go only to current members. A rotation
+ * (K-307, P-11) comes with the new key for exactly the members the log names after it.
  */
 import {
   bytes,
@@ -27,7 +28,12 @@ const WRAPPED_KEY_LENGTH = 1 + 1120 + 1 + 24 + 32 + 16;
 const Append = z.object({
   entry: LogEntryWire,
   wrappedKey: bytes(WRAPPED_KEY_LENGTH).optional(),
+  /** A rotation's new vault key, wrapped by the manager's client to each member (P-11) */
+  wrappedKeys: z
+    .array(z.object({ accountId: bytes(16), wrapped: bytes(WRAPPED_KEY_LENGTH) }))
+    .optional(),
 });
+type WrappedKeys = NonNullable<z.infer<typeof Append>["wrappedKeys"]>;
 
 type Deps = { db: Db; now: () => number };
 type Row = typeof vaultLog.$inferSelect;
@@ -58,20 +64,28 @@ const store = (deps: Deps) => {
 };
 type Store = ReturnType<typeof store>;
 
+/** A rotation carries the new key for exactly the members the log names after it, once each */
+const keysFitMembers = (entries: LogEntry[], keys: WrappedKeys) => {
+  const members = membersOf(entries);
+  const ids = new Set(keys.map((key) => encodeBytes(key.accountId)));
+  return (
+    ids.size === keys.length && ids.size === members.size && [...ids].every((id) => members.has(id))
+  );
+};
+
 /** Why this entry may not follow the stored ones; undefined when it may */
 const refusal = (
   s: Store,
   c: Context<TenantEnv>,
   rows: Row[],
   entry: LogEntry,
+  wrappedKeys: WrappedKeys | undefined,
 ): Refusal | undefined => {
   const { accountId, companyId } = c.var.session;
   if (encodeBytes(entry.signerId) !== accountId) return "forbidden";
   const prev = rows.at(-1)?.hash ?? Buffer.from(GENESIS_HASH);
   if (entry.seq !== rows.length || encodeBytes(entry.prevHash) !== encodeBytes(prev))
     return "stale";
-  // The key rotation comes with K-307, which also hands every member the new vault key
-  if (entry.action === "rotate") return "invalid";
   // verifyLog counts rights at the entry's signed time; the server also wants a manager now, so
   // no one whose access ran out appends with a backdated entry (review of K-305)
   const entries = s.entriesOf(rows);
@@ -82,7 +96,9 @@ const refusal = (
     // Only who created the vault writes its genesis: no colleague takes a new vault over
     return "forbidden";
   }
-  return chainRefusal(s.db, companyId, entry.vaultId, [...entries, entry], s.seconds());
+  const refused = chainRefusal(s.db, companyId, entry.vaultId, [...entries, entry], s.seconds());
+  if (refused) return refused;
+  return wrappedKeys && !keysFitMembers([...entries, entry], wrappedKeys) ? "invalid" : undefined;
 };
 
 const append = (s: Store, deps: Deps) => async (c: Context<TenantEnv>) => {
@@ -90,13 +106,16 @@ const append = (s: Store, deps: Deps) => async (c: Context<TenantEnv>) => {
   if (!s.vaultOf(c.var.session.companyId, vaultId)) return c.json({ error: "not-found" }, 404);
   const body = Append.safeParse(await c.req.json().catch(() => undefined));
   if (!body.success) return c.json({ error: "invalid" }, 400);
-  const { entry, wrappedKey } = body.data;
+  const { entry, wrappedKey, wrappedKeys } = body.data;
   const takesKey = entry.action === "create" || entry.action === "add";
-  if (encodeBytes(entry.vaultId) !== vaultId || takesKey !== (wrappedKey !== undefined))
-    return c.json({ error: "invalid" }, 400);
+  const wellFormed =
+    encodeBytes(entry.vaultId) === vaultId &&
+    takesKey === (wrappedKey !== undefined) &&
+    (entry.action === "rotate") === (wrappedKeys !== undefined);
+  if (!wellFormed) return c.json({ error: "invalid" }, 400);
   const stored = s.db.transaction((tx) => {
     const rows = s.rowsOf(vaultId, tx);
-    const refused = refusal(s, c, rows, entry);
+    const refused = refusal(s, c, rows, entry, wrappedKeys);
     if (refused) return { refused, seq: rows.length };
     tx.insert(vaultLog)
       .values({
@@ -118,6 +137,25 @@ const append = (s: Store, deps: Deps) => async (c: Context<TenantEnv>) => {
             eq(vaultRequests.accountId, encodeBytes(entry.accountId)),
           ),
         )
+        .run();
+    // Who is removed gets no key of the vault any more, not even the old ones (P-11)
+    if (entry.action === "remove")
+      tx.delete(vaultKeys)
+        .where(
+          and(
+            eq(vaultKeys.vaultId, vaultId),
+            eq(vaultKeys.accountId, encodeBytes(entry.accountId)),
+          ),
+        )
+        .run();
+    for (const key of wrappedKeys ?? [])
+      tx.insert(vaultKeys)
+        .values({
+          vaultId,
+          accountId: encodeBytes(key.accountId),
+          epoch: entry.epoch,
+          wrapped: Buffer.from(key.wrapped),
+        })
         .run();
     // A member removed and added again in the same epoch gets the newly wrapped key
     if (wrappedKey)

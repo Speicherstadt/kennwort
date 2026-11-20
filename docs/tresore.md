@@ -39,8 +39,12 @@ verwaltet, kann dort:
   diese Schlüssel.
 - die **Rolle** eines Mitglieds ändern.
 - ein Mitglied **entfernen**. Es sieht danach keine neuen Einträge im Protokoll mehr. Was es
-  vorher entschlüsselt hat, kann es behalten haben; den Tresor-Schlüssel zu wechseln, damit auch
-  künftige Einträge geschützt sind, kommt mit dem Austritt (K-307).
+  vorher entschlüsselt hat, kann es behalten haben. Dagegen hilft ein Wechsel des
+  Tresor-Schlüssels: Alle Einträge werden mit einem neuen Schlüssel neu verschlüsselt, den die
+  entfernte Person nie bekommt, jedes Passwort, das sie lesen konnte, wird zum Ändern markiert,
+  bis es geändert ist, und ein Austritts-Bericht zeigt, was sie lesen konnte. Kern und Server
+  können das schon; in der Web-App kommt es mit dem nächsten Teil von K-307, bis dahin behält die
+  entfernte Person den bisherigen Tresor-Schlüssel.
 
 Beim Aufnehmen kannst du unter **Zugriff bis** einen Tag wählen. Nach diesem Tag öffnet kein Gerät
 den Tresor mehr für die Person, und der Server gibt ihr das Protokoll und den Schlüssel nicht mehr;

@@ -134,6 +134,13 @@
       "when": 1795188187836,
       "tag": "0018_entry_shares",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1795206917661,
+      "tag": "0019_members_left",
+      "breakpoints": true
     }
   ]
 }

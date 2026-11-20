@@ -1,5 +1,5 @@
 /** The HTTP API (Hono): one place where every route is mounted and every request logged */
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { Hono, type MiddlewareHandler } from "hono";
 import { memberRoutes } from "./account/members.ts";
 import { policyRoutes } from "./account/policy.ts";
@@ -13,6 +13,7 @@ import { loginKeyRoutes } from "./auth/login-key.ts";
 import { pairingApiRoutes, pairingPublicRoutes } from "./auth/pairings.ts";
 import { setupRoute } from "./auth/setup.ts";
 import type { Db } from "./db/database.ts";
+import { accounts } from "./db/schema.ts";
 import type { Log } from "./log.ts";
 import { groupRoutes } from "./sync/group-routes.ts";
 import { createHub, type Hub } from "./sync/hub.ts";
@@ -44,6 +45,10 @@ export type Deps = {
   now?: () => number;
   keepAliveMs?: number;
 };
+
+const hasLeft = (db: Db, accountId: string) =>
+  db.select({ leftAt: accounts.leftAt }).from(accounts).where(eq(accounts.id, accountId)).get()
+    ?.leftAt != null;
 
 const databaseReachable = (db: Db) => {
   try {
@@ -89,7 +94,9 @@ export const createApp = ({
   const api = new Hono<TenantEnv>();
   const requireSession: MiddlewareHandler<TenantEnv> = async (c, next) => {
     const session = await authenticate(c.req.raw);
-    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    // Someone who left the company (K-307) gets in nowhere, with any session they still hold
+    if (!session || hasLeft(db, session.accountId))
+      return c.json({ error: "unauthenticated" }, 401);
     c.set("session", session);
     touchDevice(db, session.sessionId, now());
     c.set("scope", companyScope(db, session.companyId));

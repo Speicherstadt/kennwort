@@ -278,6 +278,12 @@ const cases: Record<string, () => Promise<void>> = {
     expect(response.status).toBe(404);
     expect(app.db.select().from(accounts).where(eq(accounts.id, "max")).get()?.role).toBe("member");
   },
+  "DELETE /api/members/:id": async () => {
+    // Jonas (owner of Weber Haustechnik) cannot make Max (Müller Elektro) leave
+    const response = await jonasSends("DELETE", "/api/members/max", {});
+    expect(response.status).toBe(404);
+    expect(app.db.select().from(accounts).where(eq(accounts.id, "max")).get()?.leftAt).toBeNull();
+  },
   "GET /api/account/root-grant": async () => {
     // Only Jonas's own grant: Max's stays unseen
     app.db

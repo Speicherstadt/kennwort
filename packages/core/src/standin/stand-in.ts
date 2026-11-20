@@ -8,7 +8,7 @@
 import { z } from "zod";
 import type { Certificate } from "../membership/certificate.ts";
 import { entryHash, GENESIS_HASH, type LogEntry } from "../membership/log-entry.ts";
-import { type LogError, verifyLog } from "../membership/verify-log.ts";
+import { idKey, type LogError, verifyLog } from "../membership/verify-log.ts";
 import { bytes, encodeBytes } from "../sync/bytes.ts";
 import { EntryRecord, parseJson, recordToWire } from "../sync/record.ts";
 import { LogEntryWire } from "../sync/wire.ts";
@@ -38,13 +38,21 @@ const parsedBody = <T extends z.ZodType>(schema: T, body: string) =>
 /** As the server's body limit on records (apps/server/src/sync/routes.ts) */
 const MAX_RECORD_BYTES = 1024 * 1024;
 const VaultRequest = z.object({ id: bytes(16) });
-const Append = z.object({ entry: LogEntryWire, wrappedKey: bytes(1194).optional() });
+const WRAPPED_KEY_LENGTH = 1194;
+const Append = z.object({
+  entry: LogEntryWire,
+  wrappedKey: bytes(WRAPPED_KEY_LENGTH).optional(),
+  /** A rotation's new vault key, wrapped to each member (P-11) */
+  wrappedKeys: z
+    .array(z.object({ accountId: bytes(16), wrapped: bytes(WRAPPED_KEY_LENGTH) }))
+    .optional(),
+});
 
 /** The role of a current member by the vault's log, as the server reads its stored entries */
 const roleOf = (vault: Vault, accountId: string, now: number) => {
   let member: { role: string; validUntil: number } | undefined;
   for (const e of vault.log)
-    if (encodeBytes(e.accountId) !== accountId) continue;
+    if (encodeBytes(e.accountId) !== accountId || e.action === "rotate") continue;
     else if (e.action === "remove") member = undefined;
     else member = { role: e.role, validUntil: e.validUntil };
   if (!member) return undefined;
@@ -90,10 +98,21 @@ const events = (vault: Vault, signal: AbortSignal | null | undefined, isMember: 
   return new Response(stream, { headers: { "content-type": "text/event-stream" } });
 };
 
+/** A rotation carries the new key for exactly the members the log names after it, once each */
+const keysFitMembers = (
+  members: ReadonlyMap<string, unknown>,
+  keys: { accountId: Uint8Array }[],
+) => {
+  const ids = new Set(keys.map((key) => idKey(key.accountId)));
+  return (
+    ids.size === keys.length && ids.size === members.size && [...ids].every((i) => members.has(i))
+  );
+};
+
 /**
  * The next link of the chain, as the server takes it: well formed for this vault, signed as the
- * session, the next number on the last hash, after the genesis only from a current manager, no key
- * rotation before K-307, and accepted by verifyLog under the company's root and certificates
+ * session, the next number on the last hash, after the genesis only from a current manager, accepted
+ * by verifyLog under the company's root and certificates, and a rotation with a key for each member
  */
 const appendLog = (
   company: StandInCompany,
@@ -104,18 +123,18 @@ const appendLog = (
 ) => {
   const parsed = parsedBody(Append, body);
   if (!parsed.success) return json({ error: "invalid" }, 400);
-  const { entry, wrappedKey } = parsed.data.value;
+  const { entry, wrappedKey, wrappedKeys } = parsed.data.value;
   const takesKey = entry.action === "create" || entry.action === "add";
   const wellFormed =
-    takesKey === (wrappedKey !== undefined) && encodeBytes(entry.vaultId) === vaultId;
+    takesKey === (wrappedKey !== undefined) &&
+    (entry.action === "rotate") === (wrappedKeys !== undefined) &&
+    encodeBytes(entry.vaultId) === vaultId;
   if (!wellFormed) return json({ error: "invalid" }, 400);
   if (encodeBytes(entry.signerId) !== session.accountId) return json({ error: "forbidden" }, 403);
   const last = vault.log.at(-1);
   const prev = encodeBytes(last ? entryHash(last) : GENESIS_HASH);
   if (entry.seq !== vault.log.length || encodeBytes(entry.prevHash) !== prev)
     return json({ error: "stale", seq: vault.log.length }, 409);
-  // The key rotation comes with K-307; refused where the server refuses it, after the stale check
-  if (entry.action === "rotate") return json({ error: "invalid" }, 400);
   const now = company.now();
   const allowed = last
     ? roleOf(vault, session.accountId, now) === "manage"
@@ -128,6 +147,8 @@ const appendLog = (
   };
   const checked = verifyLog(entry.vaultId, [...vault.log, entry], trust);
   if (!checked.ok) return refused(checked.error);
+  if (wrappedKeys && !keysFitMembers(checked.value.members, wrappedKeys))
+    return json({ error: "invalid" }, 400);
   vault.log.push(entry);
   return json({ seq: entry.seq }, 201);
 };
@@ -155,6 +176,9 @@ const pushRecord = (
   const entryId = encodeBytes(record.entryId);
   const versions = vault.entries.get(entryId) ?? [];
   const current = versions.at(-1);
+  // Only in the log's current epoch: an older key may be with someone who left (P-11)
+  if (record.epoch !== (vault.log.at(-1) as LogEntry).epoch)
+    return json({ error: "epoch", current: current ? recordToWire(current) : null }, 409);
   if ((current?.version ?? 0) + 1 !== record.version)
     return json({ current: current ? recordToWire(current) : null }, 409);
   vault.entries.set(entryId, [...versions, record]);

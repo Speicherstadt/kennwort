@@ -19,7 +19,6 @@ import {
   addWithoutRole,
   genesisAsReader,
   genesisOfAnotherVault,
-  rotationNotYet,
   rotationOnAStalePlace,
   rotationSignedAsAnother,
 } from "./log-contract.ts";
@@ -28,6 +27,12 @@ import {
   noOneTakesANewVault,
   removedMemberHearsNothing,
 } from "./members-contract.ts";
+import {
+  keysOnlyWithARotation,
+  recordsOnlyInTheCurrentEpoch,
+  rotationWithEveryKey,
+  rotationWithWrongKeys,
+} from "./rotation-contract.ts";
 import {
   expiredSharesAreGone,
   onlyEditorsShareTheirOwnEntries,
@@ -263,7 +268,14 @@ export const syncContract = (name: string, target: () => Promise<Target>) =>
     it("refuses a genesis for another vault", async () => genesisOfAnotherVault(await target()));
     it("refuses a genesis that makes its creator only a reader", async () =>
       genesisAsReader(await target()));
-    it("refuses a key rotation until K-307", async () => rotationNotYet(await target()));
+    it("takes a rotation with the new key for every member", async () =>
+      rotationWithEveryKey(await target()));
+    it("refuses a rotation without keys, or with keys for more or fewer than the members", async () =>
+      rotationWithWrongKeys(await target()));
+    it("refuses keys for a rotation on any other entry", async () =>
+      keysOnlyWithARotation(await target()));
+    it("takes records only in the current epoch after a rotation", async () =>
+      recordsOnlyInTheCurrentEpoch(await target()));
     it("takes an add of Anna right after the genesis", async () => addAsItShouldBe(await target()));
     it("refuses an add without a role", async () => addWithoutRole(await target()));
     it("refuses an add that commits to another vault key", async () =>

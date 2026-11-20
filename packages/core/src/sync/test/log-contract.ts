@@ -6,7 +6,7 @@ import { encodeBytes } from "../bytes.ts";
 import { toWire } from "../wire.ts";
 import { openBuero } from "./buero.ts";
 import type { Target } from "./contract.ts";
-import { anna, certificate, commitment, id, jonas, logEntries, vaultId } from "./fixtures.ts";
+import { anna, certificate, commitment, id, jonas, logEntries, max, vaultId } from "./fixtures.ts";
 
 const vault = encodeBytes(vaultId);
 const KEY = encodeBytes(new Uint8Array(1194));
@@ -48,27 +48,6 @@ export const genesisAsReader = async (t: Target) => {
   await openBuero(t, 0);
   const entry = signEntry(jonas.ed.secretKey, genesisFields({ role: "read" }));
   expect(await post(t, { entry: toWire(entry), wrappedKey: KEY })).toBe(400);
-};
-
-/** A key rotation, which the server takes only with K-307 */
-export const rotationNotYet = async (t: Target) => {
-  await openBuero(t);
-  const prev = logEntries[2];
-  if (!prev) throw new Error("fixture");
-  const entry = signEntry(jonas.ed.secretKey, {
-    ...genesisFields(),
-    seq: 3,
-    prevHash: entryHash(prev),
-    epoch: 1,
-    action: "rotate",
-    accountId: jonas.id,
-    fingerprint: new Uint8Array(),
-    role: "",
-    vkCommitment: new Uint8Array(32).fill(9),
-    time: 1_800_000_010,
-    lastSeen: entryHash(prev),
-  });
-  expect(await post(t, { entry: toWire(entry) })).toBe(400);
 };
 
 /** Jonas adds Anna right after the genesis, with one field changed */
@@ -114,7 +93,10 @@ export const addAfterAForeignState = async (t: Target) =>
 export const addFromTheFuture = async (t: Target) =>
   expect(await addAnnaWith(t, { time: 1_900_000_000 })).toBe(400);
 
-const rotation = (over: Partial<LogFields>) => {
+/** The new key for Jonas, Anna and Max, as a rotation of Büro carries it (P-11) */
+const keysOfBuero = [jonas, anna, max].map((p) => ({ accountId: encodeBytes(p.id), wrapped: KEY }));
+
+export const rotation = (over: Partial<LogFields>) => {
   const prev = logEntries[2];
   if (!prev) throw new Error("fixture");
   return signEntry(jonas.ed.secretKey, {
@@ -138,11 +120,15 @@ const rotation = (over: Partial<LogFields>) => {
 /** A rotation Jonas posts but Anna's ID claims to sign: someone else's entry, 403 */
 export const rotationSignedAsAnother = async (t: Target) => {
   await openBuero(t);
-  expect(await post(t, { entry: toWire(rotation({ signerId: anna.id })) })).toBe(403);
+  expect(
+    await post(t, { entry: toWire(rotation({ signerId: anna.id })), wrappedKeys: keysOfBuero }),
+  ).toBe(403);
 };
 
 /** A rotation on an old place of the chain: stale, 409 with the next place */
 export const rotationOnAStalePlace = async (t: Target) => {
   await openBuero(t);
-  expect(await post(t, { entry: toWire(rotation({ seq: 1 })) })).toBe(409);
+  expect(await post(t, { entry: toWire(rotation({ seq: 1 })), wrappedKeys: keysOfBuero })).toBe(
+    409,
+  );
 };
