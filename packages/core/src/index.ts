@@ -1,4 +1,13 @@
 // Schemas, sync, the membership log and the import parsers, shared by every client and the server.
+
+export {
+  answerChallenge,
+  type Derive,
+  loginKeyPair,
+  type Post,
+  type SignInResult,
+  signInWithPassphrase,
+} from "./auth/sign-in.ts";
 export {
   type Certificate,
   type CompanyRole,

@@ -10,21 +10,31 @@ const Config = z.object({
     .default(8100),
   KENNWORT_DATABASE: z.string().min(1).default("data/kennwort.db"),
   KENNWORT_LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
+  // The address people open; passkeys are bound to its host name (WebAuthn relying party)
+  KENNWORT_PUBLIC_URL: z.url({ protocol: /^https?$/ }).default("http://localhost:8100"),
+  // Signs sessions; at least 32 characters, generated once per installation
+  KENNWORT_AUTH_SECRET: z.string().min(32),
 });
 
 export type Config = {
   port: number;
   database: string;
   logLevel: z.infer<typeof Config>["KENNWORT_LOG_LEVEL"];
+  publicUrl: string;
+  authSecret: string;
 };
 
 export const readConfig = (env: Record<string, string | undefined>) => {
   const parsed = Config.safeParse(env);
   if (!parsed.success)
     return { ok: false as const, error: parsed.error.issues.map((issue) => issue.path.join(".")) };
-  const { KENNWORT_PORT, KENNWORT_DATABASE, KENNWORT_LOG_LEVEL } = parsed.data;
-  return {
-    ok: true as const,
-    value: { port: KENNWORT_PORT, database: KENNWORT_DATABASE, logLevel: KENNWORT_LOG_LEVEL },
+  const data = parsed.data;
+  const value: Config = {
+    port: data.KENNWORT_PORT,
+    database: data.KENNWORT_DATABASE,
+    logLevel: data.KENNWORT_LOG_LEVEL,
+    publicUrl: data.KENNWORT_PUBLIC_URL,
+    authSecret: data.KENNWORT_AUTH_SECRET,
   };
+  return { ok: true as const, value };
 };

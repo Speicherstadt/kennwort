@@ -36,6 +36,14 @@
     "drizzle-orm": {
       "reason": "typed SQL and migrations on bun:sqlite for the server (docs/plan.md, Stack); no runtime dependencies of its own",
       "workspaces": ["apps/server"]
+    },
+    "better-auth": {
+      "reason": "sign-in on the server (docs/plan.md, Stack): passkeys, sessions, bearer tokens, rate limits; only on the server, never in a client, and it never decrypts anything (P-02)",
+      "workspaces": ["apps/server"]
+    },
+    "@better-auth/passkey": {
+      "reason": "Better Auth's WebAuthn plugin (SimpleWebAuthn) for signing in with a passkey",
+      "workspaces": ["apps/server"]
     }
   }
 }
