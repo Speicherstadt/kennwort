@@ -3,7 +3,7 @@
  * blur; the trigger points to it with aria-describedby. A manual popover, so it never steals focus.
  */
 import type { JSX } from "@solidjs/web";
-import { createUniqueId } from "solid-js";
+import { createUniqueId, onCleanup } from "solid-js";
 import { anchoredBelow, anchorName } from "./anchor.ts";
 
 export type TriggerAttributes = {
@@ -25,17 +25,34 @@ export type TooltipProps = {
 export const Tooltip = (props: TooltipProps) => {
   const id = createUniqueId();
   let tip: HTMLDivElement | undefined;
-  const show = () => tip?.showPopover();
+  let leaving: ReturnType<typeof setTimeout> | undefined;
+  // Esc closes it wherever the focus is, also when it opened by hover (WCAG 1.4.13)
+  const onEscape = (event: KeyboardEvent) => {
+    if (event.key === "Escape") hide();
+  };
+  const show = () => {
+    clearTimeout(leaving);
+    if (tip?.matches(":popover-open")) return;
+    tip?.showPopover();
+    document.addEventListener("keydown", onEscape);
+  };
   const hide = () => {
+    clearTimeout(leaving);
+    document.removeEventListener("keydown", onEscape);
     if (tip?.matches(":popover-open")) tip.hidePopover();
   };
+  // Leaving the trigger towards the tooltip keeps it open: the pointer may rest on it (WCAG 1.4.13)
+  const leave = () => {
+    leaving = setTimeout(hide, 150);
+  };
+  onCleanup(hide);
   return (
     <>
       {props.children({
         "aria-describedby": id,
         style: anchorName(id),
         onPointerEnter: show,
-        onPointerLeave: hide,
+        onPointerLeave: leave,
         onFocus: show,
         onBlur: hide,
         onKeyDown: (event) => {
@@ -46,6 +63,8 @@ export const Tooltip = (props: TooltipProps) => {
         id={id}
         ref={(el) => {
           tip = el;
+          el.addEventListener("pointerenter", show);
+          el.addEventListener("pointerleave", leave);
         }}
         popover="manual"
         role="tooltip"

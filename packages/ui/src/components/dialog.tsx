@@ -15,8 +15,13 @@ export type DialogProps = {
   children?: JSX.Element;
 };
 
-const focusable =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const candidates = "a[href], button, input, select, textarea, [tabindex]";
+
+/** What Tab can reach: in the tab order, not disabled and not inside something hidden (review of K-301) */
+const tabbable = (root: HTMLElement) =>
+  [...root.querySelectorAll<HTMLElement>(candidates)].filter(
+    (el) => el.tabIndex >= 0 && !el.hasAttribute("disabled") && !el.closest("[hidden]"),
+  );
 
 /**
  * Tab and Shift+Tab wrap around inside the dialog (WAI-ARIA APG): showModal() makes the page
@@ -24,7 +29,7 @@ const focusable =
  */
 const wrapFocus = (event: KeyboardEvent, dialog: HTMLElement) => {
   if (event.key !== "Tab") return;
-  const items = [...dialog.querySelectorAll<HTMLElement>(focusable)];
+  const items = tabbable(dialog);
   const first = items[0];
   const last = items.at(-1);
   const edge = event.shiftKey ? first : last;

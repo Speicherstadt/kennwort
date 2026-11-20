@@ -170,3 +170,31 @@ test("the tabs move with the arrows and show their panel", async ({ page }) => {
   await page.keyboard.press("Tab");
   await expect(page.getByRole("tabpanel")).toBeFocused();
 });
+
+// Regressions from the review of K-301
+test("axe with the combobox showing no matches", async ({ page }) => {
+  await page.getByRole("combobox", { name: "Tresor" }).fill("zzz");
+  await expect(page.getByText("Keine Treffer")).toBeVisible();
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(
+    violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`),
+  ).toEqual([]);
+});
+
+test("a hovered tooltip hides on Esc", async ({ page }) => {
+  await page.getByRole("button", { name: "Geprüft" }).hover();
+  await expect(page.getByRole("tooltip")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("tooltip")).toBeHidden();
+});
+
+test("a hovered tooltip stays while the pointer moves onto it", async ({ page }) => {
+  const trigger = page.getByRole("button", { name: "Geprüft" });
+  await trigger.hover();
+  const tip = page.getByRole("tooltip");
+  await expect(tip).toBeVisible();
+  const box = await tip.boundingBox();
+  if (!box) throw new Error("tooltip has no box");
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 5 });
+  await expect(tip).toBeVisible();
+});

@@ -84,42 +84,51 @@ export const Combobox = (props: ComboboxProps) => {
         onBlur={() => setShown(false)}
       />
       <div
-        id={`${id}-list`}
         ref={(el) => {
           list = el;
         }}
         popover="manual"
-        role="listbox"
-        aria-label={props.label}
         class={cn(floatingClass, "max-h-60 min-w-56 overflow-auto")}
         style={anchoredBelow(id)}
-        onPointerDown={(event) => {
-          // Keep the focus in the field; the option under the pointer is taken
-          event.preventDefault();
-          const index = Number(
-            (event.target as Element).closest("[data-index]")?.getAttribute("data-index"),
-          );
-          const option = shown()[index];
-          if (option !== undefined) take(option);
-        }}
       >
-        <For each={shown()}>
-          {(option, index) => (
-            // biome-ignore lint/a11y/useFocusableInteractive: Biome looks for React's tabIndex; Solid writes the attribute tabindex, which is set here
-            <div
-              role="option"
-              tabindex={-1}
-              id={optionId(index())}
-              data-index={index()}
-              aria-selected={ariaBoolean(index() === active())}
-              class={cn("rounded-md px-2 py-1.5 text-[13px]", index() === active() && "bg-accent")}
-            >
-              {option}
-            </div>
-          )}
-        </For>
+        <div
+          id={`${id}-list`}
+          role="listbox"
+          aria-label={props.label}
+          onPointerDown={(event) => {
+            // Keep the focus in the field; the option under the pointer is taken
+            event.preventDefault();
+            const index = Number(
+              (event.target as Element).closest("[data-index]")?.getAttribute("data-index"),
+            );
+            const option = shown()[index];
+            if (option !== undefined) take(option);
+          }}
+        >
+          <For each={shown()}>
+            {(option, index) => (
+              // biome-ignore lint/a11y/useFocusableInteractive: Biome looks for React's tabIndex; Solid writes the attribute tabindex, which is set here
+              <div
+                role="option"
+                tabindex={-1}
+                id={optionId(index())}
+                data-index={index()}
+                aria-selected={ariaBoolean(index() === active())}
+                class={cn(
+                  "rounded-md px-2 py-1.5 text-[13px]",
+                  index() === active() && "bg-accent",
+                )}
+              >
+                {option}
+              </div>
+            )}
+          </For>
+        </div>
+        {/* Outside the listbox, which may hold only options (review of K-301) */}
         <Show when={shown().length === 0}>
-          <p class="px-2 py-1.5 text-[13px] text-muted-foreground">{m.ui_no_matches()}</p>
+          <p role="status" class="px-2 py-1.5 text-[13px] text-muted-foreground">
+            {m.ui_no_matches()}
+          </p>
         </Show>
       </div>
     </div>
