@@ -2,14 +2,23 @@
  * The entries the frame shows until it reads the real ones (K-303 to K-306): Weber Haustechnik as
  * in DESIGN.md, Testdaten. Data, not texts: it lives in demo.json, names stay as a company typed them.
  */
+import { m } from "@kennwort/ui";
 import data from "./demo.json";
-import type { ShownEntry } from "./entries/entries.ts";
+import { type ShownEntry, subtitleOf } from "./entries/entries.ts";
 
 export type DemoEntry = ShownEntry;
 
 export const company: { name: string; user: string } = data.company;
 export const vaults: { id: string; name: string }[] = data.vaults;
 export const groups: { id: string; name: string; members: number }[] = data.groups;
-export const entries: DemoEntry[] = data.entries;
+/** The demo's logins in the shape of the real entries: type and fields */
+export const entries: DemoEntry[] = data.entries.map((entry) => {
+  const fields: DemoEntry["fields"] = [
+    { id: "username", label: m.field_username(), value: entry.username, kind: "text" },
+    { id: "password", label: m.field_password(), value: entry.password, kind: "secret" },
+    { id: "website", label: m.field_website(), value: entry.website, kind: "url" },
+  ];
+  return { ...entry, type: "login", fields, subtitle: subtitleOf(fields) };
+});
 
 export const vaultName = (id: string) => vaults.find((vault) => vault.id === id)?.name ?? id;

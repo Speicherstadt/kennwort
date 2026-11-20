@@ -1,11 +1,13 @@
 /** One entry: header with title, vault and last change, the field card, access and history (DESIGN.md, Aufbau) */
 import { Button, cn, getLocale, Icon, m, type Toasts } from "@kennwort/ui";
-import { ArrowLeft, KeyRound, Pencil, Share2 } from "@kennwort/ui/icons";
+import { ArrowLeft, Pencil, Share2 } from "@kennwort/ui/icons";
 import { For, Show } from "solid-js";
 import { entries as demoEntries, vaultName as demoVaultName } from "../demo.ts";
 import type { ShownEntry } from "../entries/entries.ts";
+import { typeLabel } from "../entries/entry-types.ts";
 import type { Navigation } from "../navigation.ts";
 import { type ListFilter, routePath } from "../routes.ts";
+import { entryIcon } from "./entry-icon.ts";
 import { Link } from "./link.tsx";
 import { Field } from "./secret-field.tsx";
 
@@ -33,11 +35,12 @@ const Detail = (props: {
     <div class="grid content-start gap-5">
       <div class="flex flex-wrap items-center gap-3">
         <span class="grid size-14 place-items-center rounded-xl border border-border md:size-10">
-          <Icon icon={KeyRound} size={22} />
+          <Icon icon={entryIcon[props.entry.type]} size={22} />
         </span>
         <div class="grid min-w-0 flex-1">
           <h1 class="truncate text-[28px] font-semibold md:text-lg">{props.entry.title}</h1>
           <p class="text-xs text-muted-foreground">
+            {typeLabel(props.entry.type)} ·{" "}
             {m.detail_in_vault({ name: props.vaultName(props.entry.vault) })}
             <Show when={props.entry.changedAt > 0}>
               {" · "}
@@ -55,16 +58,18 @@ const Detail = (props: {
         </div>
       </div>
       <Card title={m.detail_fields()}>
-        <Field label={m.field_username()} value={props.entry.username} toasts={props.toasts} />
-        <Field
-          label={m.field_password()}
-          value={props.entry.password}
-          secret
-          toasts={props.toasts}
-        />
-        <Show when={props.entry.website}>
-          <Field label={m.field_website()} value={props.entry.website} mono toasts={props.toasts} />
-        </Show>
+        <For each={props.entry.fields.filter((f) => f.value !== "")}>
+          {(f) => (
+            <Field
+              label={f.label}
+              value={f.value}
+              secret={f.kind === "secret"}
+              mono={f.kind === "url" || f.kind === "totp"}
+              multiline={f.kind === "note"}
+              toasts={props.toasts}
+            />
+          )}
+        </For>
       </Card>
     </div>
     <Show when={props.entry.access.length > 0 || props.entry.changedAt > 0}>

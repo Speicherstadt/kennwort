@@ -1,26 +1,52 @@
 ---
 title: Einträge
 description: >-
-  Wie Kennwort Zugänge in Tresoren speichert: einen Eintrag anlegen und ändern, Passwörter und
-  Passphrasen erzeugen, was ein Gerät prüft, bevor es einen Eintrag zeigt, und was der Server
-  davon sieht.
+  Wie Kennwort Zugänge in Tresoren speichert: die Arten von Einträgen und eigene Felder, einen
+  Eintrag anlegen und ändern, Passwörter und Passphrasen erzeugen, was ein Gerät prüft, bevor es
+  einen Eintrag zeigt, und was der Server davon sieht.
 ---
 
 # Einträge
 
-Ein Eintrag ist ein Zugang, etwa der Online-Banking-Login der Firma: Titel, Benutzername,
-Passwort und Website. Er liegt in genau einem Tresor; wer dort Mitglied ist, sieht ihn.
+Ein Eintrag ist etwas, das die Firma geheim halten will, etwa der Online-Banking-Login, das
+WLAN-Passwort oder die Firmenkarte. Er liegt in genau einem Tresor; wer dort Mitglied ist, sieht
+ihn.
+
+## Arten von Einträgen
+
+Jede Art bringt ihre Felder mit:
+
+| Art | Felder |
+| --- | --- |
+| Login | Benutzername, Passwort, Website |
+| Notiz | Notiz (mehrzeilig) |
+| WLAN | Netzwerkname, Passwort, Sicherheit |
+| Karte | Karteninhaber, Kartennummer, Gültig bis, Prüfnummer, PIN |
+| SSH-Schlüssel | Privater Schlüssel, Öffentlicher Schlüssel, Passphrase |
+| API-Schlüssel | Schlüssel, Adresse |
+| Identität | Name, E-Mail, Telefon, Anschrift |
+
+Geheime Felder – Passwort, Kartennummer, Prüfnummer, PIN, Schlüssel – zeigt Kennwort als Punkte,
+bis du sie aufdeckst. In der Liste steht unter dem Titel das erste ausgefüllte Feld, das nicht
+geheim ist, etwa der Benutzername oder der Netzwerkname.
+
+**Eigene Felder:** Mit **Feld hinzufügen** bekommt ein Eintrag weitere Felder mit eigenem Namen
+und einer Art: Text, Geheim, Adresse (URL), E-Mail oder mehrzeiliger Text. Ein eigenes Feld
+entfernst du mit dem Papierkorb daneben; ein eigenes Feld ohne Namen speichert Kennwort nicht.
 
 ## Einen Eintrag anlegen
 
 In der Liste der Einträge öffnet **Neu** den Dialog **Neuer Eintrag**. Du wählst den Tresor –
-angeboten werden nur Tresore, in denen du bearbeiten oder verwalten darfst –, gibst Titel,
-Benutzername, Passwort und Website ein und wählst **Speichern**. Kennwort verschlüsselt den
+angeboten werden nur Tresore, in denen du bearbeiten oder verwalten darfst – und die Art, gibst
+den Titel und die Felder ein und wählst **Speichern**. Wechselst du die Art, bevor du speicherst,
+bleiben Titel, eigene Felder und Felder mit gleichem Namen erhalten; was du in ein Feld
+geschrieben hast, das die neue Art nicht kennt, wird ein eigenes Feld. Kennwort verschlüsselt den
 Eintrag auf deinem Gerät und zeigt ihn danach an.
 
 ## Einen Eintrag ändern
 
-In einem Eintrag öffnet **Bearbeiten** denselben Dialog mit den bisherigen Werten. Jede Änderung
+In einem Eintrag öffnet **Bearbeiten** denselben Dialog mit den bisherigen Werten; die Art eines
+gespeicherten Eintrags bleibt. Jede Änderung
 wird eine neue Version; frühere Versionen bleiben auf dem Server erhalten. Haben zwei Geräte
 denselben Eintrag gleichzeitig geändert, führt Kennwort beide Stände zusammen, ohne einen
 stillschweigend zu verwerfen. In einem Tresor, in dem du nur lesen darfst, ist **Bearbeiten**
@@ -45,8 +71,8 @@ Passwort mit 20 Zeichen und allen Arten hat 124 Bit, eine Passphrase aus fünf W
 **Neu erzeugen** würfelt neu, **Kopieren** legt das Ergebnis in die Zwischenablage.
 
 Kennwort merkt sich auf diesem Gerät die Einstellungen, nie ein erzeugtes Passwort. Im Dialog
-eines Eintrags füllt **Passwort erzeugen** das Passwortfeld mit den zuletzt gewählten Einstellungen
-für Passwörter.
+eines Eintrags füllt **Passwort erzeugen** (bei SSH-Schlüsseln **Passphrase erzeugen**) das Feld
+mit den zuletzt gewählten Einstellungen für Passwörter.
 
 ## Was dein Gerät prüft
 

@@ -3,7 +3,8 @@ import { flush } from "solid-js";
 import { describe, expect, it } from "vitest";
 import { jonasWithVaults } from "../vaults/vaults.test-kit.ts";
 import { loadVaults, newVault } from "../vaults/vaults.ts";
-import { type LoginInput, loginContent, loginOf } from "./entries.ts";
+import { loginContent } from "./entries.test-kit.ts";
+import { type LoginInput, loginOf } from "./entries.ts";
 import { createEntryStore, type ServerFor } from "./entry-store.ts";
 
 const names = { username: "Benutzername", password: "Passwort", website: "Website" };

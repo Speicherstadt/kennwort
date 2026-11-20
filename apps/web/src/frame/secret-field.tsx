@@ -1,5 +1,5 @@
 /** A field of the entry; a secret shows as dots until revealed, copy and reveal are own buttons (DESIGN.md) */
-import { Icon, IconButton, m, type Toasts } from "@kennwort/ui";
+import { cn, Icon, IconButton, m, type Toasts } from "@kennwort/ui";
 import { Copy, Eye, EyeOff } from "@kennwort/ui/icons";
 import { createSignal, Show } from "solid-js";
 
@@ -8,6 +8,8 @@ export type FieldProps = {
   value: string;
   secret?: boolean;
   mono?: boolean;
+  /** Long text (a note, an address, a key): shown whole, line breaks kept */
+  multiline?: boolean;
   toasts: Toasts;
 };
 
@@ -26,7 +28,12 @@ export const Field = (props: FieldProps) => {
     <div class="flex items-center gap-2 px-3.5 py-2.5">
       <div class="grid min-w-0 flex-1 gap-0.5">
         <span class="text-xs text-muted-foreground">{props.label}</span>
-        <span class={props.secret || props.mono ? "truncate font-mono" : "truncate"}>
+        <span
+          class={cn(
+            props.multiline ? "break-words whitespace-pre-wrap" : "truncate",
+            (props.secret || props.mono) && "font-mono",
+          )}
+        >
           {props.secret && !revealed() ? "•".repeat(12) : props.value}
         </span>
       </div>

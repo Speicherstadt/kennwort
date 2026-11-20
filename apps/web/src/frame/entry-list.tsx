@@ -3,13 +3,14 @@
  * entry opens it in the URL, so the phone shows it on its own screen (DESIGN.md, Aufbau)
  */
 import { Badge, Button, cn, Icon, List, m, SearchInput } from "@kennwort/ui";
-import { KeyRound, Plus } from "@kennwort/ui/icons";
+import { Plus } from "@kennwort/ui/icons";
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { entries as demoEntries, vaultName } from "../demo.ts";
 import type { ShownEntry } from "../entries/entries.ts";
 import { shownEntries } from "../filter.ts";
 import type { Navigation } from "../navigation.ts";
 import { type ListFilter, routePath } from "../routes.ts";
+import { entryIcon } from "./entry-icon.ts";
 import { Link } from "./link.tsx";
 
 /** A vault the app loaded (K-305); the demo vaults stand in where there is none */
@@ -107,10 +108,10 @@ export const EntryList = (props: {
             items={shown().map((entry) => ({
               id: entry.id,
               label: entry.title,
-              description: entry.username,
+              description: entry.subtitle,
               leading: (
                 <span class="grid size-10 shrink-0 place-items-center rounded-lg border border-border md:size-8">
-                  <Icon icon={KeyRound} />
+                  <Icon icon={entryIcon[entry.type]} />
                 </span>
               ),
               trailing: entry.weak ? <Badge tone="warning">{m.badge_change()}</Badge> : undefined,
