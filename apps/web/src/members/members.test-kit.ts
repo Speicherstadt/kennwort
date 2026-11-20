@@ -98,6 +98,7 @@ export const server = (c: Awaited<ReturnType<typeof jonasCompany>>, rows: Row[])
       return true;
     },
     rootGrant: async () => undefined,
+    savePolicy: async () => true,
     changeRole: async (_token, certificate, rootGrant) => {
       calls.push("role");
       roles.push({ certificate, rootGrant });

@@ -8,6 +8,7 @@ import { encodeBytes } from "@kennwort/core";
 import { Badge, Button, Icon, Input, m } from "@kennwort/ui";
 import { Copy, ShieldCheck } from "@kennwort/ui/icons";
 import { createSignal, For, Match, Show, Switch } from "solid-js";
+import { PolicySection } from "../policy/policy-section.tsx";
 import type { Session } from "../session/session.ts";
 import {
   adoptRoot,
@@ -304,6 +305,14 @@ export const MembersPage = (props: { session: Session; api: MembersDeps; origin:
                   )}
                 </For>
               </ul>
+              <PolicySection
+                session={props.session}
+                api={props.api}
+                canEdit={(() => {
+                  const current = opened();
+                  return current !== undefined && mayChangeRoles(current, list().me);
+                })()}
+              />
             </>
           )}
         </Show>

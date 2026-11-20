@@ -140,6 +140,9 @@ anderen Geräte brauchen ihn dann zusammen mit der neuen Passphrase.
 ## Automatisch sperren
 
 Kennwort sperrt sich nach zehn Minuten ohne Tastendruck oder Klick, und sofort mit **Sperren** in der
-Seitenleiste oder in den Einstellungen. Beim Sperren löscht Kennwort die Schlüssel aus dem Speicher;
+Seitenleiste oder in den Einstellungen. Die Zeit legt ein Inhaber für die ganze Firma fest, unter
+**Einstellungen → Mitglieder → Firmen-Richtlinien**, zwischen einer und sechzig Minuten; sie gilt
+auf allen Geräten aller Mitglieder. Die Richtlinie ist mit dem Firmenschlüssel unterschrieben, der
+Server kann sie nicht ändern. Beim Sperren löscht Kennwort die Schlüssel aus dem Speicher;
 nach dem Entsperren bist du wieder auf derselben Seite. Auch ein Neuladen der Seite sperrt, denn die
 Schlüssel liegen nur im Arbeitsspeicher.

@@ -16,6 +16,7 @@ import { Frame } from "./frame/frame.tsx";
 import type { MembersDeps } from "./members/members.ts";
 import { MembersPage } from "./members/members-page.tsx";
 import type { Navigation } from "./navigation.ts";
+import { ApplyPolicy } from "./policy/policy-section.tsx";
 import type { DevicesApi } from "./session/devices-api.ts";
 import type { Session } from "./session/session.ts";
 
@@ -98,6 +99,7 @@ export const App = (props: { nav: Navigation; session: Session; api: AppApi; has
             </Show>
           </Match>
           <Match when={props.session.opened()}>
+            <ApplyPolicy session={props.session} api={props.api} />
             <Frame
               nav={props.nav}
               onLock={() => props.session.lock()}

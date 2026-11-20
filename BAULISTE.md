@@ -117,7 +117,7 @@ und die Schritte für Menschen am Ende erledigt sind.
     besteht (Geräte-ID), die Einstellungen alle angemeldeten Geräte mit Name und letzter Aktivität
     zeigen, ein anderes Gerät abgemeldet danach keine Anfrage mehr durchbekommt und „Dieses Gerät
     abmelden“ das Konto auf dem Gerät vergisst – als Playwright-Test desktop und `@phone`.
-- [ ] **K-304 Firma, Rollen, Einladungen** – Inhaber, Admin, Mitarbeiter; Wurzelschlüssel;
+- [x] **K-304 Firma, Rollen, Einladungen** – Inhaber, Admin, Mitarbeiter; Wurzelschlüssel;
   Richtlinien.
   In Teilen, je ein Pull Request; abgehakt wird K-304, wenn alle stehen:
   - [x] Teil 1: Einladung vollständig nach P-08 – Einladungsgeheimnis im Link, das der Server nie
@@ -135,8 +135,12 @@ und die Schritte für Menschen am Ende erledigt sind.
     vergeben und nie die eigene, ein Admin den Wurzelschlüssel nur annimmt, wenn er zum gemerkten
     Fingerabdruck passt, und danach selbst einlädt und bestätigt – als Playwright-Test desktop und
     `@phone`.
-  - [ ] Teil 4: Firmen-Richtlinien, vom Wurzelschlüssel signiert (automatisches Sperren,
+  - [x] Teil 4: Firmen-Richtlinien, vom Wurzelschlüssel signiert (automatisches Sperren,
     Firmen-Recovery an oder aus mit dem Fingerabdruck ihres Schlüssels); jeder Client prüft sie.
+    Fertig, wenn: das Format (F-07) Testvektoren hat, der Server nur signierte neuere Versionen von
+    Inhabern nimmt, jeder Client eine ältere, unsignierte oder fremde Richtlinie ablehnt und die
+    Sperrzeit auf allen Geräten gilt – als Playwright-Test desktop und `@phone`. Den Schalter für
+    Firmen-Recovery bringt K-307 mit dessen Schlüssel; das Format trägt ihn schon.
 - [ ] **K-305 Tresore, Gruppen, Rechte** – persönlich und geteilt, lesen/bearbeiten/verwalten,
   Gruppen, Zugriff auf Zeit, Zugriff anfragen, einzelnen Eintrag teilen.
 - [ ] **K-306 Einträge** – alle Typen, Generator, TOTP mit QR-Scan, eigene Felder, frühere

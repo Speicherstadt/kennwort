@@ -73,5 +73,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795172311101,
     "breakpoints": true,
     "sql": "CREATE TABLE `root_grants` (\n\t`account_id` text PRIMARY KEY NOT NULL,\n\t`wrapped` blob NOT NULL,\n\t`created_at` integer NOT NULL,\n\tFOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action\n);\n"
+  },
+  {
+    "tag": "0012_company_policy",
+    "when": 1795174288117,
+    "breakpoints": true,
+    "sql": "ALTER TABLE `companies` ADD `policy` text;"
   }
 ];

@@ -21,10 +21,11 @@ import {
 } from "@kennwort/core";
 import { bundleFingerprint, constantTimeEqual } from "@kennwort/crypto";
 import type { MembersApi } from "../session/members-api.ts";
+import type { PolicyApi } from "../session/policy-api.ts";
 import type { Opened, Session } from "../session/session.ts";
 import type { StateDeps } from "../session/state-sync.ts";
 
-export type MembersDeps = MembersApi & StateDeps;
+export type MembersDeps = MembersApi & PolicyApi & StateDeps;
 
 export type Loaded = { views: MemberView[]; me: MemberView | undefined };
 export type LoadError = "unreachable" | "root-mismatch";

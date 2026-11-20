@@ -252,8 +252,9 @@ const cases: Record<string, () => Promise<void>> = {
       .onConflictDoNothing()
       .run();
     expect((await asJonas("/api/account/root-grant")).status).toBe(404);
+  },
   "PUT /api/company/policy": async () => {
-    // Jonas writes no policy for Müller Elektro: whatever he sends lands on Weber Haustechnik or nowhere
+    // Jonas writes no policy for Müller Elektro
     await jonasSends("PUT", "/api/company/policy", {});
     const mueller = app.db.select().from(companies).where(eq(companies.id, "mueller")).get();
     expect(mueller?.policy).toBeNull();

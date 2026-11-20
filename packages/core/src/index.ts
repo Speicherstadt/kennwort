@@ -117,12 +117,6 @@ export {
   trustedRoot,
 } from "./membership/members.ts";
 export {
-  changeRole,
-  grantRoot,
-  openRootGrant,
-  ROOT_GRANT_LENGTH,
-  type RootGrantError,
-} from "./membership/root-grant.ts";
   checkPolicy,
   isSignedPolicy,
   LOCK_MINUTES,
@@ -134,6 +128,13 @@ export {
   standardPolicy,
   type UnsignedPolicy,
 } from "./membership/policy.ts";
+export {
+  changeRole,
+  grantRoot,
+  openRootGrant,
+  ROOT_GRANT_LENGTH,
+  type RootGrantError,
+} from "./membership/root-grant.ts";
 export {
   idKey,
   isMember,
