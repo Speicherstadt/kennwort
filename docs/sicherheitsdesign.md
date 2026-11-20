@@ -532,10 +532,12 @@ nur von Verwaltern, nur für die aktuelle Epoche):
 name = F-01(VKₑ, Name in UTF-8 NFC, 1 bis 100 Zeichen, zweck = "vault-name", kontext = tresor-ID, epoche)
 ```
 
-Ein Name, den der Server aus einem anderen Tresor oder einer anderen Epoche herüberschiebt, lässt
-sich nicht öffnen; der Client zeigt dann „Tresor ohne Namen“ (`sealVaultName`, `openVaultName` in
-`packages/core/src/membership/vault-name.ts`). Restrisiko: Der Server kann einen früheren Namen
-derselben Epoche zurückspielen. Web-App und Extension laden jeden Tresor über `loadVaults`
+Ein Name, den der Server aus einem anderen Tresor herüberschiebt, lässt sich nicht öffnen; der
+Client zeigt dann „Tresor ohne Namen“ (`sealVaultName`, `openVaultName` in
+`packages/core/src/membership/vault-name.ts`). Seit K-307 Teil b öffnet der Client einen Namen mit
+dem Schlüssel seiner eigenen Epoche, damit ein Tresor nach einem Schlüsselwechsel nicht namenlos
+wird, bis ein Verwalter den Namen neu versiegelt hat. Restrisiko: Der Server kann einen früheren
+Namen zurückspielen, derselben oder einer früheren Epoche. Web-App und Extension laden jeden Tresor über `loadVaults`
 (`packages/client/src/vaults/vaults.ts`): Log mit `verifyLog` gegen den gemerkten Stand prüfen, VKₑ nur
 mit passender Bindung annehmen, nur öffnen, solange das Konto nach dem Log und der eigenen Uhr
 Mitglied ist, den neuen Stand im Kontozustand merken.
