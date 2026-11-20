@@ -4,8 +4,10 @@ import { encodeBytes } from "./bytes.ts";
 import { trust } from "./test/fixtures.ts";
 import {
   CertificateWire,
+  GroupsWire,
   LogEntryWire,
   toWire,
+  VaultGroupsWire,
   VaultKeysWire,
   VaultListWire,
   VaultLogWire,
@@ -115,8 +117,16 @@ describe("VaultRequestsWire", () => {
   it("reads who asked and when, and nothing else", () => {
     const accountId = encodeBytes(new Uint8Array(16).fill(5));
     expect(VaultRequestsWire.parse({ requests: [{ accountId, requestedAt: 7 }] })).toEqual({
-      requests: [{ accountId: new Uint8Array(16).fill(5), requestedAt: 7 }],
+      requests: [{ accountId: new Uint8Array(16).fill(5), requestedAt: 7, role: null }],
     });
+    for (const role of ["read", "edit", "manage"])
+      expect(VaultRequestsWire.parse({ requests: [{ accountId, requestedAt: 7, role }] })).toEqual({
+        requests: [{ accountId: new Uint8Array(16).fill(5), requestedAt: 7, role }],
+      });
+    expect(
+      VaultRequestsWire.safeParse({ requests: [{ accountId, requestedAt: 7, role: "owner" }] })
+        .success,
+    ).toBe(false);
     for (const request of [
       { requestedAt: 7 },
       { accountId },
@@ -126,5 +136,43 @@ describe("VaultRequestsWire", () => {
     ])
       expect(VaultRequestsWire.safeParse({ requests: [request] }).success).toBe(false);
     expect(VaultRequestsWire.safeParse({}).success).toBe(false);
+  });
+});
+
+// K-305 part 5: groups and the groups linked to a vault
+describe("group wire schemas", () => {
+  const member = encodeBytes(new Uint8Array(16).fill(6));
+
+  it("reads groups with their members", () => {
+    expect(
+      GroupsWire.parse({ groups: [{ id: "g", name: "Büro-Team", members: [member] }] }),
+    ).toEqual({
+      groups: [{ id: "g", name: "Büro-Team", members: [new Uint8Array(16).fill(6)] }],
+    });
+    for (const group of [
+      { name: "Büro-Team", members: [] },
+      { id: "", name: "Büro-Team", members: [] },
+      { id: "g", members: [] },
+      { id: "g", name: "", members: [] },
+      { id: "g", name: "Büro-Team" },
+      { id: "g", name: "Büro-Team", members: [encodeBytes(new Uint8Array(15))] },
+    ])
+      expect(GroupsWire.safeParse({ groups: [group] }).success).toBe(false);
+    expect(GroupsWire.safeParse({}).success).toBe(false);
+  });
+
+  it("reads the links of a vault with a vault role", () => {
+    for (const role of ["read", "edit", "manage"])
+      expect(VaultGroupsWire.parse({ groups: [{ groupId: "g", role }] })).toEqual({
+        groups: [{ groupId: "g", role }],
+      });
+    for (const link of [
+      { role: "read" },
+      { groupId: "", role: "read" },
+      { groupId: "g" },
+      { groupId: "g", role: "owner" },
+    ])
+      expect(VaultGroupsWire.safeParse({ groups: [link] }).success).toBe(false);
+    expect(VaultGroupsWire.safeParse({}).success).toBe(false);
   });
 });

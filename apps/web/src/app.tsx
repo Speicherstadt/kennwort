@@ -13,11 +13,13 @@ import { SetupPage } from "./account/setup-page.tsx";
 import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
 import { DevicesSection } from "./frame/devices-section.tsx";
 import { Frame } from "./frame/frame.tsx";
+import { GroupsPage } from "./groups/groups-page.tsx";
 import type { MembersDeps } from "./members/members.ts";
 import { MembersPage } from "./members/members-page.tsx";
 import type { Navigation } from "./navigation.ts";
 import { ApplyPolicy } from "./policy/policy-section.tsx";
 import type { DevicesApi } from "./session/devices-api.ts";
+import type { GroupApi } from "./session/groups-api.ts";
 import type { Session } from "./session/session.ts";
 import type { VaultApi } from "./session/vaults-api.ts";
 import { NoAccess } from "./vaults/no-access.tsx";
@@ -25,7 +27,7 @@ import { requestAccess, vaultIdOf } from "./vaults/vault-members.ts";
 import { createVaultStore, type VaultStore } from "./vaults/vault-store.ts";
 import { VaultsPage } from "./vaults/vaults-page.tsx";
 
-export type AppApi = PairDeps & DevicesApi & MembersDeps & VaultApi;
+export type AppApi = PairDeps & DevicesApi & MembersDeps & VaultApi & GroupApi;
 
 /** The vaults while the account is open: loaded when it opens, gone when it locks */
 const OpenedFrame = (props: {
@@ -61,6 +63,16 @@ const OpenedFrame = (props: {
         if (known || !id) return undefined;
         return <NoAccess onRequest={() => requestAccess(props.api, props.session, id)} />;
       }}
+      groupsPage={() => (
+        <GroupsPage
+          api={props.api}
+          session={props.session}
+          people={() => {
+            const shown = store.shown();
+            return shown.state === "ready" ? shown.people : undefined;
+          }}
+        />
+      )}
       vaultsPage={() => (
         <VaultsPage nav={props.nav} store={store} api={props.api} session={props.session} />
       )}

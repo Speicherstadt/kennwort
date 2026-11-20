@@ -60,6 +60,17 @@ Rolle) oder **ablehnen**. Der Server gibt dir dabei nie selbst Zugriff; den Tres
 verpackt erst das Gerät eines Verwalters an deine bestätigten Schlüssel. Freigeben geht darum nur,
 wenn deine Schlüssel schon bestätigt sind.
 
+## Gruppen
+
+Unter **Gruppen** legen Inhaber und Admins Gruppen an, etwa „Büro-Team“, und nehmen Personen der
+Firma auf oder heraus. Eine Gruppe gibt selbst keinen Zugriff: Ein Verwalter verknüpft sie im
+Dialog **Mitglieder** eines Tresors mit einer Rolle. Danach erscheint jedes Gruppenmitglied, das
+noch nicht im Tresor ist, unter **Anfragen** – auch wer der Gruppe später beitritt – und kommt erst
+mit **Freigeben** hinein, vorgeschlagen mit der Rolle der Gruppe. Löst ein Verwalter die Gruppe
+wieder, verschwinden die Anfragen, die nur sie gestellt hat. Verlässt jemand die Gruppe, bleibt er im Tresor; der Dialog markiert ihn
+mit **in keiner verknüpften Gruppe**, damit ein Verwalter ihn entfernen kann. Gruppennamen und wer
+in welcher Gruppe ist, sieht der Server.
+
 ## Was dein Gerät prüft
 
 Zu jedem Tresor gehört ein Protokoll: Wer ihn angelegt hat, wer aufgenommen, geändert oder

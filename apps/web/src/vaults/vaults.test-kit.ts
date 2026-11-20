@@ -62,6 +62,7 @@ export const vaultServer = (requester: Uint8Array = new Uint8Array(16)) => {
         ? [...vault.requests.entries()].map(([accountId, requestedAt]) => ({
             accountId: Buffer.from(accountId, "base64url") as Uint8Array,
             requestedAt,
+            role: null,
           }))
         : undefined;
     },

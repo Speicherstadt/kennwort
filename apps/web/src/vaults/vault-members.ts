@@ -141,6 +141,8 @@ export type Request = {
   certificate: Certificate | undefined;
   /** In the log already, but their time ran out: granting renews their access */
   expired: boolean;
+  /** The role a linked group asks them in with, if a group filed or backs the request */
+  role: VaultRole | null;
 };
 
 /** The vault's open requests with what the members list confirms about who asked */
@@ -168,6 +170,7 @@ export const loadRequests = async (
         requestedAt: request.requestedAt,
         certificate: person?.status === "certified" ? person.certificate : undefined,
         expired: vault.log.members.has(idKey(request.accountId)),
+        role: request.role,
       };
     });
 };

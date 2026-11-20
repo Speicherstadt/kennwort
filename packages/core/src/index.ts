@@ -196,8 +196,10 @@ export {
 export { parseSse, type SseEvent } from "./sync/sse.ts";
 export {
   CertificateWire,
+  GroupsWire,
   LogEntryWire,
   toWire,
+  VaultGroupsWire,
   VaultKeysWire,
   VaultListWire,
   VaultLogWire,
