@@ -1,0 +1,124 @@
+// The tables Better Auth needs (user, session, account, verification and the passkey plugin's
+// passkey), as its Drizzle adapter reads them, plus Kennwort's own sign-in tables. Prefixed auth_ so
+// that Better Auth's "account" (a sign-in method) is never confused with Kennwort's accounts.
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+
+const timestamps = {
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+};
+
+export const authUser = sqliteTable("auth_user", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: integer("email_verified", { mode: "boolean" }).notNull().default(false),
+  image: text("image"),
+  companyId: text("company_id").notNull(),
+  ...timestamps,
+});
+
+export const authSession = sqliteTable(
+  "auth_session",
+  {
+    id: text("id").primaryKey(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    token: text("token").notNull().unique(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    ...timestamps,
+  },
+  (table) => [index("auth_session_user").on(table.userId)],
+);
+
+export const authAccount = sqliteTable("auth_account", {
+  id: text("id").primaryKey(),
+  accountId: text("account_id").notNull(),
+  providerId: text("provider_id").notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => authUser.id, { onDelete: "cascade" }),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  idToken: text("id_token"),
+  accessTokenExpiresAt: integer("access_token_expires_at", { mode: "timestamp_ms" }),
+  refreshTokenExpiresAt: integer("refresh_token_expires_at", { mode: "timestamp_ms" }),
+  scope: text("scope"),
+  password: text("password"),
+  ...timestamps,
+});
+
+export const authVerification = sqliteTable("auth_verification", {
+  id: text("id").primaryKey(),
+  identifier: text("identifier").notNull(),
+  value: text("value").notNull(),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+  ...timestamps,
+});
+
+export const authPasskey = sqliteTable(
+  "auth_passkey",
+  {
+    id: text("id").primaryKey(),
+    name: text("name"),
+    publicKey: text("public_key").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    credentialID: text("credential_id").notNull(),
+    counter: integer("counter").notNull(),
+    deviceType: text("device_type").notNull(),
+    backedUp: integer("backed_up", { mode: "boolean" }).notNull(),
+    transports: text("transports"),
+    aaguid: text("aaguid"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }),
+  },
+  (table) => [
+    index("auth_passkey_user").on(table.userId),
+    index("auth_passkey_credential").on(table.credentialID),
+  ],
+);
+
+/**
+ * The notweg sign-in key (P-02): an Ed25519 public key derived on the device from passphrase and
+ * Secret Key; the server stores the key and the account salt, never anything to guess from
+ */
+export const loginKeys = sqliteTable("login_keys", {
+  accountId: text("account_id").primaryKey(),
+  publicKey: text("public_key").notNull(),
+  accountSalt: text("account_salt").notNull(),
+  createdAt: integer("created_at").notNull(),
+});
+
+/** One-time challenges for the sign-in key, valid for two minutes */
+export const loginChallenges = sqliteTable("login_challenges", {
+  id: text("id").primaryKey(),
+  accountId: text("account_id").notNull(),
+  challenge: text("challenge").notNull(),
+  expiresAt: integer("expires_at").notNull(),
+});
+
+/** Failed sign-ins per account, for the lockout */
+export const loginFailures = sqliteTable(
+  "login_failures",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    accountId: text("account_id").notNull(),
+    at: integer("at").notNull(),
+  },
+  (table) => [index("login_failures_account").on(table.accountId, table.at)],
+);
+
+/** Invitation links (P-08); the server keeps only a hash of the token, never the link's secret */
+export const invitations = sqliteTable("invitations", {
+  id: text("id").primaryKey(),
+  companyId: text("company_id").notNull(),
+  createdBy: text("created_by").notNull(),
+  tokenHash: text("token_hash").notNull(),
+  expiresAt: integer("expires_at").notNull(),
+  acceptedAt: integer("accepted_at"),
+  accountId: text("account_id"),
+});

@@ -22,7 +22,12 @@ export const accounts = sqliteTable(
     companyId: text("company_id")
       .notNull()
       .references(() => companies.id),
+    role: text("role", { enum: ["owner", "admin", "member"] })
+      .notNull()
+      .default("member"),
     createdAt: integer("created_at").notNull(),
   },
   (table) => [index("accounts_company").on(table.companyId)],
 );
+
+export * from "./auth-schema.ts";
