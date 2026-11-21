@@ -2,8 +2,9 @@
 title: Browser-Extension
 description: >-
   Die Browser-Extension von Kennwort für Chrome, Edge und Firefox: verbinden und entsperren, Treffer
-  für die Seite, Suche, Favoriten und Generator im Popup, Ausfüllen über das Inline-Menü, wo sie
-  entsperrte Schlüssel ablegt und wie man sie zum Entwickeln entpackt lädt.
+  für die Seite, Suche, Favoriten und Generator im Popup, Ausfüllen über das Inline-Menü, neue und
+  geänderte Logins speichern, wo sie entsperrte Schlüssel ablegt und wie man sie zum Entwickeln
+  entpackt lädt.
 ---
 
 # Browser-Extension
@@ -15,8 +16,9 @@ neue Logins speichern und vor Phishing warnen. Ihre Oberfläche ist dieselbe wie
 !!! info "Was schon geht"
     Das Popup entsperrt, zeigt die Einträge für die offene Seite, sucht, filtert Favoriten, kopiert
     Benutzername und Passwort und erzeugt Passwörter. Das Inline-Menü unter einem Login-Feld füllt
-    auf Klick oder Enter aus. Speichern neuer Logins und die Phishing-Warnung folgen Schritt für
-    Schritt (siehe [Projektplan](plan.md)).
+    auf Klick oder Enter aus. Nach dem Anmelden bietet die Extension an, ein neues Login zu speichern
+    oder ein geändertes Passwort zu aktualisieren. Die Phishing-Warnung folgt (siehe
+    [Projektplan](plan.md)).
 
 ## Browser
 
@@ -35,11 +37,11 @@ Safari und Firefox für Android kommen später mit eigenen Tests.
 | `alarms` | das automatische Sperren, auch wenn das Popup zu ist |
 | `activeTab` | die Adresse des Tabs, über dem du das Popup öffnest – erst nach deinem Klick auf das Symbol und nur für diesen Tab |
 | `webNavigation` | die Frames eines Tabs und ihre Adressen, damit die Extension beim Ausfüllen selbst prüft, in welchen Frame ein Passwort geht (unten) |
-| Content Script auf allen `http`- und `https`-Seiten | das Inline-Menü unter Login-Feldern; der Browser nennt das beim Installieren „alle Daten auf allen Websites lesen und ändern“ |
+| Content Script auf allen `http`- und `https`-Seiten | das Inline-Menü unter Login-Feldern und das Angebot zum Speichern nach dem Anmelden; der Browser nennt das beim Installieren „alle Daten auf allen Websites lesen und ändern“ |
 
 Ihre Seiten laufen unter einer strengen Content Security Policy: Es läuft nur Code, der in der
-Extension selbst steckt, nichts aus dem Netz. Websites dürfen nur eine Seite der Extension laden,
-die des Inline-Menüs.
+Extension selbst steckt, nichts aus dem Netz. Websites dürfen nur zwei Seiten der Extension laden:
+die des Inline-Menüs und die der Leiste zum Speichern.
 
 ## Verbinden und entsperren
 
@@ -117,6 +119,63 @@ IntersectionObserver v2); dort zeigt das Menü die Einträge, füllt aber nicht 
 Kopieren im Popup. Wie die Prüfungen genau laufen, steht im
 [Sicherheitsdesign](sicherheitsdesign.md#p-17-ausfullen).
 
+## Logins speichern und aktualisieren
+
+Meldest du dich auf einer Seite an, merkt die Extension das und fragt oben rechts in einer kleinen
+Leiste nach:
+
+- **Login speichern?** – für die Seite gibt es noch keinen Eintrag mit diesem Benutzernamen.
+  **Speichern** legt einen Eintrag an: Titel und Website sind die Adresse der Seite, dazu
+  Benutzername und Passwort. Darfst du in mehrere Tresore schreiben, wählst du vorher den Tresor.
+- **Passwort aktualisieren?** – es gibt einen Eintrag mit diesem Benutzernamen, aber einem anderen
+  Passwort, etwa nach „Passwort ändern“ auf der Seite. **Aktualisieren** schreibt das neue Passwort
+  in den Eintrag; das alte steht danach unter **Frühere Passwörter**, wie nach einer Änderung in der
+  Web-App. Ein Formular zum Passwort-Ändern ohne Benutzernamen erkennt die Extension am bisherigen
+  Passwort.
+- **Nichts**, wenn Benutzername und Passwort schon so gespeichert sind.
+- **Nie für diese Seite** – die Extension fragt auf diesem Host nie wieder. Die Liste dieser Seiten
+  steht verschlüsselt in deinem Kontozustand, gilt also auf allen Geräten deines Kontos und liegt
+  nirgends auf der Festplatte. Herausnehmen kann man eine Seite noch nicht.
+- **Schließen** (×) – diesmal nicht.
+
+Ist Kennwort gesperrt, zeigt die Leiste **Entsperren und speichern** und öffnet das Popup; nach dem
+Entsperren bietet sie an, was passt. Welche Einträge passen, entscheidet dieselbe Regel wie im Popup
+und beim Ausfüllen: genau der Host der Seite. Einen Eintrag in einem Tresor, den du nur lesen
+darfst, ändert die Leiste nicht, und in einem Tresor, in dem ein Schlüsselwechsel aussteht, speichert
+niemand etwas, bis ein Verwalter ihn gemacht hat.
+
+Was die Extension dabei sicherstellt:
+
+- **Nur, was du selbst abschickst**: Gezählt wird ein Absenden direkt nach einem echten Klick oder
+  Tastendruck von dir, nicht ein Formular, das ein Skript der Seite selbst abschickt. Neben dem
+  normalen Absenden zählt ein Klick auf den Knopf eines Login-Formulars und Enter in einem Login-Feld
+  ohne Formular, für Seiten, die per Skript anmelden.
+- **Nur aus Feldern, die du siehst**: Ein Passwortfeld, das die Seite versteckt, liest die Extension
+  nie; so kann eine Seite kein Passwort unterschieben, das du nie eingegeben hast.
+- **Nur in der Seite selbst oder einem Frame derselben Herkunft**, wie beim Ausfüllen; die Adresse
+  nimmt der Service Worker aus dem Frame-Baum des Browsers, nicht von der Seite.
+- **Das Passwort bleibt kurz und flüchtig**: Das Content Script gibt es sofort an den Service
+  Worker weiter und behält nichts. Der hält es nur im Arbeitsspeicher, nie in einem
+  Speicherbereich des Browsers, bietet es einmal der Seite an, die nach der Anmeldung im selben Tab
+  geladen ist, und gibt es einmal an die Leiste; danach hat er es nicht mehr. Nicht abgeholt,
+  vergisst er es nach einer Minute.
+- **Die Seite sieht nicht hinein**: Die Leiste ist wie das Inline-Menü eine Seite der Extension in
+  einem geschlossenen Shadow DOM. Sie öffnet sich zuerst unsichtbar, vergleicht mit deinen Einträgen
+  und erscheint nur, wenn es etwas anzubieten gibt.
+- **Keine verdeckte Leiste**: Speichern, Aktualisieren und „Nie für diese Seite“ zählen nur, wenn
+  die Leiste sichtbar, nicht abgedeckt und nicht durchsichtig ist, mit denselben Prüfungen wie beim
+  Inline-Menü. Sonst sagt sie: „Die Leiste war verdeckt oder durchsichtig. Kennwort hat nichts
+  gespeichert.“
+- **Gespeichert wird wie in der Web-App**: Verschlüsselt, signiert und an Eintrag, Tresor und
+  Version gebunden, über denselben Code (`packages/client`).
+
+Wann ist die Anmeldung fertig? Lädt die Seite danach eine neue Seite, fragt die Extension dort.
+Bleibt die Seite (Anmeldung per Skript), fragt sie, sobald das abgeschickte Passwortfeld
+verschwindet oder ausgeblendet wird; bleibt es stehen, gilt das als fehlgeschlagene Anmeldung, und
+die Extension fragt nicht. Meldest du dich in einem Frame derselben Herkunft an, fragt sie erst,
+wenn die Seite drumherum neu lädt. In Firefox kann die Leiste wie das Menü nicht prüfen, ob sie
+sichtbar ist; dort speichert sie nicht und verweist auf die Web-App.
+
 ## Wo die Schlüssel liegen
 
 Entsperrte Schlüssel liegen nur in `chrome.storage.session`: im Arbeitsspeicher des Browsers, weg,
@@ -131,7 +190,7 @@ sobald der Browser schließt, und für Skripte auf Websites nicht erreichbar. Do
 Öffnest du das Popup wieder, öffnet der Account Key den Schlüsselblock und den Kontozustand neu aus den
 Geheimtexten des Servers und führt den gemerkten Kontozustand hinein: Spielt der Server einen älteren
 zurück, vergisst die Extension nicht, was sie schon geprüft hat. Entschlüsselte Einträge leben nur im
-Popup und sind weg, wenn es zugeht.
+Popup, im Inline-Menü und in der Leiste zum Speichern und sind weg, wenn diese zugehen.
 
 **Automatisches Sperren**: Nach der Sperrzeit der Firma (sonst zehn Minuten) ohne Klick oder
 Tastendruck im Popup sperrt die Extension. Weil das Popup meist zu ist, ist die Sperrzeit ein Alarm
@@ -173,4 +232,7 @@ die zusätzlich die Adressen der Testseiten unter `.test` lesen darf: `activeTab
 nur nach einem echten Klick auf das Symbol frei, und den kann Playwright nicht machen. Ein Release
 trägt diese Berechtigung nie. Die Tests des Inline-Menüs (`e2e/extension-fill.spec.ts`) füllen auf
 Testseiten aus und spielen die Angriffe nach: Phishing-Domain, fremdes iFrame, verdecktes und
-durchsichtiges Menü.
+durchsichtiges Menü. Die Tests zum Speichern (`e2e/extension-save.spec.ts`) melden sich auf
+Testseiten an, speichern und aktualisieren und prüfen, dass dasselbe Passwort, ein verstecktes
+Passwortfeld, ein Absenden per Skript, eine Seite auf der Liste „Nie für diese Seite“ und eine
+verdeckte Leiste nichts speichern.

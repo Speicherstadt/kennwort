@@ -126,16 +126,21 @@ export const Offer = (props: {
 }) => {
   const { load, entries, vaults, store, start } = createEntryLoad(props.account, { policy: false });
   const [done, setDone] = createSignal<string>();
-  const view = createMemo<PromptView>(() =>
-    promptView({
+  // Decided once: the prompt's own save changes the entries, and must not turn its offer into
+  // "nothing to offer" and close it before it said "Gespeichert"
+  let decided: PromptView | undefined;
+  const view = createMemo<PromptView>(() => {
+    const now = promptView({
       phase: props.account.phase(),
       load: load(),
       entries: entries(),
       vaults: vaults(),
       neverSave: props.account.opened()?.state.neverSave ?? [],
       capture: props.capture,
-    }),
-  );
+    });
+    if (now.kind !== "waiting") decided ??= now;
+    return decided ?? now;
+  });
   const pick = <K extends PromptView["kind"]>(kind: K) =>
     createMemo(() => {
       const current = view();

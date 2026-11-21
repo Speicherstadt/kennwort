@@ -30,7 +30,16 @@ vi.mock("@kennwort/client/entries/entry-store.ts", () => ({
     return {
       load: async () => setEntries(loaded.entries),
       entries,
-      save: loaded.save,
+      // Like the real store, a save shows in the entries at once
+      save: async (vaultIdText: string, content: StoredEntry["content"], idText?: string) => {
+        const saved = await loaded.save(vaultIdText, content, idText);
+        if (saved.ok)
+          setEntries([
+            ...entries().filter((e) => e.idText !== idText),
+            { idText: saved.value, vaultIdText, role: "edit", version: 1, content },
+          ]);
+        return saved;
+      },
     };
   },
 }));
@@ -181,6 +190,8 @@ describe("the save prompt", () => {
     expect([vaultId, entryId, content.title]).toEqual(["bau", undefined, HOST]);
     expect(content.fields.find((f) => f.id === "password")?.value).toBe("Kupfer-Rohr-18!");
     expect(document.body.textContent).toContain("Gespeichert.");
+    // Closed only once, after saying so: its own save is no reason to close at once
+    expect(types().filter((t) => t === "prompt-close")).toHaveLength(1);
     expect(types().at(-1)).toBe("prompt-close");
   });
 

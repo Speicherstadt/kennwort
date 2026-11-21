@@ -81,6 +81,15 @@ K-404). Gesperrt: „Kennwort ist gesperrt“ und der Hauptknopf „Zum Entsperr
 verweigertes Ausfüllen nennt den Grund in Rot über der Liste. Es ist ein iFrame der Extension in
 einem geschlossenen Shadow DOM.
 
+**Speichern-Leiste** (Extension, nach einer Anmeldung): schwebt oben rechts in der Seite, 360 px
+breit, Radius 12 px mit Schatten, wie das Inline-Menü ein iFrame der Extension in einem
+geschlossenen Shadow DOM. Kopf mit Logo, „Kennwort“, dem Host in Geist Mono und × zum Schließen;
+darunter „Login speichern?“ oder „Passwort aktualisieren?“ mit dem Titel des Eintrags, dem
+Benutzernamen (nie dem Passwort), bei mehreren beschreibbaren Tresoren die Wahl des Tresors, der
+Hauptknopf „Speichern“ oder „Aktualisieren“ und daneben „Nie für diese Seite“ als Ghost-Knopf.
+Gesperrt: „Kennwort ist gesperrt“ und der Hauptknopf „Entsperren und speichern“. Danach kurz
+„Gespeichert.“, dann schließt sie sich; ein verweigertes Speichern nennt den Grund in Rot.
+
 ## Komponenten
 
 Eigene Komponenten in `packages/ui`, ohne Bibliothek, auf nativen Elementen:

@@ -25,22 +25,20 @@ const start = async (element: HTMLElement, worker: Runtime) => {
   if (!taken?.ok || !taken.capture) return void request({ type: "prompt-close", nonce });
   const capture = taken.capture;
   const area = browserSessionArea();
-  const show = () =>
-    render(
-      () => (
-        <SavePrompt
-          account={createPopupAccount({
-            area,
-            alarms: browserAlarms(),
-            apiFor: serverApiFor((input, init) => fetch(input, init), navigator.userAgent),
-            movesLock: false,
-          })}
-          capture={capture}
-          bridge={{ nonce, request, now: () => performance.now(), verifiable: tracksVisibility() }}
-        />
-      ),
+  const bridge = { nonce, request, now: () => performance.now(), verifiable: tracksVisibility() };
+  const show = () => {
+    // Made once per render, outside the JSX: a prop expression runs anew on every read
+    const account = createPopupAccount({
+      area,
+      alarms: browserAlarms(),
+      apiFor: serverApiFor((input, init) => fetch(input, init), navigator.userAgent),
+      movesLock: false,
+    });
+    return render(
+      () => <SavePrompt account={account} capture={capture} bridge={bridge} />,
       element,
     );
+  };
   let dispose = show();
   area?.onChanged?.addListener((changes) => {
     if (!(KEYS_ITEM in changes)) return;

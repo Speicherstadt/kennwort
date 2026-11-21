@@ -275,7 +275,7 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   nur nach Klick oder Enter, exakter Host per `tldts`, nie in fremden Frames.
   Fertig, wenn: Playwright mit geladener Extension Phishing-Domain, fremdes iFrame und überdecktes
   Menü abwehrt.
-- [ ] **K-404 Speichern und Aktualisieren** – neues Login und geändertes Passwort erkennen.
+- [x] **K-404 Speichern und Aktualisieren** – neues Login und geändertes Passwort erkennen.
   Fertig, wenn: Playwright mit geladener Extension gegen den e2e-Server ein neues Login auf einer
   Testseite nach einem echten Absenden zum Speichern anbietet, es verschlüsselt im gewählten Tresor
   speichert und das Popup es zeigt; ein geändertes Passwort als Aktualisieren anbietet und das alte
