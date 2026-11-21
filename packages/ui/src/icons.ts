@@ -16,6 +16,7 @@ export {
   Globe,
   IdCard,
   ImageUp,
+  Import,
   KeyRound,
   List,
   Lock,

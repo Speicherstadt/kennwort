@@ -391,5 +391,137 @@
   "inline_menu_hidden": "Das Menü war verdeckt oder durchsichtig. Kennwort hat nichts ausgefüllt.",
   "inline_menu_not_filled": "Kennwort hat nichts ausgefüllt: Die Seite passt nicht mehr zum Eintrag.",
   "inline_menu_unverified": "Dieser Browser kann nicht bestätigen, dass das Menü sichtbar ist. Kopiere Benutzername und Passwort aus dem Popup.",
-  "inline_menu_keys": "↑↓ wählen · Enter ausfüllen · Esc schließen"
+  "inline_menu_keys": "↑↓ wählen · Enter ausfüllen · Esc schließen",
+  "settings_import": "Importieren",
+  "import_title": "Importieren",
+  "import_intro": "Nimm deine Zugänge aus einem anderen Passwortmanager oder Browser mit. Kennwort liest die Exportdatei nur auf diesem Gerät; zum Server gehen nur die verschlüsselten Einträge.",
+  "import_vendor_step": "Woher kommen deine Zugänge?",
+  "import_vendor": "{vendor} ({file})",
+  "import_vendor_safari": "Safari / Apple Passwörter",
+  "import_vendor_chrome": "Chrome / Edge / Brave / Opera",
+  "import_vendor_table": "Andere Tabelle (CSV)",
+  "import_howto_title": "So kommst du an die Exportdatei",
+  "import_howto_bitwarden_json": "Im Web-Tresor von Bitwarden „Werkzeuge“ → „Tresor exportieren“ öffnen, als Format „.json“ wählen (nicht „.json (verschlüsselt)“) und mit dem Master-Passwort bestätigen.",
+  "import_howto_bitwarden_csv": "Im Web-Tresor von Bitwarden „Werkzeuge“ → „Tresor exportieren“ öffnen, als Format „.csv“ wählen und mit dem Master-Passwort bestätigen. Karten und Identitäten kommen nur mit dem JSON-Export mit.",
+  "import_howto_lastpass_csv": "Im Web-Tresor von LastPass „Erweiterte Optionen“ → „Exportieren“ wählen und mit dem Master-Passwort bestätigen; LastPass lädt eine CSV-Datei herunter.",
+  "import_howto_onepassword_csv": "In der App 1Password 8 am Computer „Datei“ → „Exportieren“ wählen, das Konto aussuchen, als Format „CSV“ nehmen und mit dem Kontopasswort bestätigen.",
+  "import_howto_keepass_xml": "In KeePass oder KeePassXC die Datenbank öffnen, „Datei“ → „Exportieren“ wählen und „KeePass XML (2.x)“ bzw. „XML-Datei“ nehmen.",
+  "import_howto_keepassxc_csv": "In KeePassXC die Datenbank öffnen und „Datenbank“ → „Exportieren“ → „Als CSV-Datei“ wählen.",
+  "import_howto_keepass_csv": "In KeePass 2 die Datenbank öffnen, „Datei“ → „Exportieren“ wählen und „KeePass CSV (1.x)“ nehmen.",
+  "import_howto_passbolt_csv": "In Passbolt die Passwörter markieren, „Exportieren“ wählen und als Format „CSV (KeePass)“ nehmen.",
+  "import_howto_dashlane_csv": "In der Web-App von Dashlane unter „Einstellungen“ → „Daten exportieren“ den CSV-Export laden und das ZIP entpacken; jede CSV-Datei darin einzeln importieren.",
+  "import_howto_protonpass_json": "In Proton Pass unter „Einstellungen“ → „Exportieren“ das Format „JSON“ ohne PGP-Verschlüsselung wählen, das ZIP entpacken und die Datei „data.json“ nehmen.",
+  "import_howto_keeper_csv": "Im Web-Tresor von Keeper „Einstellungen“ → „Exportieren“ wählen, „CSV“ nehmen und mit dem Master-Passwort bestätigen.",
+  "import_howto_nordpass_csv": "In der App von NordPass „Einstellungen“ → „Elemente exportieren“ wählen und mit dem Master-Passwort bestätigen; NordPass speichert eine CSV-Datei.",
+  "import_howto_enpass_json": "In Enpass am Computer „Datei“ → „Exportieren“ wählen, den Tresor aussuchen, „.json“ als Format nehmen und mit dem Master-Passwort bestätigen.",
+  "import_howto_chrome_csv": "In Chrome oder Edge „Einstellungen“ → „Passwörter“ (Google Passwortmanager) öffnen, dort „Einstellungen“ → „Passwörter exportieren“ wählen und bestätigen. Brave und Opera exportieren genauso.",
+  "import_howto_firefox_csv": "In Firefox „about:logins“ öffnen, über das Menü „…“ „Zugangsdaten exportieren“ wählen und mit dem Passwort des Geräts bestätigen.",
+  "import_howto_safari_csv": "Auf dem Mac die App „Passwörter“ öffnen (oder Safari → „Einstellungen“ → „Passwörter“) und „Ablage“ → „Alle Passwörter exportieren“ wählen.",
+  "import_howto_table": "Speichere die Tabelle als CSV mit Kommas zwischen den Spalten und einer Kopfzeile, die jede Spalte benennt. Danach ordnest du die Spalten zu.",
+  "import_howto_other": "Exportiere deine Zugänge aus der App unverschlüsselt in eine Datei und wähle sie hier aus.",
+  "import_file": "Exportdatei wählen",
+  "import_file_hint": "Die Datei bleibt auf diesem Gerät und wird nicht hochgeladen.",
+  "import_back": "Zurück",
+  "import_next": "Weiter",
+  "import_reading": "Datei wird gelesen …",
+  "import_error_not_text": "Diese Datei ist kein Text. Wähle die Exportdatei selbst, nicht ein ZIP oder eine Datenbank.",
+  "import_error_bad_csv": "Die CSV-Datei ist beschädigt: Ein Anführungszeichen wird nie geschlossen.",
+  "import_error_bad_json": "Das ist keine gültige JSON-Datei. Hast du das richtige Format gewählt?",
+  "import_error_bad_xml": "Das ist keine gültige XML-Datei, oder sie enthält einen Dokumenttyp, den Kennwort nicht liest.",
+  "import_error_wrong_format": "Diese Datei passt nicht zum gewählten Anbieter. Prüfe den Anbieter oder nimm „Andere Tabelle“.",
+  "import_error_encrypted": "Diese Datei ist verschlüsselt – exportiere unverschlüsselt.",
+  "import_error_unreadable": "Die Datei ließ sich nicht öffnen.",
+  "import_map_title": "Spalten zuordnen",
+  "import_map_intro": "Sag Kennwort, welche Spalte was enthält. Spalten ohne Zuordnung bleiben draußen.",
+  "import_map_none": "– keine –",
+  "import_map_empty": "Ordne mindestens eine Spalte zu.",
+  "import_part_title": "Titel",
+  "import_part_username": "Benutzername",
+  "import_part_password": "Passwort",
+  "import_part_url": "Adresse",
+  "import_part_totp": "Einmalcode",
+  "import_part_notes": "Notizen",
+  "import_part_folder": "Ordner",
+  "import_part_tags": "Tags",
+  "import_preview_title": "Vorschau",
+  "import_found": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "1 Eintrag in der Datei",
+        "n=*": "{count} Einträge in der Datei"
+      }
+    }
+  ],
+  "import_type_count": "{type}: {count}",
+  "import_types": "Arten",
+  "import_vault": "In Tresor",
+  "import_folders_as_tags": "Ordner als Tags übernehmen",
+  "import_list": "Einträge in der Datei",
+  "import_untitled": "(ohne Titel)",
+  "import_duplicate": "doppelt",
+  "import_weak": "schwach",
+  "import_take_anyway": "{title} trotzdem importieren",
+  "import_take_anyway_short": "Trotzdem importieren",
+  "import_duplicates": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "1 Eintrag gibt es schon und wird übersprungen.",
+        "n=*": "{count} Einträge gibt es schon und werden übersprungen."
+      }
+    }
+  ],
+  "import_weak_found": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "1 schwaches Passwort – du findest es danach unter „Zum Ändern“.",
+        "n=*": "{count} schwache Passwörter – du findest sie danach unter „Zum Ändern“."
+      }
+    }
+  ],
+  "import_start": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "1 Eintrag importieren",
+        "n=*": "{count} Einträge importieren"
+      }
+    }
+  ],
+  "import_offline": "Offline – importieren geht erst wieder mit Verbindung zum Server.",
+  "import_no_vault": "Es gibt gerade keinen Tresor, in den du schreiben darfst.",
+  "import_progress": "{done} von {total} importiert",
+  "import_done_title": "Import fertig",
+  "import_done": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "1 Eintrag importiert.",
+        "n=*": "{count} Einträge importiert."
+      }
+    }
+  ],
+  "import_unsaved": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "1 Eintrag wurde nicht gespeichert.",
+        "n=*": "{count} Einträge wurden nicht gespeichert."
+      }
+    }
+  ],
+  "import_stopped_rotation": "Der Import wurde abgebrochen: Im Tresor steht ein Schlüsselwechsel aus. Bis ein Verwalter ihn macht, kann dort niemand etwas ändern.",
+  "import_stopped_read_only": "Der Import wurde abgebrochen: In diesem Tresor darfst du nur lesen.",
+  "import_stopped_failed": "Der Import wurde abgebrochen: Der Server hat nicht geantwortet. Wenn du die Datei noch einmal importierst, sind schon gespeicherte Einträge als doppelt markiert.",
+  "import_delete_file": "Lösche jetzt die Exportdatei, auch aus Downloads und Papierkorb: Sie enthält jedes Passwort im Klartext.",
+  "import_to_change": "Schwache Passwörter unter „Zum Ändern“ ansehen",
+  "import_again": "Weitere Datei importieren"
 }

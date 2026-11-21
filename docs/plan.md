@@ -97,6 +97,10 @@ später).
 | CSV, XML und JSON ohne Bibliothek | Ein eigener CSV-Leser (RFC 4180, nachsichtig wie Excel), ein kleiner XML-Leser nur für KeePass (ohne Dokumenttyp, also ohne Entitäten) und Zod für die JSON-Exporte; kein Papa Parse, kein DOMParser | Jedes Paket liefe dort, wo Klartext liegt (K-102); `DOMParser` fehlt in Bun und im Service Worker. Beide Leser arbeiten in einem Durchgang ohne Rekursion, das Fuzzing fand so einen quadratischen Pfad bei tief verschachtelten KeePass-Gruppen, der jetzt linear ist |
 | Import in Teilen | K-502 Teil 1 liest alle Textformate (CSV, JSON, KeePass-XML); ZIP-Container (1PUX, Dashlane-, Proton-ZIP), KDBX 4 und verschlüsselte Fremdexporte folgen als eigene Teile, Team Password Manager und CXF danach | ZIP und KDBX brauchen Entpacken (`DecompressionStream`, asynchron) und KDBX Argon2, AES und ChaCha20 aus `@noble` mit eigener Rahmung und Testvektoren; das ist je ein eigener Prüfumfang. Das CSV von Team Password Manager ließ sich ohne Zugang zu dessen Doku nicht an echter Struktur festmachen, CXF ist noch ein Entwurf |
 | Mutation-Tests der Parser | Die Property-Tests der Parser laufen in `bun run test`, nicht im Mutation-Lauf; die 100 % dort erreichen die Fixture- und Einzeltests allein. In CI laufen die Parser als eigener Teil (`core-import`) nur gegen ihre eigenen Tests | Das Fuzzing berührt jede Zeile, Stryker liefe seine sekundenlangen Eingaben sonst gegen jede Mutante. Viele Mutanten der Parser sind statisch (Spaltentabellen, Schemas) und liefen sonst gegen alle Tests von `packages/core`, obwohl nur die Parser-Tests sie benutzen |
+| Import-Ablauf | Seite „Importieren“ in den Einstellungen; ein Ziel-Tresor je Import, die Ordner des anderen Managers auf Wunsch als Tags; doppelt heißt gleicher Titel, Benutzername und Adresse (ohne Groß- und Kleinschreibung, ohne `/` am Ende) wie ein Eintrag im Ziel-Tresor oder weiter oben in der Datei, übersprungen bis „Trotzdem importieren“; schwach nach der Regel von „Zum Ändern“ | Tresore aus Ordnern bräuchten je ein signiertes Log, Mitglieder und für geteilte Ordner Gruppen – ein eigener Schritt, und ein Tresor je Ordner wäre für ein kleines Team meist zu viel; Tags lassen sich danach suchen. Zusammenführen hieße, zwei Werte eines Geheimnisses gegeneinander abzuwägen; Überspringen mit „Trotzdem“ verliert nichts und bleibt durchschaubar |
+| Schreiben beim Import | Über den normalen Schreibweg der Einträge (`saveNew` in `packages/client`): verschlüsselt, signiert, an Eintrag, Tresor und Version gebunden; 25 Einträge je Abgleich; offline und bei ausstehendem Schlüsselwechsel nichts; was der Server nicht nahm, verlässt die Warteschlange sofort, und der Import hört beim ersten abgelehnten Stapel auf | Ein eigener Weg wäre eine zweite Stelle, an der Format und Prüfung stimmen müssen. Ein Abgleich je Eintrag zöge bei 500 Einträgen 500-mal alle Datensätze des Tresors. Ein abgebrochener Import, der beim nächsten Speichern still weiterliefe, widerspräche dem, was die Seite gesagt hat |
+| Klartext beim Import | Die Datei liest der Browser auf dem Gerät (`File.arrayBuffer`), die Bytes werden nach dem Lesen mit Nullen überschrieben; die gelesenen Einträge liegen nur im Zustand der Seite, solange Zuordnung und Vorschau sie brauchen, der Abschluss behält nur Zahlen; die Vorschau zeigt nie ein geheimes Feld | Strings kann JavaScript nicht überschreiben; sie warten wie jeder entschlüsselte Eintrag auf die Speicherbereinigung. Wenigstens hält nichts sie länger fest als nötig |
+| Tabellen beim Import | „Andere Tabelle“ liest die Spalten mit `csvColumns` und schlägt eine Zuordnung nach den Spaltennamen (deutsch und englisch) vor; nur Kommas als Trenner, wie der CSV-Leser aus K-502, und die Anleitung sagt es | Den Trenner zu erkennen (deutsches Excel schreibt Semikolons) gehört in den Leser in `packages/core` mit eigenen Fixtures und Mutation-Tests, nicht in den Ablauf |
 
 ## Stack
 
@@ -367,11 +371,12 @@ Der Import läuft komplett im Client; die Datei verlässt nie das Gerät und wir
 
 Ablauf:
 
-1. Anbieter wählen; Kennwort zeigt in drei Schritten, wo dort der Export ist.
-2. Datei laden; Vorschau mit Zuordnung: Ordner und Sammlungen werden Tresore, geteilte Ordner
-   geteilte Tresore mit Gruppen.
-3. Doppelte Einträge erkennen und zusammenführen; schwache und mehrfach genutzte Passwörter gleich
-   zum Ändern markieren.
+1. Anbieter wählen; Kennwort zeigt in wenigen Schritten, wo dort der Export ist.
+2. Datei laden; Vorschau mit Zuordnung: ein Ziel-Tresor, Ordner und Sammlungen auf Wunsch als Tags
+   (Tresore aus Ordnern und geteilte Ordner als geteilte Tresore mit Gruppen folgen später), bei
+   einer beliebigen Tabelle die Spalten.
+3. Doppelte Einträge erkennen und überspringen, außer man nimmt sie trotzdem; schwache Passwörter
+   markieren, sie stehen danach unter „Zum Ändern“.
 4. Verschlüsseln und hochladen; danach Hinweis, die unverschlüsselte Exportdatei zu löschen.
 
 Umsetzung: ein Parser pro Format als reine Funktion in `packages/core` (Datei rein, Einträge raus),

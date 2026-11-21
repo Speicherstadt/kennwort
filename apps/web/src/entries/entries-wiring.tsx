@@ -24,21 +24,22 @@ type Editing =
   | { kind: "new"; initial: EntryInput }
   | { kind: "change"; entry: ShownEntry; initial: EntryInput };
 
+/** The vaults a new entry may go to: this account may write there, and no rotation is due (P-11) */
+export const writableVaults = (vaults: VaultStore) => {
+  const s = vaults.shown();
+  return s.state === "ready"
+    ? s.vaults
+        .filter((v) => v.role !== "read" && !v.log.rotationDue)
+        .map((v) => ({ idText: v.idText, name: v.name ?? m.vaults_unnamed() }))
+    : [];
+};
+
 export const createEntries = (serverFor: ServerFor, session: Session, copy?: EntryCopy) => {
   const store = createEntryStore(serverFor, session, copy);
   const [editing, setEditing] = createSignal<Editing>();
   const entries = () => store.entries().map(shown);
   const storedOf = (id: string) => store.entries().find((e) => e.idText === id);
   const editor = (props: { nav: Navigation; vaults: VaultStore }) => {
-    const writable = () => {
-      const s = props.vaults.shown();
-      return s.state === "ready"
-        ? s.vaults
-            // Nobody writes while a rotation is due (P-11)
-            .filter((v) => v.role !== "read" && !v.log.rotationDue)
-            .map((v) => ({ idText: v.idText, name: v.name ?? m.vaults_unnamed() }))
-        : [];
-    };
     const close = (savedId?: string) => {
       setEditing(undefined);
       if (savedId) props.nav.go(`/entries/${savedId}`);
@@ -51,7 +52,7 @@ export const createEntries = (serverFor: ServerFor, session: Session, copy?: Ent
             <EntryEditor
               title={what.kind === "new" ? m.entry_new_title() : m.entry_change_title()}
               initial={what.initial}
-              vaults={what.kind === "new" ? writable() : undefined}
+              vaults={what.kind === "new" ? writableVaults(props.vaults) : undefined}
               onSave={(input, vaultIdText) => {
                 const before = stored();
                 const content = contentOf(input, before?.content, Math.floor(Date.now() / 1000));
@@ -76,6 +77,8 @@ export const createEntries = (serverFor: ServerFor, session: Session, copy?: Ent
     /** The vaults and entries as this device knows them, for the exit report */
     seen: store.seen,
     editor,
+    /** New entries from an import, a batch in one sync (K-501) */
+    saveNew: store.saveNew,
     startNew: () => setEditing({ kind: "new", initial: newInput("login") }),
     /** The entry as stored when "Ändern" was pressed is what the form starts from */
     startChange: (entry: ShownEntry) => {

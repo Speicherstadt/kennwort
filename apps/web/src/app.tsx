@@ -20,11 +20,12 @@ import { type PairDeps, PairPage } from "./account/pair-page.tsx";
 import { RecoverPage } from "./account/recover-page.tsx";
 import { SetupPage } from "./account/setup-page.tsx";
 import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
-import { createEntries } from "./entries/entries-wiring.tsx";
+import { createEntries, writableVaults } from "./entries/entries-wiring.tsx";
 import { markToChange } from "./entries/to-change.ts";
 import { DevicesSection } from "./frame/devices-section.tsx";
 import { Frame } from "./frame/frame.tsx";
 import { GroupsPage } from "./groups/groups-page.tsx";
+import { type ImportDeps, ImportPage } from "./import/import-page.tsx";
 import type { MemberExits } from "./members/member-exit.tsx";
 import type { MembersDeps } from "./members/members.ts";
 import { MembersPage } from "./members/members-page.tsx";
@@ -90,6 +91,18 @@ const namedMarks = (entries: ShownEntry[], people: MemberView[]) =>
         }
       : entry,
   );
+
+/** The import (K-501) with where it may write, what is there already, and the write */
+const importPage =
+  (nav: Navigation, store: VaultStore, entries: () => ShownEntry[], save: ImportDeps["save"]) =>
+  () => {
+    const deps: ImportDeps = {
+      vaults: () => writableVaults(store),
+      existing: (vaultIdText) => entries().filter((e) => e.vault === vaultIdText),
+      save,
+    };
+    return <ImportPage nav={nav} deps={deps} />;
+  };
 
 /**
  * The stores of an open account: the vaults, their entries, the shares and the exits. Every load
@@ -196,6 +209,7 @@ const OpenedFrame = (props: {
             onRemove={exits.remove}
           />
         )}
+        importPage={importPage(props.nav, store, allEntries, () => online(entries.saveNew))}
         devices={() => (
           <Show when={props.session.opened()?.token}>
             {(token) => (

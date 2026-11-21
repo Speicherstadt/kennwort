@@ -14,10 +14,16 @@ import { isWeak } from "./password-check.ts";
  */
 const CHECKED = new Set(["password", "passphrase"]);
 
-export const checkedPasswords = (entry: ShownEntry): string[] =>
+/** What the check reads of an entry: its fields, as shown or as stored (an import's preview) */
+type WithFields = { fields: readonly { id: string; kind: string; value: string }[] };
+
+export const checkedPasswords = (entry: WithFields): string[] =>
   entry.fields
     .filter((f) => f.kind === "secret" && CHECKED.has(f.id) && f.value !== "")
     .map((f) => f.value);
+
+/** Whether one of the entry's checked passwords is weak (K-501 marks them in an import's preview) */
+export const hasWeakPassword = (entry: WithFields) => checkedPasswords(entry).some(isWeak);
 
 /** For every password, the entries it is used in */
 const usersOf = (entries: readonly ShownEntry[]) => {
@@ -37,7 +43,7 @@ export const markToChange = (entries: readonly ShownEntry[]): ShownEntry[] => {
   return entries.map((entry) => {
     const values = checkedPasswords(entry);
     const reused = Math.max(0, ...values.map((value) => users.get(value)?.size ?? 0));
-    return { ...entry, weak: values.some(isWeak), reused: reused > 1 ? reused : 0 };
+    return { ...entry, weak: hasWeakPassword(entry), reused: reused > 1 ? reused : 0 };
   });
 };
 

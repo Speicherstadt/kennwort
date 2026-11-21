@@ -24,6 +24,7 @@ describe("routes", () => {
       ["/settings", { page: "settings" }],
       ["/members", { page: "members" }],
       ["/vaults", { page: "vaults" }],
+      ["/import", { page: "import" }],
       ["/setup", { page: "setup" }],
       ["/unlock", { page: "unlock" }],
       ["/recover", { page: "recover" }],

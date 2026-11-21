@@ -28,6 +28,8 @@ export const Frame = (props: {
   /** The vaults the app loaded and their page (K-305) */
   vaults?: (() => ShownVault[] | undefined) | undefined;
   vaultsPage?: (() => JSX.Element) | undefined;
+  /** The import (K-501); the app passes it with the vaults and the entry store */
+  importPage?: (() => JSX.Element) | undefined;
   /** The company's groups (K-305 part 5); the demo's stand in where the app gives none */
   groupsPage?: (() => JSX.Element) | undefined;
   /** The entries from the vaults (K-306) and what list and detail do with them */
@@ -112,6 +114,7 @@ export const Frame = (props: {
               onAddDevice={props.onAddDevice}
               onMembers={props.members ? () => props.nav.go("/members") : undefined}
               onVaults={props.vaultsPage ? () => props.nav.go("/vaults") : undefined}
+              onImport={props.importPage ? () => props.nav.go("/import") : undefined}
               devices={props.devices}
             />
           </main>
@@ -121,6 +124,9 @@ export const Frame = (props: {
         </Match>
         <Match when={route().page === "vaults" && props.vaultsPage}>
           <main class="flex min-h-0 flex-1">{props.vaultsPage?.()}</main>
+        </Match>
+        <Match when={route().page === "import" && props.importPage}>
+          <main class="flex min-h-0 flex-1">{props.importPage?.()}</main>
         </Match>
         <Match when={route().page === "not-found"}>
           <main class="flex min-h-0 flex-1">

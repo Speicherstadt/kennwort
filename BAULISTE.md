@@ -284,7 +284,7 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
 
 ## Phase 5 – Import und Export
 
-- [ ] **K-501 Import-Ablauf** – Anbieter wählen, Anleitung, Vorschau mit Zuordnung, Duplikate,
+- [x] **K-501 Import-Ablauf** – Anbieter wählen, Anleitung, Vorschau mit Zuordnung, Duplikate,
   Markierung schwacher Passwörter, Hinweis zum Löschen der Datei.
   Fertig, wenn: die Seite „Importieren“ (aus den Einstellungen) jeden Anbieter aus
   `IMPORT_FORMATS` und „Andere Tabelle (CSV)“ mit Anleitung auf Deutsch und Englisch anbietet, die

@@ -31,6 +31,7 @@ import type { OpenAccount } from "../session/open-account.ts";
 import type { Vault } from "../vaults/vaults.ts";
 import { withPulled, withSynced } from "./device-merge.ts";
 import type { StoredEntry } from "./entries.ts";
+import { entryImport } from "./entry-import.ts";
 import { entryRotation } from "./entry-rotation.ts";
 import { entryWrites } from "./entry-writes.ts";
 
@@ -53,6 +54,14 @@ export type SyncChange = (
   entryId: Uint8Array,
   change: (device: Device) => Device,
 ) => Promise<{ ok: true; value: Device } | { ok: false; error: SaveError }>;
+/** Queues a change to several entries in one sync; gives the device and the entries still queued */
+export type SyncEntries = (
+  vaultIdText: string,
+  entryIds: readonly Uint8Array[],
+  change: (device: Device) => Device,
+) => Promise<
+  { ok: true; value: { device: Device; unsaved: Uint8Array[] } } | { ok: false; error: SaveError }
+>;
 
 /**
  * What the store uses of an offline copy: the web app's (apps/web/src/offline/local-copy.ts) keeps
@@ -181,6 +190,38 @@ const vaultSync = (deps: {
   return { pullNow, syncDevice };
 };
 
+/** Syncing queued changes of one or more entries, refused in a vault nobody may write in now */
+const entrySyncs = (deps: {
+  current: (vaultIdText: string) => VaultState | undefined;
+  trust: () => Trust | undefined;
+  syncDevice: SyncDevice;
+}) => {
+  const { current, syncDevice } = deps;
+  /** Queues a change to entries and syncs it at once; what the server did not take stays queued */
+  const syncEntries: SyncEntries = async (vaultIdText, entryIds, change) => {
+    const state = current(vaultIdText);
+    if (!state || !deps.trust()) return { ok: false, error: "unreachable" };
+    if (state.vault.role === "read") return { ok: false, error: "read-only" };
+    // Not even queued: whoever left still holds the current key until a manager rotates it
+    if (state.vault.log.rotationDue) return { ok: false, error: "rotation-due" };
+    const done = await syncDevice(state, change);
+    if (typeof done === "string") return { ok: false, error: done };
+    const { device } = done.synced;
+    const queued = new Set(device.queue.map((op) => idKey(op.entryId)));
+    return { ok: true, value: { device, unsaved: entryIds.filter((id) => queued.has(idKey(id))) } };
+  };
+
+  /** Queues a change to one entry and syncs it at once; it stays queued if the server failed */
+  const syncChange: SyncChange = async (vaultIdText, entryId, change) => {
+    const done = await syncEntries(vaultIdText, [entryId], change);
+    if (!done.ok) return done;
+    const { device, unsaved } = done.value;
+    return unsaved.length > 0 ? { ok: false, error: "not-saved" } : { ok: true, value: device };
+  };
+
+  return { syncEntries, syncChange };
+};
+
 export const createEntryStore = (serverFor: ServerFor, session: Session, copy?: EntryCopy) => {
   const [states, setStates] = createSignal<VaultState[]>([]);
   let trust: Trust | undefined;
@@ -243,19 +284,7 @@ export const createEntryStore = (serverFor: ServerFor, session: Session, copy?: 
 
   const { pullNow, syncDevice } = vaultSync({ trust: () => trust, session, serverOf, update });
 
-  /** Queues a change to one entry and syncs it at once; it stays queued if the server failed */
-  const syncChange: SyncChange = async (vaultIdText, entryId, change) => {
-    const state = current(vaultIdText);
-    if (!state || !trust) return { ok: false, error: "unreachable" };
-    if (state.vault.role === "read") return { ok: false, error: "read-only" };
-    // Not even queued: whoever left still holds the current key until a manager rotates it
-    if (state.vault.log.rotationDue) return { ok: false, error: "rotation-due" };
-    const done = await syncDevice(state, change);
-    if (typeof done === "string") return { ok: false, error: done };
-    const { device } = done.synced;
-    const stillQueued = device.queue.some((op) => idKey(op.entryId) === idKey(entryId));
-    return stillQueued ? { ok: false, error: "not-saved" } : { ok: true, value: device };
-  };
+  const { syncEntries, syncChange } = entrySyncs({ current, trust: () => trust, syncDevice });
 
   /**
    * Pulls one vault anew and gives what the device then knows of the entry: a revoke starts from
@@ -286,6 +315,7 @@ export const createEntryStore = (serverFor: ServerFor, session: Session, copy?: 
     load,
     refresh,
     ...entryWrites(syncChange, current, update),
+    ...entryImport(syncEntries, update),
     ...entryRotation({ current, states, pullNow, syncDevice }),
     entries,
     refused,
