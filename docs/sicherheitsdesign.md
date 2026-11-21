@@ -959,8 +959,11 @@ dem Schlüssel der Epoche, die das geprüfte Log dann nennt, zusammengeführt mi
 verschlüsselten Version und markiert. Ein schon versiegelter Datensatz wird nie neu verschlüsselt
 übernommen. Eine ältere Version derselben Epoche bleibt lesbar, solange keine neuere Epoche des
 Eintrags bekannt ist: So liest der Client einen Eintrag, den der Server vor dem rotierenden Gerät
-versteckt hat. Die Regel steht in `pull` (`packages/core/src/sync/device.ts`) und für die
-Offline-Kopie in `keepRecords` ([P-22](#p-22-offline-kopie)).
+versteckt hat. Bringt eine Antwort mehrere Versionen eines Eintrags, wägt der Client sie in der
+Reihenfolge ihrer Versionen, damit die Reihenfolge des Servers die Regel nicht umgeht. Die Regel
+steht in `pull` (`packages/core/src/sync/device.ts`), für die Offline-Kopie in `keepRecords`
+([P-22](#p-22-offline-kopie)) und dort, wo ein Abgleich, der von einem älteren Stand ausging, in
+den Stand im Speicher kommt (`newestOf` in `packages/client/src/entries/device-merge.ts`).
 
 **Austritt aus der Firma.** `DELETE /api/members/:id` (Inhaber für alle anderen, Admins nur für
 Mitarbeiter, nie sich selbst) markiert das Konto als ausgetreten (`accounts.left_at`), löscht

@@ -5,14 +5,21 @@
  */
 import { type Device, idKey, type Known, mergeContent, type Pending } from "@kennwort/core";
 
+/**
+ * Whether theirs replaces mine: a newer version in no older epoch. A pull that started from the
+ * device before a rotation wrote the entry anew may bring a newer version of the old epoch, which
+ * only a writer kept from the rotation makes; the entry's epoch never goes back (P-11)
+ */
+const replaces = (mine: Known | undefined, theirs: Known) =>
+  !mine || (mine.version < theirs.version && (mine.key?.epoch ?? 0) <= (theirs.key?.epoch ?? 0));
+
 /** Every entry in its newest version from both sides */
 export const newestOf = (
   mine: ReadonlyMap<string, Known>,
   theirs: ReadonlyMap<string, Known>,
 ): Map<string, Known> => {
   const merged = new Map(mine);
-  for (const [key, known] of theirs)
-    if ((merged.get(key)?.version ?? 0) < known.version) merged.set(key, known);
+  for (const [key, known] of theirs) if (replaces(merged.get(key), known)) merged.set(key, known);
   return merged;
 };
 
