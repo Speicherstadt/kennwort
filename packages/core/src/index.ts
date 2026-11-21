@@ -230,6 +230,7 @@ export {
   type Exposure,
   edit,
   emptyDevice,
+  inVersionOrder,
   type Known,
   type Pending,
   type Pulled,

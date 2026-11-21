@@ -18,6 +18,7 @@ import {
   EntryRecord,
   encodeBytes,
   idKey,
+  inVersionOrder,
   recordToWire,
   type Stored,
   StoredWire,
@@ -125,7 +126,8 @@ const recordsPart = (store: KeyValue, scope: ReturnType<typeof createCopyScope>)
       const key = `records:${vaultIdText}`;
       const kept = new Map(parseRecords(await store.get(key)).map((r) => [idKey(r.entryId), r]));
       let changed = false;
-      for (const record of records) {
+      // By version, as in pull: an older epoch's newer version comes after the newer epoch's
+      for (const record of inVersionOrder(records)) {
         const known = kept.get(idKey(record.entryId));
         // An entry's epoch never goes back, as in pull (P-11): a newer version of an older epoch
         // was written by someone the server kept from the rotation

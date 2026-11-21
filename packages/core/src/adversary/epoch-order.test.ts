@@ -155,6 +155,21 @@ describe("a remaining member's versions under the old key, served after the rota
     expect(synced.device.known.get(idKey(e1))?.content.toChange).toEqual([maxMark]);
   });
 
+  it("(a) in one pull, the newer version of epoch 0 is refused whether it comes before or after epoch 1's", async () => {
+    // Anna's device last saw version 1 in epoch 0; the server shows it both versions in one answer
+    const { server, v1, ctx } = await rotated();
+    const v3 = await forked(v1);
+    const old = memoryServer();
+    old.push(v1);
+    const holding = (await pull(emptyDevice(), old, contextFor(anna))).device;
+    for (const order of [(r: EntryRecord[]) => [v3, ...r], (r: EntryRecord[]) => [...r, v3]]) {
+      const pulled = await pull(holding, lyingServer(server, { pull: order }), ctx(anna));
+      expect(pulled.refused).toEqual([{ entryId: e1, version: 3, error: "older-epoch" }]);
+      const known = pulled.device.known.get(idKey(e1));
+      expect([known?.version, known?.key?.epoch]).toEqual([2, 1]);
+    }
+  });
+
   it("a member's change queued offline before she learned of the rotation is sealed under the new key", async () => {
     const { server, v1, ctx } = await rotated();
     const old = memoryServer();

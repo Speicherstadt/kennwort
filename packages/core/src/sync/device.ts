@@ -142,6 +142,20 @@ export type Pulled = { device: Device; refused: Refused[]; blocked?: "stale-key"
 const ringOf = (ctx: SyncContext, epoch: number) =>
   ctx.older?.find((ring) => ring.epoch === epoch) ?? ctx.ring;
 
+/**
+ * The records with the versions of each entry in the order they were written, entries as they came:
+ * of two versions of one entry in one answer, a newer epoch's is known before an older epoch's
+ * newer one is weighed against it (P-11)
+ */
+export const inVersionOrder = <R extends { entryId: Uint8Array; version: number }>(
+  records: readonly R[],
+): R[] => {
+  const byEntry = Map.groupBy(records, (record) => idKey(record.entryId));
+  return [...byEntry.values()].flatMap((versions) =>
+    versions.toSorted((a, b) => a.version - b.version),
+  );
+};
+
 export const pull = async (
   device: Device,
   server: SyncServer,
@@ -150,7 +164,7 @@ export const pull = async (
   const known = new Map(device.known);
   const refused: Refused[] = [];
   const records = await server.pull();
-  for (const record of records) {
+  for (const record of inVersionOrder(records)) {
     const mine = known.get(idKey(record.entryId));
     const knownVersion = mine?.version ?? 0;
     if (record.epoch > ctx.log.epoch) {
