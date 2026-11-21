@@ -14,7 +14,7 @@ import {
   type ImportResult,
 } from "@kennwort/core";
 import { m } from "@kennwort/ui";
-import { createSignal, Match, Switch } from "solid-js";
+import { createSignal, Match, onCleanup, Switch } from "solid-js";
 import type { Navigation } from "../navigation.ts";
 import { DoneStep, PreviewStep, ProgressStep, type TargetVault } from "./import-preview.tsx";
 import { FileStep, MapStep, VendorStep } from "./import-steps.tsx";
@@ -101,11 +101,18 @@ const createImportFlow = (save: ImportDeps["save"]) => {
     parsed(map.choice, result);
   };
 
-  const backToVendor = () => {
+  /** The bytes of a table still being mapped, overwritten before they are let go */
+  const dropBytes = () => {
     const now = step();
     if (now.step === "map") now.bytes.fill(0);
+  };
+
+  const backToVendor = () => {
+    dropBytes();
     setStep({ step: "vendor" });
   };
+  // Leaving the page in the middle of the mapping lets the bytes go too
+  onCleanup(dropBytes);
 
   const onImport = async (vaultIdText: string, contents: EntryContent[], weak: number) => {
     const write = save();

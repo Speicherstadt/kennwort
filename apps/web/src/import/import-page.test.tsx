@@ -236,3 +236,25 @@ describe("ImportPage when nothing may be written", () => {
     expect(root.querySelector('[role="note"]')).not.toBeNull();
   });
 });
+
+describe("ImportPage when the person leaves", () => {
+  it("zeroes the bytes of a table still being mapped when the page goes", async () => {
+    const root = await show(deps().deps);
+    await choose(root, "Andere Tabelle (CSV)");
+    const text = "Bezeichnung,Benutzer,Kennwort\nNAS,admin,Kessel-Pumpe-Rohr-7!\n";
+    const buffer = new TextEncoder().encode(text).buffer;
+    const input = root.querySelector<HTMLInputElement>('input[type="file"]');
+    if (!input) throw new Error("no file input");
+    const file = new File([text], "export.csv");
+    // The very buffer the page reads, to see what is left in it after leaving
+    Object.defineProperty(file, "arrayBuffer", { value: async () => buffer });
+    Object.defineProperty(input, "files", { value: [file], configurable: true });
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    flush();
+    await settle();
+    expect(root.querySelector("h2")?.textContent).toBe("Spalten zuordnen");
+    dispose();
+    dispose = () => {};
+    expect(new Uint8Array(buffer).every((b) => b === 0)).toBe(true);
+  });
+});
