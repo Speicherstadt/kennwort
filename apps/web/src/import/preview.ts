@@ -5,8 +5,8 @@
  * weak by the rule of „Zum Ändern“ (K-306). Then the contents that get written.
  */
 import { loginOf } from "@kennwort/client/entries/entries.ts";
+import { capHistory } from "@kennwort/client/entries/entry-history.ts";
 import type { EntryContent, ImportedEntry } from "@kennwort/core";
-import { capHistory } from "../entries/entry-history.ts";
 import { hasWeakPassword } from "../entries/to-change.ts";
 
 export type PreviewRow = {
