@@ -72,6 +72,10 @@
     "jsqr": {
       "reason": "reads the QR code a service shows when setting up one-time codes (K-306 part 4b), from the camera or a screenshot; the browsers' BarcodeDetector is missing on desktop Linux and Windows. Pure JavaScript, no dependencies, loaded only when scanning",
       "workspaces": ["apps/web"]
+    },
+    "tldts": {
+      "reason": "the Public Suffix List for the exact host the extension lists and fills by (P-17, K-403): a public suffix such as co.uk or github.io is never taken for one site. Pure functions without I/O or globals; its one dependency is tldts-core from the same project, which has none (pinned with tldts in the root overrides). The list is bundled (about 130 kB minified) into the popup, the inline menu and the service worker, never into the content script",
+      "workspaces": ["apps/extension"]
     }
   }
 }

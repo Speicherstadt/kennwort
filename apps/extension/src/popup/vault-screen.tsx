@@ -1,22 +1,15 @@
 /**
  * The popup while the account is open (DESIGN.md, Extension-Popup): search, the entries for the
  * page in the active tab, all entries or the favorites, the generator, and a footer with the lock
- * time and a link to the web app. Vaults and entries load with the web app's code
- * (packages/client): every log checked under the pinned root, every record against its log; what is
- * decrypted lives in this popup's memory only and is gone when it closes.
+ * time and a link to the web app. Vaults and entries load as account/load-entries.ts describes.
  */
-import { shown } from "@kennwort/client/entries/entries.ts";
-import { createEntryStore, httpServerFor } from "@kennwort/client/entries/entry-store.ts";
-import { applyPolicy } from "@kennwort/client/policy/policy.ts";
-import { loadVaults } from "@kennwort/client/vaults/vaults.ts";
 import { Button, m, SearchInput, type Toasts } from "@kennwort/ui";
 import { GeneratorPanel } from "@kennwort/ui/generator/generator-panel.tsx";
 import { createMemo, createSignal, Match, onSettled, Show, Switch } from "solid-js";
+import { createEntryLoad } from "../account/load-entries.ts";
 import type { PopupAccount } from "../account/popup-account.ts";
 import { EntrySection } from "./entry-list.tsx";
 import { forPage, listed } from "./view.ts";
-
-type Load = "loading" | "ready" | "failed" | "untrusted";
 
 const Chip = (props: { pressed: boolean; onClick: () => void; children: string }) => (
   <button
@@ -38,27 +31,15 @@ export const VaultScreen = (props: {
   host: () => string | undefined;
   toasts: Toasts;
 }) => {
-  const [load, setLoad] = createSignal<Load>("loading");
+  const { load, entries, start } = createEntryLoad(props.account, { policy: true });
   const [search, setSearch] = createSignal("");
   const [favoritesOnly, setFavoritesOnly] = createSignal(false);
   const [generator, setGenerator] = createSignal(false);
-  const api = props.account.api();
-  const store = api ? createEntryStore(httpServerFor(api.syncFetch), props.account) : undefined;
-  const entries = createMemo(() => store?.entries().map(shown) ?? []);
   const matches = createMemo(() => forPage(entries(), props.host()));
   const rest = createMemo(() => listed(entries(), search(), favoritesOnly()));
 
-  // Once, when the screen is there: the policy first (it sets the lock time), then the vaults
-  onSettled(() => {
-    void (async () => {
-      if (!api || !store) return setLoad("failed");
-      await applyPolicy(api, props.account);
-      const loaded = await loadVaults(api, props.account);
-      if (!loaded.ok) return setLoad(loaded.error === "untrusted" ? "untrusted" : "failed");
-      await store.load(loaded.value.vaults, loaded.value.trust);
-      setLoad("ready");
-    })();
-  });
+  // Once, when the screen is there
+  onSettled(() => void start());
 
   const listTitle = () =>
     search().trim() !== ""

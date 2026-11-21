@@ -7,6 +7,7 @@ import {
   expectNoAxeViolations,
   extensionWorker,
   launchExtension,
+  openPopup,
 } from "./extension.ts";
 
 // K-402: the popup of the extension in a real Chromium against the e2e server. Jonas sets up his
@@ -20,7 +21,6 @@ const PORTAL_PASSWORD = "Kupfer-Rohr-17!";
 const BANK_PASSWORD = "Rohr-Ventil-2026!";
 
 type Chrome = {
-  windows: { create(options: object): Promise<unknown> };
   alarms: { create(name: string, info: { when: number }): Promise<void> };
   storage: Record<"session" | "local" | "sync", { get(keys: null): Promise<object> }>;
 };
@@ -47,27 +47,6 @@ const companyWithLogins = async (page: Page) => {
   });
   const { accountId } = JSON.parse(owner.device) as { accountId: string };
   return { accountId, secretKey: owner.secretKey };
-};
-
-/**
- * The popup over the active tab. Playwright cannot click the extension's button, so the service
- * worker opens popup.html in a window of its own; the popup reads the active tab of the last
- * focused normal window, as it does over a real click (apps/extension/src/page/current-page.ts).
- */
-const openPopup = async (context: BrowserContext) => {
-  const worker = await extensionWorker(context);
-  const opened = context.waitForEvent("page");
-  await worker.evaluate(() =>
-    (globalThis as unknown as { chrome: Chrome }).chrome.windows.create({
-      url: "popup.html",
-      type: "popup",
-      width: 360,
-      height: 600,
-    }),
-  );
-  const popup = await opened;
-  await popup.waitForLoadState();
-  return popup;
 };
 
 const storageAreas = async (context: BrowserContext) =>

@@ -20,6 +20,12 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       crx({ manifest: manifest(browser, mode === "e2e"), browser }),
     ],
-    build: { target: "es2024", outDir: `dist/${outDir}`, emptyOutDir: true },
+    build: {
+      target: "es2024",
+      outDir: `dist/${outDir}`,
+      emptyOutDir: true,
+      // The inline menu's page (K-403); the popup comes in through the manifest
+      rollupOptions: { input: { menu: "src/menu/menu.html" } },
+    },
   };
 });

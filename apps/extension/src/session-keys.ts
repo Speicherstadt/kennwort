@@ -16,6 +16,8 @@ export type SessionArea = {
   remove(keys: string): Promise<void>;
   // Chrome, Edge and Safari have it; Firefox does not, and keeps the area from content scripts anyway
   setAccessLevel?: (options: { accessLevel: "TRUSTED_CONTEXTS" }) => Promise<void>;
+  /** The inline menu follows an unlock or a lock in the popup (K-403) */
+  onChanged?: { addListener(listener: (changes: Record<string, unknown>) => void): void };
 };
 
 /** Named keys, for example the account key and the private keys of the key block */

@@ -1311,17 +1311,62 @@ Restrisiko:
 
 ### P-17 Ausfüllen
 
-- Nur nach Klick oder Enter, nie beim Laden einer Seite.
-- Nur bei exakt passendem Host (Public Suffix List über `tldts`); die URL kommt aus dem
-  verschlüsselten Eintrag, nicht vom Server (E-14).
-- Nie in einen Frame einer anderen Herkunft.
-- Das Inline-Menü ist ein iFrame der Extension in einem geschlossenen Shadow DOM; die Seite kann es
-  weder lesen noch unbemerkt überdecken (Clickjacking, DEF CON 2025).
-- Das Popup der Extension (K-402) zeigt Einträge nach exaktem Host aus dem verschlüsselten Eintrag,
-  ohne Eltern- oder Subdomain, und kopiert nur auf Klick; ausfüllen kann es nicht. Die Adresse des
-  Tabs sieht es nur über `activeTab`, also nach einem Klick auf das Symbol.
+- Nur nach Klick oder Enter auf einen Eintrag im Inline-Menü, nie beim Laden einer Seite und nie
+  auf ein Ereignis, das ein Skript der Seite erzeugt (`isTrusted`).
+- Nur bei exakt passendem Host: Die Adresse des Frames wird mit dem URL-Parser normalisiert und mit
+  `tldts` gegen die Public Suffix List gelesen; sie muss genau der Host einer gespeicherten Adresse
+  des Eintrags sein, ohne Eltern- oder Subdomain, und ein öffentliches Suffix (`co.uk`,
+  `github.io`) ist nie eine Website. Ein für https gespeichertes Passwort geht nicht in eine Seite,
+  die über http kommt. Die Adressen kommen aus dem verschlüsselten Eintrag, nicht vom Server
+  (E-14). Popup, Menü und Service Worker nutzen dieselbe Funktion.
+- Nie in einen Frame einer anderen Herkunft: Gefüllt wird nur der oberste Frame oder ein Frame
+  derselben Herkunft wie jeder Frame über ihm. Der Service Worker liest dazu bei jeder Anfrage den
+  Frame-Baum des Browsers (`webNavigation`), nicht, was eine Seite oder Nachricht behauptet, und
+  prüft die Adresse des Frames im Moment des Ausfüllens. Das Passwort geht nur an das eine geprüfte
+  Dokument (`frameId`, `documentId`); ein Frame, der inzwischen navigiert hat, bekommt nichts.
+- Das Inline-Menü ist ein iFrame der Extension in einem eigenen Element mit geschlossenem Shadow
+  Root, im Top Layer. Die Seite kann weder hineinsehen noch die Adresse des Menüs lesen. Die
+  Menü-Seite ist die einzige Seite der Extension, die Websites laden dürfen, in Chrome nur unter
+  einer Adresse, die jede Browser-Sitzung wechselt (`use_dynamic_url`). Jedes Menü trägt eine
+  zufällige Nonce (128 Bit), die nur das Content Script und sein Menü-Frame kennen; der Service
+  Worker lässt sich von genau einem Content Script bestätigen, dass es das Menü mit dieser Nonce
+  geöffnet hat, und das Content Script füllt nur für seine eigene Nonce.
+- Clickjacking (DOM-basiertes Clickjacking auf Extension-Menüs, Marek Tóth, DEF CON 33, 2025): Ein
+  Klick zählt nur, wenn der Browser das Menü seit 500 ms ohne Unterbrechung als sichtbar meldet
+  (IntersectionObserver v2, `trackVisibility`: nicht abgedeckt, ganz im Bild) und 300 ms nach dem
+  Klick noch immer. Vor dem Schreiben prüft das Content Script von der Seite aus: Menü offen im Top
+  Layer und ganz im Bild, weder das Element noch ein Vorfahre durchsichtig, gefiltert, beschnitten
+  oder maskiert, kein Element nach dem Menü in den Top Layer gekommen (nur dort kann etwas über
+  ihm liegen, auch mit `pointer-events: none`), und der Hit-Test der Seite trifft das Menü in der
+  Mitte und nahe jeder Ecke. Chromiums v2 erkennt Abdeckungen, aber keine Deckkraft, die die Seite
+  setzt; die Prüfung des Content Scripts erkennt sie. Restrisiko: eine Abdeckung, die nur kürzer
+  als etwa 100 ms um den Klick liegt, und Abdeckungen in einem geschlossenen Shadow Root der Seite
+  mit `pointer-events: none`, die v2 erst nach seiner Verzögerung meldet. Firefox kennt v2 nicht;
+  dort füllt das Menü nicht aus und sagt das.
+- Nur in Felder, die die Seite zeigt: Das Menü öffnet nur auf einem sichtbaren Login-Feld, und
+  gefüllt werden nur Felder, die beim Ausfüllen noch sichtbar sind, also angezeigt, nicht
+  `visibility: hidden`, mit allen Deckkräften bis zur Wurzel zusammen mindestens 0,2, mindestens
+  4 × 4 Pixel groß und nicht links oder oberhalb der Seite. Ein verstecktes Passwortfeld hinter
+  einem sichtbaren Benutzernamen-Feld bekommt nichts; das Skript der Seite läse sonst ein Passwort,
+  das der Nutzer nie hat hineingehen sehen.
+- Das Menü öffnet das Konto, das das Popup entsperrt hat, verschiebt die Sperrzeit aber nie: Sonst
+  hielte eine Seite die Extension offen, indem sie immer wieder ein Login-Feld fokussiert. Das
+  Content Script hält keine Geheimnisse und liest keinen Speicherbereich.
+- Das Popup der Extension (K-402) zeigt Einträge nach derselben Regel und kopiert nur auf Klick;
+  ausfüllen kann es nicht. Die Adresse des Tabs sieht es nur über `activeTab`, also nach einem
+  Klick auf das Symbol.
 - Am Handy kopiert Kennwort nur auf Tipp; die App leert die Zwischenablage nach 30 Sekunden und
   markiert sie als sensibel, die PWA kann das nicht zuverlässig.
+
+Getestet mit Playwright und geladener Extension gegen Testseiten (`e2e/extension-fill.spec.ts`):
+Ausfüllen auf dem exakten Host per Klick und per Enter; eine Phishing-Domain (Bindestrich statt
+Punkt) bekommt keine Treffer, und selbst eine erzwungene Anfrage des Menüs lehnt der Service Worker
+ab; ein fremdes iFrame auf einer passenden Seite bekommt kein Menü und keine Daten und kann die
+Menü-Seite nicht selbst einbetten; ein abgedecktes Menü (undurchsichtig oder mit
+`pointer-events: none`) und ein fast durchsichtiges (am Element oder an der ganzen Seite) füllen
+nichts aus, derselbe Klick ohne Trick schon; ein Passwortfeld, das die Seite außerhalb der Seite,
+durchsichtig oder ein Pixel groß versteckt, bleibt leer. Die Regeln selbst prüfen Vitest-Tests neben dem Code
+(`apps/extension/src/fill`, `content`, `menu`, `page`).
 
 **Wehrt ab:** E-14.
 

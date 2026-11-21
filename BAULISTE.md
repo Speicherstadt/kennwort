@@ -271,7 +271,7 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   und Englisch, und axe nichts findet; entsperrte Schlüssel und das Sitzungs-Token nur in
   `chrome.storage.session` liegen und beim Sperren und nach Ablauf der Sperrzeit daraus verschwinden
   (Test); die Extension nichts ausfüllt.
-- [ ] **K-403 Inline-Menü und Ausfüllen** – Extension-iFrame im geschlossenen Shadow DOM, Ausfüllen
+- [x] **K-403 Inline-Menü und Ausfüllen** – Extension-iFrame im geschlossenen Shadow DOM, Ausfüllen
   nur nach Klick oder Enter, exakter Host per `tldts`, nie in fremden Frames.
   Fertig, wenn: Playwright mit geladener Extension Phishing-Domain, fremdes iFrame und überdecktes
   Menü abwehrt.

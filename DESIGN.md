@@ -67,16 +67,19 @@ und Verlauf.
 Generator, Gruppen, Einstellungen). Berührungsziele mindestens 44 px.
 
 **Extension-Popup (360 × 600)**: Kopf mit Logo und Sperren, Suche, Filter-Chips „Alle“ und
-„Favoriten“, „Für <Host>“ mit Treffern (Kopieren von Benutzername und Passwort als Icon-Knöpfe,
-„Ausfüllen“ ab K-403), darunter alle Einträge, Fußzeile mit „Generator“, Sperrzeit und Link zur
+„Favoriten“, „Für <Host>“ mit Treffern (Kopieren von Benutzername und Passwort als Icon-Knöpfe; ausgefüllt
+wird im Inline-Menü), darunter alle Einträge, Fußzeile mit „Generator“, Sperrzeit und Link zur
 Web-App. Gesperrt: Schloss, „Kennwort ist gesperrt“, der Server darunter in Geist Mono, die
 Passphrase mit dem Hauptknopf „Entsperren“, Link „Anderes Konto“; „Mit Passkey entsperren“ wird der
 Hauptknopf, sobald es Entsperren per Passkey gibt. Noch nicht verbunden: „Mit Kennwort verbinden“
 mit Server, Konto-ID, Secret Key und Passphrase.
 
-**Inline-Menü**: schwebt unter dem Feld, 320 px breit; Kopf mit Logo und Host, Treffer mit Tastatur
-wählbar (↑↓, Enter, Esc), Fußzeile mit Tastenhinweis und „Neues Login“. Es ist ein iFrame der
-Extension in einem geschlossenen Shadow DOM.
+**Inline-Menü**: schwebt unter dem Feld (über ihm, wenn unten kein Platz ist), 320 px breit, Radius
+12 px mit Schatten; Kopf mit Logo und Host in Geist Mono, Treffer mit Titel und Benutzername, mit
+Tastatur wählbar (↓ im Feld, dann ↑↓, Enter, Esc), Fußzeile mit Tastenhinweis („Neues Login“ ab
+K-404). Gesperrt: „Kennwort ist gesperrt“ und der Hauptknopf „Zum Entsperren öffnen“. Ein
+verweigertes Ausfüllen nennt den Grund in Rot über der Liste. Es ist ein iFrame der Extension in
+einem geschlossenen Shadow DOM.
 
 ## Komponenten
 

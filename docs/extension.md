@@ -2,8 +2,8 @@
 title: Browser-Extension
 description: >-
   Die Browser-Extension von Kennwort für Chrome, Edge und Firefox: verbinden und entsperren, Treffer
-  für die Seite, Suche, Favoriten und Generator im Popup, wo sie entsperrte Schlüssel ablegt und wie
-  man sie zum Entwickeln entpackt lädt.
+  für die Seite, Suche, Favoriten und Generator im Popup, Ausfüllen über das Inline-Menü, wo sie
+  entsperrte Schlüssel ablegt und wie man sie zum Entwickeln entpackt lädt.
 ---
 
 # Browser-Extension
@@ -12,10 +12,11 @@ Die Extension bringt Kennwort in den Browser: Zugänge für die Seite finden, au
 neue Logins speichern und vor Phishing warnen. Ihre Oberfläche ist dieselbe wie die der Web-App
 (`packages/ui`), mit denselben Texten auf Deutsch und Englisch.
 
-!!! info "Popup ohne Ausfüllen"
+!!! info "Was schon geht"
     Das Popup entsperrt, zeigt die Einträge für die offene Seite, sucht, filtert Favoriten, kopiert
-    Benutzername und Passwort und erzeugt Passwörter. Ausfüllen auf der Seite, Speichern neuer
-    Logins und die Phishing-Warnung folgen Schritt für Schritt (siehe [Projektplan](plan.md)).
+    Benutzername und Passwort und erzeugt Passwörter. Das Inline-Menü unter einem Login-Feld füllt
+    auf Klick oder Enter aus. Speichern neuer Logins und die Phishing-Warnung folgen Schritt für
+    Schritt (siehe [Projektplan](plan.md)).
 
 ## Browser
 
@@ -33,10 +34,12 @@ Safari und Firefox für Android kommen später mit eigenen Tests.
 | `storage` | nur `chrome.storage.session` für die entsperrten Schlüssel (unten) |
 | `alarms` | das automatische Sperren, auch wenn das Popup zu ist |
 | `activeTab` | die Adresse des Tabs, über dem du das Popup öffnest – erst nach deinem Klick auf das Symbol und nur für diesen Tab |
+| `webNavigation` | die Frames eines Tabs und ihre Adressen, damit die Extension beim Ausfüllen selbst prüft, in welchen Frame ein Passwort geht (unten) |
+| Content Script auf allen `http`- und `https`-Seiten | das Inline-Menü unter Login-Feldern; der Browser nennt das beim Installieren „alle Daten auf allen Websites lesen und ändern“ |
 
-Zugriff auf Websites braucht die Extension erst zum Ausfüllen. Ihre Seiten laufen unter einer
-strengen Content Security Policy: Es läuft nur Code, der in der Extension selbst steckt, nichts aus
-dem Netz.
+Ihre Seiten laufen unter einer strengen Content Security Policy: Es läuft nur Code, der in der
+Extension selbst steckt, nichts aus dem Netz. Websites dürfen nur eine Seite der Extension laden,
+die des Inline-Menüs.
 
 ## Verbinden und entsperren
 
@@ -62,14 +65,14 @@ Entsperren mit Passkey kommt, sobald es das in Kennwort gibt; bis dahin ist die 
 - **Für <Host>**: die Einträge, deren Website genau zum Host der offenen Seite passt. Genau heißt:
   `portal.weber-haustechnik.test` passt zu einem Eintrag für `portal.weber-haustechnik.test`, aber
   nicht zu `weber-haustechnik.test`, `www.portal.weber-haustechnik.test` oder einer ähnlich
-  aussehenden Domain. Schema, Port, Pfad und Groß- und Kleinschreibung zählen nicht. Bis das
-  Ausfüllen kommt, vergleicht die Extension selbst, ohne Public Suffix List; die genaue Regel fürs
-  Ausfüllen mit `tldts` bringt der nächste Schritt.
+  aussehenden Domain. Schema, Port, Pfad und Groß- und Kleinschreibung zählen nicht. Den Host liest
+  die Extension mit `tldts` gegen die Public Suffix List, wie beim Ausfüllen: Ein öffentliches
+  Suffix wie `co.uk` oder `github.io` gilt nie als eine Website.
 - **Suche** über Titel, Art, Tags und alle nicht geheimen Felder, wie in der Web-App; Passwörter,
   frühere Passwörter und TOTP-Schlüssel durchsucht sie nie.
 - **Alle** oder **Favoriten**.
 - **Kopieren**: Benutzername und Passwort je mit einem eigenen Knopf. Das Passwort erscheint im Popup
-  nie im Klartext. Ausgefüllt wird nichts.
+  nie im Klartext. Ausgefüllt wird im Inline-Menü (unten), nicht im Popup.
 - **Generator** unten, derselbe wie in der Web-App; seine Einstellungen merkt sich die Extension
   nicht.
 - **Sperren** oben rechts; die Fußzeile nennt die Sperrzeit und verlinkt die Web-App.
@@ -77,6 +80,42 @@ Entsperren mit Passkey kommt, sobald es das in Kennwort gibt; bis dahin ist die 
 Was das Popup zeigt, lädt es mit demselben Code wie die Web-App (`packages/client`): Jedes Log ist
 gegen den gemerkten Firmen-Schlüssel geprüft, jeder Eintrag gegen sein Log. Einträge, die jemand
 einzeln mit dir geteilt hat („Mit mir geteilt“), zeigt das Popup noch nicht.
+
+## Inline-Menü und Ausfüllen
+
+Klickst du in ein Feld für Benutzername oder Passwort, legt die Extension ein kleines Menü darunter:
+oben das Logo und der Host der Seite, darunter die Einträge, deren Website genau zu diesem Host
+passt (dieselbe Regel wie im Popup), unten die Tasten. Ein Klick auf einen Eintrag oder ↓ im Feld,
+dann ↑↓ und Enter füllt Benutzername und Passwort ein; Esc oder ein Klick daneben schließt das Menü.
+Ist Kennwort gesperrt, bietet das Menü **Zum Entsperren öffnen** an und öffnet das Popup; danach
+zeigt es die Einträge von selbst.
+
+Was die Extension dabei sicherstellt:
+
+- **Nur auf deinen Klick**: Nichts wird beim Laden einer Seite ausgefüllt, und ein Klick oder
+  Tastendruck, den ein Skript der Seite vortäuscht, zählt nicht.
+- **Nur auf dem exakten Host**: Eine Seite wie `portal-weber-haustechnik.test` bekommt für
+  `portal.weber-haustechnik.test` keine Treffer und nichts ausgefüllt. Kurz vor dem Ausfüllen prüft
+  die Extension die Adresse noch einmal; ein für `https` gespeichertes Passwort geht nie in eine
+  Seite, die über `http` kommt.
+- **Nie in fremde Frames**: Ein Login-Formular in einem iFrame einer anderen Website, etwa Werbung
+  oder ein eingebettetes Fremd-Formular, bekommt kein Menü und keine Daten, auch nicht auf einer
+  passenden Seite. Gefüllt wird nur die Seite selbst oder ein Frame derselben Herkunft.
+- **Die Seite sieht nicht hinein**: Das Menü ist eine Seite der Extension in einem geschlossenen
+  Shadow DOM; die Website kann weder die Einträge lesen noch das Menü selbst einbetten.
+- **Kein verdecktes Menü**: Liegt etwas über dem Menü oder ist es durchsichtig gemacht, füllt ein
+  Klick nichts aus, und das Menü sagt: „Das Menü war verdeckt oder durchsichtig.“ So kann eine
+  Seite dich nicht in ein unsichtbares Menü klicken lassen (Clickjacking).
+- **Nur in Felder, die du siehst**: Versteckt eine Seite ein Passwortfeld hinter einem
+  Benutzernamen-Feld (außerhalb der Seite, durchsichtig, winzig oder ausgeblendet), schreibt die
+  Extension dort nichts hinein, sondern nur in die Felder, die die Seite zeigt.
+- **Die Sperrzeit läuft weiter**: Das Menü schiebt das automatische Sperren nicht hinaus; nur das
+  Popup tut das.
+
+In Firefox kann die Extension noch nicht prüfen, ob das Menü sichtbar ist (dafür fehlt
+IntersectionObserver v2); dort zeigt das Menü die Einträge, füllt aber nicht aus und verweist aufs
+Kopieren im Popup. Wie die Prüfungen genau laufen, steht im
+[Sicherheitsdesign](sicherheitsdesign.md#p-17-ausfullen).
 
 ## Wo die Schlüssel liegen
 
@@ -132,4 +171,6 @@ eigenen Paraglide-Laufzeit ohne `localStorage` (`apps/extension/paraglide`, erze
 Für die End-to-End-Tests baut `bun run --cwd apps/extension build:e2e` nach `dist/e2e` eine Fassung,
 die zusätzlich die Adressen der Testseiten unter `.test` lesen darf: `activeTab` gibt die Adresse
 nur nach einem echten Klick auf das Symbol frei, und den kann Playwright nicht machen. Ein Release
-trägt diese Berechtigung nie.
+trägt diese Berechtigung nie. Die Tests des Inline-Menüs (`e2e/extension-fill.spec.ts`) füllen auf
+Testseiten aus und spielen die Angriffe nach: Phishing-Domain, fremdes iFrame, verdecktes und
+durchsichtiges Menü.

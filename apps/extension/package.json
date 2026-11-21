@@ -15,7 +15,8 @@
     "@kennwort/crypto": "workspace:*",
     "@kennwort/ui": "workspace:*",
     "@solidjs/web": "2.0.3",
-    "solid-js": "2.0.3"
+    "solid-js": "2.0.3",
+    "tldts": "7.4.19"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "3.0.0"

@@ -383,5 +383,13 @@
   "report_no_secrets": "Ohne geheime Felder",
   "report_no_entries": "Kein Eintrag, den sie lesen konnte.",
   "report_none": "In deinen Tresoren war die Person nicht Mitglied.",
-  "report_vaults": "Tresore"
+  "report_vaults": "Tresore",
+  "inline_menu_frame": "Kennwort-Menü",
+  "inline_menu_fill": "{title} ausfüllen",
+  "inline_menu_unlock": "Zum Entsperren öffnen",
+  "inline_menu_foreign": "In diesen Rahmen füllt Kennwort nichts aus: Er gehört zu einer anderen Website als die Seite.",
+  "inline_menu_hidden": "Das Menü war verdeckt oder durchsichtig. Kennwort hat nichts ausgefüllt.",
+  "inline_menu_not_filled": "Kennwort hat nichts ausgefüllt: Die Seite passt nicht mehr zum Eintrag.",
+  "inline_menu_unverified": "Dieser Browser kann nicht bestätigen, dass das Menü sichtbar ist. Kopiere Benutzername und Passwort aus dem Popup.",
+  "inline_menu_keys": "↑↓ wählen · Enter ausfüllen · Esc schließen"
 }

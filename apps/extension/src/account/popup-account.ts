@@ -35,6 +35,12 @@ export type PopupAccountDeps = {
   derive?: Derive;
   schedule?: (run: () => void, ms: number) => unknown;
   cancel?: (timer: unknown) => void;
+  /**
+   * false for the inline menu (K-403): it opens what the popup unlocked but never sets or moves the
+   * lock time and never locks, so a page that focuses a login field over and over cannot keep the
+   * extension unlocked, and a menu that fails to open locks nothing
+   */
+  movesLock?: boolean;
 };
 
 /** What the user types to connect: the server and the account as the recovery kit shows them */
@@ -68,6 +74,7 @@ const deviceOf = (
 
 export const createPopupAccount = (deps: PopupAccountDeps) => {
   const now = deps.now ?? Date.now;
+  const movesLock = deps.movesLock ?? true;
   const store = createUnlockedStore(deps.area, deps.alarms);
   const [phase, setPhase] = createSignal<Phase>("starting");
   const [device, setDeviceSignal] = createSignal<DeviceRecord>();
@@ -107,7 +114,7 @@ export const createPopupAccount = (deps: PopupAccountDeps) => {
     setOpened(value);
     setPhase("open");
     // The lock time the account state remembers from the last valid policy, until it loads
-    timer.start(value.state.policyLock * MINUTE);
+    if (movesLock) timer.start(value.state.policyLock * MINUTE);
   };
 
   /** Signs in and unlocks this device's account with the passphrase (P-02, P-03) */
@@ -140,7 +147,7 @@ export const createPopupAccount = (deps: PopupAccountDeps) => {
     api: () => api,
     lock,
     /** Any use pushes the automatic lock back */
-    touch: () => current && timer.touch(),
+    touch: () => movesLock && current && timer.touch(),
     /** When the popup opens: the device and, if still unlocked, the open account */
     restore: async () => {
       const record = await store.readDevice();
@@ -148,7 +155,8 @@ export const createPopupAccount = (deps: PopupAccountDeps) => {
       if (!record) return void setPhase("connect");
       const reopened = await store.reopen(record, deps.apiFor(record), now());
       if (reopened) return open(reopened);
-      await lock();
+      if (movesLock) return lock();
+      setPhase("locked");
     },
     connect: async (input: ConnectInput): Promise<PopupOutcome> => {
       const record = deviceOf(input, deps.random ?? randomBytes);
@@ -165,7 +173,7 @@ export const createPopupAccount = (deps: PopupAccountDeps) => {
       await store.clearDevice();
     },
     /** The company policy's lock time (K-304); it counts from now on */
-    setLockAfter: (ms: number) => current && timer.start(ms),
+    setLockAfter: (ms: number) => movesLock && current && timer.start(ms),
     lockMinutes: timer.minutes,
     // What it writes is kept for the next popup, which merges it into what the server serves
     updateState: stateUpdater(() => current, setOpened, {

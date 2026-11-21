@@ -58,3 +58,26 @@ export const expectNoAxeViolations = async (page: Page) => {
     violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`),
   ).toEqual([]);
 };
+
+type Windows = { chrome: { windows: { create(options: object): Promise<unknown> } } };
+
+/**
+ * The popup over the active tab. Playwright cannot click the extension's button, so the service
+ * worker opens popup.html in a window of its own; the popup reads the active tab of the last
+ * focused normal window, as it does over a real click (apps/extension/src/page/current-page.ts).
+ */
+export const openPopup = async (context: BrowserContext) => {
+  const worker = await extensionWorker(context);
+  const opened = context.waitForEvent("page");
+  await worker.evaluate(() =>
+    (globalThis as unknown as Windows).chrome.windows.create({
+      url: "popup.html",
+      type: "popup",
+      width: 360,
+      height: 600,
+    }),
+  );
+  const popup = await opened;
+  await popup.waitForLoadState();
+  return popup;
+};

@@ -1,9 +1,9 @@
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { describe, expect, it } from "vitest";
-import { entryHosts, matchesHost, pageHost } from "./matches.ts";
+import { entryAddresses, entryHosts, fillAllowed, matchesHost, pageHost } from "./matches.ts";
 
-// K-402: matches for the page by exact host, a strict comparison of the extension's own until
-// K-403 brings the Public Suffix List (tldts); nothing here fills anything in
+// K-402, K-403: matches for the page by exact host, read with tldts and the Public Suffix List; the
+// popup lists by it, the inline menu lists by it, and the service worker fills only by it (P-17)
 const entry = (...urls: string[]): ShownEntry =>
   ({
     id: "e",
@@ -33,8 +33,23 @@ describe("pageHost", () => {
     "data:text/html,<p>x</p>",
     "javascript:alert(1)",
     "not a url",
+    // A public suffix is never one site: a stored "github.io" or "co.uk" would cover thousands
+    "https://github.io/",
+    "https://co.uk/",
+    "https://test/",
   ])("finds no web page in %s", (url) => {
     expect(pageHost(url)).toBeUndefined();
+  });
+});
+
+describe("pageHost with tldts", () => {
+  it.each([
+    ["https://jonas.github.io/", "jonas.github.io"],
+    ["http://localhost:5176/", "localhost"],
+    ["http://192.168.1.10/", "192.168.1.10"],
+    ["http://[::1]:8080/", "[::1]"],
+  ])("keeps the exact host of %s", (url, host) => {
+    expect(pageHost(url)).toBe(host);
   });
 });
 
@@ -84,5 +99,49 @@ describe("matchesHost", () => {
 
   it("matches nothing without a page", () => {
     expect(matchesHost(portal, undefined)).toBe(false);
+  });
+});
+
+describe("entryAddresses", () => {
+  it("reads host and scheme of each stored address, https where none is stored", () => {
+    expect(entryAddresses(["http://router.test/admin", "bank.test", "github.io"])).toEqual([
+      { host: "router.test", secure: false },
+      { host: "bank.test", secure: true },
+    ]);
+  });
+});
+
+describe("fillAllowed", () => {
+  const portal = ["https://portal.weber-haustechnik.test/login"];
+
+  it("fills on the exact host of a stored address", () => {
+    expect(fillAllowed("https://portal.weber-haustechnik.test/start", portal)).toBe(true);
+  });
+
+  it.each([
+    "https://portal.weber-haustechnik.test.evil.test/login",
+    "https://portal-weber-haustechnik.test/login",
+    "https://www.portal.weber-haustechnik.test/login",
+    "https://weber-haustechnik.test/login",
+    "chrome-extension://abc/popup.html",
+    "about:blank",
+  ])("does not fill on %s", (url) => {
+    expect(fillAllowed(url, portal)).toBe(false);
+  });
+
+  it("does not fill a password stored for https into the same host over http", () => {
+    expect(fillAllowed("http://portal.weber-haustechnik.test/login", portal)).toBe(false);
+    expect(
+      fillAllowed("http://portal.weber-haustechnik.test/", ["portal.weber-haustechnik.test"]),
+    ).toBe(false);
+  });
+
+  it("fills over http where the address itself is stored with http", () => {
+    expect(fillAllowed("http://router.test/", ["http://router.test/admin"])).toBe(true);
+    expect(fillAllowed("https://router.test/", ["http://router.test/admin"])).toBe(true);
+  });
+
+  it("does not fill without addresses", () => {
+    expect(fillAllowed("https://portal.weber-haustechnik.test/", [])).toBe(false);
   });
 });
