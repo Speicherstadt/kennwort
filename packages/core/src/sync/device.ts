@@ -58,13 +58,15 @@ export type SyncContext = {
 };
 /**
  * A record the device would not take, ("missing") a known entry the server no longer shows (E-15),
- * or ("newer-epoch") a record of an epoch the checked log does not reach: the server withholds a
- * rotation or rolled the log back (E-07, E-26)
+ * ("newer-epoch") a record of an epoch the checked log does not reach: the server withholds a
+ * rotation or rolled the log back (E-07, E-26), or ("older-epoch") a newer version in an older
+ * epoch than the one the device holds the entry in: written by someone the server kept from the
+ * rotation, readable for whoever left and without the rotation's marks (P-11, E-08)
  */
 export type Refused = {
   entryId: Uint8Array;
   version: number;
-  error: AcceptError | "missing" | "rollback" | "newer-epoch";
+  error: AcceptError | "missing" | "rollback" | "newer-epoch" | "older-epoch";
 };
 
 export const emptyDevice = (): Device => ({ known: new Map(), queue: [] });
@@ -162,7 +164,12 @@ export const pull = async (
       ctx.trust,
       knownVersion,
     );
-    if (opened.ok)
+    // An entry's epoch never goes back: every honest writer seals the next version under the key
+    // of the newest epoch it opened the entry in, and the server takes versions only in the current
+    // epoch (P-11). A newer version of an older epoch comes from a writer kept from the rotation.
+    if (opened.ok && record.epoch < (mine?.key?.epoch ?? 0))
+      refused.push({ entryId: record.entryId, version: record.version, error: "older-epoch" });
+    else if (opened.ok)
       known.set(idKey(record.entryId), {
         entryId: record.entryId,
         version: record.version,

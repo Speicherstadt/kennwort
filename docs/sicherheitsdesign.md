@@ -141,6 +141,7 @@ nennt seinen Angriff, und der Client muss ihn ablehnen und sagen, warum.
 | E-26 alter Schlüssel für das ausgetretene Mitglied | `adversary/exit.test.ts`, `apps/server/src/sync/rotation-routes.test.ts` | neuere Epoche, falsche Epoche, kein Bearbeiter |
 | E-16 alter Tresor-Schlüssel als neuer ausgegeben | `adversary/exit.test.ts` | Bindung passt nicht |
 | E-07 Log auf vor den Austritt zurückgespielt | `adversary/exit.test.ts` | Rückfall, neuere Epoche, unbekannte Epoche |
+| E-08, E-26 Mitglied vom Wechsel ferngehalten, seine Versionen unter dem alten Schlüssel nach dem Wechsel ausgeliefert | `adversary/epoch-order.test.ts`, gegen die Offline-Kopie `apps/web/src/offline/local-copy.test.ts` | ältere Epoche, kein Bearbeiter |
 
 Die übrigen folgen mit den Funktionen, die sie betreffen (Konto-Recovery, Teilen, Geräte, Austritt,
 Einmal-Links, Import und Export, ausgelieferter Code); K-701 schließt den Katalog. Beim Bau des
@@ -939,7 +940,27 @@ verschlüsselt sind; geschrieben wird nur unter dem Schlüssel der aktuellen Epo
 schreibt der Abgleich nichts (`stale-key`). Ein Datensatz einer Epoche, die das geprüfte Log nicht
 erreicht, ist ein zurückgehaltener Wechsel oder ein zurückgespieltes Log (`newer-epoch`), kein
 Update. Einen Datensatz, den die Person nach dem Austritt noch mit dem alten Schlüssel schreibt,
-lehnt jeder Client ab: Sie ist laut Log kein Mitglied mehr (`not-editor`).
+lehnt jeder Client ab: Sie ist laut Log kein Mitglied mehr (`not-editor`), gleich, ob sie in der
+alten Epoche bearbeiten durfte und welche Version sie angibt; auch eine Version, die sie damals
+selbst geschrieben hat, nimmt ein Client nach ihrem Austritt nicht mehr neu an.
+
+**Die Epoche eines Eintrags geht nie zurück.** Ein Client nimmt keine neuere Version eines
+Eintrags an, deren Epoche älter ist als die der Version, die er schon hat (`older-epoch`). Ein
+ehrlicher Schreiber versiegelt die nächste Version unter dem Schlüssel der aktuellen Epoche, und
+der Server nimmt nur sie; eine neuere Version in einer älteren Epoche hat also jemand geschrieben,
+dem der Server den Wechsel vorenthalten hat (Gabelung, E-08). Sie ist echt – von einem Mitglied
+signiert, das bearbeiten darf, gebunden an Tresor, Eintrag, Version und Epoche –, aber die
+ausgetretene Person kann sie mit dem alten Schlüssel lesen, und sie trägt die Markierungen des
+Wechsels nicht. Ohne die Regel verdrängte sie beim Abgleich die neu verschlüsselte Version samt
+Markierung; jetzt bleibt die Version der neueren Epoche, der Abgleich meldet den Angriff und
+schreibt nichts darauf. Was ein Mitglied offline geändert hat, bevor es vom Wechsel erfuhr, wartet
+als Inhalt, nicht als Geheimtext, in der Warteschlange: Versiegelt wird erst beim Abgleich, unter
+dem Schlüssel der Epoche, die das geprüfte Log dann nennt, zusammengeführt mit der neu
+verschlüsselten Version und markiert. Ein schon versiegelter Datensatz wird nie neu verschlüsselt
+übernommen. Eine ältere Version derselben Epoche bleibt lesbar, solange keine neuere Epoche des
+Eintrags bekannt ist: So liest der Client einen Eintrag, den der Server vor dem rotierenden Gerät
+versteckt hat. Die Regel steht in `pull` (`packages/core/src/sync/device.ts`) und für die
+Offline-Kopie in `keepRecords` ([P-22](#p-22-offline-kopie)).
 
 **Austritt aus der Firma.** `DELETE /api/members/:id` (Inhaber für alle anderen, Admins nur für
 Mitarbeiter, nie sich selbst) markiert das Konto als ausgetreten (`accounts.left_at`), löscht
@@ -1000,7 +1021,7 @@ ist. Der Server-Ersatz antwortet gleich (Vertrag `sync/test/rotation-contract.ts
 Umgesetzt in `packages/core/src/membership/rotation.ts` (`rotateVaultKey`, `removeAndRotate`,
 `openRings`, `dueExits`), `membership/exit-report.ts` (`exitReport`, `pastExposures`),
 `sync/change-marks.ts`, `sync/device.ts` (`rotateEntries`, ältere Schlüssel zum Lesen,
-`exposures`, `newer-epoch`, `stale-key`, `rotation-due`), mit Mutation-Tests bei 100 %, in
+`exposures`, `newer-epoch`, `older-epoch`, `stale-key`, `rotation-due`), mit Mutation-Tests bei 100 %, in
 `apps/server/src/sync/log-routes.ts`, `sync/scope.ts` und `apps/server/src/account/members.ts`
 (Migration `0019_members_left`), in `packages/client/src/vaults/vaults.ts` (Schlüssel aller
 Epochen über `openRings`), `packages/client/src/entries/entry-rotation.ts` und in der Web-App unter
@@ -1029,7 +1050,13 @@ Restrisiken:
   ihrer Änderung als sicher.
 - Ein Server kann einem Mitglied, das sich den neueren Stand nie gemerkt hat, das Log von vor dem
   Austritt zeigen. Es schreibt dann unter dem alten Schlüssel, was ein ehrlicher Server ablehnt;
-  sobald es einen neu verschlüsselten Eintrag sieht, merkt es den Angriff (`newer-epoch`).
+  sobald es einen neu verschlüsselten Eintrag sieht, merkt es den Angriff (`newer-epoch`). Was es
+  bis dahin schreibt, kann die ausgetretene Person lesen. Jedes Mitglied, das den Eintrag schon in
+  der neuen Epoche hat, lehnt diese Versionen ab (`older-epoch`); ein Gerät, das den Eintrag noch
+  nie gesehen hat, kann es nicht wissen und zeigt sie (wie das Restrisiko in
+  [P-09](#p-09-eintrage-speichern-und-lesen)). Sein nächstes Schreiben geht trotzdem unter den neuen
+  Schlüssel mit neuem EK und markiert, was die Person lesen konnte (Schritt 5); spätere Änderungen
+  liest sie nicht.
 - Clients älterer Versionen kennen `toChange` nicht und verlieren die Markierung beim nächsten
   Schreiben.
 - Freigaben einzelner Einträge (P-10) verpackt der Verwalter-Client nach dem Wechsel neu; eine
@@ -1499,8 +1526,10 @@ an bekannter Stelle bleibt ein Angriff (E-07), auch wenn der Server einen älter
 ausliefert. Ein Tresor, den das Gerät neu öffnet, zieht seine Einträge zuerst aus `records:<tresor>`
 und dann vom Server: Eine ältere Version als die gespeicherte meldet es als zurückgespielt (E-13),
 einen fehlenden Eintrag als verborgen (E-15). In `records:<tresor>` kommt nur, was die Prüfung nach
-P-09 besteht, und je Eintrag nur eine höhere Version; ein gefälschter Datensatz kann also nicht
-ersetzen, wogegen das Gerät prüft. Geprüft wird unter dem Schlüssel der Epoche des Datensatzes:
+P-09 besteht, und je Eintrag nur eine höhere Version in keiner älteren Epoche
+([P-11](#p-11-austritt-und-schlusselwechsel)); ein gefälschter Datensatz kann also nicht ersetzen,
+wogegen das Gerät prüft, und eine Version, die ein vom Wechsel ferngehaltenes Mitglied unter dem
+alten Schlüssel geschrieben hat, verdrängt die neu verschlüsselte nicht. Geprüft wird unter dem Schlüssel der Epoche des Datensatzes:
 Nach einem Schlüsselwechsel ([P-11](#p-11-austritt-und-schlusselwechsel)) bleibt auch eine
 Version, die noch nicht neu verschlüsselt ist, in der Kopie und offline lesbar, und die
 Tresor-Schlüssel aller Epochen kommen wie online aus `read:<pfad>`.

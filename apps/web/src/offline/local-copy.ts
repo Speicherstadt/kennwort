@@ -116,8 +116,9 @@ const recordsPart = (store: KeyValue, scope: ReturnType<typeof createCopyScope>)
       [] as EntryRecord[],
     ),
   /**
-   * Keeps each record that is newer than the kept one of its entry and passes the check: the
-   * check is P-09's, so a record the device refused never becomes what it checks against
+   * Keeps each record that is newer than the kept one of its entry, in no older epoch, and passes
+   * the check: the check is P-09's, so a record the device refused never becomes what it checks
+   * against
    */
   keepRecords: (vaultIdText: string, records: EntryRecord[], check: (r: EntryRecord) => boolean) =>
     scope.forCurrent(async () => {
@@ -126,7 +127,10 @@ const recordsPart = (store: KeyValue, scope: ReturnType<typeof createCopyScope>)
       let changed = false;
       for (const record of records) {
         const known = kept.get(idKey(record.entryId));
-        if ((known && known.version >= record.version) || !check(record)) continue;
+        // An entry's epoch never goes back, as in pull (P-11): a newer version of an older epoch
+        // was written by someone the server kept from the rotation
+        const replaces = !known || (known.version < record.version && known.epoch <= record.epoch);
+        if (!replaces || !check(record)) continue;
         kept.set(idKey(record.entryId), record);
         changed = true;
       }

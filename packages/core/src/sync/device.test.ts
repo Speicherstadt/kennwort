@@ -143,6 +143,28 @@ describe("the entry key (P-09, P-10)", () => {
   });
 });
 
+describe("the epoch of an entry (P-11)", () => {
+  it("is not kept for a version the device holds without its entry key", async () => {
+    const server = memoryServer();
+    await sync(edit(emptyDevice(), e1, bank), server, contextFor(jonas));
+    const v2 = sealRecord(
+      { id: anna.id, edSecretKey: anna.ed.secretKey },
+      contextFor(anna).ring,
+      e1,
+      2,
+      withField(bank, "user", "anna"),
+      new Uint8Array(),
+    );
+    const keyless = {
+      known: new Map([["e1".repeat(16), { entryId: e1, version: 1, content: bank }]]),
+      queue: [],
+    };
+    const pulled = await pull(keyless, { pull: () => [v2], push: server.push }, contextFor(jonas));
+    expect(pulled.refused).toEqual([]);
+    expect(pulled.device.known.get("e1".repeat(16))?.version).toBe(2);
+  });
+});
+
 describe("rekey (revoking a share, P-10)", () => {
   const k1 = "e1".repeat(16);
 
