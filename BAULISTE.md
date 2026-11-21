@@ -276,6 +276,15 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   Fertig, wenn: Playwright mit geladener Extension Phishing-Domain, fremdes iFrame und überdecktes
   Menü abwehrt.
 - [ ] **K-404 Speichern und Aktualisieren** – neues Login und geändertes Passwort erkennen.
+  Fertig, wenn: Playwright mit geladener Extension gegen den e2e-Server ein neues Login auf einer
+  Testseite nach einem echten Absenden zum Speichern anbietet, es verschlüsselt im gewählten Tresor
+  speichert und das Popup es zeigt; ein geändertes Passwort als Aktualisieren anbietet und das alte
+  danach unter den früheren Passwörtern steht; dasselbe Passwort, ein verstecktes Passwortfeld und
+  ein Absenden per Skript (`form.submit()` ohne Nutzeraktion) nichts anbieten; „Nie für diese Seite“
+  im verschlüsselten Kontozustand landet und danach nichts mehr angeboten wird; eine verdeckte
+  Leiste nichts speichert. Das Passwort geht nur vom Content Script an den Service Worker, liegt nur
+  in dessen Arbeitsspeicher (nie in `chrome.storage.local` oder im DOM der Seite) und verfällt nach
+  kurzer Zeit (Test); Leser und Tresore mit ausstehendem Schlüsselwechsel speichern nichts.
 - [ ] **K-405 Phishing-Warnung** – Warnung beim Eintippen eines gespeicherten Passworts auf fremder
   Domain.
 - [ ] **K-406 Passkey-Anbieter** – Passkeys in Kennwort speichern und damit anmelden.
