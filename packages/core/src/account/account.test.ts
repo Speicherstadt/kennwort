@@ -20,6 +20,7 @@ describe("account state", () => {
     certificates: { anna: 5, max: 9 },
     policy: 3,
     policyLock: 4,
+    neverSave: ["portal.weber-haustechnik.test"],
   };
   const key = new Uint8Array(32).fill(9);
   const account = new Uint8Array(16).fill(4);
@@ -66,6 +67,7 @@ describe("account state", () => {
       certificates: { anna: 7, max: 3, sandra: 1 },
       policy: 2,
       policyLock: 30,
+      neverSave: ["sparkasse.test", "portal.weber-haustechnik.test"],
     };
     expect(mergeStates(state, theirs)).toEqual({
       ok: true,
@@ -82,6 +84,7 @@ describe("account state", () => {
         certificates: { anna: 7, max: 9, sandra: 1 },
         policy: 3,
         policyLock: 4,
+        neverSave: ["portal.weber-haustechnik.test", "sparkasse.test"],
       },
     });
     expect(mergeStates(state, emptyState(root))).toEqual({ ok: true, value: state });
@@ -145,8 +148,26 @@ describe("account state", () => {
     expect(mergeStates(state, same)).toEqual({ ok: true, value: state });
   });
 
+  it("keeps every site either device never saves for, once and sorted (K-404)", () => {
+    const theirs = { ...emptyState(root), neverSave: ["b.test", "a.test", "b.test"] };
+    for (const merged of [mergeStates(state, theirs), mergeStates(theirs, state)])
+      expect(merged.ok && merged.value.neverSave).toEqual([
+        "a.test",
+        "b.test",
+        "portal.weber-haustechnik.test",
+      ]);
+    expect(emptyState(root).neverSave).toEqual([]);
+  });
+
   it("reads a state written before invitations were remembered", () => {
-    const { invitations: _, certificates: __, policy: ___, policyLock: ____, ...older } = state;
+    const {
+      invitations: _,
+      certificates: __,
+      policy: ___,
+      policyLock: ____,
+      neverSave: _____,
+      ...older
+    } = state;
     const place = { purpose: "account-state", context: [account, 2] };
     const json = JSON.stringify({
       ...older,
@@ -157,7 +178,14 @@ describe("account state", () => {
     const opened = openState(key, account, 2, seal(key, new TextEncoder().encode(json), place));
     expect(opened).toEqual({
       ok: true,
-      value: { ...state, invitations: {}, certificates: {}, policy: 0, policyLock: 10 },
+      value: {
+        ...state,
+        invitations: {},
+        certificates: {},
+        policy: 0,
+        policyLock: 10,
+        neverSave: [],
+      },
     });
   });
 });

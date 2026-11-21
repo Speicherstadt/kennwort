@@ -309,7 +309,9 @@ Was ein Client sich merkt, um den Server zu prüfen, liegt im **Kontozustand**: 
 Firmen-Wurzelschlüssels, bekannte Schlüsselbündel, der letzte Stand jedes Mitgliedschafts-Logs,
 die höchste Version jedes Eintrags, die Einladungen, die das Konto zertifiziert hat, mit dem Konto
 dazu, je Konto das Ausstellungsdatum des neuesten Zertifikats, das es gesehen hat, und die
-höchste Version der Firmen-Richtlinie mit ihrer Sperrzeit. Er ist ein F-01-Geheimtext unter AK (Zweck `account-state`,
+höchste Version der Firmen-Richtlinie mit ihrer Sperrzeit; dazu, keine Prüfung, sondern eine
+Einstellung, die auf keinem Gerät auf die Festplatte soll: die Hosts, für die die Extension nie das
+Speichern anbietet (K-404, P-17). Er ist ein F-01-Geheimtext unter AK (Zweck `account-state`,
 Kontext Konto-ID und ein Zähler) auf dem Server; jedes Gerät lädt ihn beim Entsperren, führt ihn
 mit seinem eigenen Stand zusammen (der höhere Stand gewinnt; ein anderer Wurzelschlüssel, ein anderes
 Bündel für ein bekanntes Konto oder ein anderer Hash an derselben Stelle eines Logs ist ein Angriff) und schreibt ihn mit höherem Zähler zurück. So kennt jedes Gerät eines Kontos, auch eines,
@@ -1388,6 +1390,42 @@ Restrisiko:
 - Am Handy kopiert Kennwort nur auf Tipp; die App leert die Zwischenablage nach 30 Sekunden und
   markiert sie als sensibel, die PWA kann das nicht zuverlässig.
 
+**Speichern und Aktualisieren (K-404).** Nach einer Anmeldung bietet die Extension an, ein neues
+Login zu speichern oder ein geändertes Passwort zu aktualisieren:
+
+- Erfasst wird nur ein Absenden, das der Browser zustellt (`isTrusted`) und das höchstens eine
+  Sekunde nach einem echten Klick oder Tastendruck des Nutzers kommt; `form.submit()` (ohne
+  Ereignis) und `requestSubmit()` eines Skripts ohne Nutzeraktion erfassen nichts. Gelesen werden nur
+  Felder, die die Seite zeigt (dieselbe Regel wie beim Ausfüllen), nur im obersten Frame oder einem
+  Frame derselben Herkunft wie jeder Frame über ihm.
+- Das Content Script gibt Benutzername und Passwort sofort per Nachricht an den Service Worker und
+  behält nichts; ins DOM der Seite kommt das Passwort nie. Der Service Worker prüft den Frame am
+  Frame-Baum des Browsers (`webNavigation`, `frameId`, `documentId`), nimmt den Host von dort, nicht
+  aus der Nachricht, und hält das Login nur im Arbeitsspeicher, in keinem Speicherbereich, je Tab
+  das neueste. Er bietet es einmal dem obersten Frame des Tabs an, der innerhalb von 30 Sekunden
+  danach fragt, und gibt es einmal an die Leiste, deren Nonce dieser Frame bestätigt; danach und
+  spätestens nach einer Minute hat er es nicht mehr, ebenso wenn der Browser ihn beendet.
+- Die Leiste ist wie das Menü eine Seite der Extension in einem eigenen Element mit geschlossenem
+  Shadow Root im Top Layer, mit eigener Nonce und unter `use_dynamic_url`; sie öffnet sich
+  unsichtbar, öffnet das Konto, das das Popup entsperrt hat (ohne die Sperrzeit zu verschieben),
+  vergleicht mit den Einträgen für den exakten Host und erscheint nur, wenn es etwas anzubieten gibt.
+  Entschlüsselte Einträge gibt es so nur in Seiten der Extension, nie im Service Worker oder Content
+  Script.
+- Speichern, Aktualisieren und „Nie für diese Seite“ zählen nur mit denselben Prüfungen wie das
+  Ausfüllen gegen Clickjacking: Klick vom Browser zugestellt, Leiste seit 500 ms laut
+  IntersectionObserver v2 sichtbar und 300 ms später noch immer, und das Content Script findet ihr
+  Element unmittelbar vor dem Schreiben offen, unverdeckt und undurchsichtig. In Firefox speichert die
+  Leiste darum nicht.
+- Geschrieben wird über den Eintrags-Speicher der Web-App (P-09): verschlüsselt, signiert, an
+  Eintrag, Tresor und Version gebunden; Leser und Tresore mit ausstehendem Schlüsselwechsel (P-11)
+  schreiben nichts. Beim Aktualisieren geht das alte Passwort in die Historie des Eintrags.
+- „Nie für diese Seite“ steht als Liste exakter Hosts im Kontozustand (`neverSave`), verschlüsselt
+  unter AK; zwei Geräte führen ihre Listen zusammen (Vereinigung). Die Liste gilt erst nach dem
+  Entsperren: Gesperrt bietet die Leiste „Entsperren und speichern“ an und schließt sich nach dem
+  Entsperren, wenn der Host auf der Liste steht.
+- Restrisiko: Eine fehlgeschlagene Anmeldung, nach der die Seite eine neue Seite lädt, bietet das
+  falsche Passwort an; beim Aktualisieren bleibt das richtige dann in der Historie.
+
 Getestet mit Playwright und geladener Extension gegen Testseiten (`e2e/extension-fill.spec.ts`):
 Ausfüllen auf dem exakten Host per Klick und per Enter; eine Phishing-Domain (Bindestrich statt
 Punkt) bekommt keine Treffer, und selbst eine erzwungene Anfrage des Menüs lehnt der Service Worker
@@ -1395,8 +1433,13 @@ ab; ein fremdes iFrame auf einer passenden Seite bekommt kein Menü und keine Da
 Menü-Seite nicht selbst einbetten; ein abgedecktes Menü (undurchsichtig oder mit
 `pointer-events: none`) und ein fast durchsichtiges (am Element oder an der ganzen Seite) füllen
 nichts aus, derselbe Klick ohne Trick schon; ein Passwortfeld, das die Seite außerhalb der Seite,
-durchsichtig oder ein Pixel groß versteckt, bleibt leer. Die Regeln selbst prüfen Vitest-Tests neben dem Code
-(`apps/extension/src/fill`, `content`, `menu`, `page`).
+durchsichtig oder ein Pixel groß versteckt, bleibt leer. Zum Speichern (`e2e/extension-save.spec.ts`):
+ein neues Login wird angeboten, gespeichert und im Popup gezeigt, ein geändertes Passwort
+aktualisiert und das alte steht in der Historie; dasselbe Passwort, ein verstecktes Passwortfeld,
+`form.submit()` und `requestSubmit()` eines Skripts, eine Seite auf der Liste „Nie für diese Seite“
+und eine verdeckte Leiste speichern nichts, und weder `chrome.storage.local` noch der
+Sitzungsbereich enthalten Passwort oder Host im Klartext. Die Regeln selbst prüfen Vitest-Tests
+neben dem Code (`apps/extension/src/fill`, `save`, `content`, `menu`, `prompt`, `page`).
 
 **Wehrt ab:** E-14.
 

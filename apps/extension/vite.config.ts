@@ -24,8 +24,9 @@ export default defineConfig(({ mode }) => {
       target: "es2024",
       outDir: `dist/${outDir}`,
       emptyOutDir: true,
-      // The inline menu's page (K-403); the popup comes in through the manifest
-      rollupOptions: { input: { menu: "src/menu/menu.html" } },
+      // The inline menu's page (K-403) and the save prompt's (K-404); the popup comes in through
+      // the manifest
+      rollupOptions: { input: { menu: "src/menu/menu.html", prompt: "src/prompt/prompt.html" } },
     },
   };
 });

@@ -17,6 +17,8 @@ export type Sender = {
   id?: string;
   url?: string;
   frameId?: number;
+  /** Chrome only: the sender's document */
+  documentId?: string;
   tab?: { id?: number };
 };
 
@@ -35,21 +37,24 @@ export type BrokerDeps = {
 
 const EXTENSION_SCHEMES = new Set(["chrome-extension:", "moz-extension:"]);
 
-/** The tab of the extension's own menu page, framed in it; content scripts and pages are not it */
-const menuSender = (sender: Sender, deps: BrokerDeps) => {
-  if (sender.id !== deps.extensionId || !sender.url) return undefined;
+/**
+ * The tab of one of the extension's own pages framed in it (the inline menu, the save prompt);
+ * content scripts and pages are not it
+ */
+export const extensionFrameSender = (sender: Sender, extensionId: string, path: string) => {
+  if (sender.id !== extensionId || !sender.url) return undefined;
   const tabId = sender.tab?.id;
   if (tabId === undefined || sender.frameId === undefined || sender.frameId === 0) return undefined;
   try {
     const url = new URL(sender.url);
-    if (!EXTENSION_SCHEMES.has(url.protocol) || url.pathname !== deps.menuPath) return undefined;
+    if (!EXTENSION_SCHEMES.has(url.protocol) || url.pathname !== path) return undefined;
   } catch {
     return undefined;
   }
   return { tabId };
 };
 
-const targetOf = (frame: FrameInfo): FillTarget =>
+export const targetOf = (frame: FrameInfo): FillTarget =>
   frame.documentId
     ? { frameId: frame.frameId, documentId: frame.documentId, url: frame.url }
     : { frameId: frame.frameId, url: frame.url };
@@ -124,7 +129,7 @@ export const createFillBroker = (deps: BrokerDeps) => {
   return async (message: unknown, sender: Sender): Promise<MenuAnswer | undefined> => {
     const request = menuRequest(message);
     if (!request) return undefined;
-    const menu = menuSender(sender, deps);
+    const menu = extensionFrameSender(sender, deps.extensionId, deps.menuPath);
     if (!menu) return refuse("not-menu");
     if (request.type === "menu-unlock") {
       await deps.openPopup();
