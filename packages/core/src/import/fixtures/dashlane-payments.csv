@@ -1,0 +1,4 @@
+type,account_name,account_holder,cc_number,code,expiration_month,expiration_year,routing_number,account_number,country,issuing_bank,note,name
+payment_card,Jonas Weber,,4111111111111111,123,8,2028,,,DE,Sparkasse Bremen,Tankkarte,Firmenkarte
+credit_card,Anna Schmidt,,5555555555554444,456,01,2027,,,DE,,,
+bank,Geschäftskonto,Weber Haustechnik GmbH,,,,,SBREDE22,DE89370400440532013000,DE,Sparkasse Bremen,,

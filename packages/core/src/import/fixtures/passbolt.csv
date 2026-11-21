@@ -1,0 +1,3 @@
+"Title","Username","URL","Password","Notes","Group","TOTP"
+"Heizungs-Fernwartung","service@weber-haustechnik.example","https://fernwartung.heizung.example","F3rnW@rtung","Zugang für alle Monteure","Technik/Fernwartung","otpauth://totp/Fernwartung:service?secret=KRSXG5CTMVRXEZLU&issuer=Fernwartung"
+"Telefonanlage","admin","https://192.168.10.2","T3lef0n!","","",""

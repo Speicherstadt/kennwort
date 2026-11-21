@@ -1,0 +1,61 @@
+{
+  "encrypted": false,
+  "collections": [
+    {
+      "id": "aa11bb22-cc33-4d44-8e55-ff6677889900",
+      "organizationId": "o1",
+      "name": "Alle Mitarbeiter",
+      "externalId": null
+    },
+    {
+      "id": "bb22cc33-dd44-4e55-9f66-007788990011",
+      "organizationId": "o1",
+      "name": "Buchhaltung",
+      "externalId": null
+    }
+  ],
+  "items": [
+    {
+      "id": "i1",
+      "organizationId": "o1",
+      "folderId": null,
+      "type": 1,
+      "reprompt": 0,
+      "name": "DATEV Unternehmen online",
+      "notes": null,
+      "favorite": false,
+      "fields": null,
+      "login": {
+        "uris": null,
+        "username": "anna@weber-haustechnik.example",
+        "password": "D@tev-Anna",
+        "totp": null
+      },
+      "collectionIds": [
+        "aa11bb22-cc33-4d44-8e55-ff6677889900",
+        "bb22cc33-dd44-4e55-9f66-007788990011"
+      ]
+    },
+    {
+      "id": "i2",
+      "organizationId": "o1",
+      "folderId": null,
+      "type": 1,
+      "reprompt": 0,
+      "name": "",
+      "notes": null,
+      "favorite": false,
+      "login": {
+        "uris": [
+          {
+            "uri": "https://shop.example/login"
+          }
+        ],
+        "username": "einkauf",
+        "password": "Eink@uf1",
+        "totp": null
+      },
+      "collectionIds": ["unbekannt"]
+    }
+  ]
+}

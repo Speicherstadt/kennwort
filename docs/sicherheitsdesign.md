@@ -1289,6 +1289,12 @@ Der Import liest die Datei nur im Client und verschlüsselt jeden Eintrag nach
 Schlüssel aus einer Export-Passphrase (F-05-Parameter, eigenes Salt); exportieren dürfen nur
 Verwalter, der Client signiert dafür einen Audit-Eintrag.
 
+Die Parser (`packages/core/src/import/`, K-502) sind reine Funktionen ohne Netz, Speicher oder
+Logs: Datei rein, Einträge raus, Fehler als Werte. Kaputte oder böswillige Dateien lassen sie weder
+abstürzen noch hängen (ein Durchgang ohne Rekursion, kein XML mit Dokumenttyp, also keine
+Entitäten, die wachsen); Fuzzing mit fast-check prüft das. Verschlüsselte Fremdexporte erkennen sie
+und lesen sie nicht.
+
 **Wehrt ab:** E-21.
 
 ### P-20 Audit-Log

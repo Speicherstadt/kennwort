@@ -1,0 +1,313 @@
+{
+  "folders": [
+    {
+      "icon": "1008",
+      "parent_uuid": "",
+      "title": "Weber Haustechnik",
+      "updated_at": 1730801234,
+      "uuid": "f-root"
+    },
+    {
+      "icon": "1008",
+      "parent_uuid": "f-root",
+      "title": "Kunden",
+      "updated_at": 1730801234,
+      "uuid": "f-kunden"
+    },
+    {
+      "icon": "1008",
+      "parent_uuid": "f-loop-b",
+      "title": "Schleife A",
+      "updated_at": 1,
+      "uuid": "f-loop-a"
+    },
+    {
+      "icon": "1008",
+      "parent_uuid": "f-loop-a",
+      "title": "Schleife B",
+      "updated_at": 1,
+      "uuid": "f-loop-b"
+    }
+  ],
+  "items": [
+    {
+      "archived": 0,
+      "auto_submit": 1,
+      "category": "login",
+      "createdAt": 1730801234,
+      "favorite": 1,
+      "fields": [
+        {
+          "deleted": 0,
+          "label": "Username",
+          "order": 10,
+          "sensitive": 0,
+          "type": "username",
+          "uid": 10,
+          "updated_at": 1730801234,
+          "value": "service@weber-haustechnik.example",
+          "value_updated_at": 1730801234
+        },
+        {
+          "deleted": 0,
+          "label": "E-mail",
+          "order": 12,
+          "sensitive": 0,
+          "type": "email",
+          "uid": 12,
+          "updated_at": 1730801234,
+          "value": "service@weber-haustechnik.example",
+          "value_updated_at": 1730801234
+        },
+        {
+          "deleted": 0,
+          "label": "Password",
+          "order": 11,
+          "sensitive": 1,
+          "type": "password",
+          "uid": 11,
+          "updated_at": 1730801234,
+          "value": "Me7er-Heizung",
+          "value_updated_at": 1730801234
+        },
+        {
+          "deleted": 0,
+          "label": "Website",
+          "order": 13,
+          "sensitive": 0,
+          "type": "url",
+          "uid": 13,
+          "updated_at": 1730801234,
+          "value": "https://heizung.kunde.example",
+          "value_updated_at": 1730801234
+        },
+        {
+          "deleted": 0,
+          "label": "ADDITIONAL DETAILS",
+          "order": 101,
+          "sensitive": 0,
+          "type": "section",
+          "uid": 101,
+          "updated_at": 1730801234,
+          "value": "",
+          "value_updated_at": 1730801234
+        },
+        {
+          "deleted": 0,
+          "label": "One-time code",
+          "order": 102,
+          "sensitive": 0,
+          "type": "totp",
+          "uid": 102,
+          "updated_at": 1730801234,
+          "value": "JBSWY3DPEHPK3PXP",
+          "value_updated_at": 1730801234
+        },
+        {
+          "deleted": 0,
+          "label": "Anlagennummer",
+          "order": 103,
+          "sensitive": 0,
+          "type": "text",
+          "uid": 103,
+          "updated_at": 1730801234,
+          "value": "WP-2291",
+          "value_updated_at": 1730801234
+        },
+        {
+          "deleted": 0,
+          "label": "Wartungscode",
+          "order": 104,
+          "sensitive": 1,
+          "type": "pin",
+          "uid": 104,
+          "updated_at": 1730801234,
+          "value": "8812",
+          "value_updated_at": 1730801234
+        },
+        {
+          "deleted": 1,
+          "label": "Alt",
+          "order": 105,
+          "sensitive": 0,
+          "type": "text",
+          "uid": 105,
+          "updated_at": 1730801234,
+          "value": "gelöscht",
+          "value_updated_at": 1730801234
+        }
+      ],
+      "folders": ["f-kunden"],
+      "icon": {
+        "fav": "",
+        "image": {
+          "file": "web/heizung"
+        },
+        "type": 1,
+        "uuid": ""
+      },
+      "note": "Anlage im Keller\nZugang über Garage",
+      "subtitle": "service@weber-haustechnik.example",
+      "template_type": "login.default",
+      "title": "Heizungsportal Kunde Meyer",
+      "trashed": 0,
+      "updated_at": 1763551234,
+      "uuid": "e1"
+    },
+    {
+      "archived": 0,
+      "auto_submit": 0,
+      "category": "creditcard",
+      "createdAt": 1,
+      "favorite": 0,
+      "fields": [
+        {
+          "deleted": 0,
+          "label": "Cardholder",
+          "order": 1,
+          "sensitive": 0,
+          "type": "ccName",
+          "uid": 1,
+          "updated_at": 1730801234,
+          "value": "Sandra Becker",
+          "value_updated_at": 1730801234
+        },
+        {
+          "deleted": 0,
+          "label": "Type",
+          "order": 2,
+          "sensitive": 0,
+          "type": "ccType",
+          "uid": 2,
+          "updated_at": 1730801234,
+          "value": "Visa",
+          "value_updated_at": 1730801234
+        },
+        {
+          "deleted": 0,
+          "label": "Number",
+          "order": 3,
+          "sensitive": 1,
+          "type": "ccNumber",
+          "uid": 3,
+          "updated_at": 1730801234,
+          "value": "4000056655665556",
+          "value_updated_at": 1730801234
+        },
+        {
+          "deleted": 0,
+          "label": "CVC",
+          "order": 4,
+          "sensitive": 1,
+          "type": "ccCvc",
+          "uid": 4,
+          "updated_at": 1730801234,
+          "value": "321",
+          "value_updated_at": 1730801234
+        },
+        {
+          "deleted": 0,
+          "label": "PIN",
+          "order": 5,
+          "sensitive": 1,
+          "type": "ccPin",
+          "uid": 5,
+          "updated_at": 1730801234,
+          "value": "9876",
+          "value_updated_at": 1730801234
+        },
+        {
+          "deleted": 0,
+          "label": "Expiry date",
+          "order": 6,
+          "sensitive": 0,
+          "type": "ccExpiry",
+          "uid": 6,
+          "updated_at": 1730801234,
+          "value": "09/27",
+          "value_updated_at": 1730801234
+        }
+      ],
+      "folders": ["f-loop-a"],
+      "icon": {},
+      "note": "",
+      "subtitle": "",
+      "template_type": "creditcard.default",
+      "title": "Tankkarte",
+      "trashed": 0,
+      "updated_at": 1,
+      "uuid": "e2"
+    },
+    {
+      "archived": 0,
+      "auto_submit": 0,
+      "category": "note",
+      "createdAt": 1,
+      "favorite": 0,
+      "icon": {},
+      "note": "Heizungsnotdienst: 0421 999",
+      "subtitle": "",
+      "template_type": "note.default",
+      "title": "Notfallnummern",
+      "trashed": 0,
+      "updated_at": 1,
+      "uuid": "e3"
+    },
+    {
+      "archived": 0,
+      "auto_submit": 0,
+      "category": "login",
+      "createdAt": 1,
+      "favorite": 0,
+      "fields": [],
+      "icon": {},
+      "note": "",
+      "subtitle": "",
+      "template_type": "login.default",
+      "title": "Gelöscht",
+      "trashed": 1,
+      "updated_at": 1,
+      "uuid": "e4"
+    },
+    {
+      "archived": 0,
+      "auto_submit": 0,
+      "category": "identity",
+      "createdAt": 1,
+      "favorite": 0,
+      "fields": [
+        {
+          "deleted": 0,
+          "label": "Name",
+          "order": 1,
+          "sensitive": 0,
+          "type": "text",
+          "uid": 1,
+          "updated_at": 1730801234,
+          "value": "Anna Schmidt",
+          "value_updated_at": 1730801234
+        },
+        {
+          "deleted": 0,
+          "label": "E-mail",
+          "order": 2,
+          "sensitive": 0,
+          "type": "email",
+          "uid": 2,
+          "updated_at": 1730801234,
+          "value": "anna@weber-haustechnik.example",
+          "value_updated_at": 1730801234
+        }
+      ],
+      "folders": ["fehlt"],
+      "icon": {},
+      "note": "",
+      "subtitle": "",
+      "template_type": "identity.default",
+      "title": "Anna Schmidt",
+      "trashed": 0,
+      "updated_at": 1,
+      "uuid": "e5"
+    }
+  ]
+}

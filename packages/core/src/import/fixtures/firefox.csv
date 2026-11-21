@@ -1,0 +1,4 @@
+"url","username","password","httpRealm","formActionOrigin","guid","timeCreated","timeLastUsed","timePasswordChanged"
+"https://webmail.weber-haustechnik.example","sandra@weber-haustechnik.example","Ma1l-Sandra#Büro",,"https://webmail.weber-haustechnik.example","{3f1c2a9e-5d7b-4c1e-9a2f-0b6d8e4c7a11}","1730801234000","1763551234000","1730801234000"
+"chrome://FirefoxAccounts","00000000000000000000000000000000","{""version"":1,""accountData"":{""kSync"":""xxxx""}}","Firefox Accounts credentials",,"{6b2d0a4e-1c3f-4e5a-8b7d-9c0e1f2a3b44}","1730801234000","1763551234000","1730801234000"
+"https://router.weber-haustechnik.example:8443","admin","R0uter ""Büro"" 2026","Router Login",,"{a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d}","1730801234000","1763551234000","1730801234000"

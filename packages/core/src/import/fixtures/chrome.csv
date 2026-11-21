@@ -1,0 +1,6 @@
+name,url,username,password,note
+portal.sanitaer-grosshandel.example,https://portal.sanitaer-grosshandel.example/login,jonas@weber-haustechnik.example,Gr0ssh@ndel-2026,"Kundennummer 40711, Lieferadresse Lager
+Ansprechpartner: Herr ""Kalle"" Schröder"
+datev.example,https://www.datev.example/,anna@weber-haustechnik.example,"Steuer,Büro;2026!",
+com.heizungsapp.monteur,android://Zm9vYmFy@com.heizungsapp.monteur/,max@weber-haustechnik.example,M0nteur💧App,
+,,,,

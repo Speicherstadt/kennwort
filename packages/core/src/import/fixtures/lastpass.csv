@@ -1,0 +1,41 @@
+url,username,password,totp,extra,name,grouping,fav
+https://shop.sanitaer.example/login,einkauf@weber-haustechnik.example,"Sh0p,""Sanitär""",,Bestellungen ab 500 € mit Freigabe,Sanitär-Shop,Einkauf,1
+http://sn,,,,"NoteType:Credit Card
+Language:de-DE
+Name on Card:Jonas Weber
+Type:Visa
+Number:4111111111111111
+Security Code:123
+Start Date:,
+Expiration Date:August,2028
+Notes:Firmenkarte für Tankstellen
+Nicht für private Ausgaben",Firmenkreditkarte,Shared-Büro\Karten,0
+http://sn,,,,"NoteType:Address
+Language:de-DE
+Title:Frau
+First Name:Anna
+Middle Name:
+Last Name:Schmidt
+Username:anna
+Company:Weber Haustechnik
+Address 1:Industriestraße 12
+Address 2:
+Address 3:
+City / Town:Bremen
+County:
+State:
+Zip / Postal Code:28199
+Country:DE
+Email Address:anna@weber-haustechnik.example
+Phone:+49 421 123456
+Notes:",Anna Schmidt,(none),0
+http://sn,,,,"NoteType:Wi-Fi Password
+Language:de-DE
+SSID:Weber-Buero
+Password:Heizung&Sanitaer2026
+Connection Type:WPA2
+Notes:Gäste-WLAN ist getrennt",WLAN Büro,(none),0
+http://sn,,,,"Schlüsselliste:
+Transporter 1 – Max
+Transporter 2 – Sandra",Fahrzeugschlüssel,Fuhrpark,0
+https://telematik.example,,,,,"",,0
