@@ -286,6 +286,19 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
 
 - [ ] **K-501 Import-Ablauf** – Anbieter wählen, Anleitung, Vorschau mit Zuordnung, Duplikate,
   Markierung schwacher Passwörter, Hinweis zum Löschen der Datei.
+  Fertig, wenn: die Seite „Importieren“ (aus den Einstellungen) jeden Anbieter aus
+  `IMPORT_FORMATS` und „Andere Tabelle (CSV)“ mit Anleitung auf Deutsch und Englisch anbietet, die
+  Datei nur auf dem Gerät liest (keine Anfrage trägt ihren Inhalt), jeden `ImportError` als
+  verständlichen Text zeigt, für „Andere Tabelle“ die Spalten zuordnen lässt, die Vorschau Anzahl
+  je Art, Titel, Benutzername und Adresse zeigt (nie ein Geheimnis), Ziel-Tresor und Ordner als
+  Tags wählen lässt, Duplikate (gleicher Titel, Benutzername und Adresse) markiert und überspringt,
+  bis man sie trotzdem nimmt, schwache Passwörter nach der Regel von K-306 markiert, über den
+  normalen Schreibweg der Einträge in Stapeln mit Fortschritt schreibt (nichts bei
+  `rotation-due` oder offline) und danach zum Löschen der Exportdatei auffordert und auf „Zum
+  Ändern“ verweist; der Klartext der Datei verschwindet mit dem Ablauf; Vitest dafür, und
+  Playwright desktop und `@phone` importiert ein Bitwarden-JSON und ein Chrome-CSV, überspringt
+  ein Duplikat, markiert ein schwaches Passwort, zeigt den Hinweis zum Löschen und ordnet bei
+  „Andere Tabelle“ Spalten zu.
 - [ ] **K-502 Parser** – je Format aus dem Projektplan eine reine Funktion in `packages/core`.
   Fertig, wenn: je Anbieter echte, anonymisierte Fixtures bestehen und Fuzzing ohne Absturz läuft.
   In Teilen, je ein Pull Request; abgehakt wird K-502, wenn alle stehen:
