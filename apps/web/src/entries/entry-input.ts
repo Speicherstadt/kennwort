@@ -4,9 +4,9 @@
  * back into it; the favorite rides along, and a replaced secret goes into the history.
  */
 
+import { historyAfter } from "@kennwort/client/entries/entry-history.ts";
 import { type EntryType, TEMPLATES, templateField } from "@kennwort/client/entries/entry-types.ts";
 import type { EntryContent } from "@kennwort/core";
-import { historyAfter } from "./entry-history.ts";
 
 type StoredField = EntryContent["fields"][number];
 /**

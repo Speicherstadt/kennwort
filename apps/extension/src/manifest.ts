@@ -5,6 +5,7 @@
  */
 import type { ManifestV3Export } from "@crxjs/vite-plugin";
 import { MENU_PAGE } from "./fill/messages.ts";
+import { PROMPT_PAGE } from "./save/messages.ts";
 
 /** The manifest as an object (ManifestV3Export also allows a function or a promise) */
 type ManifestV3 = Extract<ManifestV3Export, { manifest_version: number }>;
@@ -24,8 +25,8 @@ const WORKER = "src/background.ts";
 
 /**
  * No remote code, no eval, no inline scripts: only the extension's own files run on its pages.
- * Web pages may frame them (the inline menu sits in the page, K-403), but a page reaches only what
- * web_accessible_resources lists: the menu page, never the popup.
+ * Web pages may frame them (the inline menu and the save prompt sit in the page, K-403, K-404), but
+ * a page reaches only what web_accessible_resources lists: those two pages, never the popup.
  */
 export const CONTENT_SECURITY_POLICY =
   "script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors https: http:";
@@ -58,15 +59,17 @@ const common = {
 };
 
 /**
- * The menu page is the one page web pages may load (crxjs adds the content script's own chunks).
- * In Chrome under an address that changes each browser session (use_dynamic_url), so a page cannot
- * frame the menu by an address it knows; Firefox gives each installation its own random address
- * anyway. A menu framed without the content script's nonce fills nothing (fill/messages.ts).
+ * The menu page and the save prompt's page are the only pages web pages may load (crxjs adds the
+ * content script's own chunks). In Chrome under an address that changes each browser session
+ * (use_dynamic_url), so a page cannot frame them by an address it knows; Firefox gives each
+ * installation its own random address anyway. A menu or prompt framed without the content script's
+ * nonce fills, takes and saves nothing (fill/messages.ts, save/messages.ts).
  */
+const FRAMED_PAGES = [MENU_PAGE, PROMPT_PAGE];
 const menuResource = (browser: Browser) => [
   browser === "chrome"
-    ? { resources: [MENU_PAGE], matches: WEB_PAGES, use_dynamic_url: true }
-    : { resources: [MENU_PAGE], matches: WEB_PAGES },
+    ? { resources: FRAMED_PAGES, matches: WEB_PAGES, use_dynamic_url: true }
+    : { resources: FRAMED_PAGES, matches: WEB_PAGES },
 ];
 
 /**

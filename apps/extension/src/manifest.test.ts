@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { MENU_PAGE } from "./fill/messages.ts";
 import { CONTENT_SECURITY_POLICY, E2E_HOSTS, GECKO_ID, manifest, WEB_PAGES } from "./manifest.ts";
+import { PROMPT_PAGE } from "./save/messages.ts";
 
 type Manifest = Record<string, unknown> & {
   background: Record<string, unknown>;
@@ -37,9 +38,9 @@ describe.each(["chrome", "firefox"] as const)("the manifest for %s", (browser) =
     );
   });
 
-  it("lets web pages load the menu page and nothing else of the extension", () => {
+  it("lets web pages load the menu and the save prompt and nothing else of the extension", () => {
     const resources = built(browser).web_accessible_resources;
-    expect(resources.flatMap((entry) => entry.resources)).toEqual([MENU_PAGE]);
+    expect(resources.flatMap((entry) => entry.resources)).toEqual([MENU_PAGE, PROMPT_PAGE]);
     expect(resources.every((entry) => entry.matches === WEB_PAGES)).toBe(true);
   });
 
@@ -62,7 +63,7 @@ describe.each(["chrome", "firefox"] as const)("the manifest for %s", (browser) =
     expect(CONTENT_SECURITY_POLICY).toContain("script-src 'self';");
     expect(CONTENT_SECURITY_POLICY).toContain("object-src 'none'");
     expect(CONTENT_SECURITY_POLICY).not.toMatch(/unsafe|\*/);
-    // Only web pages may frame them (the inline menu, K-403); scripts still come from the extension
+    // Only web pages may frame them (the inline menu, K-403, the save prompt, K-404); scripts still come from the extension
     const directives = CONTENT_SECURITY_POLICY.split(";").map((part) => part.trim());
     expect(directives.filter((part) => /http/.test(part))).toEqual([
       "frame-ancestors https: http:",
@@ -70,9 +71,9 @@ describe.each(["chrome", "firefox"] as const)("the manifest for %s", (browser) =
   });
 });
 
-it("serves the menu page in Chrome under an address that changes each session", () => {
+it("serves menu and prompt in Chrome under an address that changes each session", () => {
   expect(built("chrome").web_accessible_resources).toEqual([
-    { resources: [MENU_PAGE], matches: WEB_PAGES, use_dynamic_url: true },
+    { resources: [MENU_PAGE, PROMPT_PAGE], matches: WEB_PAGES, use_dynamic_url: true },
   ]);
 });
 

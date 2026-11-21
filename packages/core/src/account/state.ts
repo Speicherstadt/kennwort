@@ -38,6 +38,11 @@ export const AccountState = z.object({
    * stays with the last valid policy instead of falling back to the standard (review of K-304)
    */
   policyLock: z.number().int().min(1).max(60).default(10),
+  /**
+   * The sites the extension never offers to save a login for ("Nie für diese Seite", K-404), by
+   * exact host: kept here so every device of the account knows them and no store on the disk does
+   */
+  neverSave: z.array(z.string()).default([]),
 });
 export type AccountState = z.infer<typeof AccountState>;
 
@@ -148,6 +153,7 @@ export const mergeStates = (
     invitations: { ...theirs.invitations, ...mine.invitations },
     certificates: newest(mine.certificates, theirs.certificates),
     ...newerPolicy(mine, theirs),
+    neverSave: [...new Set([...mine.neverSave, ...theirs.neverSave])].sort(),
   });
 };
 
@@ -164,4 +170,5 @@ export const emptyState = (
   certificates: {},
   policy: 0,
   policyLock: 10,
+  neverSave: [],
 });
