@@ -17,6 +17,7 @@ export type Route =
   | { page: "settings" }
   | { page: "members" }
   | { page: "vaults" }
+  | { page: "import" }
   | { page: "setup" }
   | { page: "unlock" }
   | { page: "recover" }

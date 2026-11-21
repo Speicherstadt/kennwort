@@ -1,0 +1,52 @@
+{
+  "encrypted": false,
+  "folders": [{ "id": "f1", "name": "Büro" }],
+  "items": [
+    {
+      "id": "i1",
+      "organizationId": null,
+      "folderId": "f1",
+      "type": 1,
+      "reprompt": 0,
+      "name": "DATEV Unternehmen online",
+      "notes": null,
+      "favorite": false,
+      "login": {
+        "uris": [{ "match": null, "uri": "https://datev.test/login" }],
+        "username": "anna@weber-haustechnik.test",
+        "password": "Steuer-Kessel-Rohr-2026!",
+        "totp": null
+      },
+      "collectionIds": null
+    },
+    {
+      "id": "i2",
+      "organizationId": null,
+      "folderId": null,
+      "type": 1,
+      "reprompt": 0,
+      "name": "Router Lager",
+      "notes": null,
+      "favorite": false,
+      "login": {
+        "uris": [{ "match": null, "uri": "http://router.test" }],
+        "username": "admin",
+        "password": "sommer2019",
+        "totp": null
+      },
+      "collectionIds": null
+    },
+    {
+      "id": "i3",
+      "organizationId": null,
+      "folderId": "f1",
+      "type": 2,
+      "reprompt": 0,
+      "name": "Alarmanlage Werkstatt",
+      "notes": "Code am Tablet im Lager",
+      "favorite": false,
+      "secureNote": { "type": 0 },
+      "collectionIds": null
+    }
+  ]
+}

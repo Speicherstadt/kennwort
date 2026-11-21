@@ -1,9 +1,9 @@
 ---
 title: Import und Export
 description: >-
-  Welche Exportdateien anderer Passwortmanager und Browser Kennwort liest, was daraus wird – Arten,
-  Felder, Einmalcodes, Ordner, Favoriten, frühere Passwörter – und wie die Datei auf dem Gerät
-  bleibt.
+  Wie du deine Zugänge aus einem anderen Passwortmanager, Browser oder einer Tabelle importierst –
+  Anbieter, Vorschau, Duplikate, schwache Passwörter –, welche Exportdateien Kennwort liest, was
+  daraus wird und wie die Datei auf dem Gerät bleibt.
 ---
 
 # Import und Export
@@ -15,9 +15,39 @@ Datei sie hat, frühere Passwörter.
 Die Exportdatei liest Kennwort nur auf deinem Gerät. Sie wird nie hochgeladen; der Server bekommt
 wie immer nur die fertig verschlüsselten Einträge.
 
-!!! note "Stand"
-    Kennwort liest die Formate unten bereits. Den Ablauf in der App – Anbieter wählen, Vorschau,
-    Duplikate, Ordner als Tresore – bringt der nächste Schritt (K-501).
+## So importierst du
+
+Unter **Einstellungen → Importieren**:
+
+1. **Anbieter wählen**: jeder Manager und Browser aus der Tabelle unten oder „Andere Tabelle (CSV)“.
+   Kennwort zeigt gleich, wo dort der Export ist.
+2. **Datei wählen**: Kennwort liest sie auf dem Gerät. Passt sie nicht, sagt es, warum – etwa
+   „Diese Datei ist verschlüsselt – exportiere unverschlüsselt“ oder dass sie zu einem anderen
+   Anbieter gehört.
+3. **Spalten zuordnen** (nur bei „Andere Tabelle“): Für Titel, Benutzername, Passwort, Adresse,
+   Einmalcode, Notizen, Ordner und Tags wählst du die Spalte; Kennwort schlägt nach den Namen der
+   Spalten schon eine Zuordnung vor. Die Tabelle braucht eine Kopfzeile und Kommas zwischen den
+   Spalten.
+4. **Vorschau**: wie viele Einträge welcher Art in der Datei stehen und jeden Eintrag mit Titel,
+   Benutzername und Adresse – Passwörter und andere geheime Felder zeigt die Vorschau nie. Du
+   wählst den Tresor (nur Tresore, in die du gerade schreiben darfst) und ob die Ordner des anderen
+   Managers zu Tags werden.
+    - **Doppelt** ist ein Eintrag, den es im gewählten Tresor schon gibt oder der weiter oben in der
+      Datei schon steht: gleicher Titel, gleicher Benutzername und gleiche Adresse, ohne Groß- und
+      Kleinschreibung und ohne `/` am Ende. Er wird übersprungen, außer du hakst „Trotzdem
+      importieren“ an.
+    - **Schwach** ist ein Passwort nach derselben Regel wie unter „Zum Ändern“ (siehe
+      [Einträge](eintraege.md)).
+5. **Importieren**: Kennwort verschlüsselt und signiert jeden Eintrag wie einen von Hand angelegten
+   und schreibt sie in Stapeln, mit Fortschritt. Offline oder solange im Tresor ein
+   Schlüsselwechsel aussteht, schreibt der Import nichts. Bricht er ab, sagt er, wie viele Einträge
+   schon gespeichert sind; was nicht ankam, schickt Kennwort auch später nicht von selbst.
+6. **Danach**: Lösche die Exportdatei, auch aus Downloads und Papierkorb – sie enthält jedes
+   Passwort im Klartext. Schwache Passwörter findest du über den Link gleich unter „Zum Ändern“.
+
+Der Klartext der Datei bleibt nur so lange im Speicher, wie Zuordnung und Vorschau ihn brauchen:
+Nach dem Import oder wenn du die Seite verlässt, ist er weg, die gelesenen Bytes überschreibt
+Kennwort mit Nullen.
 
 ## Formate
 
@@ -61,9 +91,10 @@ Noch nicht dabei und als eigene Teile geplant:
   wird eine Notiz.
 - **Titel**: Fehlt er (Firefox), nimmt Kennwort die Adresse der Website, sonst den Benutzernamen.
 - **Ordner und Sammlungen** merkt sich der Import zu jedem Eintrag, mit `/` zwischen den Ebenen;
-  in der Vorschau werden daraus Tresore.
+  in der Vorschau werden sie auf Wunsch Tags (`Technik/Fernwartung`). Alle Einträge einer Datei
+  kommen in einen Tresor; neue Tresore aus Ordnern legt der Import nicht an.
 - **Tags** und **Favoriten** bleiben erhalten, frühere Passwörter kommen in den Verlauf des
-  Eintrags.
+  Eintrags, je Feld die zehn neuesten.
 - Leere Felder lässt Kennwort weg, Zeilenumbrüche aus Windows-Dateien werden einheitlich.
 
 ## Kaputte Dateien
