@@ -1,6 +1,6 @@
 import { openEntryKey } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
-import { edit, emptyDevice, pull, rekey, sync } from "./device.ts";
+import { edit, emptyDevice, inVersionOrder, pull, rekey, sync } from "./device.ts";
 import { memoryServer, type SyncServer } from "./memory-server.ts";
 import { type EntryRecord, sealRecord } from "./record.ts";
 import { anna, bank, contextFor, id, jonas, max, withField } from "./test/fixtures.ts";
@@ -140,6 +140,36 @@ describe("the entry key (P-09, P-10)", () => {
     expect(key?.epoch).toBe(1);
     expect(key?.entryKey).not.toEqual(old?.entryKey);
     expect(server.pull()[0]?.epoch).toBe(1);
+  });
+});
+
+describe("the epoch of an entry (P-11)", () => {
+  it("is not kept for a version the device holds without its entry key", async () => {
+    const server = memoryServer();
+    await sync(edit(emptyDevice(), e1, bank), server, contextFor(jonas));
+    const v2 = sealRecord(
+      { id: anna.id, edSecretKey: anna.ed.secretKey },
+      contextFor(anna).ring,
+      e1,
+      2,
+      withField(bank, "user", "anna"),
+      new Uint8Array(),
+    );
+    const keyless = {
+      known: new Map([["e1".repeat(16), { entryId: e1, version: 1, content: bank }]]),
+      queue: [],
+    };
+    const pulled = await pull(keyless, { pull: () => [v2], push: server.push }, contextFor(jonas));
+    expect(pulled.refused).toEqual([]);
+    expect(pulled.device.known.get("e1".repeat(16))?.version).toBe(2);
+  });
+});
+
+describe("the order a pull weighs records in (P-11)", () => {
+  it("puts the versions of each entry in the order they were written and keeps the entries' order", () => {
+    const at = (entry: number, version: number) => ({ entryId: id(entry), version });
+    const order = inVersionOrder([at(0xe2, 2), at(0xe1, 1), at(0xe2, 1)]);
+    expect(order).toEqual([at(0xe2, 1), at(0xe2, 2), at(0xe1, 1)]);
   });
 });
 

@@ -237,6 +237,34 @@ describe("the kept records", () => {
     expect(await copy.records("other")).toEqual([]);
   });
 
+  it("never replaces a record of a later epoch with a newer version of an earlier one (P-11)", async () => {
+    const { copy } = await copyFor();
+    const inEpoch = (entry: number, version: number, epoch: number) => ({
+      ...record(entry, version),
+      epoch,
+    });
+    await copy.keepRecords(VAULT, [inEpoch(1, 2, 1), inEpoch(2, 1, 0)], () => true);
+    // A server kept a member from the rotation and serves what she wrote under the old key
+    await copy.keepRecords(VAULT, [inEpoch(1, 3, 0), inEpoch(2, 2, 1)], () => true);
+    const kept = await copy.records(VAULT);
+    expect(kept.map((r) => [r.entryId[0], r.version, r.epoch])).toEqual([
+      [1, 2, 1],
+      [2, 2, 1],
+    ]);
+  });
+
+  it("keeps the record of the later epoch when one answer brings a newer version of an earlier one first (P-11)", async () => {
+    const { copy } = await copyFor();
+    const inEpoch = (entry: number, version: number, epoch: number) => ({
+      ...record(entry, version),
+      epoch,
+    });
+    await copy.keepRecords(VAULT, [inEpoch(1, 1, 0)], () => true);
+    await copy.keepRecords(VAULT, [inEpoch(1, 3, 0), inEpoch(1, 2, 1)], () => true);
+    const kept = await copy.records(VAULT);
+    expect(kept.map((r) => [r.entryId[0], r.version, r.epoch])).toEqual([[1, 2, 1]]);
+  });
+
   it("keeps the wire form, which reads back to the same records", async () => {
     const { store, copy } = await copyFor();
     await copy.keepRecords(VAULT, [record(1, 2)], () => true);
