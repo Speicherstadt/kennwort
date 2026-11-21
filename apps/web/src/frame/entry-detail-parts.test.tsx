@@ -114,4 +114,18 @@ describe("entry detail: tags, Zum Ändern, earlier passwords", () => {
     const reused = shownIn({ ...entry("edit"), reused: 2 }).root.querySelector('[role="note"]');
     expect(reused?.textContent).not.toContain("schwach");
   });
+
+  it("says who left and until when they could read it, and what to change (K-307)", () => {
+    const marks = [
+      { account: "bWF4", name: "Max", at: Date.UTC(2026, 10, 20) / 1000, fields: ["Passwort"] },
+      { account: "YW5uYQ", name: null, at: Date.UTC(2026, 10, 21) / 1000, fields: ["PIN", "Code"] },
+    ];
+    const { root } = shownIn({ ...entry("edit"), marks });
+    const note = root.querySelector('[role="note"]');
+    expect(note?.textContent).toContain("Max hatte Zugriff bis 20.11.2026. Ändere: Passwort.");
+    expect(note?.textContent).toContain(
+      "Ein ehemaliges Mitglied hatte Zugriff bis 21.11.2026. Ändere: PIN, Code.",
+    );
+    expect(note?.textContent).not.toContain("schwach");
+  });
 });

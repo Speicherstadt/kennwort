@@ -7,6 +7,7 @@ import {
   type LogEntry,
   VaultRequestsWire as Requests,
   toWire,
+  type WrappedKey,
 } from "@kennwort/core";
 import type { Call } from "./api.ts";
 
@@ -33,10 +34,27 @@ export const vaultCalls = (call: Call) => ({
     const answer = await call("POST", "/api/vaults", { id: encodeBytes(vaultId) }, token);
     return answer.status === 201 ? "ok" : answer.status === 409 ? "taken" : "failed";
   },
-  appendLog: async (token: string, entry: LogEntry, wrappedKey?: Uint8Array): Promise<Appended> => {
+  /**
+   * The next log entry; a new member's entry carries their wrapped key, a rotation the new key for
+   * every member the log names after it (P-11)
+   */
+  appendLog: async (
+    token: string,
+    entry: LogEntry,
+    wrappedKey?: Uint8Array,
+    wrappedKeys?: readonly WrappedKey[],
+  ): Promise<Appended> => {
     const body = {
       entry: toWire(entry),
       ...(wrappedKey ? { wrappedKey: encodeBytes(wrappedKey) } : {}),
+      ...(wrappedKeys
+        ? {
+            wrappedKeys: wrappedKeys.map((key) => ({
+              accountId: encodeBytes(key.accountId),
+              wrapped: encodeBytes(key.wrapped),
+            })),
+          }
+        : {}),
     };
     const answer = await call("POST", `/api/vaults/${encodeBytes(entry.vaultId)}/log`, body, token);
     if (answer.status === 201) return "ok";

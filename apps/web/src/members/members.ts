@@ -56,6 +56,16 @@ export const mayInvite = (me: MemberView | undefined) =>
 export const mayConfirm = (opened: Opened, me: MemberView | undefined) =>
   opened.state.rootSecretKey !== undefined && mayInvite(me);
 
+/**
+ * Who may make an account leave the company, as the server allows it (K-307): owners anyone else,
+ * admins only members, nobody themselves, and nobody who left already
+ */
+export const mayRemove = (me: MemberView | undefined, view: MemberView) =>
+  mayInvite(me) &&
+  encodeBytes(view.accountId) !== encodeBytes((me as MemberView).accountId) &&
+  view.leftAt == null &&
+  (me?.role === "owner" || view.role === "member");
+
 /** Only owners give roles, with the root key at hand */
 export const mayChangeRoles = (opened: Opened, me: MemberView | undefined) =>
   mayConfirm(opened, me) && me?.role === "owner";

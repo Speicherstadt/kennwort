@@ -3,13 +3,7 @@ import { idKey } from "@kennwort/core";
 import { flush } from "solid-js";
 import { describe, expect, it } from "vitest";
 import { ownerRow } from "../members/members.test-kit.ts";
-import {
-  addToVault,
-  candidates,
-  changeVaultRole,
-  removeFromVault,
-  vaultMembers,
-} from "./vault-members.ts";
+import { addToVault, candidates, changeVaultRole, vaultMembers } from "./vault-members.ts";
 import { certifiedAnna, jonasWithVaults } from "./vaults.test-kit.ts";
 
 // K-305 part 3: Jonas adds Anna to the vault Büro, makes her an editor and removes her again
@@ -37,7 +31,7 @@ describe("vault members", () => {
     expect(members.map((p) => [p.role, p.me])).toEqual([["manage", true]]);
   });
 
-  it("adds Anna, changes her role and removes her: every entry passes the client's check", async () => {
+  it("adds Anna and changes her role: every entry passes the client's check", async () => {
     const w = await buero();
     let { vault, people } = await w.current();
     const anna = candidates(vault, people)[0];
@@ -56,10 +50,6 @@ describe("vault members", () => {
     });
     ({ vault } = await w.current());
     expect(vault.log.members.get(idKey(anna.accountId))?.role).toBe("edit");
-    expect(await removeFromVault(w.api, w.c.session, vault, anna.accountId)).toEqual({ ok: true });
-    ({ vault, people } = await w.current());
-    expect(vault.log.members.has(idKey(anna.accountId))).toBe(false);
-    expect(candidates(vault, people).map((p) => p.name)).toEqual(["Anna"]);
   });
 
   it("signs no time before the newest entry, even when this device's clock runs behind", async () => {
@@ -85,10 +75,6 @@ describe("vault members", () => {
     });
     w.c.session.lock();
     flush();
-    expect(await removeFromVault(w.api, w.c.session, vault, anna.accountId)).toEqual({
-      ok: false,
-      error: "locked",
-    });
     expect(await changeVaultRole(w.api, w.c.session, vault, anna.accountId, "edit")).toEqual({
       ok: false,
       error: "locked",

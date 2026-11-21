@@ -215,7 +215,7 @@ und die Schritte für Menschen am Ende erledigt sind.
     Person lesen konnte, markiert wird und die Angriffe „Server hält den Wechsel zurück“, „Server
     gibt dem Ausgetretenen den alten Schlüssel“ und „Server spielt das Log zurück“ als Tests gegen
     den lügenden Server erkannt werden; Mutation-Tests in `packages/core` bei 100 %.
-  - [ ] Teil b: Austritt in der Web-App – „Aus der Firma entfernen“ und „Aus dem Tresor entfernen“
+  - [x] Teil b: Austritt in der Web-App – „Aus der Firma entfernen“ und „Aus dem Tresor entfernen“
     mit Schlüsselwechsel und Neuverschlüsseln, Freigaben neu verpackt (`reshare`), Markierte unter
     „Zum Ändern“ mit Grund, Austritts-Bericht; ein Verwalter-Client holt ausstehende Wechsel nach
     (`dueExits`), ein Eintrag aus einer Epoche vor einem Austritt bekommt beim Schreiben seine

@@ -13,7 +13,6 @@ import {
 import { m } from "@kennwort/ui";
 import { createSignal } from "solid-js";
 import type { Session } from "../session/session.ts";
-import type { ChangeError } from "./vault-members.ts";
 
 export type VaultsShown =
   | { state: "loading" }
@@ -23,20 +22,24 @@ export type VaultsShown =
 export const createVaultStore = (
   api: VaultDeps,
   session: Session,
-  /** Called with every load that succeeded: the entries load from the vaults it opened */
-  onLoaded: (loaded: Loaded) => void = () => {},
+  /**
+   * Called with every load that succeeded: the entries load from the vaults it opened; a reload
+   * ends once it has, so a change that reloads finds the entries of the vaults as they now are
+   */
+  onLoaded: (loaded: Loaded) => void | Promise<void> = () => {},
 ) => {
   const [shown, setShown] = createSignal<VaultsShown>({ state: "loading" });
   let personalTried = false;
   /** Only the newest load shows: an older answer that arrives later is dropped */
   let generation = 0;
-  const reload = async (): Promise<void> => {
+  /** Loads the vaults anew; gives what it loaded, nothing when it failed or a newer load won */
+  const reload = async (): Promise<Loaded | undefined> => {
     const mine = ++generation;
     const loaded = await loadVaults(api, session);
-    if (mine !== generation) return;
+    if (mine !== generation) return undefined;
     if (!loaded.ok) {
       setShown({ state: "failed", error: loaded.error });
-      return;
+      return undefined;
     }
     if (needsPersonal(loaded.value) && !personalTried) {
       const made = await newVault(api, session, m.vaults_personal_name(), true);
@@ -45,7 +48,8 @@ export const createVaultStore = (
       if (made.ok || made.error === "exists") return reload();
     }
     setShown({ state: "ready", ...loaded.value });
-    onLoaded(loaded.value);
+    await onLoaded(loaded.value);
+    return loaded.value;
   };
   /**
    * The personal vault only for an account that never saw a vault: if the server lists none of the
@@ -62,9 +66,9 @@ export const createVaultStore = (
     return undefined;
   };
   /** A change to a vault's members, then the vault anew: also after "stale", to try again on it */
-  const change = async (
-    run: () => Promise<{ ok: true } | { ok: false; error: ChangeError }>,
-  ): Promise<ChangeError | undefined> => {
+  const change = async <E extends string>(
+    run: () => Promise<{ ok: true } | { ok: false; error: E }>,
+  ): Promise<E | undefined> => {
     const done = await run();
     await reload();
     return done.ok ? undefined : done.error;

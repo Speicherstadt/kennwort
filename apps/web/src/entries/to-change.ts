@@ -1,6 +1,7 @@
 /**
  * „Zum Ändern“ (K-306 part 5): entries whose password is weak or used in more than one entry this
- * account can see. Worked out in memory on the device from the decrypted entries each time they
+ * account can see; and since K-307 entries whose secrets someone who left could read (their marks
+ * travel encrypted in the entry, P-11). Worked out in memory on the device from the decrypted entries each time they
  * change; no value, hash or mark of it is stored or sent anywhere.
  */
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
@@ -40,5 +41,9 @@ export const markToChange = (entries: readonly ShownEntry[]): ShownEntry[] => {
   });
 };
 
-/** Whether an entry belongs under „Zum Ändern“ */
-export const toChange = (entry: ShownEntry) => entry.weak || entry.reused > 1;
+/**
+ * Whether an entry belongs under „Zum Ändern“: weak, reused, or marked because someone who left
+ * could read its secrets (K-307, P-11)
+ */
+export const toChange = (entry: ShownEntry) =>
+  entry.weak || entry.reused > 1 || (entry.marks?.length ?? 0) > 0;

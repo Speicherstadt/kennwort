@@ -58,13 +58,24 @@ Konto; sein Gerät nimmt ihn beim nächsten Öffnen der Mitglieder an, wenn er z
 
 ## Austritt aus der Firma
 
-Verlässt jemand die Firma, entfernt ihn ein Inhaber (oder bei Mitarbeitern ein Admin) aus der
-Firma. Der Server sperrt das Konto sofort: Alle seine Geräte sind abgemeldet, und es kommt an
-nichts mehr heran, auch nicht mit einer Sitzung, die es noch hat. Einladungslinks, die es
-verschickt hat und die noch niemand angenommen hat, gelten nicht mehr. In der Mitgliederliste bleibt es
-mit dem Tag des Austritts stehen, denn seine Unterschriften in den Tresoren müssen prüfbar bleiben.
-Aus den Tresoren entfernt es danach das Gerät eines Verwalters, mit neuem Tresor-Schlüssel (siehe
-[Tresore](tresore.md)). Die Schaltfläche dafür bringt der nächste Teil von K-307.
+Verlässt jemand die Firma, wählt ein Inhaber (bei Mitarbeitern auch ein Admin) unter **Einstellungen
+→ Mitglieder** neben der Person **Aus der Firma entfernen** und bestätigt. Inhaber können jeden
+außer sich selbst entfernen, Admins nur Mitarbeiter. Der Server sperrt das Konto sofort: Alle
+seine Geräte sind abgemeldet, und es kommt an nichts mehr heran, auch nicht mit einer Sitzung, die
+es noch hat. Einladungslinks, die es verschickt hat und die noch niemand angenommen hat, gelten
+nicht mehr. In der Mitgliederliste bleibt es als **Ausgetreten** stehen, denn seine Unterschriften
+in den Tresoren müssen prüfbar bleiben.
+
+Aus den Tresoren nimmt es danach das Gerät eines Verwalters, mit neuem Tresor-Schlüssel und
+markierten Passwörtern (siehe [Wenn jemand geht](tresore.md#wenn-jemand-geht)): sofort das Gerät,
+auf dem du entfernt hast, für die Tresore, die du verwaltest, und für alle anderen Tresore das
+Gerät ihres Verwalters, sobald er Kennwort öffnet.
+
+**Austritts-Bericht** neben einer ausgetretenen Person zeigt, was sie lesen konnte: je Tresor ihre
+Rolle, seit wann und bis wann sie Mitglied war, und jeden Eintrag, den sie lesen konnte, mit den
+Namen seiner geheimen Felder. Dein Gerät stellt den Bericht aus den Protokollen und Einträgen
+zusammen, die es entschlüsseln kann; Tresore, in denen du nicht Mitglied bist, fehlen darin. Der
+Server sieht den Bericht nie.
 
 !!! warning "Wenn der Firmenschlüssel nicht passt"
     Zeigt Kennwort statt der Mitglieder den Hinweis, dass der Firmenschlüssel nicht zu deinem Konto

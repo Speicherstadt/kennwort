@@ -5,6 +5,8 @@
  * memory. With the offline copy (K-308 part b) every record that passed the checks is kept there as
  * the server sent it, still sealed; a vault opened anew first pulls from the copy, so offline the
  * entries are there, and online the server is checked against what this device saw (E-13, E-15).
+ * After someone left (K-307, P-11) every write knows who left and marks what they could read, no
+ * write goes out while a rotation is due, and a manager's rotation writes every entry anew.
  */
 import {
   type Connection,
@@ -15,6 +17,8 @@ import {
   httpServer,
   idKey,
   openRecordWithKey,
+  type Pulled,
+  pastExposures,
   pull,
   type Refused,
   type SyncContext,
@@ -27,6 +31,7 @@ import type { OpenAccount } from "../session/open-account.ts";
 import type { Vault } from "../vaults/vaults.ts";
 import { withPulled, withSynced } from "./device-merge.ts";
 import type { StoredEntry } from "./entries.ts";
+import { entryRotation } from "./entry-rotation.ts";
 import { entryWrites } from "./entry-writes.ts";
 
 export type ServerFor = (token: string, vaultId: Uint8Array) => SyncServer;
@@ -40,7 +45,8 @@ export const httpServerFor =
   };
 
 export type VaultState = { vault: Vault; device: Device; refused: Refused[] };
-export type SaveError = "locked" | "read-only" | "unreachable" | "not-saved";
+/** rotation-due: someone left and the vault key is not rotated yet, so nothing is written (P-11) */
+export type SaveError = "locked" | "read-only" | "unreachable" | "not-saved" | "rotation-due";
 /** Queues a change to one entry and syncs it at once; gives the device as the sync left it */
 export type SyncChange = (
   vaultIdText: string,
@@ -97,8 +103,11 @@ const serversOf =
     if (!opened) return undefined;
     const server = serverFor(opened.token, vault.ring.vaultId);
     if (!copy) return server;
-    const check = (record: EntryRecord) =>
-      openRecordWithKey(record, ctx.ring, ctx.log, ctx.trust, 0).ok;
+    // Under the key of the record's own epoch: one a rotation has not re-encrypted yet stays too
+    const check = (record: EntryRecord) => {
+      const ring = [ctx.ring, ...(ctx.older ?? [])].find((r) => r.epoch === record.epoch);
+      return ring !== undefined && openRecordWithKey(record, ring, ctx.log, ctx.trust, 0).ok;
+    };
     return keeping(server, (records) => void copy.keepRecords(vault.idText, records, check));
   };
 
@@ -109,11 +118,67 @@ const contextOf = (session: Session, vault: Vault, trust: Trust): SyncContext | 
   return {
     author: { id: opened.accountId, edSecretKey: opened.keyBlock.ed.secretKey },
     ring: vault.ring,
+    older: vault.older,
     log: vault.log,
     trust: { ...trust, now },
     lastSeen: vault.log.hash,
     now,
+    exposures: pastExposures(vault.entries),
   };
+};
+
+/** Syncs the device a change makes of the vault's state; why not, or what was sent and came back */
+export type SyncDevice = (
+  state: VaultState,
+  change: (device: Device) => Device,
+) => Promise<"locked" | "unreachable" | { queued: Device; synced: Pulled }>;
+
+/** Pulling and syncing one vault under its context as things are now; nothing while locked */
+const vaultSync = (deps: {
+  trust: () => Trust | undefined;
+  session: Session;
+  serverOf: ReturnType<typeof serversOf>;
+  update: (vaultIdText: string, change: (state: VaultState) => VaultState) => void;
+}) => {
+  const { session, serverOf, update } = deps;
+  /** The vault's sync context and server as things are now; nothing while locked */
+  const openOf = (state: VaultState) => {
+    const trust = deps.trust();
+    const ctx = trust && contextOf(session, state.vault, trust);
+    const server = ctx && serverOf(state.vault, ctx);
+    return ctx && server ? { ctx, server } : undefined;
+  };
+
+  /** Pulls a vault anew into its device as it is now; nothing while locked or unanswered */
+  const pullNow = async (state: VaultState) => {
+    const open = openOf(state);
+    const pulled = open && (await pull(state.device, open.server, open.ctx).catch(() => undefined));
+    if (!pulled) return undefined;
+    update(state.vault.idText, (s) => ({
+      ...s,
+      device: withPulled(s.device, pulled.device),
+      refused: pulled.refused,
+    }));
+    return pulled;
+  };
+
+  /** Syncs the device a change makes of the vault's state, and keeps what the sync left */
+  const syncDevice: SyncDevice = async (state, change) => {
+    const open = openOf(state);
+    if (!open) return "locked";
+    const { ctx, server } = open;
+    const queued = change(state.device);
+    // The very device that is sent: withSynced knows the ops it took by their identity
+    update(state.vault.idText, (s) => ({ ...s, device: queued }));
+    const synced = await sync(queued, server, ctx).catch(() => undefined);
+    if (!synced) return "unreachable";
+    update(state.vault.idText, (s) => ({
+      ...s,
+      device: withSynced(s.device, queued, synced.device, ctx.now),
+    }));
+    return { queued, synced };
+  };
+  return { pullNow, syncDevice };
 };
 
 export const createEntryStore = (serverFor: ServerFor, session: Session, copy?: EntryCopy) => {
@@ -176,25 +241,20 @@ export const createEntryStore = (serverFor: ServerFor, session: Session, copy?: 
     }));
   };
 
+  const { pullNow, syncDevice } = vaultSync({ trust: () => trust, session, serverOf, update });
+
   /** Queues a change to one entry and syncs it at once; it stays queued if the server failed */
   const syncChange: SyncChange = async (vaultIdText, entryId, change) => {
     const state = current(vaultIdText);
     if (!state || !trust) return { ok: false, error: "unreachable" };
     if (state.vault.role === "read") return { ok: false, error: "read-only" };
-    const ctx = contextOf(session, state.vault, trust);
-    const server = ctx && serverOf(state.vault, ctx);
-    if (!ctx || !server) return { ok: false, error: "locked" };
-    const queued = change(state.device);
-    // The very device that is sent: withSynced knows the ops it took by their identity
-    update(vaultIdText, (s) => ({ ...s, device: queued }));
-    const synced = await sync(queued, server, ctx).catch(() => undefined);
-    if (!synced) return { ok: false, error: "unreachable" };
-    update(vaultIdText, (s) => ({
-      ...s,
-      device: withSynced(s.device, queued, synced.device, ctx.now),
-    }));
-    const stillQueued = synced.device.queue.some((op) => idKey(op.entryId) === idKey(entryId));
-    return stillQueued ? { ok: false, error: "not-saved" } : { ok: true, value: synced.device };
+    // Not even queued: whoever left still holds the current key until a manager rotates it
+    if (state.vault.log.rotationDue) return { ok: false, error: "rotation-due" };
+    const done = await syncDevice(state, change);
+    if (typeof done === "string") return { ok: false, error: done };
+    const { device } = done.synced;
+    const stillQueued = device.queue.some((op) => idKey(op.entryId) === idKey(entryId));
+    return stillQueued ? { ok: false, error: "not-saved" } : { ok: true, value: device };
   };
 
   /**
@@ -204,16 +264,8 @@ export const createEntryStore = (serverFor: ServerFor, session: Session, copy?: 
    */
   const refresh = async (vaultIdText: string, entryId: Uint8Array) => {
     const state = current(vaultIdText);
-    const ctx = state && trust && contextOf(session, state.vault, trust);
-    const server = state && ctx && serverOf(state.vault, ctx);
-    if (!state || !ctx || !server) return undefined;
-    const pulled = await pull(state.device, server, ctx).catch(() => undefined);
+    const pulled = state && (await pullNow(state));
     if (!pulled) return undefined;
-    update(vaultIdText, (s) => ({
-      ...s,
-      device: withPulled(s.device, pulled.device),
-      refused: pulled.refused,
-    }));
     if (pulled.refused.some((r) => idKey(r.entryId) === idKey(entryId))) return undefined;
     return current(vaultIdText)?.device.known.get(idKey(entryId));
   };
@@ -224,12 +276,20 @@ export const createEntryStore = (serverFor: ServerFor, session: Session, copy?: 
         idText: encodeBytes(known.entryId),
         vaultIdText: state.vault.idText,
         role: state.vault.role,
+        rotationDue: state.vault.log.rotationDue,
         version: known.version,
         content: known.content,
       })),
     );
   const refused = () => states().flatMap((s) => s.refused);
-  return { load, refresh, ...entryWrites(syncChange, current, update), entries, refused };
+  return {
+    load,
+    refresh,
+    ...entryWrites(syncChange, current, update),
+    ...entryRotation({ current, states, pullNow, syncDevice }),
+    entries,
+    refused,
+  };
 };
 
 export type EntryStore = ReturnType<typeof createEntryStore>;

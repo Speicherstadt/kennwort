@@ -120,10 +120,18 @@ Eintrag es steht. Die Suche läuft auf deinem Gerät, der Server sieht sie nicht
 ## Zum Ändern
 
 **Zum Ändern** sammelt Einträge, deren Passwort schwach ist oder in mehr als einem Eintrag steht,
-den du sehen kannst; die Seitenleiste zeigt, wie viele es sind, am Handy der Filter
-„Zum Ändern · N“. In der Liste tragen sie den Hinweis „ändern“, und im Eintrag steht, warum:
-„Das Passwort ist schwach …“ oder „Dasselbe Passwort steht in N Einträgen.“ Sobald du das
-Passwort änderst, verschwindet der Eintrag aus der Liste.
+den du sehen kannst, und Einträge, deren geheime Felder jemand lesen konnte, der den Tresor
+verlassen hat; die Seitenleiste zeigt, wie viele es sind, am Handy der Filter „Zum Ändern · N“. In
+der Liste tragen sie den Hinweis „ändern“, und im Eintrag steht, warum: „Das Passwort ist schwach
+…“, „Dasselbe Passwort steht in N Einträgen.“ oder „Anna hatte Zugriff bis 20.11.2026. Ändere:
+Passwort.“ Sobald du das Passwort änderst, verschwindet der Eintrag aus der Liste.
+
+Den Hinweis auf jemanden, der gegangen ist, setzt das Gerät, das nach dem Austritt den
+Tresor-Schlüssel wechselt ([Wenn jemand geht](tresore.md#wenn-jemand-geht)), und danach jedes
+Gerät, das einen Eintrag aus der Zeit vor dem Austritt ändert. Er steht verschlüsselt im Eintrag
+selbst, alle Mitglieder sehen ihn, und er bleibt bei jeder anderen Änderung erhalten. Jedes Feld
+geht aus ihm heraus, sobald sein Wert sich ändert; mit dem letzten Feld verschwindet der Hinweis.
+Einen PIN oder einen TOTP-Schlüssel nennt er ebenso wie ein Passwort.
 
 Geprüft werden die Passwörter von Logins und WLAN und die Passphrase eines SSH-Schlüssels. Eine
 PIN, eine Prüfnummer oder ein API-Schlüssel ist kurz oder vom Dienst vorgegeben; die prüft

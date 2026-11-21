@@ -532,10 +532,12 @@ nur von Verwaltern, nur für die aktuelle Epoche):
 name = F-01(VKₑ, Name in UTF-8 NFC, 1 bis 100 Zeichen, zweck = "vault-name", kontext = tresor-ID, epoche)
 ```
 
-Ein Name, den der Server aus einem anderen Tresor oder einer anderen Epoche herüberschiebt, lässt
-sich nicht öffnen; der Client zeigt dann „Tresor ohne Namen“ (`sealVaultName`, `openVaultName` in
-`packages/core/src/membership/vault-name.ts`). Restrisiko: Der Server kann einen früheren Namen
-derselben Epoche zurückspielen. Web-App und Extension laden jeden Tresor über `loadVaults`
+Ein Name, den der Server aus einem anderen Tresor herüberschiebt, lässt sich nicht öffnen; der
+Client zeigt dann „Tresor ohne Namen“ (`sealVaultName`, `openVaultName` in
+`packages/core/src/membership/vault-name.ts`). Seit K-307 Teil b öffnet der Client einen Namen mit
+dem Schlüssel seiner eigenen Epoche, damit ein Tresor nach einem Schlüsselwechsel nicht namenlos
+wird, bis ein Verwalter den Namen neu versiegelt hat. Restrisiko: Der Server kann einen früheren
+Namen zurückspielen, derselben oder einer früheren Epoche. Web-App und Extension laden jeden Tresor über `loadVaults`
 (`packages/client/src/vaults/vaults.ts`): Log mit `verifyLog` gegen den gemerkten Stand prüfen, VKₑ nur
 mit passender Bindung annehmen, nur öffnen, solange das Konto nach dem Log und der eigenen Uhr
 Mitglied ist, den neuen Stand im Kontozustand merken.
@@ -852,14 +854,16 @@ Restrisiken:
   Kontostand verloren, kann ihm der Server eine ältere Version des Eintrags ausliefern, die mit
   demselben EK verschlüsselt ist; erst ab der ersten gesehenen Version lehnt sein Client ältere ab
   (Schritt 5). Neuere Versionen kann der Server ihm vorenthalten.
-- **Schlüsselwechsel:** Ein Schlüsselwechsel ([P-11](#p-11-austritt-und-schlusselwechsel), K-307)
-  gibt jedem Eintrag des Tresors einen neuen EK. Damit öffnet keine bestehende Freigabe die neuen
-  Versionen mehr, bis sie neu verpackt ist; das macht K-307 Teil b mit dem Schlüsselwechsel, wie
-  beim Widerruf mit `reshare`.
+- **Schlüsselwechsel:** Ein Schlüsselwechsel ([P-11](#p-11-austritt-und-schlusselwechsel))
+  gibt jedem Eintrag des Tresors einen neuen EK. Der Client des Verwalters verpackt danach jede
+  Freigabe neu, die unter dem EK der ersetzten Version echt ist (`genuineShares` gegen das Log nach
+  dem Austritt), wie beim Widerruf mit `reshare`; Freigaben, die die ausgetretene Person signiert
+  hat oder die an sie gingen, nicht. Hat ein anderes Gerät den Eintrag dazwischen geschrieben,
+  bleibt seine Freigabe unter dem alten EK und öffnet die neue Version nicht.
 - **Teilender verlässt den Tresor:** Der Server liefert eine Freigabe weiter aus, auch wenn ihr
   Teilender den Tresor inzwischen verlassen hat oder nur noch lesen darf; der Empfänger kennt das
-  Log nicht und merkt es nicht. Nach dem Entfernen folgt ein Schlüsselwechsel (P-11, K-307), und
-  danach öffnet die Freigabe keine neue Version mehr, bis ein Mitglied sie neu verpackt. Bis dahin
+  Log nicht und merkt es nicht. Nach dem Entfernen folgt ein Schlüsselwechsel (P-11), der ihre
+  Freigaben nicht neu verpackt; danach öffnen sie keine neue Version mehr. Bis dahin
   liest der Empfänger, was er vorher auch lesen konnte. Die Mitglieder sehen eine solche Freigabe
   im Dialog nicht mehr, weil `genuineShares` nur Freigaben aktueller Bearbeiter annimmt, und können
   sie dort darum nicht entfernen; ein Widerruf einer anderen Freigabe des Eintrags verpackt sie
@@ -956,24 +960,71 @@ eine Version nur in der Epoche des neuesten Log-Eintrags, sonst `409` mit `error
 aktuellen Stand: Wer noch mit dem alten Schlüssel schreibt, schreibt für jemanden, der gegangen
 ist. Der Server-Ersatz antwortet gleich (Vertrag `sync/test/rotation-contract.ts`).
 
+**In der Web-App** (K-307 Teil b, `apps/web/src/vaults/exit.ts`):
+
+1. **Aus dem Tresor entfernen** nimmt die Person heraus und mit ihr jeden, den das Log noch nennt
+   und der laut Mitgliederliste die Firma verlassen hat, damit der neue Schlüssel keinen von ihnen
+   erreicht. Es prüft jedes `entfernen` gegen das Log, wie es danach steht
+   (`verifyLog`), signiert danach den `schlüsselwechsel` (`rotateVaultKey`) und schickt beides der
+   Reihe nach; nimmt der Server einen Eintrag nicht, geht der Rest nicht hinaus, und ein Entfernen
+   ohne Wechsel holt der Verwalter-Client später nach. Danach versiegelt er den Namen des Tresors
+   unter VKₑ₊₁; bis dahin liest jeder Client einen Namen mit dem Schlüssel seiner eigenen Epoche.
+2. Er lädt den Tresor neu, holt die Einträge vom Server und schreibt jeden, der noch in einer
+   früheren Epoche liegt, und jede wartende Änderung neu (`rotateEntries`); was schon in der
+   aktuellen Epoche liegt, bekommt keine neue Version.
+3. Er verpackt die Freigaben der neu geschriebenen Einträge neu (P-10), aber keine von oder an
+   jemanden, der den Tresor oder die Firma verlassen hat, auch wenn der Server sie noch auflistet.
+4. **Aus der Firma entfernen** ruft `DELETE /api/members/:id`; danach lädt der Client die Tresore
+   neu. Nach jedem Laden der Tresore holt ein Verwalter-Client nach, was seine Tresore schulden
+   (`dueExits` mit den Konten, die laut Mitgliederliste ausgetreten sind): ein Entfernen mit
+   Wechsel, einen Wechsel nach einem Entfernen, das der Server ohne ihn behalten hat, und Einträge
+   einer früheren Epoche, etwa weil das Neuschreiben scheiterte oder der Server sie dem
+   rotierenden Gerät verborgen hatte. Jeder Tresor kommt dabei je Stand des Logs einmal dran, und
+   immer nur ein Austritt zur Zeit, damit ein Neuladen mitten im Austritt nicht dieselben Einträge
+   zugleich schreibt.
+5. **Jedes Schreiben kennt die früheren Austritte**: Der `SyncContext` trägt sie
+   (`exposures`, aus dem geprüften Log mit `pastExposures`: wer entfernt wurde und nicht wieder
+   aufgenommen ist, wann, und die Epochen seiner Schlüssel). Ersetzt eine Version eine aus einer
+   dieser Epochen, markiert der Kern die geheimen Felder mit unverändertem Wert für diese Person,
+   gleich, ob ein Schlüsselwechsel sie gesehen hat. Ein Eintrag, den der Server vor dem
+   rotierenden Gerät versteckt hat, bekommt so seine Markierung, sobald ihn jemand schreibt (Test
+   gegen den lügenden Server in `packages/core/src/adversary/exit.test.ts`).
+6. **Solange ein Wechsel aussteht** (`rotationDue`), schreibt kein Client: Der Abgleich bricht ab
+   (`rotation-due`), die Web-App nimmt eine Änderung gar nicht erst in die Warteschlange, bietet
+   weder Anlegen noch Bearbeiten an und zeigt den Hinweis, dass im Tresor ein Schlüsselwechsel
+   aussteht. Lesen bleibt möglich, auch aus der Offline-Kopie.
+7. Die Markierungen stehen unter **Zum Ändern** mit dem Namen der Person, dem Tag und den Feldern;
+   der **Austritts-Bericht** (`exitReport`) liegt in den Mitgliedern neben jeder ausgetretenen
+   Person und rechnet aus den Tresoren, die das Gerät öffnen kann.
+
 Umgesetzt in `packages/core/src/membership/rotation.ts` (`rotateVaultKey`, `removeAndRotate`,
-`openRings`, `dueExits`), `membership/exit-report.ts`, `sync/change-marks.ts`, `sync/device.ts`
-(`rotateEntries`, ältere Schlüssel zum Lesen, `newer-epoch`, `stale-key`), mit Mutation-Tests bei
-100 %, und in `apps/server/src/sync/log-routes.ts`, `sync/scope.ts` und
-`apps/server/src/account/members.ts` (Migration `0019_members_left`). Die Oberfläche dazu folgt
-(K-307 Teil b).
+`openRings`, `dueExits`), `membership/exit-report.ts` (`exitReport`, `pastExposures`),
+`sync/change-marks.ts`, `sync/device.ts` (`rotateEntries`, ältere Schlüssel zum Lesen,
+`exposures`, `newer-epoch`, `stale-key`, `rotation-due`), mit Mutation-Tests bei 100 %, in
+`apps/server/src/sync/log-routes.ts`, `sync/scope.ts` und `apps/server/src/account/members.ts`
+(Migration `0019_members_left`), in `packages/client/src/vaults/vaults.ts` (Schlüssel aller
+Epochen über `openRings`), `packages/client/src/entries/entry-rotation.ts` und in der Web-App unter
+`apps/web/src/vaults/exit.ts` und `apps/web/src/members/member-exit.tsx`.
 
 Restrisiken:
 
 - **Vor dem Wechsel versteckter Eintrag:** `rotateEntries` verschlüsselt nur die Einträge neu, die
-  das rotierende Gerät kennt. Hält der Server einen Eintrag vor diesem Gerät zurück und zeigt ihn
-  später anderen Mitgliedern, bleibt er in der alten Epoche ohne Markierung und wandert beim
-  nächsten Ändern ohne Markierung in die neue. Schließen soll das K-307 Teil b: Jedes Schreiben
-  kennt die früheren Austritte (Expositionen im `SyncContext`) und markiert danach.
+  das rotierende Gerät kennt. Hält der Server einen Eintrag vor diesem Gerät zurück, bleibt er in
+  der alten Epoche, bis ein Verwalter-Client ihn sieht und neu schreibt oder jemand ihn ändert;
+  markiert wird er dann so oder so (Schritt 5). Bis dahin lesen ihn die Mitglieder mit dem alten
+  Schlüssel, den auch die ausgetretene Person hat; neu ist für sie daran nichts.
 - Bis ein Verwalter-Client den Wechsel macht, entscheidet der Server allein; die Person kennt bis
-  dahin den Schlüssel der aktuellen Epoche. Der Client sieht das (`rotationDue`), schreibt in Teil a
-  aber noch weiter darunter; ab Teil b holt ein Verwalter-Client den Wechsel sofort nach, und die
-  übrigen warnen.
+  dahin den Schlüssel der aktuellen Epoche. Darum schreibt solange kein Client (Schritt 6), und
+  ein Verwalter-Client holt den Wechsel nach, sobald er die Tresore lädt. Geht kein Verwalter
+  online, bleibt der Tresor nur lesbar.
+- **Austritt nach dem Wort des Servers:** Wer die Firma verlassen hat, sagt die Mitgliederliste
+  des Servers (`leftAt`), unsigniert. Behauptet ein Server das zu Unrecht, entfernt ein
+  Verwalter-Client die Person aus seinen Tresoren und wechselt den Schlüssel, nie aber das eigene
+  Konto, mit dem er angemeldet ist. Das nimmt Zugriff,
+  gibt aber keinen; die Person lässt sich wieder aufnehmen, und das Log zeigt, wer sie wann
+  entfernt hat. Den Zugang zum Server kann ein Server ohnehin jederzeit nehmen.
+- Der Austritts-Bericht kennt nur die Tresore, die das Gerät des Verwalters öffnen kann; ein
+  Tresor, in dem er nicht Mitglied ist, fehlt darin.
 - Was die Person vor dem Austritt gelesen hat, kennt sie weiter; diese Passwörter gelten erst nach
   ihrer Änderung als sicher.
 - Ein Server kann einem Mitglied, das sich den neueren Stand nie gemerkt hat, das Log von vor dem
@@ -981,8 +1032,9 @@ Restrisiken:
   sobald es einen neu verschlüsselten Eintrag sieht, merkt es den Angriff (`newer-epoch`).
 - Clients älterer Versionen kennen `toChange` nicht und verlieren die Markierung beim nächsten
   Schreiben.
-- Freigaben einzelner Einträge (P-10) öffnen nach dem Wechsel keine neue Version mehr, bis ein
-  Mitglied sie neu verpackt; das macht Teil b mit `reshare`.
+- Freigaben einzelner Einträge (P-10) verpackt der Verwalter-Client nach dem Wechsel neu; eine
+  Freigabe eines Eintrags, den ein anderes Gerät mitten im Wechsel geschrieben hat, öffnet die
+  neue Version nicht mehr und muss neu geteilt werden.
 - War die Person der einzige Verwalter eines Tresors, kann niemand den Schlüssel wechseln; das löst
   erst der Notfallzugriff oder die Firmen-Recovery (Teil c, d).
 
@@ -1448,7 +1500,10 @@ ausliefert. Ein Tresor, den das Gerät neu öffnet, zieht seine Einträge zuerst
 und dann vom Server: Eine ältere Version als die gespeicherte meldet es als zurückgespielt (E-13),
 einen fehlenden Eintrag als verborgen (E-15). In `records:<tresor>` kommt nur, was die Prüfung nach
 P-09 besteht, und je Eintrag nur eine höhere Version; ein gefälschter Datensatz kann also nicht
-ersetzen, wogegen das Gerät prüft.
+ersetzen, wogegen das Gerät prüft. Geprüft wird unter dem Schlüssel der Epoche des Datensatzes:
+Nach einem Schlüsselwechsel ([P-11](#p-11-austritt-und-schlusselwechsel)) bleibt auch eine
+Version, die noch nicht neu verschlüsselt ist, in der Kopie und offline lesbar, und die
+Tresor-Schlüssel aller Epochen kommen wie online aus `read:<pfad>`.
 
 **Sperren und Abmelden**: Sperren lässt die Kopie liegen – sie ist verschlüsselt und genau das, was
 das Entsperren ohne Server braucht. „Dieses Gerät abmelden“ löscht sie ganz, ebenso das Öffnen eines

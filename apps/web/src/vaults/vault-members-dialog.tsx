@@ -1,7 +1,8 @@
 /**
  * The members of one vault in a dialog (K-305 part 3): everyone the checked log names with their
  * role; a manager changes roles, removes members and adds certified people of the company. Every
- * change is an entry the manager's device signs (P-05, P-06).
+ * change is an entry the manager's device signs (P-05, P-06); removing someone also rotates the
+ * vault key and writes every entry anew (K-307, P-11).
  */
 
 import type { Vault } from "@kennwort/client/vaults/vaults.ts";
@@ -12,19 +13,18 @@ import { createSignal, For, Show } from "solid-js";
 import { linkGroup, outsideLinkedGroups, unlinkGroup } from "../groups/groups.ts";
 import type { Session } from "../session/session.ts";
 import { dateText, endOfDay, today } from "./day.ts";
-import { createDialogState, type DialogApi } from "./dialog-state.ts";
+import { createDialogState, type DialogApi, type Outcome } from "./dialog-state.ts";
+import type { ExitError } from "./exit.ts";
 import { RoleSelect } from "./role-select.tsx";
 import { VaultGroups } from "./vault-groups.tsx";
 import {
   addToVault,
-  type ChangeError,
   candidates,
   changeVaultRole,
   declineRequest,
   grantRequest,
   hasExpired,
   mayManage,
-  removeFromVault,
   type VaultMember,
   vaultMembers,
 } from "./vault-members.ts";
@@ -34,12 +34,14 @@ import { roleText } from "./vault-text.ts";
 
 const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
 
-const errorText = (error: ChangeError) =>
-  error === "stale"
-    ? m.vault_members_stale()
-    : error === "past"
-      ? m.vault_members_past()
-      : m.vault_members_failed();
+const errorText = (error: ExitError) => {
+  if (error === "stale") return m.vault_members_stale();
+  if (error === "past") return m.vault_members_past();
+  if (error === "uncertified-member") return m.vault_members_uncertified();
+  // The rotation is in the log; only writing the entries anew failed, which a catch-up repeats
+  if (error === "not-saved" || error === "rotation-due") return m.vault_members_rewrite_failed();
+  return m.vault_members_failed();
+};
 
 const nameOf = (person: { name: string | null }) => person.name ?? m.vault_members_unnamed();
 
@@ -77,7 +79,11 @@ const MemberRow = (props: {
         disabled={props.busy}
         onChange={props.onRole}
       />
-      <Button disabled={props.busy} onClick={props.onRemove}>
+      <Button
+        disabled={props.busy}
+        aria-label={m.vault_members_remove_of({ name: nameOf(props.member) })}
+        onClick={props.onRemove}
+      >
         {m.vault_members_remove()}
       </Button>
     </Show>
@@ -141,6 +147,8 @@ export const VaultMembersDialog = (props: {
   api: DialogApi;
   session: Session;
   store: VaultStore;
+  /** Takes someone out of the vault and rotates its key (exit.ts) */
+  onRemove: (accountId: Uint8Array) => Promise<Outcome>;
 }) => {
   const state = createDialogState(props);
   const { busy, error, requests, run } = state;
@@ -167,9 +175,7 @@ export const VaultMembersDialog = (props: {
               onRole={(role) =>
                 run(() => changeVaultRole(api, session, props.vault, member.accountId, role))
               }
-              onRemove={() =>
-                run(() => removeFromVault(api, session, props.vault, member.accountId))
-              }
+              onRemove={() => run(() => props.onRemove(member.accountId))}
             />
           )}
         </For>

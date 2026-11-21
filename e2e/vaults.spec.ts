@@ -72,11 +72,7 @@ test.describe("members of a vault", { tag: "@phone" }, () => {
       "Bearbeiten",
     );
 
-    await dialog
-      .getByRole("listitem")
-      .filter({ hasText: "Anna" })
-      .getByRole("button", { name: "Entfernen" })
-      .click();
+    await dialog.getByRole("button", { name: "Anna aus dem Tresor entfernen" }).click();
     await expect(members.getByRole("listitem")).toHaveCount(1);
     await openVaults(anna);
     await expect(annaList.getByRole("listitem").filter({ hasText: "Büro" })).toHaveCount(0);

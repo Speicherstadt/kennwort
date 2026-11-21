@@ -38,13 +38,9 @@ verwaltet, kann dort:
   nur Konten, deren Schlüssel bestätigt sind; dein Gerät verpackt den Tresor-Schlüssel an genau
   diese Schlüssel.
 - die **Rolle** eines Mitglieds ändern.
-- ein Mitglied **entfernen**. Es sieht danach keine neuen Einträge im Protokoll mehr. Was es
-  vorher entschlüsselt hat, kann es behalten haben. Dagegen hilft ein Wechsel des
-  Tresor-Schlüssels: Alle Einträge werden mit einem neuen Schlüssel neu verschlüsselt, den die
-  entfernte Person nie bekommt, jedes Passwort, das sie lesen konnte, wird zum Ändern markiert,
-  bis es geändert ist, und ein Austritts-Bericht zeigt, was sie lesen konnte. Kern und Server
-  können das schon; in der Web-App kommt es mit dem nächsten Teil von K-307, bis dahin behält die
-  entfernte Person den bisherigen Tresor-Schlüssel.
+- ein Mitglied **aus dem Tresor entfernen**. Was es vorher entschlüsselt hat, kann es behalten
+  haben; deshalb wechselt dein Gerät dabei gleich den Tresor-Schlüssel (siehe
+  [Wenn jemand geht](#wenn-jemand-geht)).
 
 Beim Aufnehmen kannst du unter **Zugriff bis** einen Tag wählen. Nach diesem Tag öffnet kein Gerät
 den Tresor mehr für die Person, und der Server gibt ihr das Protokoll und den Schlüssel nicht mehr;
@@ -54,6 +50,34 @@ seinen Zugriff ohne Ende.
 
 Hat ein anderes Gerät den Tresor gerade geändert, lädt Kennwort den neuen Stand und bittet dich,
 die Änderung noch einmal zu machen.
+
+## Wenn jemand geht
+
+**Aus dem Tresor entfernen** macht auf dem Gerät des Verwalters vier Dinge in einem Zug:
+
+1. Es unterschreibt im Protokoll, dass die Person draußen ist, und gleich danach einen
+   **Schlüsselwechsel**.
+2. Es erzeugt einen neuen Tresor-Schlüssel und verpackt ihn für jedes Mitglied, das bleibt, an
+   dessen bestätigte Schlüssel. Hat ein Mitglied keine bestätigten Schlüssel, bricht Kennwort ab
+   und entfernt niemanden, statt jemanden still auszulassen.
+3. Es schreibt jeden Eintrag neu, verschlüsselt mit dem neuen Schlüssel, den die Person nie
+   bekommt; auch den Namen des Tresors. Was danach geschrieben wird, kann sie nicht lesen.
+4. Es verpackt die [Freigaben einzelner Einträge](eintraege.md#einen-einzelnen-eintrag-teilen) neu, damit
+   sie weiter gelten. Freigaben, die die entfernte Person selbst gemacht hat, enden dabei.
+
+Jedes geheime Feld, das die Person lesen konnte, steht danach unter
+[Zum Ändern](eintraege.md#zum-andern), mit ihrem Namen und dem Tag, bis zu dem sie Zugriff hatte.
+Ändere diese Passwörter beim jeweiligen Dienst: Ein neuer Tresor-Schlüssel schützt nur, was nach
+dem Austritt geschrieben wird.
+
+Verlässt jemand die ganze Firma ([Austritt aus der Firma](konto.md#austritt-aus-der-firma)), holt
+das Gerät jedes Verwalters das von selbst nach, sobald er Kennwort öffnet: Es nimmt die Person aus
+jedem Tresor, den er verwaltet, und wechselt den Schlüssel. Ebenso einen Schlüsselwechsel, der nach
+einem Entfernen noch fehlt, und Einträge, die beim Wechsel nicht neu geschrieben wurden.
+
+Bis der Schlüssel gewechselt ist, kennt die entfernte Person noch den aktuellen. Solange zeigen
+alle Geräte oben den Hinweis, dass im Tresor ein Schlüsselwechsel aussteht, und niemand kann dort
+etwas anlegen oder ändern. Lesen geht weiter, auch ohne Verbindung.
 
 ## Zugriff anfragen
 

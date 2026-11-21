@@ -4,6 +4,7 @@ import {
   type Certificate,
   createAccount,
   emptyState,
+  encodeBytes,
   invitationMac,
   type MembersWire,
   newInvitation,
@@ -81,6 +82,7 @@ export const annaRow = (c: Awaited<ReturnType<typeof jonasCompany>>, secret?: Ui
 export const server = (c: Awaited<ReturnType<typeof jonasCompany>>, rows: Row[]) => {
   const state = stateServer(c.upload);
   const calls: string[] = [];
+  const left: Uint8Array[] = [];
   const certified: Certificate[] = [];
   const roles: { certificate: Certificate; rootGrant: Uint8Array | undefined }[] = [];
   const api: MembersDeps = {
@@ -104,6 +106,15 @@ export const server = (c: Awaited<ReturnType<typeof jonasCompany>>, rows: Row[])
       roles.push({ certificate, rootGrant });
       return true;
     },
+    // as the real server: the account is marked as left and listed with the time
+    leave: async (_token, accountId) => {
+      calls.push("leave");
+      left.push(accountId);
+      const index = rows.findIndex((row) => encodeBytes(row.id) === encodeBytes(accountId));
+      const row = rows[index];
+      if (row) rows[index] = { ...row, leftAt: 1_800_000_000_000 };
+      return row !== undefined;
+    },
   };
-  return { api, calls, certified, roles, state };
+  return { api, calls, certified, roles, state, left };
 };

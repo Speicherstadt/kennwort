@@ -4,14 +4,15 @@
  * show trust, don't claim it).
  */
 
-import type { CreateError } from "@kennwort/client/vaults/vaults.ts";
+import type { CreateError, Vault } from "@kennwort/client/vaults/vaults.ts";
+import type { Trust } from "@kennwort/core";
 import { Button, Icon, Input, m } from "@kennwort/ui";
 import { Archive, TriangleExclamationPoint, Users } from "@kennwort/ui/icons";
 import { createSignal, For, Match, onSettled, Show, Switch } from "solid-js";
 import { Link } from "../frame/link.tsx";
 import type { Navigation } from "../navigation.ts";
 import type { Session } from "../session/session.ts";
-import type { DialogApi } from "./dialog-state.ts";
+import type { DialogApi, Outcome } from "./dialog-state.ts";
 import { VaultMembersDialog } from "./vault-members-dialog.tsx";
 import type { VaultStore } from "./vault-store.ts";
 import { roleText } from "./vault-text.ts";
@@ -63,6 +64,13 @@ export const VaultsPage = (props: {
   store: VaultStore;
   api: DialogApi;
   session: Session;
+  /** Takes someone out of a vault and rotates its key (exit.ts) */
+  onRemove: (
+    vault: Vault,
+    trust: Trust,
+    accountId: Uint8Array,
+    left: ReadonlySet<string>,
+  ) => Promise<Outcome>;
 }) => {
   /** The vault whose members show: by ID, so the dialog stays open while the vaults load anew */
   const [membersOf, setMembersOf] = createSignal<string>();
@@ -139,6 +147,9 @@ export const VaultsPage = (props: {
                     api={props.api}
                     session={props.session}
                     store={props.store}
+                    onRemove={(accountId) =>
+                      props.onRemove(vault(), ready().trust, accountId, ready().left)
+                    }
                   />
                 )}
               </Show>

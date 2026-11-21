@@ -4,7 +4,15 @@ import { flush } from "solid-js";
 import { describe, expect, it } from "vitest";
 import { readInvitation } from "../account/invite-page.tsx";
 import { annaRow, jonasCompany, ownerRow, server } from "./members.test-kit.ts";
-import { confirm, invitationLink, invite, loadMembers, mayConfirm, mayInvite } from "./members.ts";
+import {
+  confirm,
+  invitationLink,
+  invite,
+  loadMembers,
+  mayConfirm,
+  mayInvite,
+  mayRemove,
+} from "./members.ts";
 
 // K-304 part 2: Jonas sets up Weber Haustechnik, invites Anna and confirms her
 describe("loadMembers", () => {
@@ -61,6 +69,30 @@ describe("who may invite and confirm", () => {
     expect(mayConfirm(c.opened, undefined)).toBe(false);
     const noRoot = { ...c.opened, state: emptyState(c.opened.state.rootFingerprint) };
     expect(mayConfirm(noRoot, { ...view, role: "admin" })).toBe(false);
+  });
+});
+
+describe("who may remove whom from the company (K-307)", () => {
+  it("lets owners remove anyone else, admins only members, nobody themselves or twice", () => {
+    const id = (byte: number) => new Uint8Array(16).fill(byte);
+    const view = (
+      byte: number,
+      role: "owner" | "admin" | "member",
+      leftAt: number | null = null,
+    ) => ({ accountId: id(byte), name: null, status: "certified" as const, role, leftAt });
+    const owner = view(1, "owner");
+    const admin = view(2, "admin");
+    expect(mayRemove(owner, view(3, "owner"))).toBe(true);
+    expect(mayRemove(owner, admin)).toBe(true);
+    expect(mayRemove(owner, view(3, "member"))).toBe(true);
+    expect(mayRemove(owner, owner)).toBe(false);
+    expect(mayRemove(owner, view(3, "member", 1))).toBe(false);
+    expect(mayRemove(admin, view(3, "member"))).toBe(true);
+    expect(mayRemove(admin, view(3, "admin"))).toBe(false);
+    expect(mayRemove(admin, owner)).toBe(false);
+    expect(mayRemove(view(4, "member"), view(3, "member"))).toBe(false);
+    expect(mayRemove({ ...owner, status: "waiting" }, view(3, "member"))).toBe(false);
+    expect(mayRemove(undefined, view(3, "member"))).toBe(false);
   });
 });
 
