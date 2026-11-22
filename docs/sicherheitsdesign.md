@@ -2189,7 +2189,9 @@ HMAC endet als `unsupported` (E-17). Die Grenzen sind die Bereiche, die Bitwarde
 (`password-protected-kdf-config.ts`, `kdf-config.ts`), `BITWARDEN_LIMITS`: PBKDF2 mit 5 000 bis
 2 000 000 Iterationen, Argon2id mit 2 bis 10 Durchläufen, 16 bis 1 024 MiB und 1 bis 16 Threads.
 Darunter schreibt kein Bitwarden eine Datei (`unsupported`), darüber endet sie, bevor gerechnet
-wird (`too-costly`); im schlimmsten Fall rechnet das Gerät etwa eine Minute, so viel wie bei KDBX.
+wird (`too-costly`); im schlimmsten Fall (Argon2id mit 1 GiB und zehn Durchläufen) rechnet das
+Gerät etwa anderthalb Minuten, ein Viertel mehr als die Obergrenze bei KDBX, und ein Handy mit
+wenig Speicher kann daran scheitern.
 Den kontobeschränkten Export, verschlüsselt mit dem Schlüssel des Bitwarden-Kontos, kann nur
 dieses Konto öffnen: Er endet als `account-encrypted` mit der Bitte um einen passwortgeschützten
 Export. Ein Export ist so sicher wie sein Export-Passwort; Kennwort liest ihn, schützt ihn aber
