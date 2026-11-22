@@ -22,7 +22,17 @@ export type ImportError =
   /** Readable, but not the export this parser reads (other columns, other structure) */
   | "wrong-format"
   /** An encrypted export; it needs the export password first */
-  | "encrypted";
+  | "encrypted"
+  /** Not a ZIP, or one whose lengths and offsets do not fit together */
+  | "bad-zip"
+  /** A ZIP in a form the reader leaves out: ZIP64, across disks, another compression method */
+  | "unsupported-zip"
+  /** More than an export ever holds: too many files or bytes, or packed too tightly */
+  | "too-large";
 
 export type ImportResult = Result<ImportedEntry[], ImportError>;
 export type Parser = (input: string | Uint8Array) => ImportResult;
+/** A parser of a ZIP container: unpacking is asynchronous (`DecompressionStream`) */
+export type ZipParser = (bytes: Uint8Array) => Promise<ImportResult>;
+/** What the import flow calls with the file's bytes, either kind */
+export type FileParser = (bytes: Uint8Array) => ImportResult | Promise<ImportResult>;

@@ -7,12 +7,15 @@ const FIXTURES: Record<string, string> = {
   "bitwarden-json": "bitwarden.json",
   "bitwarden-csv": "bitwarden.csv",
   "lastpass-csv": "lastpass.csv",
+  "1password-1pux": "onepassword.1pux",
   "1password-csv": "onepassword.csv",
   "keepass-xml": "keepass.xml",
   "keepassxc-csv": "keepassxc.csv",
   "keepass-csv": "keepass.csv",
   "passbolt-csv": "passbolt.csv",
+  "dashlane-zip": "dashlane.zip",
   "dashlane-csv": "dashlane-credentials.csv",
+  "protonpass-zip": "protonpass.zip",
   "protonpass-json": "protonpass.json",
   "keeper-csv": "keeper.csv",
   "nordpass-csv": "nordpass.csv",
@@ -28,12 +31,15 @@ describe("import formats (K-502)", () => {
       ["bitwarden-json", "Bitwarden", "JSON"],
       ["bitwarden-csv", "Bitwarden", "CSV"],
       ["lastpass-csv", "LastPass", "CSV"],
+      ["1password-1pux", "1Password", "1PUX"],
       ["1password-csv", "1Password", "CSV"],
       ["keepass-xml", "KeePass", "XML"],
       ["keepassxc-csv", "KeePassXC", "CSV"],
       ["keepass-csv", "KeePass", "CSV"],
       ["passbolt-csv", "Passbolt", "CSV"],
+      ["dashlane-zip", "Dashlane", "ZIP"],
       ["dashlane-csv", "Dashlane", "CSV"],
+      ["protonpass-zip", "Proton Pass", "ZIP"],
       ["protonpass-json", "Proton Pass", "JSON"],
       ["keeper-csv", "Keeper", "CSV"],
       ["nordpass-csv", "NordPass", "CSV"],
@@ -44,9 +50,9 @@ describe("import formats (K-502)", () => {
     ]);
   });
 
-  it("reads each vendor's fixture with its own parser", () => {
+  it("reads each vendor's fixture with its own parser", async () => {
     for (const format of IMPORT_FORMATS) {
-      const result = format.parse(fixture(FIXTURES[format.id] ?? ""));
+      const result = await format.parse(fixture(FIXTURES[format.id] ?? ""));
       expect([format.id, result.ok && result.value.length > 0]).toEqual([format.id, true]);
     }
   });

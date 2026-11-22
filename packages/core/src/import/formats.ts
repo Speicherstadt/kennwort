@@ -6,6 +6,7 @@ import { parseBitwardenCsv } from "./bitwarden-csv.ts";
 import { parseBitwardenJson } from "./bitwarden-json.ts";
 import { parseChromeCsv } from "./chrome-csv.ts";
 import { parseDashlaneCsv } from "./dashlane-csv.ts";
+import { parseDashlaneZip } from "./dashlane-zip.ts";
 import { parseEnpassJson } from "./enpass-json.ts";
 import { parseFirefoxCsv } from "./firefox-csv.ts";
 import { parseKeePassCsv, parseKeePassXcCsv } from "./keepass-csv.ts";
@@ -13,25 +14,33 @@ import { parseKeePassXml } from "./keepass-xml.ts";
 import { parseKeeperCsv } from "./keeper-csv.ts";
 import { parseLastPassCsv } from "./lastpass-csv.ts";
 import { parseNordPassCsv } from "./nordpass-csv.ts";
+import { parseOnePassword1pux } from "./onepassword-1pux.ts";
 import { parseOnePasswordCsv } from "./onepassword-csv.ts";
 import { parsePassboltCsv } from "./passbolt-csv.ts";
 import { parseProtonPassJson } from "./protonpass-json.ts";
+import { parseProtonPassZip } from "./protonpass-zip.ts";
 import { parseSafariCsv } from "./safari-csv.ts";
-import type { Parser } from "./types.ts";
+import type { FileParser } from "./types.ts";
 
-/** `vendor` is the product name only; the import flow says the rest in its own texts (Paraglide) */
-export type ImportFormat = { id: string; vendor: string; file: string; parse: Parser };
+/**
+ * `vendor` is the product name only; the import flow says the rest in its own texts (Paraglide).
+ * The parsers of ZIP containers answer asynchronously, the others at once.
+ */
+export type ImportFormat = { id: string; vendor: string; file: string; parse: FileParser };
 
 export const IMPORT_FORMATS: readonly ImportFormat[] = [
   { id: "bitwarden-json", vendor: "Bitwarden", file: "JSON", parse: parseBitwardenJson },
   { id: "bitwarden-csv", vendor: "Bitwarden", file: "CSV", parse: parseBitwardenCsv },
   { id: "lastpass-csv", vendor: "LastPass", file: "CSV", parse: parseLastPassCsv },
+  { id: "1password-1pux", vendor: "1Password", file: "1PUX", parse: parseOnePassword1pux },
   { id: "1password-csv", vendor: "1Password", file: "CSV", parse: parseOnePasswordCsv },
   { id: "keepass-xml", vendor: "KeePass", file: "XML", parse: parseKeePassXml },
   { id: "keepassxc-csv", vendor: "KeePassXC", file: "CSV", parse: parseKeePassXcCsv },
   { id: "keepass-csv", vendor: "KeePass", file: "CSV", parse: parseKeePassCsv },
   { id: "passbolt-csv", vendor: "Passbolt", file: "CSV", parse: parsePassboltCsv },
+  { id: "dashlane-zip", vendor: "Dashlane", file: "ZIP", parse: parseDashlaneZip },
   { id: "dashlane-csv", vendor: "Dashlane", file: "CSV", parse: parseDashlaneCsv },
+  { id: "protonpass-zip", vendor: "Proton Pass", file: "ZIP", parse: parseProtonPassZip },
   { id: "protonpass-json", vendor: "Proton Pass", file: "JSON", parse: parseProtonPassJson },
   { id: "keeper-csv", vendor: "Keeper", file: "CSV", parse: parseKeeperCsv },
   { id: "nordpass-csv", vendor: "NordPass", file: "CSV", parse: parseNordPassCsv },

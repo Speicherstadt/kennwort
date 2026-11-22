@@ -37,6 +37,7 @@ const TEMPLATE = {
   "private-key": ["Private key", "secret"],
   "public-key": ["Public key", "note"],
   passphrase: ["Passphrase", "secret"],
+  key: ["Key", "secret"],
   name: ["Name", "text"],
   email: ["Email", "email"],
   phone: ["Phone", "text"],
