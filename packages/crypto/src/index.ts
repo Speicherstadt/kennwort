@@ -67,6 +67,21 @@ export {
   inviteMac,
   verifyInviteMac,
 } from "./invite.ts";
+export {
+  KDBX_HEADER_INDEX,
+  type KdbxAesKdf,
+  type KdbxArgon2,
+  type KdbxCipher,
+  type KdbxInnerStream,
+  type KdbxKdf,
+  kdbxBlockMac,
+  kdbxCompositeKey,
+  kdbxDecrypt,
+  kdbxInnerKeystream,
+  kdbxKeys,
+  kdbxPasswordPart,
+  kdbxTransformKey,
+} from "./kdbx.ts";
 export { hotp, OTP_ALGORITHMS, type OtpAlgorithm, type TotpOptions, totp } from "./otp.ts";
 export {
   ACCOUNT_SALT_LENGTH,

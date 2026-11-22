@@ -70,6 +70,11 @@ const ERROR_TEXT: Record<ImportError, () => string> = {
   "unsupported-zip": () => m.import_error_unsupported_zip(),
   "too-large": () => m.import_error_too_large(),
   incomplete: () => m.import_error_incomplete(),
+  "wrong-key": () => m.import_error_wrong_key(),
+  "bad-kdbx": () => m.import_error_bad_kdbx(),
+  unsupported: () => m.import_error_unsupported(),
+  "too-costly": () => m.import_error_too_costly(),
+  "bad-key-file": () => m.import_error_bad_key_file(),
 };
 
 export const errorText = (error: ImportError) => ERROR_TEXT[error]();

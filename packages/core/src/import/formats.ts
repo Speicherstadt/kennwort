@@ -11,6 +11,7 @@ import { parseDashlaneZip } from "./dashlane-zip.ts";
 import { parseEnpassJson } from "./enpass-json.ts";
 import { parseFirefoxCsv } from "./firefox-csv.ts";
 import { parseGoogleMigration } from "./google-migration.ts";
+import { checkKdbx, unlockKdbx } from "./kdbx.ts";
 import { parseKeePassCsv, parseKeePassXcCsv } from "./keepass-csv.ts";
 import { parseKeePassXml } from "./keepass-xml.ts";
 import { parseKeeperCsv } from "./keeper-csv.ts";
@@ -23,15 +24,22 @@ import { parseProtonPassJson } from "./protonpass-json.ts";
 import { parseProtonPassZip } from "./protonpass-zip.ts";
 import { parseSafariCsv } from "./safari-csv.ts";
 import { parseTwoFasJson } from "./twofas-json.ts";
-import type { FileParser } from "./types.ts";
+import type { FileParser, LockedParser } from "./types.ts";
 
 /**
  * `vendor` is the product name only; the import flow says the rest in its own texts (Paraglide).
  * The parsers of ZIP containers answer asynchronously, the others at once. Google Authenticator's
  * export is no file but QR codes (`file: "QR"`): the import flow scans them or takes the pasted
- * links, one per line, and hands those on as text.
+ * links, one per line, and hands those on as text. An encrypted file with `unlock` (KeePass's
+ * KDBX) needs its password first: `parse` only checks the file, `unlock` opens it.
  */
-export type ImportFormat = { id: string; vendor: string; file: string; parse: FileParser };
+export type ImportFormat = {
+  id: string;
+  vendor: string;
+  file: string;
+  parse: FileParser;
+  unlock?: LockedParser;
+};
 
 export const IMPORT_FORMATS: readonly ImportFormat[] = [
   { id: "bitwarden-json", vendor: "Bitwarden", file: "JSON", parse: parseBitwardenJson },
@@ -39,6 +47,13 @@ export const IMPORT_FORMATS: readonly ImportFormat[] = [
   { id: "lastpass-csv", vendor: "LastPass", file: "CSV", parse: parseLastPassCsv },
   { id: "1password-1pux", vendor: "1Password", file: "1PUX", parse: parseOnePassword1pux },
   { id: "1password-csv", vendor: "1Password", file: "CSV", parse: parseOnePasswordCsv },
+  {
+    id: "keepass-kdbx",
+    vendor: "KeePass / KeePassXC",
+    file: "KDBX",
+    parse: checkKdbx,
+    unlock: unlockKdbx,
+  },
   { id: "keepass-xml", vendor: "KeePass", file: "XML", parse: parseKeePassXml },
   { id: "keepassxc-csv", vendor: "KeePassXC", file: "CSV", parse: parseKeePassXcCsv },
   { id: "keepass-csv", vendor: "KeePass", file: "CSV", parse: parseKeePassCsv },

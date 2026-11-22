@@ -9,6 +9,7 @@ const FIXTURES: Record<string, string> = {
   "lastpass-csv": "lastpass.csv",
   "1password-1pux": "onepassword.1pux",
   "1password-csv": "onepassword.csv",
+  "keepass-kdbx": "kdbx-argon2d-aes.kdbx",
   "keepass-xml": "keepass.xml",
   "keepassxc-csv": "keepassxc.csv",
   "keepass-csv": "keepass.csv",
@@ -36,6 +37,7 @@ describe("import formats (K-502, K-503)", () => {
       ["lastpass-csv", "LastPass", "CSV"],
       ["1password-1pux", "1Password", "1PUX"],
       ["1password-csv", "1Password", "CSV"],
+      ["keepass-kdbx", "KeePass / KeePassXC", "KDBX"],
       ["keepass-xml", "KeePass", "XML"],
       ["keepassxc-csv", "KeePassXC", "CSV"],
       ["keepass-csv", "KeePass", "CSV"],
@@ -56,10 +58,22 @@ describe("import formats (K-502, K-503)", () => {
     ]);
   });
 
-  it("reads each vendor's fixture with its own parser", async () => {
+  it("reads each vendor's fixture with its own parser, an encrypted one with its password", async () => {
     for (const format of IMPORT_FORMATS) {
-      const result = await format.parse(fixture(FIXTURES[format.id] ?? ""));
+      const bytes = fixture(FIXTURES[format.id] ?? "");
+      const result = format.unlock
+        ? await format.unlock(bytes, { password: "Weber-Haustechnik-2026" })
+        : await format.parse(bytes);
       expect([format.id, result.ok && result.value.length > 0]).toEqual([format.id, true]);
     }
+  });
+
+  it("asks for the password only for KeePass's database", async () => {
+    const locked = IMPORT_FORMATS.filter((format) => format.unlock);
+    expect(locked.map((format) => format.id)).toEqual(["keepass-kdbx"]);
+    expect(await locked[0]?.parse(fixture("kdbx-argon2d-aes.kdbx"))).toEqual({
+      ok: false,
+      error: "encrypted",
+    });
   });
 });

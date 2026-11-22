@@ -29,7 +29,17 @@ export type ImportError =
   /** More than an export ever holds: too many files or bytes, or packed too tightly */
   | "too-large"
   /** Some of the QR codes an authenticator split its export into are missing (K-503) */
-  | "incomplete";
+  | "incomplete"
+  /** A KeePass database (KDBX) the password or key file does not open */
+  | "wrong-key"
+  /** A KeePass database whose bytes were changed or cut, or that breaks the format */
+  | "bad-kdbx"
+  /** A KeePass database in a form the reader leaves out: KDBX 3.1 and older, Twofish */
+  | "unsupported"
+  /** A KeePass database whose key derivation costs more than the limits allow (KDBX_LIMITS) */
+  | "too-costly"
+  /** A key file that says it is KeePass's XML key file but is broken */
+  | "bad-key-file";
 
 /**
  * The entries, or why not. An authenticator's export can hold codes Kennwort cannot work out
@@ -43,3 +53,7 @@ export type Parser = (input: string | Uint8Array) => ImportResult;
 export type ZipParser = (bytes: Uint8Array) => Promise<ImportResult>;
 /** What the import flow calls with the file's bytes, either kind */
 export type FileParser = (bytes: Uint8Array) => ImportResult | Promise<ImportResult>;
+/** What opens an encrypted file such as a KeePass database: its password and key file */
+export type ImportKey = { password: string; keyFile?: Uint8Array | undefined };
+/** A parser of an encrypted file: it needs the key, and deriving it takes time */
+export type LockedParser = (bytes: Uint8Array, key: ImportKey) => Promise<ImportResult>;

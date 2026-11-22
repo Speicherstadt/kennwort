@@ -22,7 +22,9 @@ Unter **Einstellungen → Importieren**:
 1. **Anbieter wählen**: jeder Manager, Browser und jede Authenticator-App aus der Tabelle unten oder
    „Andere Tabelle (CSV)“. Kennwort zeigt gleich, wo dort der Export ist.
 2. **Datei wählen**: Kennwort liest sie auf dem Gerät; ein ZIP des Anbieters (1Passwords 1PUX,
-   Dashlane, Proton Pass) wählst du, wie es ist, ohne es zu entpacken. Passt die Datei nicht, sagt
+   Dashlane, Proton Pass) wählst du, wie es ist, ohne es zu entpacken. Eine KeePass-Datenbank
+   (`.kdbx`) öffnest du mit ihrem Master-Passwort und, falls sie eine hat, ihrer Schlüsseldatei
+   (siehe [KeePass-Datenbanken](#keepass-datenbanken-kdbx)). Passt die Datei nicht, sagt
    Kennwort, warum – etwa „Diese Datei ist verschlüsselt – exportiere unverschlüsselt“ oder dass
    sie zu einem anderen Anbieter gehört. Bei Google Authenticator gibt es keine Datei, sondern
    QR-Codes; wie das geht, steht unter [Authenticator-Apps](#authenticator-apps).
@@ -60,6 +62,7 @@ Kennwort mit Nullen.
 | LastPass | CSV aus dem Web-Tresor | Logins, sichere Notizen, Kreditkarten, Adressen als Identität, andere Notiz-Arten mit ihren Feldern, Ordner und geteilte Ordner, Favoriten |
 | 1Password | 1PUX (1Password 8) | alle Kategorien: Logins, Passwörter, Server und Datenbanken als Login, Karten, Identitäten, WLAN-Router, API-Zugänge, SSH-Schlüssel, alles andere als Notiz mit seinen Feldern; Abschnitte als eigene Felder, Einmalcodes, mehrere Adressen, Tresore als Ordner, Tags, Favoriten, frühere Passwörter, archivierte Einträge; Anhänge und Häkchen aus Anmeldeformularen bleiben draußen |
 | 1Password | CSV (1Password 8) | Logins mit Einmalcode, Tags, Favoriten |
+| KeePass / KeePassXC / Passbolt | KDBX 4, die Datenbank selbst, mit Master-Passwort und auf Wunsch Schlüsseldatei | alles wie beim KeePass-2-XML (nächste Zeile); Anhänge bleiben draußen |
 | KeePass / KeePassXC | KeePass-2-XML | Gruppen als Ordner, geschützte Felder als geheime Felder, Einmalcodes (KeePassXC und KeePass 2.47+), weitere Adressen, Tags, frühere Passwörter; der Papierkorb bleibt draußen |
 | KeePassXC | CSV | Gruppen als Ordner, Einmalcodes; der Papierkorb bleibt draußen |
 | KeePass 2 | CSV | Logins mit Notizen |
@@ -81,8 +84,6 @@ Kennwort mit Nullen.
 
 Noch nicht dabei und als eigene Teile geplant:
 
-- **KDBX 4**, die verschlüsselte Datenbank von KeePass und KeePassXC, auch aus Passbolt. Bis dahin
-  geht der Weg über den XML-Export.
 - **Verschlüsselte Exporte**: Bitwardens verschlüsseltes und passwortgeschütztes JSON, Proton
   Pass' PGP-Export. Kennwort erkennt sie und sagt, dass sie verschlüsselt sind.
 - **Team Password Manager** und **FIDO Credential Exchange (CXF)**, sobald das Format stabil ist.
@@ -141,8 +142,10 @@ bleiben auch die QR-Codes und Links auf dem Gerät; lösche danach die Screensho
 
 Eine Datei, die nicht passt, bricht den Import mit einer klaren Meldung ab: kein Text (kein
 UTF-8), ein Anführungszeichen ohne Ende, kein gültiges JSON oder XML, andere Spalten als beim
-gewählten Anbieter, ein verschlüsselter Export, fehlende QR-Codes eines Exports, oder ein ZIP, das beschädigt ist, in einer Form
-gepackt, die Kennwort nicht liest, oder größer als jeder Export. Absturz oder Hänger gibt es nicht: Die Leser
+gewählten Anbieter, ein verschlüsselter Export, fehlende QR-Codes eines Exports, ein ZIP, das beschädigt ist, in einer Form
+gepackt, die Kennwort nicht liest, oder größer als jeder Export, oder eine KeePass-Datenbank, zu
+der Passwort oder Schlüsseldatei nicht passen, die beschädigt oder zu alt ist oder deren
+Schlüsselableitung die Grenzen sprengt. Absturz oder Hänger gibt es nicht: Die Leser
 arbeiten in einem Durchgang ohne Rekursion, lehnen XML mit Dokumenttyp ab, damit keine Entität
 wachsen kann, und werden mit zufälligen und zufällig beschädigten Dateien getestet.
 
@@ -163,6 +166,46 @@ der Anbieter braucht – Anhänge nie. Kennwort traut keiner Zahl im ZIP:
 - **Namen** dienen nur dem Finden einer Datei, nie als Pfad. Ein ZIP mit einem Namen, der aus
   seinem Ordner führt (`..`, `/` am Anfang, `\`, ein Laufwerksbuchstabe), oder mit einem Namen
   zweimal lehnt Kennwort trotzdem ab.
+
+### KeePass-Datenbanken (KDBX)
+
+Die Datenbank von KeePass 2 und KeePassXC – und den KDBX-Export von Passbolt – liest Kennwort
+direkt, ohne Umweg über den XML-Export. Du wählst die `.kdbx`-Datei, gibst das Master-Passwort ein
+und, wenn die Datenbank eine hat, die Schlüsseldatei. Hat sie nur eine Schlüsseldatei, bleibt das
+Passwort leer.
+
+- **Gelesen** wird KDBX 4 (4.0 und 4.1) mit AES-256 oder ChaCha20, die Schlüsselableitung mit
+  Argon2d, Argon2id oder AES-KDF, gepackt oder nicht. Schlüsseldateien gehen in jeder Form, die
+  KeePass kennt: die XML-Schlüsseldatei (Version 1.0 und 2.0, `.keyx`), 32 Bytes, 64 Hex-Zeichen
+  oder jede andere Datei.
+- **Nicht gelesen** werden KDBX 3.1 und älter, KeePass 1 (`.kdb`), Twofish und ein YubiKey als
+  Teil des Schlüssels. Stelle die Datenbank vorher in KeePassXC oder KeePass in ihren
+  Verschlüsselungseinstellungen auf KDBX 4 um und speichere sie, oder nimm den XML-Export.
+- **Was mitkommt**, ist dasselbe wie beim XML-Export: Gruppen als Ordner, geschützte Felder als
+  geheime Felder, Einmalcodes, weitere Adressen, Tags und frühere Passwörter; der Papierkorb und
+  Anhänge bleiben draußen.
+- **Prüfungen**: Kennwort liest jede Länge im Kopf der Datei nur so weit, wie die Datei reicht,
+  prüft seine SHA-256-Prüfsumme und seinen HMAC und dann jeden HMAC-Block der verschlüsselten
+  Daten. Ein falsches Passwort oder eine falsche Schlüsseldatei erkennt es am HMAC des Kopfs, eine
+  geänderte oder abgeschnittene Datei an der Prüfsumme oder einem Block; entschlüsselt wird erst
+  danach.
+- **Grenzen**: Die Schlüsselableitung bestimmt die Datei, nicht Kennwort. Damit keine Datei das
+  Gerät minutenlang rechnen lässt oder seinen Speicher füllt, liest Kennwort nur Argon2 mit
+  höchstens 1 GiB Speicher, höchstens 100 Durchläufen und Speicher mal Durchläufe höchstens 8 GiB,
+  AES-KDF mit höchstens 100 Millionen Runden und höchstens 64 MiB entpackte Daten. Die
+  Voreinstellungen von KeePassXC und KeePass liegen weit darunter; das Entschlüsseln dauert dann
+  wenige Sekunden. Eine Datenbank darüber endet mit einer Meldung, die die Grenzen nennt.
+- **Passwort und Schlüssel**: Das Passwort steht nur im Feld, bis du „Datenbank öffnen“ wählst,
+  dann leert Kennwort das Feld; gespeichert, protokolliert oder hochgeladen wird es nie. Die
+  Bytes von Datenbank und Schlüsseldatei überschreibt Kennwort danach mit Nullen.
+
+Die Bausteine – SHA-256, HMAC-SHA-256, Argon2, AES und ChaCha20 sowie Salsa20 für den inneren
+Strom geschützter Felder – kommen aus den geprüften `@noble`-Bibliotheken, gekapselt in
+`packages/crypto` und mit Testvektoren aus unabhängigen Implementierungen geprüft; das Entpacken
+übernimmt der `DecompressionStream` des Browsers. Wie das Format aufgebaut ist, folgt dem Leser von
+KeePassXC. Getestet wird mit Datenbanken aus KeePassXC 2.7.6 und pykeepass für jede Kombination
+aus Verschlüsselung, Schlüsselableitung und Schlüsseldatei, mit falschen Passwörtern, geänderten
+Bytes und zufällig beschädigten Dateien.
 
 ## Export
 
