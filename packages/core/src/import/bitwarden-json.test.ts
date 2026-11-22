@@ -163,6 +163,18 @@ describe("Bitwarden JSON (K-502)", () => {
     ]);
   });
 
+  it("refuses JSON without an items list instead of reading it as an empty export", () => {
+    // fast-check seeds -738442150 and 1865286675 of bitwarden-protected.property.test.ts: a
+    // protected export whose "encrypted" and "passwordProtected" keys were both changed
+    const wrongFormat = { ok: false, error: "wrong-format" };
+    expect(parseBitwardenJson("{}")).toEqual(wrongFormat);
+    expect(parseBitwardenJson('{"items":null}')).toEqual(wrongFormat);
+    expect(parseBitwardenJson('{"encr=ypted":true,"salt":"MDEy","data":"2.a|b|c"}')).toEqual(
+      wrongFormat,
+    );
+    expect(parseBitwardenJson('{"items":[]}')).toEqual({ ok: true, value: [] });
+  });
+
   it("refuses JSON of another shape and text that is no JSON", () => {
     expect(parseBitwardenJson('{"items":{}}')).toEqual({ ok: false, error: "wrong-format" });
     expect(parseBitwardenJson("{")).toEqual({ ok: false, error: "bad-json" });
