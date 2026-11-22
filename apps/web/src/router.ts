@@ -28,6 +28,7 @@ const simplePages = [
   "setup",
   "unlock",
   "recover",
+  "recover-company",
   "pair",
   "link",
 ] as const;

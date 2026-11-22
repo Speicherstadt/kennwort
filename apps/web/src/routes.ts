@@ -21,6 +21,7 @@ export type Route =
   | { page: "setup" }
   | { page: "unlock" }
   | { page: "recover" }
+  | { page: "recover-company" }
   | { page: "pair" }
   | { page: "link" }
   | { page: "invite"; id: string }

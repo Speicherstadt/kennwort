@@ -25,6 +25,7 @@ import { groupCalls } from "./groups-api.ts";
 import { memberCalls } from "./members-api.ts";
 import { pairingCalls } from "./pairing-api.ts";
 import { policyCalls } from "./policy-api.ts";
+import { recoveryCalls } from "./recovery-api.ts";
 import { shareCalls } from "./shares-api.ts";
 import { requestCalls, vaultCalls } from "./vaults-api.ts";
 export type ApiError = "wrong-code" | "invalid-invitation" | "too-many-requests" | "unexpected";
@@ -114,6 +115,7 @@ export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity)
     ...deviceCalls(call),
     ...memberCalls(call),
     ...policyCalls(call),
+    ...recoveryCalls(call),
     ...vaultCalls(call),
     ...requestCalls(call),
     ...groupCalls(call),
@@ -194,6 +196,7 @@ export type AccountApi = Omit<
   | keyof ReturnType<typeof deviceCalls>
   | keyof ReturnType<typeof memberCalls>
   | keyof ReturnType<typeof policyCalls>
+  | keyof ReturnType<typeof recoveryCalls>
   | keyof ReturnType<typeof vaultCalls>
   | keyof ReturnType<typeof requestCalls>
   | keyof ReturnType<typeof groupCalls>

@@ -24,6 +24,12 @@ describe("the query cache", () => {
   });
 
   it("names its data without a token, a key or a secret", () => {
-    expect(Object.values(queryKeys).flat()).toEqual(["devices", "groups", "members", "policy"]);
+    expect(Object.values(queryKeys).flat()).toEqual([
+      "devices",
+      "groups",
+      "members",
+      "policy",
+      "recovery",
+    ]);
   });
 });

@@ -82,7 +82,12 @@ describe("the gate", () => {
   it("offers a new device to set up a company, to connect with another device or to unlock", () => {
     const root = open("/entries", fakeSession({}).session);
     const labels = [...root.querySelectorAll("button")].map((b) => b.textContent);
-    expect(labels).toEqual(["Firma anlegen", "Mit einem anderen Gerät verbinden", "Anderes Konto"]);
+    expect(labels).toEqual([
+      "Firma anlegen",
+      "Mit einem anderen Gerät verbinden",
+      "Anderes Konto",
+      "Alles verloren? Über die Firma wiederherstellen",
+    ]);
     button(root, "Mit einem anderen Gerät verbinden").click();
     flush();
     expect(window.location.pathname).toBe("/pair");

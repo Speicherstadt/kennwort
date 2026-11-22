@@ -9,6 +9,8 @@ import {
   type PolicyDeps,
   saveLockTime,
 } from "@kennwort/client/policy/policy.ts";
+import { keepDeposit } from "@kennwort/client/policy/recovery.ts";
+import type { RecoveryApi } from "@kennwort/client/session/recovery-api.ts";
 import { LOCK_MINUTES, type UnsignedPolicy } from "@kennwort/core";
 import { Button, Input, m } from "@kennwort/ui";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
@@ -103,8 +105,19 @@ export const PolicySection = (props: { session: Session; api: PolicyDeps; canEdi
   );
 };
 
-/** Applies the company policy once the account is open (the lock time); renders nothing */
-export const ApplyPolicy = (props: { session: Session; api: PolicyDeps }) => {
-  onSettled(() => void applyPolicy(props.api, props.session));
+/**
+ * Applies the company policy once the account is open (the lock time) and then keeps this account's
+ * company recovery deposit up to it (K-307 part c); renders nothing
+ */
+export const ApplyPolicy = (props: {
+  session: Session;
+  api: PolicyDeps & Pick<RecoveryApi, "heldDeposit" | "saveDeposit">;
+}) => {
+  onSettled(() => {
+    void applyPolicy(props.api, props.session).then(() => {
+      const opened = props.session.opened();
+      if (opened?.token) void keepDeposit(props.api, opened);
+    });
+  });
   return null;
 };

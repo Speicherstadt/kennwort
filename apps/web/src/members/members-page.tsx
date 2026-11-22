@@ -11,6 +11,7 @@ import { ShieldCheck } from "@kennwort/ui/icons";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, For, Loading, Match, onSettled, resolve, Show, Switch } from "solid-js";
 import { PolicySection } from "../policy/policy-section.tsx";
+import { RecoverySection } from "../policy/recovery-section.tsx";
 import { queryKeys } from "../queries.ts";
 import type { Opened, Session } from "../session/session.ts";
 import { InviteForm } from "./invite-form.tsx";
@@ -21,6 +22,7 @@ import {
   confirm,
   invite,
   type LoadError,
+  leaveCompany,
   loadMembers,
   type MembersDeps,
   mayChangeRoles,
@@ -209,10 +211,7 @@ export const MembersPage = (props: {
   const refresh = () => client.invalidateQueries({ queryKey: queryKeys.members });
   const leaving = createLeaving({
     exits: () => props.exits,
-    leave: async (accountId) => {
-      const current = opened();
-      return current !== undefined && props.api.leave(current.token, accountId);
-    },
+    leave: (accountId) => leaveCompany(props.api, props.session, accountId, ready()?.views ?? []),
     busy,
     setBusy,
     setProblem,
@@ -304,6 +303,11 @@ export const MembersPage = (props: {
                 </ul>
                 <ExitDialogs leaving={leaving} />
                 <PolicySection
+                  session={props.session}
+                  api={props.api}
+                  canEdit={may(mayChangeRoles, list().me)}
+                />
+                <RecoverySection
                   session={props.session}
                   api={props.api}
                   canEdit={may(mayChangeRoles, list().me)}

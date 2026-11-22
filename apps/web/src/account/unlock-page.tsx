@@ -73,9 +73,14 @@ export const UnlockPage = (props: {
           {busy() ? m.working() : m.unlock_submit()}
         </Button>
       </form>
-      <Button variant="ghost" class="w-fit" onClick={() => props.nav.go("/recover")}>
-        {m.unlock_forgot()}
-      </Button>
+      <div class="flex flex-wrap gap-2">
+        <Button variant="ghost" class="w-fit" onClick={() => props.nav.go("/recover")}>
+          {m.unlock_forgot()}
+        </Button>
+        <Button variant="ghost" class="w-fit" onClick={() => props.nav.go("/recover-company")}>
+          {m.recovery_start()}
+        </Button>
+      </div>
     </Card>
   );
 };
@@ -90,5 +95,8 @@ export const WelcomePage = (props: { nav: Navigation; onUnlock: () => void }) =>
       <Button onClick={() => props.nav.go("/pair")}>{m.welcome_pair()}</Button>
       <Button onClick={() => props.onUnlock()}>{m.unlock_other()}</Button>
     </div>
+    <Button variant="ghost" class="w-fit" onClick={() => props.nav.go("/recover-company")}>
+      {m.recovery_start()}
+    </Button>
   </Card>
 );

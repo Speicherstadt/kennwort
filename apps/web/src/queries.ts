@@ -13,6 +13,7 @@ export const queryKeys = {
   groups: ["groups"],
   members: ["members"],
   policy: ["policy"],
+  recovery: ["recovery"],
 } as const;
 
 /**

@@ -22,16 +22,34 @@ export type PolicyAccount = OpenAccount & { setLockAfter: (ms: number) => void }
 export type PolicyDeps = Pick<MembersApi, "company"> & PolicyApi & StateDeps;
 export type LoadPolicyError = "unreachable" | "root-mismatch" | PolicyError;
 
-export const loadPolicy = async (
-  api: PolicyDeps,
+/**
+ * The policy checked under the pinned root, with the recovery key's public half the server serves
+ * beside it; that key counts only where the policy names its fingerprint (K-307 part c)
+ */
+export const loadCompanyPolicy = async (
+  api: Pick<PolicyDeps, "company">,
   opened: Opened,
-): Promise<{ ok: true; value: UnsignedPolicy } | { ok: false; error: LoadPolicyError }> => {
+): Promise<
+  | { ok: true; value: { policy: UnsignedPolicy; recoveryPublicKey: Uint8Array | null } }
+  | { ok: false; error: LoadPolicyError }
+> => {
   const company = await api.company(opened.token);
   const companyId = bytes(16).safeParse(company?.id);
   if (!company || !companyId.success) return { ok: false, error: "unreachable" };
   const root = trustedRoot(opened.state.rootFingerprint, company.rootPublicKey);
   if (!root) return { ok: false, error: "root-mismatch" };
-  return checkPolicy(root, companyId.data, opened.state.policy, company.policy);
+  const checked = checkPolicy(root, companyId.data, opened.state.policy, company.policy);
+  return checked.ok
+    ? { ok: true, value: { policy: checked.value, recoveryPublicKey: company.recoveryPublicKey } }
+    : checked;
+};
+
+export const loadPolicy = async (
+  api: Pick<PolicyDeps, "company">,
+  opened: Opened,
+): Promise<{ ok: true; value: UnsignedPolicy } | { ok: false; error: LoadPolicyError }> => {
+  const loaded = await loadCompanyPolicy(api, opened);
+  return loaded.ok ? { ok: true, value: loaded.value.policy } : loaded;
 };
 
 const MINUTE = 60_000;

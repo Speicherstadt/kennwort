@@ -5,8 +5,11 @@
  * so one invitation makes one member even if the upload fails and is tried again.
  */
 
+import { loadPolicy } from "@kennwort/client/policy/policy.ts";
+import { makeRecoveryKey, ownRecoveryKey } from "@kennwort/client/policy/recovery.ts";
 import type { MembersApi } from "@kennwort/client/session/members-api.ts";
 import type { PolicyApi } from "@kennwort/client/session/policy-api.ts";
+import type { RecoveryApi } from "@kennwort/client/session/recovery-api.ts";
 import type { StateDeps } from "@kennwort/client/session/state-sync.ts";
 import {
   type AccountState,
@@ -16,6 +19,7 @@ import {
   changeRole,
   checkMembers,
   encodeBytes,
+  grantRecoveryKey,
   type MemberView,
   newerCertificates,
   newInvitation,
@@ -26,7 +30,7 @@ import {
 import { bundleFingerprint, constantTimeEqual } from "@kennwort/crypto";
 import type { Opened, Session } from "../session/session.ts";
 
-export type MembersDeps = MembersApi & PolicyApi & StateDeps;
+export type MembersDeps = MembersApi & PolicyApi & StateDeps & RecoveryApi;
 
 export type Loaded = { views: MemberView[]; me: MemberView | undefined };
 export type LoadError = "unreachable" | "root-mismatch";
@@ -107,6 +111,43 @@ export const rememberCertificates = (api: MembersDeps, session: Session, views: 
   });
 
 /**
+ * An owner left or is an owner no more (K-307 part c): it held the recovery key and with it every
+ * deposit, so while company recovery is on, a remaining owner makes a new key and everyone deposits
+ * anew (P-13)
+ */
+export const afterOwnerLeft = async (api: MembersDeps, session: Session) => {
+  const opened = session.opened();
+  if (!opened) return false;
+  const policy = await loadPolicy(api, opened);
+  if (!policy.ok || !policy.value.companyRecovery.enabled) return policy.ok;
+  return makeRecoveryKey(api, session);
+};
+
+/** The account leaves the company; an owner who left held the recovery key: a new one (P-13) */
+export const leaveCompany = async (
+  api: MembersDeps,
+  session: Session,
+  accountId: Uint8Array,
+  views: MemberView[],
+) => {
+  const opened = session.opened();
+  if (!opened || !(await api.leave(opened.token, accountId))) return false;
+  const id = encodeBytes(accountId);
+  if (views.some((v) => encodeBytes(v.accountId) === id && v.role === "owner"))
+    await afterOwnerLeft(api, session);
+  return true;
+};
+
+/** A new owner gets the recovery key too, while company recovery is on; undefined when it is off */
+const recoveryGrantFor = async (api: MembersDeps, opened: Opened, certificate: Certificate) => {
+  if (certificate.role !== "owner") return { ok: true as const, grant: undefined };
+  const own = await ownRecoveryKey(api, opened);
+  if (own.ok)
+    return { ok: true as const, grant: grantRecoveryKey(own.value.secretKey, certificate) };
+  return { ok: own.error === "off", grant: undefined };
+};
+
+/**
  * An owner gives another certified member a new role (root-grant.ts); the new certificate is
  * remembered before it is uploaded, so the old role never counts again on this account's devices
  */
@@ -120,12 +161,17 @@ export const setRole = async (
   const root = opened?.state.rootSecretKey;
   if (!opened || !root || !view.certificate) return false;
   const { certificate, rootGrant } = changeRole(root, view.certificate, role);
+  const recovery = await recoveryGrantFor(api, opened, certificate);
+  if (!recovery.ok) return false;
   const id = encodeBytes(certificate.accountId);
   const remembered = await session.updateState(api, (state) => ({
     ...state,
     certificates: { ...state.certificates, [id]: certificate.issuedAt },
   }));
-  return remembered.ok && (await api.changeRole(opened.token, certificate, rootGrant));
+  const saved =
+    remembered.ok && (await api.changeRole(opened.token, certificate, rootGrant, recovery.grant));
+  if (!saved || view.role !== "owner" || role === "owner") return saved;
+  return afterOwnerLeft(api, session);
 };
 
 /** The link's fragment never reaches the server: the secret and the pinned root fingerprint */
