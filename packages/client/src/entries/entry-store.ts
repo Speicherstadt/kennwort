@@ -315,7 +315,7 @@ export const createEntryStore = (serverFor: ServerFor, session: Session, copy?: 
     load,
     refresh,
     ...entryWrites(syncChange, current, update),
-    ...entryImport(syncEntries, update),
+    ...entryImport(syncEntries, current, update),
     ...entryRotation({ current, states, pullNow, syncDevice }),
     entries,
     refused,

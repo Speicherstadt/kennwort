@@ -79,8 +79,8 @@ export const createEntries = (serverFor: ServerFor, session: Session, copy?: Ent
     /** Every entry with its decrypted content, for the export (K-504) */
     stored: store.entries,
     editor,
-    /** New entries from an import, a batch in one sync (K-501) */
-    saveNew: store.saveNew,
+    /** New entries and codes for logins from an import, a batch in one sync (K-501, K-503) */
+    saveImport: store.saveImport,
     startNew: () => setEditing({ kind: "new", initial: newInput("login") }),
     /** The entry as stored when "Ändern" was pressed is what the form starts from */
     startChange: (entry: ShownEntry) => {

@@ -386,13 +386,14 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
     Fixtures mit der echten Struktur bestehen und das Fuzzing sie einschließt. CXF ist seit dem
     14.08.2025 Proposed Standard der FIDO Alliance (Errata 09.03.2026, geprüft am 22.11.2026) und
     damit stabil genug; gelesen wird das unverschlüsselte JSON, CXP nicht.
-- [ ] **K-503 Authenticator-Import** – otpauth-migration-QR, Aegis, 2FAS, Microsoft.
+- [x] **K-503 Authenticator-Import** – otpauth-migration-QR, Aegis, 2FAS, Microsoft.
   Fertig, wenn: je App ein Parser in `packages/core/src/import/` jedes TOTP-Konto als Login mit
   otpauth-Link (Schlüssel, Aussteller, Konto, Algorithmus, Ziffern, Dauer) liefert, was Kennwort
   nicht berechnet (HOTP, Steam, …), überspringt und zählt, verschlüsselte Exporte als `encrypted`
   meldet, die Codes dem passenden Login zugeordnet werden können (Projektplan) und Fixtures,
   Fuzzing und Mutation-Tests wie bei K-502 bestehen. In Teilen, je ein Pull Request; abgehakt wird
-  K-503, wenn alle stehen:
+  K-503, wenn alle stehen. Abgehakt mit Teil 1 und 2: Teil 3 (Microsoft) ist nicht zu bauen,
+  solange Microsoft keinen Export hat, und steht deshalb unter „Zurückgestellt“:
   - [x] Teil 1: Google Authenticator, Aegis und 2FAS. Fertig, wenn: Fixtures (Weber Haustechnik)
     für Googles Export aus zwei QR-Codes, Aegis-JSON und 2FAS-Backup, unverschlüsselt und
     verschlüsselt, bestehen; Googles `MigrationPayload` ein eigener Protobuf-Leser ohne neues
@@ -404,7 +405,7 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
     Parser und für den Protobuf-Leser ohne Absturz und Hänger läuft; die Mutation-Tests der neuen
     Dateien bei 100 % stehen; Playwright desktop und `@phone` einen Google-Export aus zwei
     QR-Code-Screenshots und ein 2FAS-Backup importiert.
-  - [ ] Teil 2: Codes dem passenden Login zuordnen. Fertig, wenn: die Vorschau zu jedem Code aus
+  - [x] Teil 2: Codes dem passenden Login zuordnen. Fertig, wenn: die Vorschau zu jedem Code aus
     einer Authenticator-App den Login im Ziel-Tresor mit gleichem Dienst (Titel oder Host der
     Adresse) und Benutzernamen vorschlägt, der Code auf Wunsch dort ins Feld „Einmalcode“ kommt,
     statt einen eigenen Login anzulegen, ein vorhandener anderer Code nie still überschrieben

@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import type { EntryContent } from "@kennwort/core";
+import type { ImportWrite } from "@kennwort/client/entries/entry-import.ts";
 import { setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { flush } from "solid-js";
@@ -38,8 +38,8 @@ const VAULTS = [
 type Saved = Awaited<ReturnType<NonNullable<ReturnType<ImportDeps["save"]>>>>;
 
 const deps = (over: Partial<ImportDeps> = {}) => {
-  const written: { vault: string; batch: EntryContent[] }[] = [];
-  const save = async (vault: string, batch: EntryContent[]): Promise<Saved> => {
+  const written: { vault: string; batch: ImportWrite[] }[] = [];
+  const save = async (vault: string, batch: ImportWrite[]): Promise<Saved> => {
     written.push({ vault, batch });
     return { ok: true, value: { saved: batch.map((_, i) => `id-${i}`), unsaved: 0 } };
   };
@@ -51,6 +51,10 @@ const deps = (over: Partial<ImportDeps> = {}) => {
   };
   return { deps: all, written };
 };
+
+/** The contents of the new entries written, in order */
+const newContents = (written: { batch: ImportWrite[] }[]) =>
+  written.flatMap((w) => w.batch.flatMap((b) => (b.kind === "new" ? [b.content] : [])));
 
 const show = async (d: ImportDeps) => {
   setLocale("de", { reload: false });
@@ -202,9 +206,12 @@ describe("ImportPage preview and import", () => {
   it("skips a duplicate unless it is taken anyway, and flags a weak password", async () => {
     const existing: Comparable[] = [
       {
+        id: "portal",
+        type: "login",
         title: "portal.sanitaer-grosshandel.example",
         username: "jonas@weber-haustechnik.example",
         website: "https://portal.sanitaer-grosshandel.example/login",
+        fields: [],
       },
     ];
     const root = await show(deps({ existing: () => existing }).deps);
@@ -236,7 +243,7 @@ describe("ImportPage preview and import", () => {
     await click(tags);
     await click(button(root, /importieren$/));
     expect(written.every((w) => w.vault === "buero")).toBe(true);
-    const contents = written.flatMap((w) => w.batch);
+    const contents = newContents(written);
     expect(contents.find((c) => c.title === "Online-Banking Sparkasse")?.tags).toContain("Büro");
     expect(root.textContent).toContain("Import fertig");
     expect(root.querySelector('[role="note"]')?.textContent).toContain(
@@ -284,7 +291,7 @@ describe("ImportPage with an authenticator (K-503)", () => {
     // The keys never show
     expect(root.textContent).not.toContain("JBSWY3DPEHPK3PXP");
     await click(button(root, /importieren$/));
-    const datev = written.flatMap((w) => w.batch).find((c) => c.title === "DATEV");
+    const datev = newContents(written).find((c) => c.title === "DATEV");
     expect(datev?.fields.find((f) => f.kind === "totp")?.value).toContain(
       "secret=JBSWY3DPEHPK3PXP",
     );

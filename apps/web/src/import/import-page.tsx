@@ -8,13 +8,8 @@
  * counts, and leaving the page drops the rest. The file's bytes are zeroed once parsed; strings
  * JavaScript cannot wipe, so they wait for the garbage collector like every decrypted entry.
  */
-import {
-  type Columns,
-  csvColumns,
-  type EntryContent,
-  type ImportedEntry,
-  type ImportResult,
-} from "@kennwort/core";
+import type { ImportWrite } from "@kennwort/client/entries/entry-import.ts";
+import { type Columns, csvColumns, type ImportedEntry, type ImportResult } from "@kennwort/core";
 import { m } from "@kennwort/ui";
 import { createSignal, Match, onCleanup, Switch } from "solid-js";
 import type { Navigation } from "../navigation.ts";
@@ -30,10 +25,10 @@ import { isLocked, isQr, opensWhenEncrypted, type VendorChoice, vendorChoices } 
 export type ImportDeps = {
   /** The vaults this account may write in now: no reader's, none with a rotation due (P-11) */
   vaults: () => TargetVault[];
-  /** What the vault's entries are compared by for duplicates */
+  /** What the vault's entries are compared by for duplicates and codes (K-503 Teil 2) */
   existing: (vaultIdText: string) => Comparable[];
   /** Writes a batch through the entry store; missing while offline */
-  save: () => ((vaultIdText: string, batch: EntryContent[]) => ReturnType<SaveBatch>) | undefined;
+  save: () => ((vaultIdText: string, batch: ImportWrite[]) => ReturnType<SaveBatch>) | undefined;
 };
 
 type Step =
@@ -164,7 +159,7 @@ const createImportFlow = (save: ImportDeps["save"]) => {
   // Leaving the page in the middle of the mapping lets the bytes go too
   onCleanup(dropBytes);
 
-  const onImport = async (vaultIdText: string, contents: EntryContent[], weak: number) => {
+  const onImport = async (vaultIdText: string, contents: ImportWrite[], weak: number) => {
     const write = save();
     if (!write) return;
     // From here on only the contents being written hold plaintext, and only until they are

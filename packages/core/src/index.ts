@@ -129,6 +129,15 @@ export {
 } from "./generator/generator.ts";
 export { IMPORT_FORMATS, type ImportFormat } from "./import/formats.ts";
 export { migrationBatch } from "./import/google-migration.ts";
+export {
+  addTotp,
+  type CodeCandidate,
+  type CodeState,
+  codeCandidates,
+  codeOf,
+  type ImportedCode,
+  type VaultLogin,
+} from "./import/match-codes.ts";
 export { type Columns, csvColumns, parseTableCsv } from "./import/table.ts";
 export type {
   FileParser,

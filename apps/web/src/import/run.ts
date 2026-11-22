@@ -4,12 +4,11 @@
  * batch. The first batch the store refuses (rotation due, offline, read only) ends the import:
  * the rest is not written, and nothing of a refused batch stays queued (entry-import.ts).
  */
-import type { Imported } from "@kennwort/client/entries/entry-import.ts";
+import type { Imported, ImportWrite } from "@kennwort/client/entries/entry-import.ts";
 import type { SaveError } from "@kennwort/client/entries/entry-store.ts";
-import type { EntryContent } from "@kennwort/core";
 
 export type SaveBatch = (
-  batch: EntryContent[],
+  batch: ImportWrite[],
 ) => Promise<{ ok: true; value: Imported } | { ok: false; error: SaveError }>;
 
 export type ImportOutcome = { imported: number; unsaved: number; error?: SaveError };
@@ -19,7 +18,7 @@ export const BATCH_SIZE = 25;
 
 export const runImport = async (
   save: SaveBatch,
-  contents: readonly EntryContent[],
+  contents: readonly ImportWrite[],
   onProgress: (written: number) => void,
   size = BATCH_SIZE,
 ): Promise<ImportOutcome> => {
