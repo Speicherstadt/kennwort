@@ -7,9 +7,13 @@ import {
   EmergencyVaultsWire,
   encodeBytes,
   grantToWire,
+  idKey,
   makeGrant,
   packagesToWire,
   ReleaseWire,
+  removeMember,
+  toWire,
+  verifyLog,
 } from "@kennwort/core";
 import { emergencyGrants } from "../db/schema.ts";
 import { DAY, type WeberWithBuero, weberWithBuero } from "../testing/emergency-setup.ts";
@@ -252,6 +256,31 @@ describe("revoking and what the grantee reads (P-14)", () => {
     expect(shown.vaults.map((v) => encodeBytes(v.id))).toEqual([e.vaultId]);
     expect(shown.vaults[0]?.log).toHaveLength(1);
     expect(shown.vaults[0]?.keys).toEqual([]);
+  });
+
+  it("gives no vault of a view grant the grantor is no longer a member of", async () => {
+    // Review of K-307 part d: the grantee reads no more than the grantor still may
+    const e = await weberWithBuero();
+    const { grant } = await e.grant();
+    const trust = {
+      rootPublicKey: e.w.o.company.rootPublicKey,
+      certificates: new Map([[idKey(e.jonas.id), e.w.o.company.certificate]]),
+      now: e.seconds(),
+    };
+    const state = verifyLog(e.buero.ring.vaultId, [e.buero.genesis], trust);
+    if (!state.ok) throw new Error(state.error);
+    const signer = { accountId: e.jonas.id, edSecretKey: e.jonas.edSecretKey };
+    const left = removeMember(signer, state.value, e.buero.ring.vaultId, e.jonas.id, e.seconds());
+    const posted = await e.request(`/api/vaults/${e.vaultId}/log`, {
+      body: { entry: toWire(left) },
+    });
+    expect(posted.status).toBe(201);
+    await e.annaRequests(grant);
+    e.w.o.setup.clock.advance(7 * DAY * 1000);
+    const shown = await e.request(`/api/emergency/${e.jonasIdText}/vaults`, {
+      token: e.w.annaToken,
+    });
+    expect(EmergencyVaultsWire.parse(await shown.json()).vaults).toEqual([]);
   });
 
   it("for full access gives the sealed key block and the grantor's vault keys", async () => {

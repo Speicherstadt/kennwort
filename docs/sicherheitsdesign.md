@@ -1342,9 +1342,9 @@ bleibt für die Person sichtbar.
 **Herausgeben.** `GET /api/emergency/:geber/release` gibt die Pakete erst heraus, wenn eine Anfrage
 läuft, ihr nicht widersprochen wurde und die Wartezeit nach der Uhr des Servers vorbei ist oder der
 Gebende früher freigegeben hat; beim Vollzugriff dazu den versiegelten Schlüsselblock des Gebenden.
-`GET /api/emergency/:geber/vaults` gibt danach die genannten Tresore (beim Vollzugriff alle, in
-denen der Gebende Mitglied ist, mit seinen verpackten Schlüsseln) mit Log, Namen und der neuesten
-Version jedes Eintrags.
+`GET /api/emergency/:geber/vaults` gibt danach die genannten Tresore (beim Vollzugriff alle, mit
+seinen verpackten Schlüsseln), beide nur, solange der Gebende in ihnen Mitglied ist, mit Log, Namen
+und der neuesten Version jedes Eintrags.
 
 **Prüfen.** Der Client der Person nimmt eine Freigabe nur (`checkGrant`), wenn sie an ihr Konto und
 genau ihr Bündel geht, ein vom gemerkten Wurzelschlüssel zertifiziertes Mitglied derselben Firma
