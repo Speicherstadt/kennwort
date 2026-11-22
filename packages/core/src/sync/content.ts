@@ -16,6 +16,8 @@ export const EntryType = z.enum([
   "ssh-key",
   "api-key",
   "identity",
+  /** A WebAuthn credential the extension created for a website (K-406, F-12, webauthn/passkey-entry.ts) */
+  "passkey",
 ]);
 
 export const Field = z.object({

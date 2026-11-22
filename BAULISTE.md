@@ -300,7 +300,19 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   des getippten Werts, nie den Wert selbst und nie etwas an den Server; die Hashes liegen nur
   entsperrt in `chrome.storage.session` und verschwinden beim Sperren und nach der Sperrzeit (Test);
   weder `chrome.storage.local` noch der Sitzungsbereich enthalten Passwort oder Host im Klartext.
-- [ ] **K-406 Passkey-Anbieter** – Passkeys in Kennwort speichern und damit anmelden.
+- [x] **K-406 Passkey-Anbieter** – Passkeys in Kennwort speichern und damit anmelden.
+  Fertig, wenn: Playwright mit geladener Extension gegen den e2e-Server auf einer Testseite, die
+  mit SimpleWebAuthn prüft, einen Passkey anlegt (ES256 aus `@noble/curves`, Attestation „none“,
+  verschlüsselt als Eintrag der Art „Passkey“ im gewählten Tresor) und sich damit anmeldet, beides
+  erst nach einem echten Klick in die sichtbare, unverdeckte Leiste; eine fremde Domain, die die
+  rpId einer anderen beansprucht, `SecurityError` bekommt; ein fremdes iFrame, gesperrtes Kennwort,
+  „Anderes Gerät verwenden“ und kein passender Passkey an das WebAuthn des Browsers zurückgeben; eine
+  verdeckte Leiste nichts signiert. Das Skript in der Seite erfährt nur das Ergebnis der Zeremonie,
+  die der Nutzer bestätigt hat, und erreicht den Service Worker nur über das Content Script; der
+  private Schlüssel liegt nur im verschlüsselten Eintrag und beim Signieren im Arbeitsspeicher der
+  Leiste. Der Schlüssel hat ein Format mit Version (F-12) und Testvektoren aus `node:crypto`, die
+  WebAuthn-Strukturen bestehen die Prüfung von SimpleWebAuthn in Vitest, Texte auf Deutsch und
+  Englisch.
 - [ ] **K-407 Firefox für Android und Safari** – Build und Tests je Browser.
 - [ ] **K-408 Reproduzierbarer Build** – zweimal bauen, Hashes vergleichen, in CI.
 

@@ -41,6 +41,23 @@ export const WEB_PAGES = ["https://*/*", "http://*/*"];
  */
 const contentScripts = [
   { matches: WEB_PAGES, js: ["src/content/main.ts"], all_frames: true, run_at: "document_idle" },
+  // The passkey provider (K-406), before any script of the page: in the page's own world in place
+  // of navigator.credentials (passkey/page-api.ts), and beside it the content script that passes a
+  // ceremony to the service worker (passkey/channel.ts). Self-contained IIFEs (crxjs), so they run
+  // at once and not after a module loads.
+  {
+    matches: WEB_PAGES,
+    js: ["src/content/passkey-page.iife.ts"],
+    all_frames: true,
+    run_at: "document_start",
+    world: "MAIN",
+  },
+  {
+    matches: WEB_PAGES,
+    js: ["src/content/passkey-bridge.iife.ts"],
+    all_frames: true,
+    run_at: "document_start",
+  },
 ];
 
 const common = {

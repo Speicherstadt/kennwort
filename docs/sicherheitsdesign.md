@@ -161,6 +161,7 @@ Nur standardisierte Verfahren aus `@noble/*`, nichts selbst gebaut:
 | Symmetrisch | XChaCha20-Poly1305, 256-Bit-Schlüssel, 192-Bit-Nonce | RFC 8439, draft-irtf-cfrg-xchacha | `@noble/ciphers` |
 | Hybrid-KEM | X-Wing: X25519 + ML-KEM-768 | draft-connolly-cfrg-xwing-kem, FIPS 203 | `@noble/post-quantum` |
 | Signaturen | Ed25519 | RFC 8032 | `@noble/curves` |
+| Passkeys für Websites | ECDSA P-256 mit SHA-256 (ES256), k nach RFC 6979 | FIPS 186-5, RFC 6979, WebAuthn Level 3 | `@noble/curves` |
 | Ableitung | HKDF-SHA-512 | RFC 5869 | `@noble/hashes` |
 | Passphrase, Phishing-Warnung | Argon2id | RFC 9106 | `@noble/hashes` |
 | Hash | SHA-512, SHA-512/256; SHA-256 nur für Release-Manifeste (wie Subresource Integrity) | FIPS 180-4 | `@noble/hashes` |
@@ -352,6 +353,32 @@ Host-Tag ist ein mit dem Salt geschlüsselter Hash (HKDF), damit der Sitzungsber
 Klartext hält. Umgesetzt in `packages/crypto/src/password-alert.ts`; die Testvektoren in
 `packages/crypto/vectors/password-alert-v1.json` entstehen ohne den Code, den sie prüfen (Argon2id
 und HKDF aus `node:crypto`).
+
+### F-12 Passkey-Schlüssel v1
+
+```text
+schlüssel   = 0x01 ‖ d (32 Byte, Big Endian, 1 ≤ d < n von P-256)
+öffentlich  = 0x04 ‖ x ‖ y (d·G unkomprimiert, SEC 1)
+signatur    = ECDSA-P256-SHA-256(d, authenticatorData ‖ SHA-256(clientDataJSON)), ASN.1 DER,
+              kleines S, k nach RFC 6979
+eintrag     = Art "passkey", Felder rp-id, username, display-name, user-handle (base64url),
+              credential-id (base64url, 16 zufällige Byte), private-key (base64url des Schlüssels,
+              geheim), counter ("0")
+```
+
+Der private Schlüssel eines Passkeys, den die Extension für eine Website anlegt ([P-17](#p-17-ausfullen),
+K-406). ES256 (COSE −7) nimmt jede Relying Party an, darum legt Kennwort nur diesen an. Das
+Versions-Byte steht vor dem Skalar; ein Schlüssel einer anderen Version, ein Skalar 0 oder ≥ n und
+eine falsche Länge sind Fehler. Der Schlüssel liegt nur als Feld im einen Geheimtext des Eintrags
+(P-09) und beim Signieren im Arbeitsspeicher der Leiste; deren Kopie des Skalars wird danach mit
+Nullen überschrieben. k nach RFC 6979 macht die Signatur deterministisch, sodass kein schwacher
+Zufall d verraten kann. Was die Relying Party bekommt, schreibt `packages/core/src/webauthn` nach
+WebAuthn Level 3: Authenticator-Daten mit den Flags UP, UV, BE und BS (bei der Registrierung AT),
+Zähler 0, AAGUID aus Nullen, der COSE-Schlüssel in der kanonischen Reihenfolge von CTAP2 und
+Attestation „none“. Umgesetzt in `packages/crypto/src/passkey.ts`; die Testvektoren in
+`packages/crypto/vectors/passkey-v1.json` entstehen ohne den Code, den sie prüfen (öffentliche
+Schlüssel aus `node:crypto`, Signaturen aus RFC 6979, Anhang A.2.5, von `node:crypto` geprüft). Die
+Strukturen prüft in Vitest der Server von SimpleWebAuthn, wie eine Relying Party es täte.
 
 ## Schlüsselhierarchie
 
@@ -1693,6 +1720,69 @@ Warnung deckt den Fall ab, in dem jemand das Passwort selbst eintippt oder einf�
   Inline-Menü auf dieser Seite nicht aus (es meldet, es sei verdeckt). In Firefox lässt sich die
   Warnung nicht wegklicken, weil die Sichtbarkeit nicht prüfbar ist; sie geht mit der Seite.
 
+**Passkeys (K-406).** Die Extension ist ein WebAuthn-Authenticator für Websites: Sie legt Passkeys
+als Einträge an (F-12) und meldet damit an. Vorbild ist Bitwardens Extension
+(`bitwarden/clients`, `apps/browser/src/autofill/fido2`), die `navigator.credentials` in der Seite
+ersetzt und sonst an den Browser abgibt; der Code ist Kennworts eigener.
+
+- Ein Skript im Hauptkontext der Seite (`world: "MAIN"`, `document_start`, in jedem http(s)-Frame)
+  tritt vor `navigator.credentials.create` und `get`. Es nimmt nur `publicKey`-Zeremonien ohne
+  `mediation: "conditional"`, schickt sie mit einem neuen `MessageChannel` an das eigene Fenster,
+  wo nur das Content Script desselben Frames sie annimmt (`event.source`), und baut aus der Antwort
+  ein `PublicKeyCredential`. Was dieses Skript kann, kann die Seite auch: Es entscheidet nichts,
+  hält nichts und erreicht die Extension nicht selbst. Eine Seite, die die Nachricht selbst schickt,
+  kommt so weit wie mit `navigator.credentials` und nicht weiter.
+- Das Content Script prüft Form und Größen (`user.id` höchstens 64 Byte, höchstens 64
+  Credential-IDs, Zeitlimit höchstens zehn Minuten) und gibt die Zeremonie an den Service Worker.
+  Der nimmt sie nur von einem Frame, der nach dem Frame-Baum des Browsers (`webNavigation`) der
+  oberste ist oder dieselbe Herkunft hat wie jeder Frame über ihm, dieselbe Regel wie beim Ausfüllen,
+  und nur für das Dokument, das gefragt hat (`documentId`). Die Herkunft nimmt er aus dem Frame-Baum,
+  nicht aus der Nachricht, und wo der Browser die eigene Herkunft des Dokuments nennt (Chrome:
+  `sender.origin`), muss sie dieselbe sein: Ein Dokument in einer Sandbox (`<iframe sandbox>` oder
+  CSP `sandbox`, wie Websites Anhänge zeigen) hat unter derselben Adresse eine opake Herkunft, und
+  das WebAuthn des Browsers lehnt es ab. Dasselbe prüft das Content Script an `window.origin`.
+  Die rpId muss der Host des Frames sein oder ein registrierbares Suffix
+  davon, gelesen mit `tldts` gegen die Public Suffix List samt privatem Teil: `portal.example.test`
+  darf `example.test` beanspruchen, aber nie `test`, `co.uk`, `github.io` oder die Domain einer
+  anderen Website; sonst endet die Zeremonie in `SecurityError`, ohne dass etwas erscheint. Ein
+  fremder Frame, eine Seite ohne sicheren Kontext (https, http nur auf `localhost`), eine IP-Adresse
+  und eine Registrierung ohne ES256 gehen an das WebAuthn des Browsers, das die Permissions Policy
+  (`publickey-credentials-get`/`-create`) für fremde Frames selbst prüft.
+- Die geprüfte Zeremonie hält der Service Worker nur im Arbeitsspeicher, je Tab eine; eine neue
+  beendet die ältere mit `NotAllowedError`. Er lässt den obersten Frame die Leiste von K-404 öffnen
+  (neue Nonce, geschlossenes Shadow DOM, `use_dynamic_url`) und gibt ihr die Zeremonie einmal.
+  Nimmt sie keine Leiste innerhalb von zehn Sekunden, übernimmt der Browser; nach dem Zeitlimit der
+  Seite (sonst fünf Minuten) endet sie mit `NotAllowedError`, ein Abbruch der Seite (`AbortSignal`)
+  sofort. Die Seite bekommt erst eine Antwort, wenn die Leiste geantwortet hat.
+- Die Leiste öffnet das Konto, das das Popup entsperrt hat (ohne die Sperrzeit zu verschieben), und
+  lädt die Einträge. Gesperrt oder ohne geladene Einträge gibt sie unsichtbar an den Browser ab;
+  die Seite erfährt so nur, dass Kennwort gesperrt ist. Sonst bietet sie „Passkey speichern“ mit
+  der Wahl des Tresors oder „Anmelden als …“ je Passkey für genau diese rpId (bei
+  `allowCredentials` nur unter den erlaubten Credential-IDs) an, dazu immer „Anderes Gerät
+  verwenden“ (Browser) und × (`NotAllowedError`). Passt kein Passkey, erscheint sie trotzdem und
+  sagt das: Die Seite sieht, ob die Leiste erscheint und wie groß ihr Frame ist, und erführe sonst
+  vor jeder Zustimmung, ob Kennwort einen Passkey für eine Credential-ID hält, die sie ausprobiert
+  (WebAuthn Level 3, §14.5.2). Darum hat die Leiste auch immer dieselbe Höhe und rollt, was nicht
+  hineinpasst. Liegt ein Passkey aus `excludeCredentials` schon
+  in Kennwort, sagt sie das und bietet nur „Anderes Gerät verwenden“ an.
+- Speichern und Anmelden zählen nur mit denselben Prüfungen gegen Clickjacking wie das Speichern
+  eines Logins: Klick vom Browser zugestellt, Leiste seit 500 ms laut IntersectionObserver v2
+  sichtbar und 300 ms später noch immer, und das Content Script findet ihr Element unmittelbar davor
+  offen, unverdeckt und undurchsichtig. Benutzer verifiziert (UV) heißt darum: entsperrt und dieser
+  Klick; `userVerification` jeder Stufe ist damit erfüllt. In Firefox, das v2 nicht kennt, signiert
+  die Leiste nicht und verweist auf ein anderes Gerät.
+- Beim Speichern entstehen Schlüssel und Credential-ID in der Leiste; der Passkey geht über den
+  Eintrags-Speicher von P-09 in den gewählten Tresor (Leser und Tresore mit ausstehendem
+  Schlüsselwechsel schreiben nichts), und erst danach bekommt die Seite die Registrierung. Beim
+  Anmelden prüft die Leiste die rpId des Eintrags noch einmal, signiert mit dem Schlüssel aus dem
+  entschlüsselten Eintrag und überschreibt ihre Kopie. Der Zähler bleibt 0, ein Anmelden schreibt
+  also nichts. Kein privater Schlüssel kommt in den Service Worker, das Content Script, die Seite
+  oder einen Speicherbereich.
+- Restrisiko: Eine Seite kann die Funktionen des Browsers über `CredentialsContainer.prototype`
+  selbst aufrufen und Kennwort so umgehen; das nimmt ihr nur den Passkey aus Kennwort. Eine Seite kann eine Zeremonie anstoßen, ohne dass der Nutzer etwas getan
+  hat; die Leiste erscheint dann, signiert aber nichts ohne Klick. `excludeCredentials` erkennt nur
+  Passkeys in Tresoren, die der Nutzer lesen kann.
+
 Getestet mit Playwright und geladener Extension gegen Testseiten (`e2e/extension-fill.spec.ts`):
 Ausfüllen auf dem exakten Host per Klick und per Enter; eine Phishing-Domain (Bindestrich statt
 Punkt) bekommt keine Treffer, und selbst eine erzwungene Anfrage des Menüs lehnt der Service Worker
@@ -1713,8 +1803,14 @@ einen Wert, den die Seite selbst einsetzt (auch über `execCommand`) oder nach d
 und gesperrt warnt nichts; eine Seite unter `s3.amazonaws.com` warnt; eine überdeckte oder
 durchsichtig gemachte Warnung kommt wieder nach oben, und „trotzdem fortfahren“ zählt verdeckt
 nicht; der Sitzungsbereich hält weder Passwort noch Host im Klartext und verliert die Alarmliste
-beim Sperren. Die Regeln selbst prüfen Vitest-Tests neben dem Code (`apps/extension/src/fill`,
-`save`, `alert`, `content`, `menu`, `prompt`, `page`) und die Testvektoren von F-10.
+beim Sperren. Zu Passkeys (`e2e/extension-passkey.spec.ts`), gegen eine Test-Relying-Party, die jede Registrierung
+und Anmeldung mit dem Server von SimpleWebAuthn prüft: Ein Passkey wird nach dem Klick in die Leiste
+gespeichert und meldet an; eine ähnlich aussehende Domain, die die rpId des Portals beansprucht,
+bekommt `SecurityError` und keine Leiste; ein fremder Frame, „Anderes Gerät verwenden“ und ein
+gesperrtes Kennwort gehen an das WebAuthn des Browsers (ein virtueller Authenticator); eine
+verdeckte Leiste signiert nichts, und kein Speicherbereich hält etwas vom Passkey. Die Regeln selbst
+prüfen Vitest-Tests neben dem Code (`apps/extension/src/fill`, `save`, `alert`, `content`, `menu`,
+`prompt`, `page`, `passkey`) und die Testvektoren von F-10 und F-12.
 
 **Wehrt ab:** E-14.
 

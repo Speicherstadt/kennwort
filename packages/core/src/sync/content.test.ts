@@ -127,7 +127,7 @@ describe("merging fields that differ in one property", () => {
 });
 
 describe("EntryContent accepts every type and kind", () => {
-  it.each(["login", "note", "wifi", "card", "ssh-key", "api-key", "identity"])(
+  it.each(["login", "note", "wifi", "card", "ssh-key", "api-key", "identity", "passkey"])(
     "type %s",
     (type) => {
       expect(EntryContent.safeParse({ ...bank, type }).success).toBe(true);

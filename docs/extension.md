@@ -3,14 +3,14 @@ title: Browser-Extension
 description: >-
   Die Browser-Extension von Kennwort für Chrome, Edge und Firefox: verbinden und entsperren, Treffer
   für die Seite, Suche, Favoriten und Generator im Popup, Ausfüllen über das Inline-Menü, neue und
-  geänderte Logins speichern, vor Phishing warnen, wo sie entsperrte Schlüssel ablegt und wie man
-  sie zum Entwickeln entpackt lädt.
+  geänderte Logins speichern, vor Phishing warnen, Passkeys für Websites anlegen und damit anmelden,
+  wo sie entsperrte Schlüssel ablegt und wie man sie zum Entwickeln entpackt lädt.
 ---
 
 # Browser-Extension
 
 Die Extension bringt Kennwort in den Browser: Zugänge für die Seite finden, auf Klick ausfüllen,
-neue Logins speichern und vor Phishing warnen. Ihre Oberfläche ist dieselbe wie die der Web-App
+neue Logins speichern, vor Phishing warnen und Passkeys für Websites halten. Ihre Oberfläche ist dieselbe wie die der Web-App
 (`packages/ui`), mit denselben Texten auf Deutsch und Englisch.
 
 !!! info "Was schon geht"
@@ -18,7 +18,8 @@ neue Logins speichern und vor Phishing warnen. Ihre Oberfläche ist dieselbe wie
     Benutzername und Passwort und erzeugt Passwörter. Das Inline-Menü unter einem Login-Feld füllt
     auf Klick oder Enter aus. Nach dem Anmelden bietet die Extension an, ein neues Login zu speichern
     oder ein geändertes Passwort zu aktualisieren. Tippst du ein gespeichertes Passwort auf einer
-    anderen Seite ein als der, für die es gespeichert ist, warnt sie dich.
+    anderen Seite ein als der, für die es gespeichert ist, warnt sie dich. Will eine Website einen
+    Passkey anlegen oder damit anmelden, bietet Kennwort an, ihn zu speichern oder zu benutzen.
 
 ## Browser
 
@@ -37,7 +38,7 @@ Safari und Firefox für Android kommen später mit eigenen Tests.
 | `alarms` | das automatische Sperren, auch wenn das Popup zu ist |
 | `activeTab` | die Adresse des Tabs, über dem du das Popup öffnest – erst nach deinem Klick auf das Symbol und nur für diesen Tab |
 | `webNavigation` | die Frames eines Tabs und ihre Adressen, damit die Extension beim Ausfüllen selbst prüft, in welchen Frame ein Passwort geht (unten) |
-| Content Script auf allen `http`- und `https`-Seiten | das Inline-Menü unter Login-Feldern, das Angebot zum Speichern nach dem Anmelden und die Phishing-Warnung; der Browser nennt das beim Installieren „alle Daten auf allen Websites lesen und ändern“ |
+| Content Script auf allen `http`- und `https`-Seiten | das Inline-Menü unter Login-Feldern, das Angebot zum Speichern nach dem Anmelden, die Phishing-Warnung und die Passkeys (dafür auch ein kleines Skript im Kontext der Seite selbst, vor deren Skripten); der Browser nennt das beim Installieren „alle Daten auf allen Websites lesen und ändern“ |
 
 Ihre Seiten laufen unter einer strengen Content Security Policy: Es läuft nur Code, der in der
 Extension selbst steckt, nichts aus dem Netz. Websites dürfen nur zwei Seiten der Extension laden:
@@ -224,6 +225,62 @@ Wie in der Leiste zum Speichern kann Firefox nicht bestätigen, dass die Warnung
 bleibt sie stehen, bis du die Seite verlässt. Wie die Hashes genau gebildet werden und was sie
 verraten, steht im [Sicherheitsdesign](sicherheitsdesign.md#p-17-ausfullen).
 
+## Passkeys
+
+Will eine Website einen Passkey anlegen („Mit Passkey registrieren“) oder dich damit anmelden,
+fragt Kennwort oben rechts in derselben Leiste wie beim Speichern:
+
+- **Passkey in Kennwort speichern?** – mit der Website (`für weber-haustechnik.test`) und deinem
+  Benutzernamen dort. **Passkey speichern** legt einen Eintrag der Art „Passkey“ an; darfst du in
+  mehrere Tresore schreiben, wählst du vorher den Tresor. Liegt für dieses Konto schon ein Passkey
+  in Kennwort, sagt die Leiste das.
+- **Mit Passkey anmelden?** – je Passkey für genau diese Website ein Knopf **Anmelden als …**.
+- **Anderes Gerät verwenden** gibt an das Fenster des Browsers ab: einen Passkey auf dem Gerät
+  selbst, einem Handy oder einem Sicherheitsschlüssel.
+- **Schließen** (×) bricht ab; die Website erfährt nur, dass es nicht geklappt hat.
+
+Ist Kennwort gesperrt, erscheint die Leiste nicht, und der Browser fragt wie ohne Kennwort. Liegt
+kein passender Passkey darin, erscheint sie trotzdem, gleich groß, und sagt das; „Anderes Gerät
+verwenden“ gibt dann an den Browser ab. So sieht die Website nicht an der Leiste, ob es in Kennwort
+einen Passkey für sie gibt. Ein Passkey ist ein Eintrag wie jeder andere: verschlüsselt,
+synchronisiert auf alle deine Geräte und mit allen teilbar, die den Tresor lesen. Er hat keine
+Adresse, darum bietet ihn weder das Popup unter „Für <Host>“ noch das Inline-Menü zum Ausfüllen an;
+die Suche findet ihn. Neu anlegen lässt er sich nur von der Website aus.
+
+Was die Extension dabei sicherstellt:
+
+- **Nur nach deinem Klick**: Speichern und Anmelden zählen nur mit denselben Prüfungen wie das
+  Speichern eines Logins – Klick vom Browser zugestellt, Leiste sichtbar, nicht abgedeckt und nicht
+  durchsichtig. Sonst sagt sie: „Die Leiste war verdeckt oder durchsichtig. Kennwort hat nichts
+  signiert.“ Die Website bekommt erst eine Antwort, wenn du geklickt hast.
+- **Nur für die richtige Website**: Eine Seite darf einen Passkey nur für ihren eigenen Host oder
+  eine übergeordnete Domain anlegen und benutzen, die kein öffentliches Suffix ist –
+  `portal.weber-haustechnik.test` für `weber-haustechnik.test`, aber nie
+  `portal-weber-haustechnik.test` für `weber-haustechnik.test`, nie `co.uk` oder `github.io`.
+  Prüft wird mit `tldts` gegen die Public Suffix List, wie beim Ausfüllen, und mit der Adresse des
+  Frames aus dem Frame-Baum des Browsers, nicht mit dem, was die Seite behauptet.
+- **Nie in fremden Frames**: Bedient wird nur die Seite selbst oder ein Frame derselben Herkunft,
+  nie ein Dokument in einer Sandbox, auch nicht unter der Adresse der Website (etwa ein Anhang, den
+  sie in einem `<iframe sandbox>` zeigt): Das geht an den Browser, der es ablehnt.
+  Will ein eingebettetes Fremd-Formular einen Passkey, fragt der Browser selbst und prüft dabei,
+  ob die Seite es mit `allow="publickey-credentials-get"` (oder `-create`) erlaubt hat.
+- **Die Seite sieht nicht hinein**: Ein kleines Skript im Kontext der Seite stellt sich vor
+  `navigator.credentials` und reicht die Anfrage an das Content Script weiter; es kennt keine
+  Passkeys und entscheidet nichts. Die Website erfährt nur, was du bestätigt hast: den neuen Passkey
+  oder die Anmeldung. Ob es in Kennwort einen Passkey für sie gibt, erfährt sie nicht.
+- **Der Schlüssel bleibt im Eintrag**: Der private Schlüssel (ES256 auf P-256, Format F-12) liegt
+  nur verschlüsselt im Eintrag und zum Signieren kurz im Arbeitsspeicher der Leiste, nie im Service
+  Worker, im Content Script, in der Seite oder in einem Speicherbereich des Browsers.
+- **Kein Zähler**: Wie bei den Passkeys von Apple, Google und Bitwarden bleibt der Zähler 0, weil
+  ein Passkey auf mehreren Geräten liegt. Ein Anmelden ändert den Eintrag darum nicht, auch Leser
+  eines Tresors melden sich an.
+
+Nicht von Kennwort, sondern vom Browser beantwortet werden außerdem Passkeys im Autofill-Menü der
+Seite (`mediation: "conditional"`), Seiten ohne HTTPS (außer `localhost`) und Websites, die kein
+ES256 annehmen. In Firefox kann die Leiste wie beim Speichern nicht prüfen, ob sie sichtbar ist; dort
+signiert sie nicht und verweist auf ein anderes Gerät. Wie die Prüfungen genau laufen, steht im
+[Sicherheitsdesign](sicherheitsdesign.md#p-17-ausfullen).
+
 ## Wo die Schlüssel liegen
 
 Entsperrte Schlüssel liegen nur in `chrome.storage.session`: im Arbeitsspeicher des Browsers, weg,
@@ -289,4 +346,8 @@ tippen das Passwort des Portals auf einer ähnlich aussehenden Domain ein und pr
 Warnung kommt und sich nicht zudecken lässt, aber nicht auf dem Portal selbst, nicht bei einem
 anderen Passwort, einem versteckten Feld, einem Wert, den die Seite selbst setzt (auch über
 `execCommand`) oder nach dem Tippen austauscht, und nicht gesperrt; auf einer Seite unter
-`s3.amazonaws.com` kommt sie.
+`s3.amazonaws.com` kommt sie. Die Tests der Passkeys (`e2e/extension-passkey.spec.ts`) legen auf
+einer Testseite, die mit dem Server von SimpleWebAuthn prüft, einen Passkey an und melden sich damit
+an; eine ähnlich aussehende Domain, die die rpId des Portals beansprucht, bekommt `SecurityError`,
+ein fremdes iFrame, „Anderes Gerät verwenden“ und ein gesperrtes Kennwort gehen an einen virtuellen
+Authenticator des Browsers, und eine verdeckte Leiste signiert nichts.

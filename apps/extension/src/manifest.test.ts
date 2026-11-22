@@ -31,6 +31,21 @@ describe.each(["chrome", "firefox"] as const)("the manifest for %s", (browser) =
         all_frames: true,
         run_at: "document_idle",
       },
+      // K-406: the passkey provider, before the page's own scripts: the page's world takes the
+      // place of navigator.credentials, the content script beside it passes ceremonies on
+      {
+        matches: WEB_PAGES,
+        js: ["src/content/passkey-page.iife.ts"],
+        all_frames: true,
+        run_at: "document_start",
+        world: "MAIN",
+      },
+      {
+        matches: WEB_PAGES,
+        js: ["src/content/passkey-bridge.iife.ts"],
+        all_frames: true,
+        run_at: "document_start",
+      },
     ]);
     expect(WEB_PAGES).toEqual(["https://*/*", "http://*/*"]);
     expect(JSON.stringify(built(browser).content_scripts)).not.toMatch(

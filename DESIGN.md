@@ -98,6 +98,16 @@ dem Titel des Eintrags, seinem Host und dem der Seite, der Hauptknopf „Passwor
 als Ghost-Knopf „Das ist nicht <Host> – trotzdem fortfahren“. Ein verdeckter Klick nennt den Grund in
 Rot.
 
+**Passkey-Leiste** (Extension, wenn eine Website einen Passkey anlegen oder damit anmelden will):
+dieselbe Leiste oben rechts. Kopf wie dort mit dem Host der Seite; darunter „Passkey in Kennwort
+speichern?“ oder „Mit Passkey anmelden?“, klein „für <rpId>“, beim Speichern der Benutzername und bei
+mehreren beschreibbaren Tresoren die Wahl des Tresors mit dem Hauptknopf „Passkey speichern“, beim
+Anmelden je passendem Passkey ein Hauptknopf „Anmelden als <Name>“; immer „Anderes Gerät verwenden“
+als Ghost-Knopf. Ohne passenden Passkey sagt sie das klein in Grau, über „Anderes Gerät verwenden“.
+Immer gleich hoch (232 px), was nicht passt, rollt: Die Seite sieht die Größe des Frames. Gesperrt
+erscheint sie nicht, der Browser fragt selbst.
+Ein verdeckter Klick nennt den Grund in Rot.
+
 ## Komponenten
 
 Eigene Komponenten in `packages/ui`, ohne Bibliothek, auf nativen Elementen:

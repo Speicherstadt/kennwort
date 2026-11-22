@@ -6,13 +6,15 @@
  * offers it once to the top frame of the tab, and hands it once to the save prompt that this top
  * frame's content script opened with its nonce. The prompt, an extension page, compares and saves.
  * A phishing warning (K-405, alert/alert-broker.ts) is held and handed over the same way, and goes
- * first: the login submitted on the page that raised it is not offered for saving.
+ * first: the login submitted on the page that raised it is not offered for saving. A passkey
+ * ceremony (K-406) goes before both, and the prompt's answer to it goes back to the passkey broker.
  */
 import type { Warning } from "../alert/messages.ts";
 
 import { extensionFrameSender, type Sender, targetOf } from "../fill/broker.ts";
 import { type FillTarget, type FrameInfo, fillTarget } from "../fill/frames.ts";
 import { pageHost } from "../page/matches.ts";
+import type { Ceremony, PasskeyAnswer } from "../passkey/messages.ts";
 import type { Captures } from "./captures.ts";
 import {
   type CaptureRequest,
@@ -31,6 +33,11 @@ export type SaveBrokerDeps = {
   captures: Captures;
   /** Phishing warnings waiting for the prompt (K-405) */
   warnings: Captures<Warning>;
+  /** Passkey ceremonies waiting for the prompt and its answer (K-406, passkey/passkey-broker.ts) */
+  passkeys?: {
+    take: (tabId: number) => Ceremony | undefined;
+    finish: (tabId: number, answer: PasskeyAnswer) => boolean;
+  };
   frames: (tabId: number) => Promise<FrameInfo[] | undefined>;
   send: (tabId: number, message: PromptContentMessage, target: FillTarget) => Promise<unknown>;
   openPopup: () => Promise<void>;
@@ -125,6 +132,9 @@ export const createSaveBroker = (deps: SaveBrokerDeps) => {
     const { nonce } = request;
     switch (request.type) {
       case "prompt-take": {
+        // A passkey ceremony first: the page waits for it
+        const ceremony = deps.passkeys?.take(prompt.tabId);
+        if (ceremony) return { ok: true, ceremony };
         const warning = deps.warnings.take(prompt.tabId);
         if (warning) {
           deps.captures.drop(prompt.tabId);
@@ -136,6 +146,10 @@ export const createSaveBroker = (deps: SaveBrokerDeps) => {
       case "prompt-unlock":
         await deps.openPopup();
         return { ok: true };
+      case "prompt-passkey":
+        return deps.passkeys?.finish(prompt.tabId, request.answer)
+          ? { ok: true }
+          : refuse("nothing");
       case "prompt-check": {
         const answer = await deliver(
           prompt.tabId,
