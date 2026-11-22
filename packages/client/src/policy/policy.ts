@@ -6,6 +6,7 @@
 import {
   bytes,
   checkPolicy,
+  encodeBytes,
   type PolicyError,
   signPolicy,
   trustedRoot,
@@ -62,9 +63,18 @@ export const applyPolicy = async (api: PolicyDeps, session: PolicyAccount) => {
   const opened = session.opened();
   if (!opened) return { ok: false as const, error: "unreachable" as const };
   const loaded = await loadPolicy(api, opened);
-  const minutes = loaded.ok ? loaded.value.lockAfterMinutes : opened.state.policyLock;
+  // Locked or another account opened while it loaded: this policy is not that account's. The same
+  // account under a newer state (a sync, a new token) is still it
+  const now = session.opened();
+  if (!now || encodeBytes(now.accountId) !== encodeBytes(opened.accountId))
+    return { ok: false as const, error: "unreachable" as const };
+  // A newer policy applied while this one loaded (an owner's save) wins: its lock time is in the
+  // account state by now, so a slower, older answer or a failed load falls back to that one
+  const current = loaded.ok && loaded.value.version >= now.state.policy;
+  const minutes = current ? loaded.value.lockAfterMinutes : now.state.policyLock;
   session.setLockAfter(minutes * MINUTE);
   if (!loaded.ok) return loaded;
+  if (!current) return { ok: false as const, error: "older" as const };
   const { version } = loaded.value;
   if (version > opened.state.policy)
     await session.updateState(api, (state) =>

@@ -25,7 +25,11 @@ afterEach(() => {
 
 /** Only what the gate reads; the flows themselves are in session.test.ts and e2e/account.spec.ts */
 const fakeSession = (state: { opened?: boolean; device?: boolean }) => {
-  const account = { token: "t", state: emptyState(new Uint8Array(32)) } as never;
+  const account = {
+    accountId: new Uint8Array(16),
+    token: "t",
+    state: emptyState(new Uint8Array(32)),
+  } as never;
   const [opened, setOpened] = createSignal(state.opened ? account : undefined);
   const touches: number[] = [];
   const session = {
