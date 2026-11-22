@@ -1394,10 +1394,13 @@ Restrisiko:
 Login zu speichern oder ein geändertes Passwort zu aktualisieren:
 
 - Erfasst wird nur ein Absenden, das der Browser zustellt (`isTrusted`) und das höchstens eine
-  Sekunde nach einem echten Klick oder Tastendruck des Nutzers kommt; `form.submit()` (ohne
-  Ereignis) und `requestSubmit()` eines Skripts ohne Nutzeraktion erfassen nichts. Gelesen werden nur
-  Felder, die die Seite zeigt (dieselbe Regel wie beim Ausfüllen), nur im obersten Frame oder einem
-  Frame derselben Herkunft wie jeder Frame über ihm.
+  Sekunde nach einem echten Klick oder Tastendruck des Nutzers auf das Login selbst kommt: in sein
+  Formular oder auf einen Knopf dieses Formulars, auf den Knopf eines Logins ohne Formular, in das
+  Feld, in dem Enter fiel. `form.submit()` (ohne Ereignis) und `requestSubmit()` eines Skripts
+  erfassen nichts, auch nicht direkt nach einem Klick des Nutzers anderswo (etwa auf ein
+  Cookie-Banner) oder auf ein Label, das die Seite mit dem Knopf des Formulars verknüpft.
+  Gelesen werden nur Felder, die die Seite zeigt (dieselbe Regel wie beim Ausfüllen), nur im
+  obersten Frame oder einem Frame derselben Herkunft wie jeder Frame über ihm.
 - Das Content Script gibt Benutzername und Passwort sofort per Nachricht an den Service Worker und
   behält nichts; ins DOM der Seite kommt das Passwort nie. Der Service Worker prüft den Frame am
   Frame-Baum des Browsers (`webNavigation`, `frameId`, `documentId`), nimmt den Host von dort, nicht
@@ -1436,7 +1439,8 @@ nichts aus, derselbe Klick ohne Trick schon; ein Passwortfeld, das die Seite au�
 durchsichtig oder ein Pixel groß versteckt, bleibt leer. Zum Speichern (`e2e/extension-save.spec.ts`):
 ein neues Login wird angeboten, gespeichert und im Popup gezeigt, ein geändertes Passwort
 aktualisiert und das alte steht in der Historie; dasselbe Passwort, ein verstecktes Passwortfeld,
-`form.submit()` und `requestSubmit()` eines Skripts, eine Seite auf der Liste „Nie für diese Seite“
+`form.submit()` und `requestSubmit()` eines Skripts, auch nach einem Klick des Nutzers auf ein
+Cookie-Banner oder ein Label daneben, eine Seite auf der Liste „Nie für diese Seite“
 und eine verdeckte Leiste speichern nichts, und weder `chrome.storage.local` noch der
 Sitzungsbereich enthalten Passwort oder Host im Klartext. Die Regeln selbst prüfen Vitest-Tests
 neben dem Code (`apps/extension/src/fill`, `save`, `content`, `menu`, `prompt`, `page`).

@@ -49,6 +49,17 @@ const scriptSubmit = (how: "submit" | "requestSubmit") =>
   `${loginForm("Automatik")}<script>setTimeout(() => { const f = document.forms[0];
     f.user.value = "${USERNAME}"; f.pass.value = "Von-Skript-1!"; f.${how}(); }, 300);</script>`;
 
+/**
+ * A page that fills its own form and submits it when the user clicks something else: a cookie
+ * banner whose button calls requestSubmit(), or a label for the form's button laid over the banner
+ */
+const bannerSubmit = (how: "requestSubmit" | "label") =>
+  `${loginForm("Banner").replace("<button", '<button id="go"')}<p>${
+    how === "label"
+      ? '<label for="go" style="border:1px solid">Cookies akzeptieren</label>'
+      : '<button type="button" onclick="document.forms[0].requestSubmit()">Cookies akzeptieren</button>'
+  }</p><script>const f = document.forms[0]; f.user.value = "${USERNAME}"; f.pass.value = "Von-Skript-2!";</script>`;
+
 const WELCOME = `<!doctype html><html lang="de"><title>Willkommen</title><h1>Willkommen</h1>`;
 
 const PAGES: Record<string, string> = {
@@ -66,6 +77,8 @@ const PAGES: Record<string, string> = {
   [`${SITE("newsletter")}/login`]: hiddenPassword,
   [`${SITE("automatik")}/submit`]: scriptSubmit("submit"),
   [`${SITE("automatik")}/request`]: scriptSubmit("requestSubmit"),
+  [`${SITE("banner")}/request`]: bannerSubmit("requestSubmit"),
+  [`${SITE("banner")}/label`]: bannerSubmit("label"),
 };
 
 type Area = { get(keys: null): Promise<Record<string, unknown>> };
@@ -155,13 +168,14 @@ test.describe
           ? route.fulfill({ contentType: "text/html", body })
           : route.fulfill({ status: 404, body: "" });
       });
-      // What the page itself can see: whether the prompt's element was ever shown
+      // What the page itself can see: whether the prompt's element was ever shown. The document,
+      // not its root element: an init script runs before the parser has made that
       await context.addInitScript(() => {
         new MutationObserver(() => {
           const host = document.querySelector("kennwort-save") as HTMLElement | null;
           if (host?.style.display === "block")
             (window as unknown as { promptShown: boolean }).promptShown = true;
-        }).observe(document.documentElement, {
+        }).observe(document, {
           subtree: true,
           childList: true,
           attributes: true,
@@ -179,6 +193,8 @@ test.describe
       const prompt = await armedPrompt(tab, "Login speichern?");
       await expect(prompt.locator("header")).toContainText("shop.weber-haustechnik.test");
       await expect(prompt.getByText(USERNAME)).toBeVisible();
+      // What the tests that expect no prompt read sees this one (expectNoPrompt)
+      expect(await everShown(tab)).toBe(true);
       // The page sees neither the prompt's content nor its frame
       expect(
         await tab.evaluate(() => [
@@ -294,6 +310,15 @@ test.describe
     test("does not capture a submit the page makes by script", async () => {
       for (const path of ["/submit", "/request"]) {
         await tab.goto(`${SITE("automatik")}${path}`);
+        await expect(tab.getByRole("heading", { name: "Willkommen" })).toBeVisible();
+        await expectNoPrompt(tab);
+      }
+    });
+
+    test("does not capture a submit the page makes after a click of the user elsewhere", async () => {
+      for (const path of ["/request", "/label"]) {
+        await tab.goto(`${SITE("banner")}${path}`);
+        await tab.getByText("Cookies akzeptieren").click();
         await expect(tab.getByRole("heading", { name: "Willkommen" })).toBeVisible();
         await expectNoPrompt(tab);
       }

@@ -28,7 +28,8 @@ const setup = (overrides: Partial<SaveWatchDeps> = {}, pending: SaveAnswer = { o
   document.body.innerHTML = `<form id="login"><input id="user" value="jonas.weber">
     <input id="pass" type="password" value="Kupfer-Rohr-17!"><button id="go" type="button">Anmelden</button>
     </form><div id="formless"><input id="fuser" value="anna"><input id="fpass" type="password"
-    value="Ventil-9!"><button id="fgo">Weiter</button></div><button id="before">Früher</button>`;
+    value="Ventil-9!"><button id="fgo">Weiter</button></div><button id="before">Früher</button>
+    <button id="outside" form="login" type="submit">Absenden</button><label id="cover" for="go">Cookies</label>`;
   let clock = 10_000;
   const timers: (() => void)[] = [];
   const frame = fakeFrame();
@@ -56,7 +57,8 @@ const setup = (overrides: Partial<SaveWatchDeps> = {}, pending: SaveAnswer = { o
     clock += ms;
     for (const run of [...timers]) run();
   };
-  const act = () => watch.onUserAction(event(document.body));
+  /** A real click or key press, by default into the login form's password field */
+  const act = (target: EventTarget = el("pass")) => watch.onUserAction(event(target));
   return { watch, frame, sent, el, tick, act, advance: (ms: number) => (clock += ms) };
 };
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -98,6 +100,40 @@ describe("capturing a submitted login", () => {
     expect(captures(sent)).toEqual([]);
   });
 
+  it("captures nothing when the user's click or key press was not on the login", async () => {
+    const { watch, sent, el, act } = setup();
+    // A real click on another button (a cookie banner), then the page's requestSubmit()
+    act(el("before"));
+    watch.onSubmit(event(el("login")));
+    // A label elsewhere that the browser turns into a click on the form's button
+    act(el("cover"));
+    watch.onClick(event(el("go")));
+    // A real click elsewhere, then the page's click() on the formless button: a click it made up
+    // is untrusted anyway, but neither does a real one outside the button count for it
+    act(el("before"));
+    watch.onClick(event(el("fgo")));
+    // A real key press in another field, then Enter the page claims for the formless field
+    act(el("user"));
+    watch.onKeyDown(event(el("fpass"), { key: "Enter" }));
+    await settle();
+    expect(captures(sent)).toEqual([]);
+  });
+
+  it("takes a submit after a click or key press anywhere in the form or on its own button", async () => {
+    const { watch, sent, el, act } = setup();
+    act(el("user"));
+    watch.onSubmit(event(el("login")));
+    await settle();
+    (el("pass") as HTMLInputElement).value = "Kupfer-Rohr-18!";
+    act(el("outside"));
+    watch.onSubmit(event(el("login")));
+    await settle();
+    expect(captures(sent).map((r) => r.type === "save-capture" && r.password)).toEqual([
+      "Kupfer-Rohr-17!",
+      "Kupfer-Rohr-18!",
+    ]);
+  });
+
   it("captures nothing in a frame it may not fill and nothing from a hidden password field", async () => {
     const foreign = setup({ mayCapture: () => false });
     foreign.act();
@@ -118,11 +154,11 @@ describe("capturing a submitted login", () => {
     act();
     watch.onClick(event(el("go")));
     await settle();
-    act();
+    act(el("fgo"));
     watch.onClick(event(el("fgo")));
     await settle();
     // A button before the formless password field signs nothing in
-    act();
+    act(el("before"));
     watch.onClick(event(el("before")));
     await settle();
     expect(captures(sent).map((r) => r.type === "save-capture" && r.username)).toEqual([
@@ -133,8 +169,9 @@ describe("capturing a submitted login", () => {
 
   it("takes Enter in a formless login field, leaves a form's Enter to its submit", async () => {
     const { watch, sent, el, act } = setup();
-    act();
+    act(el("fpass"));
     watch.onKeyDown(event(el("fpass"), { key: "Enter" }));
+    act(el("pass"));
     watch.onKeyDown(event(el("pass"), { key: "Enter" }));
     watch.onKeyDown(event(el("fpass"), { key: "a" }));
     await settle();
