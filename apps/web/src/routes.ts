@@ -20,6 +20,7 @@ export type Route =
   | { page: "import" }
   | { page: "export" }
   | { page: "emergency" }
+  | { page: "links" }
   | { page: "renew" }
   | { page: "setup" }
   | { page: "unlock" }
@@ -28,6 +29,8 @@ export type Route =
   | { page: "pair" }
   | { page: "link" }
   | { page: "invite"; id: string }
+  /** A one-time link's page (K-601): reachable without an account, its secret in the fragment */
+  | { page: "secret"; id: string }
   | { page: "not-found" };
 
 const filterPath = (filter: ListFilter) =>
@@ -39,6 +42,7 @@ const filterPath = (filter: ListFilter) =>
 
 export const routePath = (route: Route): string => {
   if (route.page === "invite") return `/invite/${encodeURIComponent(route.id)}`;
+  if (route.page === "secret") return `/s/${encodeURIComponent(route.id)}`;
   if (route.page !== "entries") return route.page === "not-found" ? "/" : `/${route.page}`;
   const base = filterPath(route.filter);
   return route.entry ? `${base}/${encodeURIComponent(route.entry)}` : base;

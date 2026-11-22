@@ -7,7 +7,7 @@ import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { entryIcon } from "@kennwort/client/entries/entry-icon.ts";
 import { typeLabel } from "@kennwort/client/entries/entry-types.ts";
 import { Button, cn, getLocale, Icon, m, type Toasts } from "@kennwort/ui";
-import { ArrowLeft, Pencil, Share2 } from "@kennwort/ui/icons";
+import { ArrowLeft, Link2, Pencil, Share2 } from "@kennwort/ui/icons";
 import { For, Show } from "solid-js";
 import { entries as demoEntries, vaultName as demoVaultName } from "../demo.ts";
 import type { Navigation } from "../navigation.ts";
@@ -27,12 +27,13 @@ import { TotpField } from "./totp-field.tsx";
 const date = (time: number) =>
   new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }).format(time);
 
-/** The detail's two buttons and the star; each greyed out where this account may not use it */
+/** The detail's buttons and the star; each greyed out where this account may not use it */
 const Actions = (props: {
   entry: ShownEntry;
   toasts: Toasts;
   onEdit?: (() => void) | undefined;
   onShare?: (() => void) | undefined;
+  onLink?: (() => void) | undefined;
   onFavorite?: (() => Promise<Saved> | undefined) | undefined;
 }) => (
   <div class="flex gap-2">
@@ -43,6 +44,9 @@ const Actions = (props: {
     />
     <Button disabled={!props.onShare} onClick={() => props.onShare?.()}>
       <Icon icon={Share2} /> {m.detail_share()}
+    </Button>
+    <Button disabled={!props.onLink} onClick={() => props.onLink?.()}>
+      <Icon icon={Link2} /> {m.detail_link()}
     </Button>
     <Button variant="primary" disabled={!props.onEdit} onClick={() => props.onEdit?.()}>
       <Icon icon={Pencil} /> {m.detail_edit()}
@@ -56,6 +60,7 @@ const Detail = (props: {
   vaultName: (id: string) => string;
   onEdit?: (() => void) | undefined;
   onShare?: (() => void) | undefined;
+  onLink?: (() => void) | undefined;
   onFavorite?: (() => Promise<Saved> | undefined) | undefined;
 }) => (
   <div class="grid gap-5 p-4 md:p-6 xl:grid-cols-[1fr_16rem]">
@@ -127,6 +132,8 @@ export const EntryDetail = (props: {
   onEdit?: ((entry: ShownEntry) => void) | undefined;
   /** Opens sharing for an entry of a vault this account may edit (P-10) */
   onShare?: ((entry: ShownEntry) => void) | undefined;
+  /** Opens a one-time link for an entry of a vault this account may edit (K-601) */
+  onLink?: ((entry: ShownEntry) => void) | undefined;
   /** Marks an entry of a vault this account may edit as a favorite, or no longer (K-306 part 5) */
   onFavorite?: ((entry: ShownEntry) => Promise<Saved>) | undefined;
 }) => {
@@ -164,6 +171,11 @@ export const EntryDetail = (props: {
             onShare={
               props.onShare && found.editable !== false && found.sharedBy === undefined
                 ? () => props.onShare?.(found)
+                : undefined
+            }
+            onLink={
+              props.onLink && found.editable !== false && found.sharedBy === undefined
+                ? () => props.onLink?.(found)
                 : undefined
             }
             onFavorite={

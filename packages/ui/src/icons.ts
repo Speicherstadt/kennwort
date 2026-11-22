@@ -20,6 +20,7 @@ export {
   Import,
   KeyRound,
   LifeBuoy,
+  Link2,
   List,
   Lock,
   Pencil,

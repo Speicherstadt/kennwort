@@ -811,5 +811,69 @@
   "root_change_title": "Neuer Firmenschlüssel",
   "root_change_text": "Deine Firma hat einen neuen Firmenschlüssel. Vergleiche diesen Code mit einem Inhaber, am besten persönlich oder am Telefon. Übernimm ihn nur, wenn jede Ziffer gleich ist.",
   "root_change_confirm": "Code stimmt, übernehmen",
-  "root_change_failed": "Der neue Firmenschlüssel konnte nicht übernommen werden."
+  "root_change_failed": "Der neue Firmenschlüssel konnte nicht übernommen werden.",
+  "detail_link": "Einmal-Link",
+  "settings_links": "Einmal-Links",
+  "secret_title": "Geteiltes Geheimnis",
+  "secret_intro": "Jemand hat dir mit Kennwort etwas Vertrauliches geschickt. Der Link lässt sich nur begrenzt oft öffnen: Zeig den Inhalt erst an, wenn du ihn brauchst.",
+  "secret_reveal": "Anzeigen",
+  "secret_retry": "Noch einmal versuchen",
+  "secret_gone": "Dieser Link ist abgelaufen, widerrufen oder schon so oft geöffnet worden wie erlaubt. Bitte um einen neuen.",
+  "secret_damaged": "Der Inhalt passt nicht zu diesem Link. Er wurde unterwegs verändert, oder der Link ist nicht vollständig.",
+  "secret_broken": "Dieser Link ist unvollständig. Kopiere ihn noch einmal ganz aus der Nachricht.",
+  "secret_passphrase_intro": "Dieser Link ist zusätzlich mit einer Passphrase geschützt. Du hast sie auf einem anderen Weg bekommen, etwa am Telefon.",
+  "secret_passphrase": "Passphrase",
+  "secret_passphrase_wrong": "Die Passphrase stimmt nicht.",
+  "secret_unlock": "Öffnen",
+  "secret_used_up": "Der Link ist damit verbraucht. Kopiere, was du brauchst: Schließt du die Seite, ist der Inhalt weg.",
+  "secret_remaining": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "Der Link lässt sich noch 1-mal öffnen.",
+        "n=*": "Der Link lässt sich noch {count}-mal öffnen."
+      }
+    }
+  ],
+  "secret_footer": "Kennwort hat den Inhalt erst auf deinem Gerät entschlüsselt. Der Server kennt ihn nicht.",
+  "link_title": "Einmal-Link für {title}",
+  "link_intro": "Ein Link für jemanden ohne Konto. Er läuft ab und lässt sich nur so oft öffnen, wie du wählst. Wer den ganzen Link hat, kann den Inhalt lesen.",
+  "link_fields": "Im Link: {fields}",
+  "link_nothing": "Dieser Eintrag hat keine Felder, die in einen Einmal-Link können.",
+  "link_expiry": "Gültig für",
+  "link_expiry_hour": "1 Stunde",
+  "link_expiry_days": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "1 Tag",
+        "n=*": "{count} Tage"
+      }
+    }
+  ],
+  "link_fetches": "Abrufe",
+  "link_passphrase": "Passphrase (optional)",
+  "link_passphrase_hint": "Sag sie auf einem anderen Weg weiter, etwa am Telefon. Ohne sie öffnet der Link nichts.",
+  "link_create": "Link erstellen",
+  "link_address": "Einmal-Link",
+  "link_made_note": "Der Link gilt bis {date}. Kennwort zeigt ihn nur jetzt: Kopiere ihn und schick ihn weiter.",
+  "link_copied": "Link kopiert.",
+  "link_copy": "Link kopieren",
+  "link_done": "Fertig",
+  "link_too_large": "Zu viel für einen Einmal-Link. Kürze den Text oder teile weniger Felder.",
+  "link_failed": "Der Link konnte nicht erstellt werden. Versuch es noch einmal.",
+  "links_title": "Einmal-Links",
+  "links_intro": "Schick ein Geheimnis an jemanden ohne Konto, etwa einen Handwerker oder die Steuerberaterin. Kennwort verschlüsselt es auf deinem Gerät; der Schlüssel steht nur im Link.",
+  "links_text_title": "Titel (optional)",
+  "links_text_label": "Geheimnis",
+  "links_active": "Deine aktiven Links",
+  "links_none": "Keine aktiven Links.",
+  "links_failed": "Die Links konnten nicht geladen oder widerrufen werden.",
+  "links_created": "Erstellt am {date}",
+  "links_left": "noch {remaining} von {max} Abrufen",
+  "links_until": "gültig bis {date}",
+  "links_revoke": "Widerrufen",
+  "links_revoke_of": "Link vom {date} widerrufen"
 }

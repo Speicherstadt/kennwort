@@ -27,6 +27,7 @@ const simplePages = [
   "import",
   "export",
   "emergency",
+  "links",
   "renew",
   "setup",
   "unlock",
@@ -53,6 +54,7 @@ const pages: Page[] = [
     route: (p) => entriesOf({ kind: "vault", id: p.vault ?? "" }, p.entry),
   },
   { path: "/invite/$id", route: (p) => ({ page: "invite", id: p.id ?? "" }) },
+  { path: "/s/$id", route: (p) => ({ page: "secret", id: p.id ?? "" }) },
 ];
 
 const buildRouteTree = () => {

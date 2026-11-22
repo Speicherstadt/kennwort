@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createLog, redact } from "./log.ts";
+import { createLog, pathForLog, redact } from "./log.ts";
 
 const capture = (level: "debug" | "info" | "warn" | "error" = "info") => {
   const lines: string[] = [];
@@ -45,5 +45,19 @@ describe("log", () => {
     "body",
   ])("never writes a field named like a secret: %s", (name) => {
     expect(redact({ [name]: "Weber-2026!" })).toEqual({ [name]: "[redacted]" });
+  });
+});
+
+describe("pathForLog", () => {
+  it("writes a one-time link's fetch ID as a placeholder and every other path as it is", () => {
+    expect(pathForLog("/auth/links/GpplYT0ymcqF4R5MxemI3g/open")).toBe("/auth/links/:fetchId/open");
+    expect(pathForLog("/auth/links/x")).toBe("/auth/links/:fetchId");
+    expect(pathForLog("/api/links/GpplYT0ymcqF4R5MxemI3g")).toBe(
+      "/api/links/GpplYT0ymcqF4R5MxemI3g",
+    );
+    expect(pathForLog("/s/auth/links/GpplYT0ymcqF4R5MxemI3g")).toBe(
+      "/s/auth/links/GpplYT0ymcqF4R5MxemI3g",
+    );
+    expect(pathForLog("/auth/pairings/abc/poll")).toBe("/auth/pairings/abc/poll");
   });
 });

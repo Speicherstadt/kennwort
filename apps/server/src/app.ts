@@ -19,7 +19,8 @@ import { pairingApiRoutes, pairingPublicRoutes } from "./auth/pairings.ts";
 import { setupRoute } from "./auth/setup.ts";
 import type { Db } from "./db/database.ts";
 import { accounts } from "./db/schema.ts";
-import type { Log } from "./log.ts";
+import { linkApiRoutes, linkPublicRoutes } from "./links/routes.ts";
+import { type Log, pathForLog } from "./log.ts";
 import { groupRoutes } from "./sync/group-routes.ts";
 import { createHub, type Hub } from "./sync/hub.ts";
 import { logRoutes } from "./sync/log-routes.ts";
@@ -81,7 +82,7 @@ export const createApp = ({
     await next();
     log("info", "request", {
       method: c.req.method,
-      path: c.req.path,
+      path: pathForLog(c.req.path),
       status: c.res.status,
       ms: Math.round(performance.now() - started),
     });
@@ -131,9 +132,12 @@ export const createApp = ({
     const deps = { db, ...signIn };
     api.route("/", createInvitationRoute(deps));
     api.route("/", pairingApiRoutes(deps));
+    api.route("/", linkApiRoutes(deps));
     // Public: sign-in key, accepting an invitation, and Better Auth (passkeys, sessions) for the rest
     app.route("/auth/login-key", loginKeyRoutes(deps));
     app.route("/auth/pairings", pairingPublicRoutes(deps));
+    // One-time links (K-601): fetched without an account, by the ID in the link's address
+    app.route("/auth/links", linkPublicRoutes(deps));
     app.route("/auth", acceptInvitationRoute(deps));
     app.route("/auth", setupRoute({ ...deps, setupCode: signIn.setupCode }));
     app.on(["GET", "POST"], "/auth/*", (c) => {
@@ -150,7 +154,7 @@ export const createApp = ({
   app.notFound((c) => c.json({ error: "not-found" }, 404));
 
   app.onError((error, c) => {
-    log("error", "unhandled", { path: c.req.path, name: error.name });
+    log("error", "unhandled", { path: pathForLog(c.req.path), name: error.name });
     return c.json({ error: "internal" }, 500);
   });
 

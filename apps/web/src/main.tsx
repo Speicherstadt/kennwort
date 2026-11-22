@@ -1,6 +1,7 @@
 import "@kennwort/ui/styles.css";
-import { createApi } from "@kennwort/client/session/api.ts";
+import { callerOf, createApi } from "@kennwort/client/session/api.ts";
 import { deviceIdentity } from "@kennwort/client/session/device-identity.ts";
+import { linkCalls } from "@kennwort/client/session/links-api.ts";
 import { getLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { createSignal } from "solid-js";
@@ -26,11 +27,13 @@ if (root) {
   const identity = deviceIdentity(globalThis.localStorage, navigator.userAgent);
   const api = createApi(copy.fetch(fetch), identity);
   const session = createSession({ api, storage: globalThis.localStorage, copy });
+  // A one-time link is fetched without the device naming itself: the recipient has no account
+  const { fetchLink } = linkCalls(callerOf(fetch, undefined));
   const [updateReady, setUpdateReady] = createSignal(false);
   render(
     () => (
       <>
-        <App nav={nav} session={session} api={api} hash={hash} copy={copy} />
+        <App nav={nav} session={session} api={api} hash={hash} copy={copy} fetchLink={fetchLink} />
         <UpdateNotice ready={updateReady()} onReload={() => location.reload()} />
       </>
     ),

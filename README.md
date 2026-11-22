@@ -47,7 +47,7 @@ deinem eigenen Server betreibst.
 | 📱 Handy | Web-App zum Installieren (PWA), die nur signierte und geprüfte Updates annimmt und ohne Verbindung entsperrt und liest, und App für Android und iOS mit systemweitem Ausfüllen |
 | 🔁 Umzug | Import aus Bitwarden (auch der passwortgeschützte Export), LastPass, 1Password, KeePass (auch die KDBX-Datenbank mit Master-Passwort und Schlüsseldatei), Team Password Manager, Passbolt, den Browsern, jeder Tabelle und Authenticator-Apps (Google Authenticator per QR-Code, Aegis, 2FAS): Anbieter wählen, Anleitung, Vorschau ohne Geheimnisse, Duplikate überspringen, schwache Passwörter gleich unter „Zum Ändern“ |
 | 📤 Export | Inhaber und Admins exportieren einen Tresor oder alle als verschlüsseltes JSON (wieder importierbar, mit allem), als KeePass-Datenbank (KDBX 4) oder als CSV für andere Passwortmanager; die Datei entsteht nur auf dem Gerät, jeder Export steht im Audit-Log |
-| 🛡️ Sicherheit im Alltag | Sicherheits-Übersicht, Prüfung gegen Datenlecks, „Zum Ändern“-Liste, Einmal-Links für Externe |
+| 🛡️ Sicherheit im Alltag | Sicherheits-Übersicht, Prüfung gegen Datenlecks, „Zum Ändern“-Liste, Einmal-Links für Externe ohne Konto (ein Eintrag oder freier Text, bis zu sieben Tage und zehn Abrufe, auf Wunsch mit Passphrase, jederzeit widerrufbar; erst ein Klick zeigt den Inhalt, damit Linkvorschauen ihn nicht verbrauchen) |
 
 ## Sicherheit
 
