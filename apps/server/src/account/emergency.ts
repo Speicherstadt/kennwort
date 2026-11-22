@@ -98,17 +98,6 @@ const grantRefusal = (deps: Deps, c: Env, upload: Upload, grantee: string) => {
   return undefined;
 };
 
-/** The same scope, waiting time and vaults: a renewal after a key rotation keeps a running request */
-const sameTerms = (old: GrantRow, grant: EmergencyGrant) => {
-  const before = EmergencyGrant.parse(JSON.parse(old.grant));
-  const vaults = (g: EmergencyGrant) => g.items.map((i) => encodeBytes(i.vaultId)).join();
-  return (
-    before.scope === grant.scope &&
-    before.waitSeconds === grant.waitSeconds &&
-    vaults(before) === vaults(grant)
-  );
-};
-
 const putGrant = (deps: Deps) => async (c: Env) => {
   const grantee = c.req.param("grantee") ?? "";
   const upload = await parsed(c, GrantUpload);
@@ -118,18 +107,19 @@ const putGrant = (deps: Deps) => async (c: Env) => {
   const store = emergencyStore(deps.db, c.var.session.companyId);
   const old = store.row(c.var.session.accountId, grantee);
   if (old && old.time >= upload.grant.time) return c.json({ error: "stale" }, 409);
-  const keep = old && sameTerms(old, upload.grant);
+  // A new grant ends a running request: requests, objections and approvals name the grant they are
+  // about, so none of them answers this one (F-09)
   store.put({
     grantor: c.var.session.accountId,
     grantee,
     grant: JSON.stringify(grantToWire(upload.grant)),
     packages: JSON.stringify(packagesToWire(upload.packages)),
     time: upload.grant.time,
-    request: keep ? old.request : null,
-    requestedAt: keep ? old.requestedAt : null,
-    objection: keep ? old.objection : null,
-    approval: keep ? old.approval : null,
-    releasedAt: keep ? old.releasedAt : null,
+    request: null,
+    requestedAt: null,
+    objection: null,
+    approval: null,
+    releasedAt: null,
     storedAt: deps.now(),
   });
   audit(deps, c, "emergency-granted", grantee);
@@ -155,7 +145,7 @@ const audit = (
     signature: new Uint8Array(),
   });
 
-/** A statement of this kind about the stored grant, signed by the account given */
+/** A statement of this kind naming exactly the stored grant, signed by the account given */
 const signedStatement = async (
   deps: Deps,
   c: Env,

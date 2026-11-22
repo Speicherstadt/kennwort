@@ -218,6 +218,8 @@ Server kann die Schlüssel nicht öffnen und keine eigenen unterschieben.
 Seite, mit dem Tag, an dem die Wartezeit endet. Bis dahin kannst du **Widersprechen**: Diese
 Anfrage bleibt dann gesperrt, und die Person muss neu anfragen, mit neuer Wartezeit. Mit **Jetzt
 freigeben** gibst du den Zugriff sofort frei. **Notfallzugriff zurückziehen** beendet die Freigabe.
+Änderst du die Freigabe (oder erneuert dein Gerät sie nach einem Schlüsselwechsel), endet eine
+laufende Anfrage; die Person fragt dann neu an.
 
 **Wer Notfallzugriff hat**, sieht ihn unter **Für dich** und wählt im Notfall **Zugriff anfragen**.
 Nach der Wartezeit, oder sobald der Gebende freigibt, öffnet **Öffnen** die Tresore zum Lesen. Dein

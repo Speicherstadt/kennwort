@@ -3,6 +3,7 @@ import vectors from "../vectors/emergency-v1.json" with { type: "json" };
 import {
   EMERGENCY_STATEMENTS,
   emergencyAccountCommitment,
+  emergencyGrantDigest,
   emergencyGrantMessage,
   emergencyStatementMessage,
   unwrapEmergencyVaultKey,
@@ -97,12 +98,20 @@ describe("F-09 vectors: emergency access", () => {
       expect(hex(message)).toBe(vector?.message);
       expect(hex(sign(grantorSeed, "emergency", message))).toBe(vector?.signature);
     }
+    const [viewTerms, fullTerms] = [
+      { ...terms, scope: "view" as const, accountCommitment: new Uint8Array(), items: viewItems },
+      { ...terms, scope: "full" as const, accountCommitment: fromHex(full.commitment), items: [] },
+    ];
+    expect(hex(emergencyGrantDigest(viewTerms))).toBe(view.digest);
+    expect(hex(emergencyGrantDigest(fullTerms))).toBe(full.digest);
   });
 
-  it("encodes and signs every statement as libsodium does, each under its own purpose", () => {
+  it("encodes and signs every statement as libsodium does, naming its grant, under its purpose", () => {
     expect(vectors.statements.map((s) => s.purpose)).toEqual([...EMERGENCY_STATEMENTS]);
     for (const statement of vectors.statements) {
-      const message = emergencyStatementMessage(companyId, parties, statement.at);
+      expect(statement.grantDigest).toBe(view.digest);
+      const grant = { time: statement.grantTime, digest: fromHex(statement.grantDigest) };
+      const message = emergencyStatementMessage(companyId, parties, grant, statement.at);
       expect(hex(message)).toBe(statement.message);
       const signer = statement.purpose === "emergency-request" ? granteeEd.publicKey : undefined;
       const publicKey = signer ?? fromHex(vectors.grantorPublicKey);

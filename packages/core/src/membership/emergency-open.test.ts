@@ -59,6 +59,28 @@ describe("checking a release (P-14)", () => {
       );
   });
 
+  it("never for an old request and approval played back against a newer full grant", () => {
+    // Review of K-307 part d: statements name the exact grant, so view never turns into full
+    const full = fullGrant(GRANTED_AT + 500).grant;
+    const asFull = release({ approval });
+    expect(checkRelease(full, asFull, parties, undefined, REQUESTED)).toEqual(
+      refused("not-my-request"),
+    );
+    expect(checkRelease(full, release(), parties, undefined, ends)).toEqual(
+      refused("not-my-request"),
+    );
+    const fresh = requestBy(sandra, full, REQUESTED + 600);
+    expect(
+      checkRelease(
+        full,
+        release({ request: fresh, approval }),
+        parties,
+        undefined,
+        REQUESTED + 600,
+      ),
+    ).toEqual(refused("waiting"));
+  });
+
   it("never for a request the grantor objected to, approved or not", () => {
     const seen = { grant: GRANTED_AT, revoked: false, objected: REQUESTED };
     expect(checkRelease(grant, release({ approval }), parties, seen, ends)).toEqual(

@@ -38,6 +38,7 @@ export { DIGEST_LENGTH, digest, sha256 } from "./digest.ts";
 export {
   EMERGENCY_PURPOSE,
   EMERGENCY_STATEMENTS,
+  type EmergencyGrantRef,
   type EmergencyItem,
   type EmergencyKeyError,
   type EmergencyParties,
@@ -47,6 +48,7 @@ export {
   type EmergencyTerms,
   type EmergencyVaultPlace,
   emergencyAccountCommitment,
+  emergencyGrantDigest,
   emergencyGrantMessage,
   emergencyStatementMessage,
   type TakeOverError,

@@ -178,6 +178,31 @@ describe("the waiting time (P-14)", () => {
     ]);
   });
 
+  it("forgets no objection when the grantor stores new terms: the old request is not taken again", async () => {
+    // Review of K-307 part d: a request names its grant, so it cannot be played back against another
+    const e = await weberWithBuero();
+    const first = await e.grant();
+    const requested = e.seconds();
+    const request = e.statement("emergency-request", "anna", first.grant, requested);
+    const ask = () =>
+      e.request(`/api/emergency/${e.jonasIdText}/request`, { token: e.w.annaToken, body: request });
+    expect((await ask()).status).toBe(201);
+    await e.request(`/api/emergency/${e.w.annaIdText}/objection`, {
+      body: e.statement("emergency-objection", "jonas", first.grant, requested),
+    });
+    e.w.o.setup.clock.advance(1000);
+    const renewed = await e.grant(undefined, { waitSeconds: DAY, time: e.seconds() });
+    expect(renewed.status).toBe(200);
+    expect((await ask()).status).toBe(400);
+    // an approval of the old request does not let the new grant out either
+    expect((await e.annaRequests(renewed.grant)).status).toBe(201);
+    const oldApproval = await e.request(`/api/emergency/${e.w.annaIdText}/approval`, {
+      body: e.statement("emergency-approval", "jonas", first.grant, e.seconds()),
+    });
+    expect(oldApproval.status).toBe(400);
+    expect((await e.release()).status).toBe(403);
+  });
+
   it("refuses an objection once the packages are out", async () => {
     const e = await weberWithBuero();
     const { grant } = await e.grant();
@@ -210,18 +235,15 @@ describe("the waiting time (P-14)", () => {
     ]);
   });
 
-  it("keeps a running request when the grantor renews the grant after a rotation", async () => {
+  it("ends a running request with any new grant, a renewal after a rotation included", async () => {
     const e = await weberWithBuero();
     const first = await e.grant();
     await e.annaRequests(first.grant);
     e.w.o.setup.clock.advance(1000);
     const renewed = await e.grant(undefined, { waitSeconds: 7 * DAY, time: e.seconds() });
     expect(renewed.status).toBe(200);
-    expect((await list(e, e.w.annaToken)).received[0]?.request).not.toBeNull();
-    e.w.o.setup.clock.advance(1000);
-    // other terms start over
-    await e.grant(undefined, { waitSeconds: DAY, time: e.seconds() });
     expect((await list(e, e.w.annaToken)).received[0]?.request).toBeNull();
+    expect((await e.annaRequests(renewed.grant)).status).toBe(201);
   });
 });
 

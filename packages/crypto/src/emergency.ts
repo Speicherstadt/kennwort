@@ -16,7 +16,10 @@
  *          commitment = commitment(AK, "emergency-account", grantor)
  *   grant = enc("kennwort/emergency/v1", company, grantor, grantee, fp(grantee), scope, wait,
  *               time, account commitment or empty, enc(enc(vault, epoch, commitment)…))
+ *   statement = enc("kennwort/emergency-statement/v1", company, grantor, grantee, grant's time,
+ *                   SHA-512/256(grant), at)
  */
+import { sha512_256 } from "@noble/hashes/sha2.js";
 import { type KeyBlock, openKeyBlock } from "./account.ts";
 import { constantTimeEqual, keyCommitment } from "./commitment.ts";
 import { type Certified, matchesBundle } from "./company-recovery.ts";
@@ -161,9 +164,20 @@ export const emergencyGrantMessage = (t: EmergencyTerms) =>
   );
 
 /**
+ * The digest of a grant: SHA-512/256 over the message the grantor signed. Its first part is the
+ * grant's own label, so it never equals a fingerprint (F-04).
+ */
+export const emergencyGrantDigest = (t: EmergencyTerms) => sha512_256(emergencyGrantMessage(t));
+
+/** The exact grant a statement is about: its signed time and its digest */
+export type EmergencyGrantRef = { time: number; digest: Uint8Array };
+
+/**
  * The short statements around a grant, each signed under its own purpose: the grantee's request,
  * the grantor's objection or early approval (all naming the request's time), the grantor's
- * revocation (naming the grant's time)
+ * revocation (naming the grant's time). Each names the exact grant it is about, so none can be
+ * played back against another grant of the same two accounts (an approval of view access never
+ * lets out a later grant of full access).
  */
 export const EMERGENCY_STATEMENTS = [
   "emergency-request",
@@ -176,5 +190,15 @@ export type EmergencyStatement = (typeof EMERGENCY_STATEMENTS)[number];
 export const emergencyStatementMessage = (
   companyId: Uint8Array,
   parties: EmergencyParties,
+  grant: EmergencyGrantRef,
   at: number,
-) => encode("kennwort/emergency-statement/v1", companyId, parties.grantorId, parties.granteeId, at);
+) =>
+  encode(
+    "kennwort/emergency-statement/v1",
+    companyId,
+    parties.grantorId,
+    parties.granteeId,
+    grant.time,
+    grant.digest,
+    at,
+  );

@@ -12,6 +12,7 @@ import {
   type EmergencyStatement,
   type EmergencyTerms,
   emergencyAccountCommitment,
+  emergencyGrantDigest,
   emergencyGrantMessage,
   emergencyStatementMessage,
   sign,
@@ -147,38 +148,76 @@ export const checkGrant = (
   return isReplayed(seen, grant.time) ? err("replayed") : ok(grantor);
 };
 
-/** A request, objection, approval or revocation for the grant between these two accounts */
+/** The exact grant a statement names: its signed time and the digest of what the grantor signed */
+export const grantRef = (grant: Unsigned) => ({
+  time: grant.time,
+  digest: emergencyGrantDigest(termsOf(grant)),
+});
+
+/** A request, objection, approval or revocation for exactly this grant */
 export const signStatement = (
   kind: EmergencyStatement,
   edSecretKey: Uint8Array,
-  grant: Pick<EmergencyGrant, "companyId" | "grantor" | "grantee">,
+  grant: Unsigned,
   at: number,
-): Statement => ({
-  grantor: grant.grantor,
-  grantee: grant.grantee,
-  at,
-  signature: sign(
-    edSecretKey,
-    kind,
-    emergencyStatementMessage(grant.companyId, partiesOf(grant), at),
-  ),
-});
+): Statement => {
+  const ref = grantRef(grant);
+  return {
+    grantor: grant.grantor,
+    grantee: grant.grantee,
+    grantTime: ref.time,
+    grantDigest: ref.digest,
+    at,
+    signature: sign(
+      edSecretKey,
+      kind,
+      emergencyStatementMessage(grant.companyId, partiesOf(grant), ref, at),
+    ),
+  };
+};
 
-/** Whether the statement is of this kind, for this grant's two accounts, signed by this key */
-export const isSignedStatement = (
+/**
+ * Whether this key signed the statement as this kind, about the grant the statement itself names:
+ * enough to learn of a revocation whose grant is gone, never to use one against a grant
+ */
+export const isSignedStatementOf = (
   kind: EmergencyStatement,
   edPublicKey: Uint8Array,
-  grant: Pick<EmergencyGrant, "companyId" | "grantor" | "grantee">,
+  companyId: Uint8Array,
   statement: Statement,
 ) =>
-  constantTimeEqual(statement.grantor, grant.grantor) &&
-  constantTimeEqual(statement.grantee, grant.grantee) &&
   verify(
     edPublicKey,
     statement.signature,
     kind,
-    emergencyStatementMessage(grant.companyId, partiesOf(grant), statement.at),
+    emergencyStatementMessage(
+      companyId,
+      partiesOf(statement),
+      { time: statement.grantTime, digest: statement.grantDigest },
+      statement.at,
+    ),
   );
+
+/** Whether the statement names exactly this grant: its two accounts, its time and its digest */
+export const namesGrant = (statement: Statement, grant: Unsigned) => {
+  const ref = grantRef(grant);
+  return (
+    constantTimeEqual(statement.grantor, grant.grantor) &&
+    constantTimeEqual(statement.grantee, grant.grantee) &&
+    statement.grantTime === ref.time &&
+    constantTimeEqual(statement.grantDigest, ref.digest)
+  );
+};
+
+/** Whether the statement is of this kind, about exactly this grant, signed by this key */
+export const isSignedStatement = (
+  kind: EmergencyStatement,
+  edPublicKey: Uint8Array,
+  grant: Unsigned,
+  statement: Statement,
+) =>
+  namesGrant(statement, grant) &&
+  isSignedStatementOf(kind, edPublicKey, grant.companyId, statement);
 
 /**
  * After a key rotation (P-11) the grantor's client renews a view grant: true when the grantor now

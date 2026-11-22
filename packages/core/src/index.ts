@@ -141,6 +141,7 @@ export {
   isBehind,
   isSignedGrant,
   isSignedStatement,
+  isSignedStatementOf,
   makeGrant,
   partiesOf,
   signStatement,

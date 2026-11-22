@@ -315,10 +315,18 @@ freigabe  = enc("kennwort/emergency/v1", firmen-ID, geber-ID, person-ID, fp(pers
                 ("view" oder "full"), wartezeit (sekunden), zeit, bindung von AK oder leer,
                 enc(enc(tresor-ID, epoche, bindung)…))
 signatur  = F-03(geber, "emergency", freigabe)
-aussage   = F-03(wer, zweck, enc("kennwort/emergency-statement/v1", firmen-ID, geber-ID, person-ID, zeit))
+digest    = SHA-512/256(freigabe)
+aussage   = F-03(wer, zweck, enc("kennwort/emergency-statement/v1", firmen-ID, geber-ID, person-ID,
+                 zeit der freigabe, digest, zeit))
             zweck: emergency-request (person, zeit der anfrage), emergency-objection und
             emergency-approval (geber, zeit der anfrage), emergency-revocation (geber, zeit der freigabe)
 ```
+
+Jede Aussage nennt die Freigabe, um die es geht, mit ihrer Zeit und ihrem Digest; auf dem Draht
+trägt sie beide mit. So lässt sich keine Aussage gegen eine andere Freigabe desselben Paars
+abspielen: Eine Anfrage und eine frühere Freigabe zum Ansehen öffnen keinen späteren Vollzugriff,
+und eine Anfrage, der widersprochen wurde, gilt für keine neue Freigabe. Der Digest beginnt mit der
+Kennung der Freigabe und gleicht so nie einem Fingerabdruck (F-04).
 
 Die Signatur deckt die Bindungen, nicht die Pakete: So prüft die Person die Freigabe, bevor der
 Server die Pakete herausgibt, und jedes Paket danach an seiner Bindung. Geber und Person stehen im
@@ -1334,10 +1342,14 @@ höchstens fünf Minuten von seiner abweicht, und startet die Wartezeit. Er zeig
 Gebenden: auf der Seite und als Hinweis über jeder Seite der App, solange sie läuft (geladen beim
 Öffnen, mit der Seite und alle fünf Minuten). Bis zum Ende der Wartezeit kann der Gebende
 **widersprechen** (Zweck `emergency-objection`) oder **jetzt freigeben** (Zweck
-`emergency-approval`), beides signiert und an die Zeit der Anfrage gebunden. Ein Widerspruch sperrt
-diese Anfrage für immer; eine neue Anfrage beginnt eine neue Wartezeit. **Zurückziehen** löscht die
-Freigabe; die signierte Rücknahme (Zweck `emergency-revocation`, an die Zeit der Freigabe gebunden)
-bleibt für die Person sichtbar.
+`emergency-approval`), beides signiert und an die Zeit der Anfrage gebunden. Jede Aussage nennt
+genau die Freigabe, um die es geht (F-09); der Server nimmt nur Aussagen, die die gespeicherte
+Freigabe nennen. Ein Widerspruch sperrt diese Anfrage für immer; eine neue Anfrage beginnt eine neue
+Wartezeit. Speichert der Gebende eine neue Freigabe (neue Bedingungen oder eine Erneuerung), endet
+eine laufende Anfrage samt Widerspruch und früherer Freigabe: Sie nennen die alte Freigabe und
+gelten für die neue nicht, auch nicht noch einmal eingereicht; die Person fragt neu an.
+**Zurückziehen** löscht die Freigabe; die signierte Rücknahme (Zweck `emergency-revocation`, an die
+Zeit der Freigabe gebunden) bleibt für die Person sichtbar.
 
 **Herausgeben.** `GET /api/emergency/:geber/release` gibt die Pakete erst heraus, wenn eine Anfrage
 läuft, ihr nicht widersprochen wurde und die Wartezeit nach der Uhr des Servers vorbei ist oder der
@@ -1352,9 +1364,9 @@ sie signiert hat und sie nicht älter ist als die neueste Freigabe dieses Gebend
 hat, und nicht genau diese nach einer Rücknahme. Was sie gesehen hat, merkt sie sich im
 Kontozustand (`emergency`: je Gebendem die Zeit der neuesten Freigabe, ob sie zurückgenommen ist,
 und die neueste Anfrage, der widersprochen wurde). Die herausgegebenen Pakete nutzt sie nur
-(`checkRelease`), wenn die Anfrage ihre eigene ist, ihr nach dem, was sie gesehen hat, nicht
-widersprochen wurde und die Wartezeit nach ihrer eigenen Uhr vorbei ist oder eine signierte
-Freigabe des Gebenden für genau diese Anfrage vorliegt. Dann prüft sie jedes Log mit `verifyLog`
+(`checkRelease`), wenn die Anfrage ihre eigene ist und genau die geprüfte Freigabe nennt, ihr nach
+dem, was sie gesehen hat, nicht widersprochen wurde und die Wartezeit nach ihrer eigenen Uhr vorbei
+ist oder eine signierte Freigabe des Gebenden für genau diese Anfrage und diese Freigabe vorliegt. Dann prüft sie jedes Log mit `verifyLog`
 und nimmt einen Tresor-Schlüssel nur, wenn er zur Bindung der Freigabe passt und das Log dieselbe
 Bindung für die Epoche signiert hat (`openEmergencyVault`; so gibt der Gebende nur Schlüssel
 weiter, die er wirklich hat), AK nur, wenn er den Schlüsselblock des Gebenden öffnet, dessen
@@ -1364,7 +1376,8 @@ jede Öffnung signiert sie als Ereignis `emergency-access` ins Audit-Log.
 
 **Nach einem Schlüsselwechsel** (P-11) erneuert der Client des Gebenden nach jedem Laden der Tresore
 jede Ansehen-Freigabe, die einen älteren VKₑ trägt, mit den aktuellen Schlüsseln und denselben
-Bedingungen (`renewGrants`); der Server behält dann eine laufende Anfrage. Bis dahin öffnet der
+Bedingungen (`renewGrants`). Wie jede neue Freigabe beendet das eine laufende Anfrage: Der
+Gebende ist offenbar da und kann eine neue Anfrage sofort freigeben. Bis dahin öffnet der
 Notfallzugriff nur, was vor dem Wechsel geschrieben wurde. Verlässt der Gebende oder die Person die
 Firma, löscht der Server Freigabe und Rücknahme.
 

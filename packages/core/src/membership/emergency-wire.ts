@@ -63,10 +63,15 @@ export const packagesToWire = (packages: EmergencyPackages) => ({
   ...(packages.account ? { account: encodeBytes(packages.account) } : {}),
 });
 
-/** A request, objection, approval or revocation, signed under its own purpose (F-09) */
+/**
+ * A request, objection, approval or revocation, signed under its own purpose (F-09), naming the
+ * exact grant it is about by its time and digest
+ */
 export const Statement = z.object({
   grantor: bytes(16),
   grantee: bytes(16),
+  grantTime: count,
+  grantDigest: bytes(32),
   at: count,
   signature: bytes(65),
 });

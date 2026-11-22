@@ -1,4 +1,4 @@
-import { emergencyGrantMessage, sign } from "@kennwort/crypto";
+import { emergencyGrantMessage, emergencyStatementMessage, sign } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
 import {
   certificate,
@@ -20,6 +20,7 @@ import {
   isBehind,
   isSignedGrant,
   isSignedStatement,
+  isSignedStatementOf,
   makeGrant,
   signStatement,
 } from "./emergency.ts";
@@ -205,6 +206,52 @@ describe("statements around a grant (F-09)", () => {
     const relabelled = { ...signed, grantee: sandra.id };
     expect(isSignedStatement("emergency-request", sandra.ed.publicKey, grant, relabelled)).toBe(
       false,
+    );
+  });
+});
+
+describe("statements name their grant (review of K-307 part d)", () => {
+  const request = signStatement("emergency-request", sandra.ed.secretKey, grant, GRANTED_AT + 60);
+  /** The request with one field changed and signed again as it then stands */
+  const resigned = (changes: Partial<typeof request>) => {
+    const changed = { ...request, ...changes };
+    const message = emergencyStatementMessage(
+      grant.companyId,
+      { grantorId: changed.grantor, granteeId: changed.grantee },
+      { time: changed.grantTime, digest: changed.grantDigest },
+      changed.at,
+    );
+    return { ...changed, signature: sign(sandra.ed.secretKey, "emergency-request", message) };
+  };
+
+  it("name the grant by its time and the digest of what the grantor signed", () => {
+    expect(request.grantTime).toBe(grant.time);
+    expect(request.grantDigest).toHaveLength(32);
+    const other = grantTo(sandra, undefined, { time: GRANTED_AT + 1 }).grant;
+    expect(
+      signStatement("emergency-request", sandra.ed.secretKey, other, 9).grantDigest,
+    ).not.toEqual(request.grantDigest);
+  });
+
+  it("count for no other grant, whichever single field names another", () => {
+    const changes = [
+      { grantor: anna.id },
+      { grantee: anna.id },
+      { grantTime: grant.time + 1 },
+      { grantDigest: new Uint8Array(32).fill(7) },
+    ];
+    for (const change of changes) {
+      const statement = resigned(change);
+      // signed as it stands, so it is learnt of, but it is no statement about this grant
+      expect(
+        isSignedStatementOf("emergency-request", sandra.ed.publicKey, grant.companyId, statement),
+      ).toBe(true);
+      expect(isSignedStatement("emergency-request", sandra.ed.publicKey, grant, statement)).toBe(
+        false,
+      );
+    }
+    expect(isSignedStatement("emergency-request", sandra.ed.publicKey, grant, resigned({}))).toBe(
+      true,
     );
   });
 });

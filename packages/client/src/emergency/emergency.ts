@@ -19,7 +19,7 @@ import {
   encodeBytes,
   isBehind,
   isSignedGrant,
-  isSignedStatement,
+  isSignedStatementOf,
   type ListedGrant,
   type MemberView,
   makeGrant,
@@ -57,8 +57,9 @@ const personOf = (people: MemberView[], accountId: Uint8Array) =>
   people.find((p) => encodeBytes(p.accountId) === encodeBytes(accountId));
 
 /**
- * A statement of this kind for a grant from this grantor to this account, signed by the grantor's
- * certified key; one about another pair (a revocation of a grant to Anna) tells this account nothing
+ * A statement of this kind from this grantor to this account, signed by the grantor's certified
+ * key, about the grant it names; one about another pair (a revocation of a grant to Anna) tells
+ * this account nothing
  */
 const signedBy = (
   kind: EmergencyStatement,
@@ -68,11 +69,12 @@ const signedBy = (
   trust: Trust,
 ): statement is Statement => {
   const signer = certificateOf(trust, grantor);
-  const grant = { companyId: me.companyId, grantor, grantee: me.accountId };
   return (
     statement !== null &&
     signer !== undefined &&
-    isSignedStatement(kind, signer.edPublicKey, grant, statement)
+    encodeBytes(statement.grantor) === encodeBytes(grantor) &&
+    encodeBytes(statement.grantee) === encodeBytes(me.accountId) &&
+    isSignedStatementOf(kind, signer.edPublicKey, me.companyId, statement)
   );
 };
 
@@ -90,7 +92,7 @@ export const learn = (
   for (const r of list.revocations) {
     const key = encodeBytes(r.grantor);
     if (signedBy("emergency-revocation", r, r.grantor, me, trust))
-      seen[key] = noteRevocation(seen[key], r.at);
+      seen[key] = noteRevocation(seen[key], r.grantTime);
   }
   for (const listed of list.received) {
     const key = encodeBytes(listed.grant.grantor);
@@ -225,7 +227,8 @@ export const revoke = (api: EmergencyApi, opened: Opened, grant: EmergencyGrant)
 /**
  * After a key rotation (P-11) the grantor's view grants carry an old vault key, which opens only
  * what was written before it. Each such grant is made anew with the current keys of the vaults it
- * names that this account still holds, under the same terms, so a running request stays.
+ * names that this account still holds, under the same terms. The new grant ends a running request
+ * (requests name their grant): the grantor renewing is evidently there to approve a new one.
  */
 export const renewGrants = async (
   api: EmergencyDeps,
@@ -238,7 +241,7 @@ export const renewGrants = async (
   const due = given.filter((g) => g.grant.scope === "view" && isBehind(g.grant, rings));
   for (const { grant } of due) {
     const grantee = certificateOf(trust, grant.grantee);
-    // In the grant's order: the server keeps a running request only for the same vaults
+    // In the grant's order, each vault it names once more
     const named = grant.items.flatMap((item) =>
       rings.filter((r) => encodeBytes(r.vaultId) === encodeBytes(item.vaultId)),
     );
