@@ -508,6 +508,22 @@
   "import_weak": "schwach",
   "import_take_anyway": "{title} trotzdem importieren",
   "import_take_anyway_short": "Trotzdem importieren",
+  "import_code_target": "Wohin kommt der Einmalcode von {title}?",
+  "import_code_add": "Zu »{title}« ({username}) hinzufügen",
+  "import_code_own": "Eigenen Login anlegen",
+  "import_code_conflict": "anderer Code",
+  "import_code_conflict_text": "»{title}« ({username}) hat schon einen anderen Einmalcode. Kennwort überschreibt ihn nicht; der Code bekommt einen eigenen Login.",
+  "import_code_same": "»{title}« ({username}) hat diesen Einmalcode schon.",
+  "import_codes_added": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "1 Code kommt in einen vorhandenen Login.",
+        "n=*": "{count} Codes kommen in vorhandene Logins."
+      }
+    }
+  ],
   "import_duplicates": [
     {
       "declarations": ["input count", "local n = count: plural"],

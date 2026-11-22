@@ -508,6 +508,22 @@
   "import_weak": "weak",
   "import_take_anyway": "Import {title} anyway",
   "import_take_anyway_short": "Import anyway",
+  "import_code_target": "Where does the one-time code of {title} go?",
+  "import_code_add": "Add to “{title}” ({username})",
+  "import_code_own": "Create a login of its own",
+  "import_code_conflict": "other code",
+  "import_code_conflict_text": "“{title}” ({username}) already has another one-time code. Kennwort does not overwrite it; this code gets a login of its own.",
+  "import_code_same": "“{title}” ({username}) already has this one-time code.",
+  "import_codes_added": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "1 code goes into an existing login.",
+        "n=*": "{count} codes go into existing logins."
+      }
+    }
+  ],
   "import_duplicates": [
     {
       "declarations": ["input count", "local n = count: plural"],

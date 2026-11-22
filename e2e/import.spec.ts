@@ -1,13 +1,14 @@
+import { createHmac } from "node:crypto";
 import { join } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { setUpCompany, test } from "./account.ts";
-import { addEntry } from "./entries.ts";
+import { addEntry, goInApp } from "./entries.ts";
 import { QR, qrPng } from "./qr.ts";
 
 // K-501: Jonas brings the company's logins from Bitwarden, Chrome and a spreadsheet into Kennwort;
 // K-502: and KeePassXC's database and a password-protected Bitwarden export; K-503: and the
-// one-time codes from Google Authenticator and 2FAS
+// one-time codes from Google Authenticator and 2FAS, into the logins they belong to (K-503 Teil 2)
 test.use({ locale: "de-DE" });
 
 const fixture = (name: string) => join(import.meta.dirname, "fixtures", name);
@@ -41,6 +42,38 @@ const recordRequests = (page: Page) => {
   const bodies: string[] = [];
   page.on("request", (request) => bodies.push(`${request.url()} ${request.postData() ?? ""}`));
   return bodies;
+};
+
+// The key of the DATEV account in the 2FAS backup, JBSWY3DPEHPK3PXP in Base32
+const DATEV_KEY = "otpauth://totp/DATEV:jonas?secret=JBSWY3DPEHPK3PXP&issuer=DATEV";
+const DATEV_SECRET = Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x21, 0xde, 0xad, 0xbe, 0xef]);
+
+/** RFC 6238 with SHA-1 and six digits, on Node's own HMAC, as in totp.spec.ts */
+const expectedCode = (key: Buffer, ms: number) => {
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(ms / 30_000)));
+  const mac = createHmac("sha1", key).update(counter).digest();
+  const offset = (mac.at(-1) as number) & 0x0f;
+  return String((mac.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).padStart(6, "0");
+};
+
+/** A login with a one-time code, through the app's own dialog; gives its ID */
+const addLoginWithCode = async (page: Page, title: string, username: string, key: string) => {
+  // A phone shows the detail of the last entry made: back to the list first
+  await visibleLink(page, "Einträge").click();
+  await page
+    .getByRole("button", { name: "Neu", exact: true })
+    .filter({ visible: true })
+    .first()
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Neuer Eintrag" });
+  await dialog.getByLabel("Titel").fill(title);
+  await dialog.getByLabel("Benutzername").fill(username);
+  await dialog.getByLabel("Einmalcode", { exact: true }).fill(key);
+  await dialog.getByRole("button", { name: "Speichern" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+  return new URL(page.url()).pathname.split("/").pop() ?? "";
 };
 
 const finish = async (page: Page, count: string) => {
@@ -292,6 +325,47 @@ test.describe("import", { tag: "@phone" }, () => {
     await finish(page, "3 Einträge importieren");
     await visibleLink(page, "Einträge").click();
     await expect(option(page, "Großhandel-Portal")).toBeVisible();
+  });
+
+  test("Jonas puts the 2FAS codes into the logins he has; another code is not overwritten", async ({
+    page,
+  }) => {
+    await setUpCompany(page);
+    const datev = await addEntry(page, {
+      title: "DATEV",
+      username: "jonas@weber-haustechnik.example",
+      password: "Steuer-Kessel-Rohr-2026!",
+      website: "https://www.datev.de",
+    });
+    // Sandra's portal login has a code already, another one than the backup's
+    const portal = await addLoginWithCode(page, "Großhandel-Portal", "sandra.becker", DATEV_KEY);
+    await importFile(page, "2FAS (.2fas)", coreFixture("twofas.2fas"));
+    const into = page.getByRole("radio", {
+      name: "Zu »DATEV« (jonas@weber-haustechnik.example) hinzufügen",
+    });
+    await expect(into).toBeChecked();
+    await expect(page.getByText("1 Code kommt in einen vorhandenen Login.")).toBeVisible();
+    const conflict = rows(page).getByRole("listitem").filter({ hasText: "anderer Code" });
+    await expect(conflict).toContainText(
+      "»Großhandel-Portal« (sandra.becker) hat schon einen anderen Einmalcode. Kennwort überschreibt ihn nicht",
+    );
+    await expect(conflict.getByRole("radio")).toHaveCount(0);
+    await axe(page);
+    await finish(page, "3 Einträge importieren");
+
+    await visibleLink(page, "Einträge").click();
+    await expect(option(page, "DATEV")).toHaveCount(1);
+    await expect(option(page, "Großhandel-Portal")).toHaveCount(2);
+    const at = (Math.floor(Date.now() / 30_000) + 1) * 30_000 + 5_000;
+    await page.clock.setFixedTime(at);
+    const code = expectedCode(DATEV_SECRET, at);
+    const fields = page.getByRole("region", { name: "Felder" });
+    // The code went into the DATEV login, beside its password
+    await goInApp(page, `/entries/${datev}`);
+    await expect(fields).toContainText(`${code.slice(0, 3)} ${code.slice(3)}`);
+    // Sandra's login still shows its own code, not the backup's seven digits
+    await goInApp(page, `/entries/${portal}`);
+    await expect(fields).toContainText(`${code.slice(0, 3)} ${code.slice(3)}`);
   });
 
   test("a loose CSV chosen as a ZIP says it is not one", async ({ page }) => {

@@ -204,7 +204,7 @@ const OpenedFrame = (props: {
             onRemove={exits.remove}
           />
         )}
-        importPage={importPage(props.nav, store, allEntries, () => online(entries.saveNew))}
+        importPage={importPage(props.nav, store, allEntries, () => online(entries.saveImport))}
         exportPage={() => <ExportPage deps={exporting} />}
         canExport={exporting.allowed()}
         emergencyPage={emergencyPage(props, shownVaults)}

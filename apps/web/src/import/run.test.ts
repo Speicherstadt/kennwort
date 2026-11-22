@@ -1,4 +1,4 @@
-import type { EntryContent } from "@kennwort/core";
+import type { ImportWrite } from "@kennwort/client/entries/entry-import.ts";
 import { describe, expect, it } from "vitest";
 import { runImport, type SaveBatch } from "./run.ts";
 
@@ -7,19 +7,22 @@ import { runImport, type SaveBatch } from "./run.ts";
 const contents = (n: number) =>
   Array.from(
     { length: n },
-    (_, i): EntryContent => ({
-      type: "note",
-      title: `Notiz ${i}`,
-      fields: [],
-      tags: [],
-      favorite: false,
-      history: [],
+    (_, i): ImportWrite => ({
+      kind: "new",
+      content: {
+        type: "note",
+        title: `Notiz ${i}`,
+        fields: [],
+        tags: [],
+        favorite: false,
+        history: [],
+      },
     }),
   );
 
 const savingAll: SaveBatch = async (batch) => ({
   ok: true,
-  value: { saved: batch.map((c) => c.title), unsaved: 0 },
+  value: { saved: batch.map((_, i) => `id-${i}`), unsaved: 0 },
 });
 
 describe("runImport", () => {
@@ -53,7 +56,7 @@ describe("runImport", () => {
   it("counts entries the server turned away as unsaved and goes on", async () => {
     const save: SaveBatch = async (batch) => ({
       ok: true,
-      value: { saved: batch.slice(1).map((c) => c.title), unsaved: 1 },
+      value: { saved: batch.slice(1).map((_, i) => `id-${i}`), unsaved: 1 },
     });
     expect(await runImport(save, contents(4), () => {}, 2)).toEqual({ imported: 2, unsaved: 2 });
   });

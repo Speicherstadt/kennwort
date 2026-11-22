@@ -2,9 +2,9 @@
 title: Import und Export
 description: >-
   Wie du deine Zugänge aus einem anderen Passwortmanager, Browser, einer Tabelle oder einer
-  Authenticator-App importierst – Anbieter, Vorschau, Duplikate, schwache Passwörter –, welche
-  Exportdateien Kennwort liest, was daraus wird und wie die Datei auf dem Gerät bleibt; und wie
-  Inhaber und Admins als verschlüsseltes JSON, KDBX oder CSV exportieren.
+  Authenticator-App importierst – Anbieter, Vorschau, Duplikate, schwache Passwörter, Einmalcodes
+  zum passenden Login –, welche Exportdateien Kennwort liest, was daraus wird und wie die Datei auf
+  dem Gerät bleibt; und wie Inhaber und Admins als verschlüsseltes JSON, KDBX oder CSV exportieren.
 ---
 
 # Import und Export
@@ -45,6 +45,9 @@ Unter **Einstellungen → Importieren**:
       importieren“ an.
     - **Schwach** ist ein Passwort nach derselben Regel wie unter „Zum Ändern“ (siehe
       [Einträge](eintraege.md)).
+    - **Einmalcodes aus einer Authenticator-App** schlägt die Vorschau dem passenden Login im
+      gewählten Tresor vor: „Zu »DATEV« (jonas@…) hinzufügen“ oder einen eigenen Login anlegen
+      (siehe [Codes dem passenden Login zuordnen](#codes-dem-passenden-login-zuordnen)).
 5. **Importieren**: Kennwort verschlüsselt und signiert jeden Eintrag wie einen von Hand angelegten
    und schreibt sie in Stapeln, mit Fortschritt. Offline oder solange im Tresor ein
    Schlüsselwechsel aussteht, schreibt der Import nichts. Bricht er ab, sagt er, wie viele Einträge
@@ -197,6 +200,45 @@ Den Inhalt von Googles QR-Codes liest Kennwort selbst, ohne weitere Bibliothek: 
 Protocol-Buffers-Datensatz (`MigrationPayload`, wie ihn Aegis dokumentiert), den ein kleiner Leser
 in einem Durchgang ohne Rekursion entschlüsselt und der jede Länge prüft. Wie die Exportdatei
 bleiben auch die QR-Codes und Links auf dem Gerät; lösche danach die Screenshots.
+
+### Codes dem passenden Login zuordnen
+
+Hast du für einen Dienst schon einen Login in Kennwort, gehört der Einmalcode meist dorthin und
+nicht in einen zweiten Login. Die Vorschau sucht deshalb zu jedem Code aus Google Authenticator,
+Aegis oder 2FAS – also einem Login mit Einmalcode, aber ohne Passwort und Adresse – die Logins im
+gewählten Tresor mit gleichem Dienst und gleichem Benutzernamen:
+
+- **Gleicher Dienst**: Der Titel ist derselbe, ohne Groß- und Kleinschreibung, Leerzeichen,
+  Satz- und Sonderzeichen („Großhandel-Portal“ wie „GROSSHANDEL PORTAL“); oder eine Adresse des
+  Logins hat als Host den Aussteller des Codes – als Host (`datev.de` für den Aussteller
+  `datev.de`) oder als Namen vor der Endung (`www.datev.de` für „DATEV“). `www.`, ein Port und
+  ein Punkt am Ende zählen nicht, internationale Domains vergleicht Kennwort in beiden
+  Schreibweisen.
+- **Gleicher Benutzername**: genau gleich, eine E-Mail-Adresse ohne Groß- und Kleinschreibung. Ein
+  Code ohne Konto passt zu keinem Login.
+
+Was dann geschieht, hängt davon ab, was die Vorschau findet:
+
+| Gefunden | Vorschau | Vorgabe |
+| --- | --- | --- |
+| kein Login | ein eigener Login wie bisher | eigener Login |
+| ein Login ohne Einmalcode | „Zu »Titel« (Benutzer) hinzufügen“ oder „Eigenen Login anlegen“ | hinzufügen |
+| mehrere Logins | jeder als „Zu »Titel« (Benutzer) hinzufügen“ und „Eigenen Login anlegen“ | eigener Login – welcher Login, entscheidest du |
+| ein Login mit einem anderen Einmalcode | „anderer Code“: Kennwort überschreibt ihn nicht | eigener Login |
+| ein Login mit genau diesem Code | „doppelt“: Er wird übersprungen | übersprungen |
+
+Gleich ist ein Code, wenn Schlüssel, Algorithmus, Ziffern und Dauer gleich sind, auch wenn der
+eine als otpauth-Link und der andere als bloßer Schlüssel gespeichert ist. Einen vorhandenen
+Einmalcode ersetzt der Import nie; willst du ihn tauschen, änderst du den Login danach von Hand.
+
+Fügst du den Code hinzu, kommt er ins Feld „Einmalcode“ des Logins – ein leeres Feld füllt
+Kennwort, sonst kommt das Feld dazu. Das ist eine neue Version des Logins, verschlüsselt und
+signiert wie eine Änderung von Hand und im selben Stapel wie die neuen Einträge; offline oder
+solange ein Schlüsselwechsel aussteht, schreibt der Import auch hier nichts. Kennwort baut die
+neue Version erst beim Schreiben aus dem Login, wie er dann ist: Hat er inzwischen einen
+anderen Code, bleibt er, wie er ist, und der Code zählt als nicht gespeichert. Sollen zwei Codes
+der Datei in denselben Login, kommt nur der erste hinein; der zweite bekommt einen eigenen Login. Die Vorschau zeigt nie einen Schlüssel, und sie sagt, wie viele
+Codes in vorhandene Logins kommen.
 
 ## Was aus einem Eintrag wird
 
