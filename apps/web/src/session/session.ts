@@ -3,6 +3,7 @@
  * dropped on lock and after a while without use. Locking overwrites the account key's bytes, so
  * nothing usable lingers once the references are gone.
  */
+import type { Renewed } from "@kennwort/client/account/renewal.ts";
 import type { AccountApi } from "@kennwort/client/session/api.ts";
 import { type Opened, stateUpdater } from "@kennwort/client/session/open-account.ts";
 import {
@@ -192,6 +193,23 @@ const reconnect = async (
   return true;
 };
 
+/**
+ * The account under its renewed keys (P-12), with the same session: the offline copy, whose boxes
+ * the old keys open, emptied and written anew, the new Secret Key remembered on the device
+ */
+const openRenewed =
+  (
+    copy: AccountCopy | undefined,
+    remember: (accountId: Uint8Array, secretKey: Uint8Array) => void,
+    open: (value: Opened) => void,
+  ) =>
+  async ({ opened: next, stored, secretKey }: Renewed) => {
+    await copy?.forget();
+    remember(next.accountId, secretKey);
+    open(next);
+    await keepAccount(copy, stored, next);
+  };
+
 /** What the device remembers of its account (device.ts); the copy of another account goes first */
 const deviceMemory = (deps: SessionDeps) => {
   const [device, setDevice] = createSignal<DeviceAccount | undefined>(readDevice(deps.storage));
@@ -287,6 +305,7 @@ export const createSession = (deps: SessionDeps) => {
       openAndKeep({ ...served, ...(await withKeptState(deps.copy, keys.accountId, served)) });
       return { ok: true, value: keys };
     },
+    renewed: openRenewed(deps.copy, remember, open),
     /** A device joined by pairing (P-04): remember it and open the account it was given */
     adopt: (value: Opened, secretKey: Uint8Array) => {
       remember(value.accountId, secretKey);

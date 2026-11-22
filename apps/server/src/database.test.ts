@@ -43,6 +43,7 @@ describe("database", () => {
       "recovery_grants",
       "root_grants",
       "sqlite_sequence",
+      "superseded_certificates",
       "vault_groups",
       "vault_keys",
       "vault_log",

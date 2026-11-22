@@ -125,6 +125,16 @@ describe("rotateEntries (P-11)", () => {
     expect(contentOf(none.device, e1)).toEqual(bank);
   });
 
+  it("writes every entry anew and marks nothing when nobody left: a renewal of keys (P-12)", async () => {
+    const { server, device } = await before();
+    const queued = rotateEntries(device);
+    expect(queued.queue.map((op) => op.exposedTo)).toEqual([undefined, undefined]);
+    expect(queued.queue[0]).not.toHaveProperty("exposedTo");
+    const renewed = await sync(queued, server, after(jonas));
+    expect(contentOf(renewed.device, e1)).toEqual(bank);
+    expect(renewed.device.known.get(idKey(e1))?.key?.epoch).toBe(1);
+  });
+
   it("takes a queued change along and marks it too", async () => {
     const { server, device } = await before();
     const changed = edit(device, e1, withField(bank, "user", "buero"));

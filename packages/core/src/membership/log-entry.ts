@@ -8,7 +8,7 @@
  */
 import { DIGEST_LENGTH, digest, encode, sign } from "@kennwort/crypto";
 
-export type Action = "create" | "add" | "remove" | "role" | "rotate";
+export type Action = "create" | "add" | "remove" | "role" | "rotate" | "rekey";
 export type VaultRole = "read" | "edit" | "manage";
 
 export type LogFields = {
@@ -18,7 +18,7 @@ export type LogFields = {
   epoch: number;
   action: Action;
   accountId: Uint8Array;
-  /** Fingerprint of the subject's certified bundle; empty for remove */
+  /** Fingerprint of the subject's certified bundle (the new one for rekey); empty for remove */
   fingerprint: Uint8Array;
   role: VaultRole | "";
   /** Unix seconds after which the access ends; 0 for none */

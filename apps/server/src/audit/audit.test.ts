@@ -50,7 +50,7 @@ const history = async () => {
     AuditExport.parse(await (await setup.request("/api/audit", { token: jonas.token })).json());
   const check = (remembered?: AuditHead) => ({
     companyId: "weber",
-    publicKeyOf: (actor: string) => (actor === jonas.id ? jonasKeys.publicKey : undefined),
+    publicKeysOf: (actor: string) => (actor === jonas.id ? [jonasKeys.publicKey] : []),
     ...(remembered ? { remembered } : {}),
   });
   return { setup, jonas, anna, read, check };

@@ -19,6 +19,7 @@ export type Route =
   | { page: "vaults" }
   | { page: "import" }
   | { page: "emergency" }
+  | { page: "renew" }
   | { page: "setup" }
   | { page: "unlock" }
   | { page: "recover" }

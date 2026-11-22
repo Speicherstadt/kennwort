@@ -26,6 +26,7 @@ const simplePages = [
   "vaults",
   "import",
   "emergency",
+  "renew",
   "setup",
   "unlock",
   "recover",

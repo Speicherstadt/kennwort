@@ -98,9 +98,10 @@ export const edit = (device: Device, entryId: Uint8Array, content: EntryContent)
 /**
  * After someone left and the vault key rotated (P-11): every entry the device knows is written
  * again, under the new epoch's key and so under a new entry key, and the secrets of a version the
- * person could read are marked "to change". Queued changes go along and get the marks too.
+ * person could read are marked "to change". Queued changes go along and get the marks too. After a
+ * member only renewed her keys (P-12) nobody left: no exposure, no marks, the same person stays.
  */
-export const rotateEntries = (device: Device, exposure: Exposure): Device => {
+export const rotateEntries = (device: Device, exposure?: Exposure): Device => {
   const queued = new Set(device.queue.map((op) => idKey(op.entryId)));
   const unchanged = [...device.known.values()]
     .filter((known) => !queued.has(idKey(known.entryId)))
@@ -109,7 +110,9 @@ export const rotateEntries = (device: Device, exposure: Exposure): Device => {
       base: { version: known.version, content: known.content },
       content: known.content,
     }));
-  const queue = [...device.queue, ...unchanged].map((op) => ({ ...op, exposedTo: exposure }));
+  const queue = [...device.queue, ...unchanged].map((op) =>
+    exposure ? { ...op, exposedTo: exposure } : op,
+  );
   return { ...device, queue };
 };
 

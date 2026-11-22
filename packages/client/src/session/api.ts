@@ -27,6 +27,7 @@ import { memberCalls } from "./members-api.ts";
 import { pairingCalls } from "./pairing-api.ts";
 import { policyCalls } from "./policy-api.ts";
 import { recoveryCalls } from "./recovery-api.ts";
+import { renewalCalls } from "./renewal-api.ts";
 import { shareCalls } from "./shares-api.ts";
 import { requestCalls, vaultCalls } from "./vaults-api.ts";
 export type ApiError = "wrong-code" | "invalid-invitation" | "too-many-requests" | "unexpected";
@@ -122,6 +123,7 @@ export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity)
     ...groupCalls(call),
     ...shareCalls(call),
     ...emergencyCalls(call),
+    ...renewalCalls(call),
     /** The root key's public half goes along, for every member to check certificates (P-07) */
     setup: async (
       code: string,
@@ -189,11 +191,14 @@ export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity)
   };
 };
 
+export type { RekeyAnswer } from "./renewal-api.ts";
+
 export type Api = ReturnType<typeof createApi>;
-/** What the session needs: everything but the pairing calls (P-04), which pairing/ uses */
+/** What the session needs: all but the pairing calls (P-04) and the renewal (account/renewal.ts) */
 export type AccountApi = Omit<
   Api,
   | "syncFetch"
+  | "rekey"
   | keyof ReturnType<typeof pairingCalls>
   | keyof ReturnType<typeof deviceCalls>
   | keyof ReturnType<typeof memberCalls>

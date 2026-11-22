@@ -146,6 +146,7 @@ nennt seinen Angriff, und der Client muss ihn ablehnen und sagen, warum.
 | E-16 gefälschte Bindung, Schlüssel ohne Bindung im Log | `adversary/emergency.test.ts`, `membership/emergency-open.test.ts` | falsche Signatur, nicht im Log, Bindung passt nicht |
 | E-04 alte Freigabe nach einer Rücknahme zurückgespielt | `adversary/emergency.test.ts`, `packages/client/src/emergency/emergency.test.ts` | wiederholt |
 | E-08, E-26 Mitglied vom Wechsel ferngehalten, seine Versionen unter dem alten Schlüssel nach dem Wechsel ausgeliefert | `adversary/epoch-order.test.ts`, gegen die Offline-Kopie `apps/web/src/offline/local-copy.test.ts` | ältere Epoche, kein Bearbeiter |
+| E-01, E-05 nach einem Kit in fremden Händen: altes Bündel weiter ausgeliefert, neues Zertifikat zurückgehalten, altes Kit nach dem Wechsel, Tresor ohne Erneuerung oder Wechsel | `adversary/rekey.test.ts`, `membership/verify-log.rekey.test.ts`, `apps/server/src/account/rekey.test.ts` | ungültig, nicht zertifiziert, Wechsel steht aus, falsche Signatur, Rückfall, neuere Epoche |
 
 Die übrigen folgen mit den Funktionen, die sie betreffen (Konto-Recovery, Teilen, Geräte, Austritt,
 Einmal-Links, Import und Export, ausgelieferter Code); K-701 schließt den Katalog. Beim Bau des
@@ -184,7 +185,12 @@ die neue überführt.
   derselbe Schlüssel in zwei Zwecken ergibt nie dieselbe Eingabe.
 - **Ableitung**: `kdf(ikm, salt, zweck, …) = HKDF-SHA-512(ikm, salt, info = enc(zweck, …), L = 32)`.
 - **Fingerabdruck** eines öffentlichen Schlüsselbündels: `SHA-512/256(enc("kennwort/fp/v1", xwingPk, edPk))`;
-  angezeigt als Vergleichscode aus 12 Gruppen zu 5 Ziffern. Für Schlüssel, die allein stehen:
+  angezeigt als Vergleichscode aus 12 Gruppen zu 5 Ziffern: die 32 Byte als Zahl (Big Endian)
+  modulo 10⁶⁰, mit führenden Nullen auf 60 Ziffern (`comparisonCode` in
+  `packages/crypto/src/fingerprint.ts`, Testvektoren in `packages/crypto/vectors/rekey-v1.json`).
+  Das sind gut 199 Bit; wer ein Bündel sucht, das denselben Code zeigt, braucht etwa 2¹⁹⁹ Versuche,
+  anders als bei den sechs Ziffern einer Kopplung (P-04), die zusätzlich ein Einmal-Geheimnis
+  schützt. Für Schlüssel, die allein stehen:
   Wurzelschlüssel `SHA-512/256(enc("kennwort/fp-root/v1", edPk))`, Firmen-Recovery-Schlüssel
   `SHA-512/256(enc("kennwort/fp-recovery/v1", xwingPk))`.
 
@@ -353,6 +359,24 @@ Host-Tag ist ein mit dem Salt geschlüsselter Hash (HKDF), damit der Sitzungsber
 Klartext hält. Umgesetzt in `packages/crypto/src/password-alert.ts`; die Testvektoren in
 `packages/crypto/vectors/password-alert-v1.json` entstehen ohne den Code, den sie prüfen (Argon2id
 und HKDF aus `node:crypto`).
+
+### F-11 Schlüsselerneuerung v1
+
+```text
+aussage = enc("kennwort/rekey/v1", konto-ID, konto-salt, anmelde-pk, recovery-anmelde-pk,
+              xwingPk, edPk, schlüsselblock, kontozustand, zähler,
+              AK unter der Passphrase, AK unter dem Recovery Key,
+              enc(enc(tresor-ID, epoche, verpackter tresor-schlüssel)…))
+beweis  = F-03(bisheriger ed-Schlüssel, "account-rekey", aussage)
+```
+
+Die Aussage nennt jeden neuen Wert, den der Server ersetzt ([P-12](#p-12-recovery-kit)), auch
+jeden Tresor-Schlüssel, den das Gerät an das neue Bündel neu verpackt hat, in der Reihenfolge, in
+der es sie schickt. Der bisherige Ed25519-Schlüssel beweist dem Server nur, dass das Konto selbst
+erneuert; für alle anderen bezeugt er das neue Bündel nicht, denn wer das Kit hat, hat ihn auch.
+Das tut erst ein neues Zertifikat des Wurzelschlüssels (P-07). Umgesetzt in
+`packages/crypto/src/rekey.ts`; die Testvektoren in `packages/crypto/vectors/rekey-v1.json`
+rechnet libsodium aus (`generate-rekey.ts`).
 
 ### F-12 Passkey-Schlüssel v1
 
@@ -655,6 +679,8 @@ Den persönlichen Tresor legt die Web-App nur für ein Konto an, das noch nie ei
 hat (keine Logs im Kontozustand): Verschweigt der Server die Tresore eines Kontos, deckt kein neuer
 Tresor das zu. Seine ID ist `kdf(AK, leer, "kennwort/personal-vault/v1", konto-ID)`, gekürzt auf
 16 Byte; zwei Geräte desselben Kontos wählen dieselbe, und nur der erste Genesis-Eintrag zählt.
+Hat das Konto seinen AK erneuert ([P-12](#p-12-recovery-kit)), steht die erste ID im Kontozustand
+(`personalVault`) und gilt vor der Ableitung.
 
 **Wehrt ab:** E-02, E-05, E-06, E-16, E-27.
 
@@ -667,16 +693,29 @@ eintrag = enc("kennwort/log/v1", tresor-ID, seq, vorgänger-hash, epoche, aktion
               fingerabdruck, rolle, gültig-bis, vk-bindung, zeit, unterzeichner-ID, zuletzt-gesehen)
           ‖ F-03-Signatur(unterzeichner, "log", …)
 hash    = SHA-512/256(eintrag)
-aktion  ∈ { anlegen, aufnehmen, entfernen, rolle, schlüsselwechsel }
-vk-bindung = bindung(VKₑ, "vault-key", tresor-ID, epoche)    (F-02; leer bei entfernen und rolle)
+aktion  ∈ { anlegen, aufnehmen, entfernen, rolle, schlüsselwechsel, schlüsselerneuerung }
+vk-bindung = bindung(VKₑ, "vault-key", tresor-ID, epoche)    (F-02; leer bei entfernen, rolle
+                                                              und schlüsselerneuerung)
 ```
+
+Auf dem Draht heißen die Aktionen `create`, `add`, `remove`, `role`, `rotate` und `rekey`.
+`schlüsselerneuerung` (seit K-307 Teil e) nennt für ein Mitglied, dessen Konto seine Schlüssel
+erneuert hat ([P-12](#p-12-recovery-kit)), den Fingerabdruck des neuen Bündels, mit derselben Rolle
+und demselben Ablauf wie bisher; signiert vom Mitglied selbst mit dem neuen Schlüssel, gleich mit
+welcher Rolle, oder von einem Verwalter. Die Kodierung des Eintrags bleibt `kennwort/log/v1`; neu ist
+nur der Wert der Aktion, den die Signatur wie jeden anderen deckt.
 
 Der Client prüft bei jedem Abruf die ganze Kette ab seinem letzten Stand:
 
 - `seq` lückenlos, `vorgänger-hash` passend, Genesis mit `seq = 0` und Null-Hash (ausgelassen,
   vertauscht, eingeschoben: E-07);
 - jede Signatur gültig, der Unterzeichner zu diesem Zeitpunkt Verwalter, sein Schlüssel und der des
-  Mitglieds durch die Firma zertifiziert (unsigniert, fremd: E-06, E-07). „Zu diesem Zeitpunkt“
+  Mitglieds durch die Firma zertifiziert (unsigniert, fremd: E-06, E-07). Geprüft wird mit dem
+  Zertifikat genau des Bündels, das das Log an dieser Stelle für den Unterzeichner nennt; bei
+  `anlegen` und bei der eigenen `schlüsselerneuerung` mit dem Bündel des Eintrags. Ein Zertifikat
+  eines Bündels, das das Konto ersetzt hat ([P-12](#p-12-recovery-kit)), gilt nur für Einträge,
+  deren signierte Zeit vor der Ausstellung des nächsten Zertifikats liegt (plus die fünf Minuten
+  Uhrenabweichung); so verifizieren alte Logs weiter, aber der alte Schlüssel hängt nichts mehr an. „Zu diesem Zeitpunkt“
   heißt zur signierten Zeit des Eintrags; diese Zeiten sinken nie und liegen höchstens fünf
   Minuten vor der Uhr des Prüfenden (`CLOCK_SKEW_SECONDS`), weil die Uhren der Geräte
   auseinandergehen.
@@ -685,7 +724,10 @@ Der Client prüft bei jedem Abruf die ganze Kette ab seinem letzten Stand:
 - jeder VKₑ, den der Client entpackt, passt zur `vk-bindung` des Eintrags `anlegen` bzw.
   `schlüsselwechsel` seiner Epoche (untergeschobener Tresor-Schlüssel: E-16);
 - der letzte Stand (`seq`, `hash`) wird gespeichert; ein kürzeres Log oder ein anderer Hash an
-  bekannter Stelle ist ein Angriff, kein Update (zurückgespielt: E-07).
+  bekannter Stelle ist ein Angriff, kein Update (zurückgespielt: E-07);
+- nennt das Log für ein Mitglied ein Bündel, das dessen Konto ersetzt hat (`superseded`), oder
+  folgt einer `schlüsselerneuerung` noch kein `schlüsselwechsel`, steht ein Wechsel aus
+  (`rotationDue`): Wer die alten Schlüssel hat, kennt VKₑ, also schreibt bis dahin niemand.
 
 Gegen eine Gabelung (E-08) trägt jeder signierte Eintrag und jedes signierte Schreiben eines
 Eintrags den zuletzt gesehenen Log-Stand; trifft ein Client auf einen Stand, der nicht in seiner
@@ -704,8 +746,10 @@ annimmt – mit dem Wurzelschlüssel der Firma und den Zertifikaten, die er häl
 Server dieselben Regeln wie im Client: gültige Signatur, Verwalter zur signierten Zeit, `aufnehmen`
 nur für Nicht-Mitglieder, `rolle` und `entfernen` nur für Mitglieder, Zeiten, die nie zurückgehen
 und höchstens fünf Minuten vor seiner Uhr liegen. Dazu muss der Unterzeichner nach der Uhr des
-Servers gerade Verwalter sein: Ein Verwalter, dessen Zugriff abgelaufen ist, hängt auch mit einer
+Servers gerade Mitglied sein: Ein Verwalter, dessen Zugriff abgelaufen ist, hängt auch mit einer
 zurückdatierten Zeit nichts mehr an (das Restrisiko oben bleibt nur gegen einen bösartigen Server).
+Welche Rechte ein aktuelles Mitglied hat, entscheidet `verifyLog` zur signierten Zeit, die nie
+zurückgeht: ein Verwalter jeden Eintrag, jedes Mitglied die eigene `schlüsselerneuerung`.
 Wer entfernt und wieder aufgenommen wird, bekommt den Schlüssel neu verpackt. Einen
 `schlüsselwechsel` nimmt er nur mit dem neuen VK für genau die Mitglieder des Logs
 ([P-11](#p-11-austritt-und-schlusselwechsel)). Ob ein
@@ -729,7 +773,18 @@ durchgelassen hat.
   derselben Transaktion, in der er schreibt. Ein neues Zertifikat ist immer später ausgestellt als
   das, das es ersetzt, und jeder Client merkt sich je Konto das neueste, das er gesehen hat (im
   Kontozustand); ein älteres, das der Server zurückspielt, gilt nicht mehr, auch nicht, um einen
-  Wurzelschlüssel anzunehmen. Ein Gerät, das die neuere Rolle nie gesehen hat, kann der Server so
+  Wurzelschlüssel anzunehmen. Hat ein Konto seine Schlüssel erneuert ([P-12](#p-12-recovery-kit)),
+  führt der Server die Zertifikate der ersetzten Bündel weiter (Tabelle `superseded_certificates`,
+  in `GET /api/members` als `previous`), damit die Logs und Datensätze verifizieren, die die alten
+  Schlüssel signiert haben; jeder Client prüft auch sie unter dem gemerkten Wurzelschlüssel und
+  nimmt nur solche, die älter sind als das aktuelle. Liefert der Server ein aktuelles, das nicht
+  stimmt, oder keines, obwohl der Client ein neueres gesehen hat als das neueste der früheren, hat
+  er das Zertifikat versteckt oder verfälscht, das die früheren begrenzt: Das Konto gilt dann als
+  ungültig, und die früheren zählen nicht, statt dass die alten Schlüssel wieder ohne Grenze
+  signieren. Ein neues Bündel für ein bekanntes Konto nimmt
+  ein Client nur mit einem neueren Zertifikat; im Kontozustand gewinnt beim Zusammenführen das
+  Bündel der Seite, die das neuere Zertifikat gesehen hat, sonst bleibt ein anderes Bündel ein
+  Angriff. Ein Gerät, das die neuere Rolle nie gesehen hat, kann der Server so
   noch täuschen; den lückenlosen Nachweis bringt erst ein signiertes Log der Firmenrollen. Wer zum Mitarbeiter wird, verliert den
   Wurzelschlüssel auf dem Server, nicht aber eine Kopie, die er schon hat; davor schützt erst ein
   neuer Wurzelschlüssel (K-307 Teil f, Plan unten).
@@ -1191,8 +1246,8 @@ der Größe eines verpackten AK: Eine Sitzung allein, etwa ein gestohlenes Token
 Danach melden die alte Passphrase und der alte Recovery Key nicht mehr an. AK bleibt aber derselbe,
 damit nichts anderes neu verpackt werden muss; wer den alten Recovery-Geheimtext aufbewahrt hat –
 der Server oder wer eine frühere Antwort mitgelesen hat –, öffnet AK mit dem alten Recovery Key
-weiterhin. Ist das Kit in fremde Hände geraten, schützt erst ein Wechsel von AK und der
-Benutzer-Schlüssel (Plan unten, K-307 Teil e).
+weiterhin. Ist das Kit in fremde Hände geraten, schützt erst die Erneuerung von AK und der
+Benutzer-Schlüssel (unten, K-307 Teil e).
 
 Ein Gerät, das das Konto kennt, behält seinen Secret Key, sodass die übrigen Geräte weiter
 funktionieren; ein fremdes Gerät kennt ihn nicht und erzeugt einen neuen, den das neue Kit zeigt.
@@ -1206,42 +1261,107 @@ Recovery Key steht nie im QR-Code: Ein Foto des Codes allein öffnet kein Konto,
 Passphrase. Das PDF schreibt die Web-App selbst (`apps/web/src/kit/`), ohne PDF-Bibliothek; den
 QR-Code erzeugt `uqr`.
 
-#### Wechsel des Account Key nach einem Kit in fremden Händen (Plan, K-307 Teil e)
+#### Schlüssel erneuern nach einem Kit in fremden Händen (K-307 Teil e)
 
 Das Kit trägt Secret Key und Recovery Key. Wer beides hat und dazu einen Recovery-Geheimtext (der
 Server, ein Dieb der Datenbank, wer eine frühere Antwort mitgelesen hat), öffnet AK und damit den
 Schlüsselblock: die privaten X-Wing- und Ed25519-Schlüssel. Mit dem X-Wing-Schlüssel entpackt er
 jeden Tresor-Schlüssel, der je an das Konto verpackt wurde und auf dem Server liegt. Ein neuer AK
 allein hilft darum nicht; es braucht neue Benutzer-Schlüssel und in jedem Tresor des Kontos einen
-Schlüsselwechsel, als ob die Person ginge und mit neuen Schlüsseln wiederkäme:
+Schlüsselwechsel. Vorbild sind das Neu-Erzeugen des Secret Key bei 1Password und der Wechsel des
+Kontoschlüssels bei Bitwarden: Beide verschlüsseln alles unter neuen Schlüsseln und melden die
+anderen Geräte ab; anders als dort bezeugt hier nicht der alte Schlüssel das neue Bündel.
 
-1. Ein entsperrtes Gerät erzeugt AK′, einen neuen Secret Key, neue X-Wing- und Ed25519-Schlüssel und
-   einen neuen Recovery Key; die Passphrase bleibt, ihr Geheimtext wird mit dem neuen Secret Key neu
-   abgeleitet (F-05). Schlüsselblock, Kontozustand (Zähler läuft weiter) und jeder Entsperr-Weg
-   kommen unter AK′; Passkeys werden neu verpackt. Die ID des persönlichen Tresors steht danach im
-   Kontozustand, weil sie aus dem alten AK abgeleitet war.
-2. `PUT /api/account/rekey` ersetzt alles in einem Schritt, nur mit einer Signatur des bisherigen
-   Ed25519-Schlüssels über Konto und alle neuen Werte (Zweck `account-rekey`), und löscht die alten
-   Geheimtexte und alle anderen Sitzungen. Gegen jemanden, der sie schon kopiert hat, hilft das
-   Löschen nicht, nur gegen einen späteren Diebstahl.
-3. Das neue Bündel braucht ein neues Zertifikat. Weil der alte Schlüssel als verraten gilt, kann er
-   das neue Bündel nicht bezeugen: Ein Inhaber oder Admin vergleicht den Fingerabdruck des neuen
-   Bündels mit der Person (Vergleichscode wie in P-04) und stellt ein Zertifikat mit späterem Datum
-   aus. Clients nehmen ein neues Bündel für ein bekanntes Konto nur mit einem neueren Zertifikat des
-   gemerkten Wurzelschlüssels und zeigen den Wechsel an (P-07).
-4. In jedem Tresor des Kontos signiert ein Verwalter `entfernen` für den alten Fingerabdruck,
-   `aufnehmen` für den neuen und `schlüsselwechsel` ([P-11](#p-11-austritt-und-schlusselwechsel));
-   Einträge werden neu verschlüsselt, aber nicht markiert, wenn die Person dieselbe bleibt. Ist die
-   Person selbst Verwalter, macht ihr Client das mit dem neuen Schlüssel, nachdem das neue
-   Zertifikat steht.
-5. Freigaben an das Konto (P-10) werden an das neue Bündel neu verpackt, die Hinterlegung für die
-   Firmen-Recovery ([P-13](#p-13-firmen-recovery)) neu angelegt, und der Wechsel kommt signiert ins
-   Audit-Log.
+1. **Neue Schlüssel** (**Einstellungen → Schlüssel erneuern**, `renewKeys` in
+   `packages/client/src/account/renewal.ts`, `rekeyAccount` in `packages/core/src/account/rekey.ts`):
+   Das entsperrte Gerät fragt die Passphrase noch einmal ab und prüft sie gegen den Geheimtext auf
+   dem Server, bevor es etwas ändert, denn ein Tippfehler sperrte das Konto für immer. Dann erzeugt
+   es AK′, einen neuen Secret Key, ein neues Konto-Salt, neue X-Wing- und Ed25519-Schlüssel und einen
+   neuen Recovery Key; die Passphrase bleibt und wird mit dem neuen Secret Key neu abgeleitet (F-05).
+   Schlüsselblock und Kontozustand (zusammengeführt mit dem des Servers, Zähler um eins höher) kommen
+   unter AK′, AK′ unter Passphrase und Recovery Key. Jeden Tresor-Schlüssel, den das Gerät hält, jeder
+   Epoche, verpackt es an das neue Bündel (F-02), damit es weiter liest, bis jeder Tresor wechselt.
+   Die ID des persönlichen Tresors, die aus dem alten AK abgeleitet war, steht danach im
+   Kontozustand (`personalVault`).
+2. **Auf dem Server** (`PUT /api/account/rekey`, `apps/server/src/account/rekey.ts`): ersetzt in
+   einer Transaktion Bündel, Schlüsselblock, Kontozustand, beide Geheimtexte von AK, das Salt, beide
+   Anmelde-Schlüssel und die verpackten Tresor-Schlüssel des Kontos, nur mit dem Beweis nach F-11
+   durch den bisherigen Ed25519-Schlüssel, nur auf dem Zähler, den er hält (sonst `409`), und nur mit
+   Tresor-Schlüsseln, die das Konto schon hält, je einmal. Er legt das bisherige Zertifikat in die
+   Geschichte (`superseded_certificates`), führt das Konto ohne Zertifikat, löscht alle anderen
+   Sitzungen (die anderen Geräte koppeln neu, P-04), alle Passkeys des Kontos (wer das Kit hatte,
+   konnte mit einer Sitzung der alten Schlüssel einen eigenen anlegen) und alles, was die alten Schlüssel öffnen oder
+   signiert haben: die Hinterlegung der Firmen-Recovery, an das alte Bündel verpackte Wurzel- und
+   Recovery-Schlüssel, Freigaben und Notfallzugriffe an das Konto und von ihm. Gegen jemanden, der
+   die alten Geheimtexte schon kopiert hat, hilft das Löschen nicht, nur gegen einen späteren
+   Diebstahl.
+3. **Das Gerät** öffnet das Konto unter AK′ mit derselben Sitzung, merkt sich den neuen Secret Key,
+   ersetzt die Offline-Kopie ([P-22](#p-22-offline-kopie)) ganz, hinterlegt AK′ für die
+   Firmen-Recovery neu (P-13), signiert `account-rekey` mit dem neuen Schlüssel ins Audit-Log (P-20)
+   und zeigt das neue Recovery-Kit mit dem Vergleichscode des neuen Bündels (F-04).
+4. **Neues Zertifikat** (`certifyRenewed` in `packages/core/src/membership/members.ts`): Die
+   Mitgliederliste zeigt das Konto als „Neue Schlüssel“ (Status `renewed`: kein Zertifikat, aber ein
+   früheres des gemerkten Wurzelschlüssels). Ein Inhaber oder Admin vergleicht den Code mit der
+   Person, am besten persönlich oder am Telefon, und stellt erst dann ein Zertifikat für das neue
+   Bündel aus, mit der Rolle des Kontos und später als jedes, das er für das Konto gesehen hat; der
+   Server nimmt es nur später als jedes frühere. Hält das Konto selbst den Wurzelschlüssel (Inhaber
+   oder Admin), zertifiziert es sein neues Bündel sofort selbst: Es ist dieselbe Person.
+5. **In jedem Tresor** (`apps/web/src/vaults/renewals.ts`, `rekeyMember` und `dueRekeys` in
+   `packages/core/src/membership/renewal.ts`): Sobald das neue Zertifikat steht, signiert der Client
+   des Kontos mit dem neuen Schlüssel eine `schlüsselerneuerung` in jedem seiner Tresore, gleich mit
+   welcher Rolle; für andere tut das der Client eines Verwalters. Danach steht ein Wechsel aus, den
+   ein Verwalter-Client wie nach einem Austritt signiert ([P-11](#p-11-austritt-und-schlusselwechsel)):
+   VKₑ₊₁ an jedes Mitglied, also an das neue Bündel, alle Einträge neu verschlüsselt, Freigaben neu
+   verpackt. Markiert wird nichts, denn niemand ist gegangen. Bis beides im Log steht, schreibt in dem
+   Tresor niemand (`superseded`, `rotationDue`), und jeder Client warnt.
 
-Kein Format ändert sich: AK′, Schlüsselblock und Log-Einträge nutzen F-01, F-02, F-03 und P-06 wie
-bisher; neu ist nur der Zweck `account-rekey` der Signatur, mit eigenen Testvektoren.
+**Warum `schlüsselerneuerung` statt `entfernen` und `aufnehmen`:** Ist die Person der einzige
+Verwalter eines Tresors, wie immer im persönlichen Tresor, kann sie sich nicht entfernen und dann
+wieder aufnehmen: Nach dem Entfernen ist niemand mehr Verwalter. Ein eigener Eintrag tut beides in
+einem Schritt, mit derselben Rolle und demselben Ablauf, und das Mitglied darf ihn mit dem neuen
+Schlüssel selbst signieren.
 
-**Wehrt ab:** E-01.
+**Was andere Clients prüfen.** Ein Client nimmt das neue Bündel nur mit einem neueren Zertifikat des
+gemerkten Wurzelschlüssels (P-07); ein Server, der das alte weiter als aktuelles ausliefert, ist
+entlarvt, sobald der Client das neue einmal gesehen hat (ungültig), und ein Log mit einer
+`schlüsselerneuerung` verifiziert ohne das neue Zertifikat nicht. Mit dem alten Schlüssel signierte
+Log-Einträge gelten nur bis zur Ausstellung des neuen Zertifikats (P-06), Datensätze nur, solange das
+Log das alte Bündel nennt, und danach bis zum Wechsel (P-09, ohne signierte Zeit): Was die Person
+vorher schrieb, muss ein Gerät, das es noch nicht hatte, vor dem Wechsel öffnen, sonst schriebe der
+Wechsel eine ältere Fassung darüber. Freigaben und Notfallzugriffe, die der alte
+Schlüssel signiert hat, gelten nicht mehr: Wer das Kit hat, kann mit ihm beliebig zurückdatierte
+signieren, und ein Client, der sie mit dem neuen Schlüssel neu verpackte, bezeugte die Fälschungen.
+Die Person gibt sie neu; die Seite sagt das vorher.
+
+Kein Format der Geheimtexte ändert sich: AK′, Schlüsselblock, Tresor-Schlüssel und Log-Einträge nutzen
+F-01, F-02, F-03 und P-06 wie bisher. Neu sind F-11 mit eigenen Testvektoren, der Vergleichscode nach
+F-04 und die Aktion `schlüsselerneuerung` im Log.
+
+Restrisiken:
+
+- **Zwischen Erneuerung und neuem Zertifikat** verifiziert das alte Zertifikat Log-Einträge ohne
+  zeitliche Grenze, denn das Ende des alten Bündels sagt nur der Server, unsigniert. Ein ehrlicher
+  Server nimmt vom alten Schlüssel nichts mehr an, weil die alten Anmelde-Schlüssel und Sitzungen weg
+  sind; ein bösartiger Server, der mit dem Dieb zusammenarbeitet, kann bis dahin Log-Einträge im
+  Namen der Person einschieben. Die Tresore schreiben in dieser Zeit nichts.
+- **Datensätze ohne Zeit:** Bis ein Tresor nach der `schlüsselerneuerung` den Wechsel hat, nimmt
+  ein Client einen Datensatz, den der alte Schlüssel signiert, als von der Person. Ein ehrlicher
+  Server nimmt ihn nicht (keine Sitzung, kein Passkey), und niemand schreibt in dem Tresor, bis
+  Erneuerung und Wechsel stehen.
+- **Zurückdatierte Log-Einträge** des alten Schlüssels sind möglich, solange im Tresor seit dem neuen
+  Zertifikat niemand geschrieben hat und die Zeit noch vor dem Zertifikat liegt (wie das Restrisiko
+  abgelaufener Verwalter in P-06).
+- **Andere Geräte** werden abgemeldet; ihre Offline-Kopie öffnet weiter mit altem Secret Key und
+  Passphrase den alten Stand, nichts Neueres. „Dieses Gerät abmelden“ löscht sie.
+- **Inhaber und Admins** halten den privaten Wurzelschlüssel und als Inhaber den
+  Firmen-Recovery-Schlüssel im Kontozustand bzw. an ihr Bündel verpackt; ist ihr Kit in fremden
+  Händen, sind auch diese verraten. Den Wurzelschlüssel wechselt erst K-307 Teil f (P-07), den
+  Recovery-Schlüssel „Neuen Recovery-Schlüssel anlegen“ (P-13).
+- **Wer erneuert, ehe der Dieb es tut:** Der Dieb kann mit dem alten Schlüssel selbst erneuern und
+  die Person aussperren; ein neues Zertifikat bekommt er ohne den Vergleich mit einem Inhaber oder
+  Admin aber nicht, und die Person meldet sich dort.
+
+**Wehrt ab:** E-01, E-05, E-07.
 
 ### P-13 Firmen-Recovery
 
@@ -1280,7 +1400,8 @@ selbst: von ihm signiert, für den Fingerabdruck in Kraft, mit der Bindung an se
 für einen früheren Schlüssel, eine, die der Server erfunden hat, oder keine ersetzt er
 (`PUT /api/account/recovery-deposit`; der Server prüft die Signatur mit dem Ed25519-Schlüssel des
 Kontos und den Fingerabdruck des Schlüssels, den er hält). Die Extension hinterlegt nicht; das macht
-die Web-App beim nächsten Entsperren.
+die Web-App beim nächsten Entsperren. Erneuert ein Konto seine Schlüssel (P-12), löscht der Server
+die alte Hinterlegung, und das Gerät hinterlegt AK′ gleich danach neu.
 
 **Wiederherstellen.** Das neue Gerät des Mitarbeiters („Alles verloren? Über die Firma
 wiederherstellen“) startet eine Kopplung wie in P-04 und zeigt den QR-Code mit Kopplungs-ID,
@@ -1424,7 +1545,9 @@ jede Ansehen-Freigabe, die einen älteren VKₑ trägt, mit den aktuellen Schlü
 Bedingungen (`renewGrants`). Wie jede neue Freigabe beendet das eine laufende Anfrage: Der
 Gebende ist offenbar da und kann eine neue Anfrage sofort freigeben. Bis dahin öffnet der
 Notfallzugriff nur, was vor dem Wechsel geschrieben wurde. Verlässt der Gebende oder die Person die
-Firma, löscht der Server Freigabe und Rücknahme.
+Firma, löscht der Server Freigabe und Rücknahme, ebenso, wenn einer von beiden seine Schlüssel
+erneuert ([P-12](#p-12-recovery-kit)): Die Pakete sind an das alte Bündel verpackt oder tragen den
+alten AK, die Signatur den alten Schlüssel. Der Gebende gibt den Zugriff neu.
 
 **Audit-Log** (P-20): Der Server schreibt `emergency-granted`, `emergency-revoked`,
 `emergency-requested`, `emergency-objected` und `emergency-released` (bei früherer Freigabe mit dem
@@ -1855,7 +1978,9 @@ Ein Ereignis ist `enc("kennwort/audit-event/v1", firma, nr, zeit, wer, was, woru
 Kette beginnt bei 32 Null-Bytes und hat je Firma eigene Nummern ab 0. Der Server schreibt selbst:
 Anmeldung (jede neue Sitzung), Einladung erstellt und angenommen, Tresor angelegt und die Schritte
 des Notfallzugriffs (P-14). Ein Client signiert `sign("audit", firma, wer, was, worum)` mit seinem
-Ed25519-Schlüssel; `worum` ist eine ID, die er einmal wählt, dieselbe Handlung mit derselben ID
+Ed25519-Schlüssel (Handlungen: `export`, `recovery`, `key-rotation`, `emergency-access` und seit
+K-307 Teil e `account-rekey`); nach einer Erneuerung der Schlüssel (P-12) prüft `verifyAudit` eine
+Handlung gegen jeden Schlüssel, den das Konto hatte; `worum` ist eine ID, die er einmal wählt, dieselbe Handlung mit derselben ID
 zweimal gilt als wiederholt.
 
 Text steht in jeder Zeile wohlgeformt und schon in NFC, sonst gilt die Zeile als fehlerhaft: So haben
@@ -2002,6 +2127,10 @@ alten Schlüssel geschrieben hat, verdrängt die neu verschlüsselte nicht. Gepr
 Nach einem Schlüsselwechsel ([P-11](#p-11-austritt-und-schlusselwechsel)) bleibt auch eine
 Version, die noch nicht neu verschlüsselt ist, in der Kopie und offline lesbar, und die
 Tresor-Schlüssel aller Epochen kommen wie online aus `read:<pfad>`.
+
+**Schlüssel erneuert** ([P-12](#p-12-recovery-kit)): Das Gerät, das erneuert, löscht die Kopie und
+legt `keys` und `state` unter den neuen Schlüsseln neu an; was die alten Schlüssel öffneten, liegt
+danach nicht mehr auf ihm.
 
 **Sperren und Abmelden**: Sperren lässt die Kopie liegen – sie ist verschlüsselt und genau das, was
 das Entsperren ohne Server braucht. „Dieses Gerät abmelden“ löscht sie ganz, ebenso das Öffnen eines

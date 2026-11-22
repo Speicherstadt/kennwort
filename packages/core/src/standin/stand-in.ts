@@ -20,6 +20,8 @@ export type StandInSession = { accountId: string; companyId: string };
 export type StandInCompany = {
   rootPublicKey: Uint8Array;
   certificates: ReadonlyMap<string, Certificate>;
+  /** Earlier certificates of accounts that renewed their keys (P-12) */
+  history?: ReadonlyMap<string, Certificate[]>;
   now: () => number;
 };
 type Change = { entryId: string; version: number };
@@ -136,13 +138,17 @@ const appendLog = (
   if (entry.seq !== vault.log.length || encodeBytes(entry.prevHash) !== prev)
     return json({ error: "stale", seq: vault.log.length }, 409);
   const now = company.now();
+  // After the genesis only a current member by the stand-in's own clock, so no one whose time ran
+  // out appends with a backdated entry; what each may sign verifyLog decides: a manager anything,
+  // any member her own rekey with her renewed keys (P-12)
   const allowed = last
-    ? roleOf(vault, session.accountId, now) === "manage"
+    ? roleOf(vault, session.accountId, now) !== undefined
     : vault.createdBy === session.accountId;
   if (!allowed) return json({ error: "forbidden" }, 403);
   const trust = {
     ...company,
     certificates: new Map(company.certificates),
+    history: new Map(company.history),
     now: Math.floor(now / 1000),
   };
   const checked = verifyLog(entry.vaultId, [...vault.log, entry], trust);

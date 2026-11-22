@@ -6,7 +6,7 @@
 
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { httpServerFor } from "@kennwort/client/entries/entry-store.ts";
-import type { AccountApi } from "@kennwort/client/session/api.ts";
+import type { AccountApi, Api } from "@kennwort/client/session/api.ts";
 import type { DevicesApi } from "@kennwort/client/session/devices-api.ts";
 import type { EmergencyApi } from "@kennwort/client/session/emergency-api.ts";
 import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
@@ -22,6 +22,7 @@ import { InvitePage } from "./account/invite-page.tsx";
 import { type PairDeps, PairPage } from "./account/pair-page.tsx";
 import { RecoverCompanyPage } from "./account/recover-company-page.tsx";
 import { RecoverPage } from "./account/recover-page.tsx";
+import { renewPage } from "./account/renew-route.tsx";
 import { SetupPage } from "./account/setup-page.tsx";
 import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
 import { renewEmergency } from "./emergency/emergency.ts";
@@ -58,7 +59,8 @@ export type AppApi = PairDeps &
   GroupApi &
   ShareApi &
   EmergencyApi &
-  Pick<AccountApi, "replaceUnlock"> & { syncFetch: typeof fetch };
+  Pick<AccountApi, "replaceUnlock"> &
+  Pick<Api, "rekey"> & { syncFetch: typeof fetch };
 
 /** The company's people as the vaults' load checked them; none before it */
 const peopleOf = (store: VaultStore) => {
@@ -229,6 +231,7 @@ const OpenedFrame = (props: {
         )}
         importPage={importPage(props.nav, store, allEntries, () => online(entries.saveNew))}
         emergencyPage={emergencyPage(props, shownVaults)}
+        renewPage={renewPage(props, store, reload)}
         devices={() => (
           <Show when={props.session.opened()?.token}>
             {(token) => (

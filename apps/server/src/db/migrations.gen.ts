@@ -133,5 +133,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795356298606,
     "breakpoints": true,
     "sql": "CREATE TABLE `emergency_grants` (\n\t`grantor` text NOT NULL,\n\t`grantee` text NOT NULL,\n\t`grant` text NOT NULL,\n\t`packages` text NOT NULL,\n\t`time` integer NOT NULL,\n\t`request` text,\n\t`requested_at` integer,\n\t`objection` text,\n\t`approval` text,\n\t`released_at` integer,\n\t`stored_at` integer NOT NULL,\n\tPRIMARY KEY(`grantor`, `grantee`),\n\tFOREIGN KEY (`grantor`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action,\n\tFOREIGN KEY (`grantee`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE TABLE `emergency_revocations` (\n\t`grantor` text NOT NULL,\n\t`grantee` text NOT NULL,\n\t`statement` text NOT NULL,\n\t`stored_at` integer NOT NULL,\n\tPRIMARY KEY(`grantor`, `grantee`),\n\tFOREIGN KEY (`grantor`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action,\n\tFOREIGN KEY (`grantee`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action\n);\n"
+  },
+  {
+    "tag": "0022_account_rekey",
+    "when": 1795362801422,
+    "breakpoints": true,
+    "sql": "CREATE TABLE `superseded_certificates` (\n\t`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,\n\t`account_id` text NOT NULL,\n\t`certificate` text NOT NULL,\n\t`superseded_at` integer NOT NULL,\n\tFOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action\n);\n"
   }
 ];

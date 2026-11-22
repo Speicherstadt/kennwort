@@ -41,4 +41,13 @@ describe("RotationNotice", () => {
     expect(root.textContent).toContain("The vault Unnamed vault is waiting for a key change");
     setLocale("de", { reload: false });
   });
+
+  it("says when someone renewed her keys and the vault waits for them (P-12)", () => {
+    setLocale("de", { reload: false });
+    const root = document.createElement("div");
+    const renewed = { name: "Büro", log: { rotationDue: true, superseded: ["20".repeat(16)] } };
+    dispose = render(() => <RotationNotice vaults={[renewed]} />, root);
+    flush();
+    expect(root.textContent).toContain("Im Tresor Büro hat jemand neue Schlüssel");
+  });
 });

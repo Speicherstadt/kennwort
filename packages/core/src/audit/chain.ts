@@ -28,7 +28,14 @@ export const SERVER_ACTIONS = [
   "emergency-objected",
   "emergency-released",
 ] as const;
-export const CLIENT_ACTIONS = ["export", "recovery", "key-rotation", "emergency-access"] as const;
+export const CLIENT_ACTIONS = [
+  "export",
+  "recovery",
+  "key-rotation",
+  "emergency-access",
+  // The account renewed its keys (K-307 part e, P-12), signed with the new ones
+  "account-rekey",
+] as const;
 export const AuditAction = z.enum([...SERVER_ACTIONS, ...CLIENT_ACTIONS]);
 export type AuditAction = z.infer<typeof AuditAction>;
 export type ClientAction = (typeof CLIENT_ACTIONS)[number];
@@ -112,8 +119,12 @@ export type AuditProblem =
   | "forked";
 export type AuditCheck = {
   companyId: string;
-  /** The actor's Ed25519 public key from its certificate, for client actions */
-  publicKeyOf: (actor: string) => Uint8Array | undefined;
+  /**
+   * The actor's Ed25519 public keys from its certificates, for client actions: the current one,
+   * and after the account renewed its keys (P-12) its earlier ones, which signed the events before;
+   * none for an unknown actor
+   */
+  publicKeysOf: (actor: string) => readonly Uint8Array[];
   remembered?: AuditHead;
 };
 
@@ -129,14 +140,10 @@ const checkEvent = (
   if (!constantTimeEqual(event.prevHash, prevHash)) return "broken-chain";
   if (!constantTimeEqual(event.hash, auditHash(prevHash, event))) return "changed";
   if (!isClientAction(event.action)) return undefined;
-  // An unknown actor has no key; an empty one verifies nothing
-  const publicKey = check.publicKeyOf(event.actor) ?? new Uint8Array();
-  const signed = verify(
-    publicKey,
-    event.signature,
-    "audit",
-    ...signedFields({ ...event, action: event.action }),
-  );
+  // An unknown actor has no key, and no key verifies nothing
+  const keys = check.publicKeysOf(event.actor);
+  const fields = signedFields({ ...event, action: event.action });
+  const signed = keys.some((key) => verify(key, event.signature, "audit", ...fields));
   return signed ? undefined : "bad-signature";
 };
 

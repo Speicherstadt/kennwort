@@ -29,6 +29,7 @@ import {
   type WrappedKey,
 } from "@kennwort/core";
 import type { Session } from "../session/session.ts";
+import { catchUpRenewals } from "./renewals.ts";
 import { type ChangeError, fromIdKey } from "./vault-members.ts";
 
 export type ExitDeps = { api: VaultDeps & ShareApi; session: Session };
@@ -39,7 +40,7 @@ export type ExitStores = {
   reload: () => Promise<Loaded | undefined>;
   rotate: (
     vaultIdText: string,
-    exposure: Exposure,
+    exposure: Exposure | undefined,
   ) => Promise<{ ok: true; value: Rotated } | { ok: false; error: SaveError }>;
   /** Whether the vault still has entries from before its current epoch */
   behind: (vaultIdText: string) => boolean;
@@ -129,9 +130,10 @@ const shareAgain = async (deps: ExitDeps, loaded: Loaded, vault: Vault, rotated:
 /** Writes the vault's entries anew under its current key and makes their shares again */
 const rewrite = async (deps: ExitDeps, stores: ExitStores, loaded: Loaded, idText: string) => {
   const vault = loaded.vaults.find((v) => v.idText === idText);
-  // The newest exit: the context marks for every other one as well (SyncContext.exposures)
+  // The newest exit: the context marks for every other one as well (SyncContext.exposures). After
+  // a member only renewed her keys (P-12) there may be none: nobody left, nothing to mark
   const exposure = vault && pastExposures(vault.entries).at(-1);
-  if (!vault || !exposure) return { ok: false, error: "unreachable" } as const;
+  if (!vault) return { ok: false, error: "unreachable" } as const;
   const rotated = await stores.rotate(idText, exposure);
   if (!rotated.ok) return rotated;
   await shareAgain(deps, loaded, vault, rotated.value);
@@ -187,7 +189,9 @@ export const catchUp = async (
   tried: Set<string>,
 ): Promise<{ idText: string; error: ExitError }[]> => {
   const failed: { idText: string; error: ExitError }[] = [];
-  for (const vault of loaded.vaults.filter((v) => v.role === "manage")) {
+  // A vault that still names someone's replaced bundle waits for its rekey entry (renewals.ts)
+  const ready = loaded.vaults.filter((v) => v.role === "manage" && v.log.superseded.length === 0);
+  for (const vault of ready) {
     const due = dueExits(vault.log, loaded.left);
     const attempt = `${vault.idText}:${vault.log.seq}`;
     if ((!due.rotate && !stores.behind(vault.idText)) || tried.has(attempt)) continue;
@@ -223,7 +227,17 @@ export const createExits = (deps: ExitDeps, stores: ExitStores) => {
       const remove = [accountId, ...others.map(fromIdKey)];
       return oneAtATime(() => exitVault(deps, stores, vault, trust, remove));
     },
-    catchUp: (loaded: Loaded) => oneAtATime(() => catchUp(deps, stores, loaded, tried)),
+    /**
+     * First the rekey entries of renewed keys (P-12): when the server took any, the vaults load
+     * anew, and that load catches up on the rotation they want
+     */
+    catchUp: (loaded: Loaded) =>
+      oneAtATime(async () => {
+        if (!(await catchUpRenewals(deps, loaded, tried)))
+          return catchUp(deps, stores, loaded, tried);
+        await stores.reload();
+        return [];
+      }),
   };
 };
 

@@ -19,7 +19,7 @@ const company = "weber";
 const actor = encodeBytes(jonas.id);
 const check = {
   companyId: company,
-  publicKeyOf: (a: string) => (a === actor ? jonas.ed.publicKey : undefined),
+  publicKeysOf: (a: string) => (a === actor ? [jonas.ed.publicKey] : []),
 };
 
 describe("verifyAudit replay across Unicode normal forms", () => {

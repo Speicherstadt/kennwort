@@ -32,6 +32,7 @@ import {
   vaultRequests,
 } from "../db/schema.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
+import { supersededOf } from "./rekey.ts";
 
 type KeysRow = typeof accountKeys.$inferSelect;
 type InvitationRow = typeof invitations.$inferSelect;
@@ -65,6 +66,7 @@ const membersOf = (db: Db, companyId: string, me: string) => {
       .all()
       .map((row) => [row.accountId, row]),
   );
+  const previous = supersededOf(db, ids);
   return rows.map((row) => {
     const key = keys.get(row.id);
     return {
@@ -76,11 +78,19 @@ const membersOf = (db: Db, companyId: string, me: string) => {
       certificate: key?.certificate ? JSON.parse(key.certificate) : null,
       invitation: pending(me, key, invited.get(row.id)),
       leftAt: row.leftAt,
+      previous: previous.get(row.id) ?? [],
     };
   });
 };
 
 const same = (a: Uint8Array, b: Uint8Array) => encodeBytes(a) === encodeBytes(b);
+
+/** A certificate after a renewal comes later than each of the account's earlier ones (P-12) */
+const laterThanEarlier = (db: Db, accountId: string, issuedAt: number) =>
+  (supersededOf(db, [accountId]).get(accountId) ?? []).every((earlier) => {
+    const parsed = CertificateWire.safeParse(earlier);
+    return parsed.success && parsed.data.issuedAt < issuedAt;
+  });
 
 const RoleChange = z.object({
   certificate: CertificateWire,
@@ -223,10 +233,12 @@ export const memberRoutes = ({ db, now }: { db: Db; now: () => number }) =>
       const certificate = parsed.data;
       const keys = db.select().from(accountKeys).where(eq(accountKeys.accountId, member.id)).get();
       if (!keys) return c.json({ error: "no-keys" }, 409);
-      // Only for this member, this company, its uploaded keys and the role it has
+      // Only for this member, this company, its uploaded keys and the role it has, and after a
+      // renewal of its keys (P-12) issued later than every certificate it had
       if (
         !fitsKeys(certificate, member, session.companyId, keys) ||
-        certificate.role !== member.role
+        certificate.role !== member.role ||
+        !laterThanEarlier(db, member.id, certificate.issuedAt)
       )
         return c.json({ error: "invalid" }, 400);
       const stored = db

@@ -10,7 +10,7 @@ export const LogEntryWire = z.object({
   seq: z.number().int().nonnegative(),
   prevHash: bytes(32),
   epoch: z.number().int().nonnegative(),
-  action: z.enum(["create", "add", "remove", "role", "rotate"]),
+  action: z.enum(["create", "add", "remove", "role", "rotate", "rekey"]),
   accountId: bytes(16),
   fingerprint: bytes(),
   role: z.enum(["read", "edit", "manage", ""]),

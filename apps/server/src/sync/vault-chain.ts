@@ -16,6 +16,7 @@ import {
   verifyLog,
 } from "@kennwort/core";
 import { asc, eq } from "drizzle-orm";
+import { supersededOf } from "../account/rekey.ts";
 import type { Db } from "../db/database.ts";
 import { accountKeys, accounts, companies, vaultLog } from "../db/schema.ts";
 
@@ -51,6 +52,26 @@ const certificatesOf = (db: Db, companyId: string) => {
   return certificates;
 };
 
+/** Earlier certificates of the company's accounts that renewed their keys (P-12), by hex ID */
+const historyOf = (db: Db, companyId: string) => {
+  const ids = db
+    .select({ id: accounts.id })
+    .from(accounts)
+    .where(eq(accounts.companyId, companyId))
+    .all()
+    .map((row) => row.id);
+  const history = new Map<string, Certificate[]>();
+  for (const [id, earlier] of supersededOf(db, ids)) {
+    const parsed = earlier.flatMap((c) => {
+      const certificate = CertificateWire.safeParse(c);
+      return certificate.success ? [certificate.data] : [];
+    });
+    const account = bytes(16).safeParse(id);
+    if (account.success) history.set(idKey(account.data), parsed);
+  }
+  return history;
+};
+
 const rootOf = (db: Db, companyId: string) => {
   const company = db.select().from(companies).where(eq(companies.id, companyId)).get();
   const root = bytes(32).safeParse(company?.rootPublicKey ?? "");
@@ -72,6 +93,7 @@ export const chainRefusal = (
   const trust = {
     rootPublicKey,
     certificates: certificatesOf(db, companyId),
+    history: historyOf(db, companyId),
     // verifyLog allows the same clock skew (CLOCK_SKEW_SECONDS) as every client
     now,
   };

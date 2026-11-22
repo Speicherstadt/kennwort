@@ -129,8 +129,48 @@ describe("account state", () => {
       ok: false,
       error: "other-root",
     });
-    const swapped = { ...emptyState(root), bundles: { anna: new Uint8Array(32).fill(9) } };
+    const swapped = {
+      ...emptyState(root),
+      bundles: { anna: new Uint8Array(32).fill(9) },
+      certificates: state.certificates,
+    };
     expect(mergeStates(state, swapped)).toEqual({ ok: false, error: "other-bundle" });
+  });
+
+  it("takes another bundle for a known account only with a newer certificate (P-12)", () => {
+    const at = state.certificates.anna ?? 0;
+    const renewed = {
+      ...emptyState(root),
+      bundles: { anna: new Uint8Array(32).fill(9) },
+      certificates: { anna: at + 1 },
+    };
+    for (const merged of [mergeStates(state, renewed), mergeStates(renewed, state)])
+      expect(merged.ok && merged.value.bundles.anna).toEqual(new Uint8Array(32).fill(9));
+    const unseen = { ...state, certificates: {} };
+    for (const merged of [mergeStates(unseen, renewed), mergeStates(renewed, unseen)])
+      expect(merged.ok && merged.value.bundles.anna).toEqual(new Uint8Array(32).fill(9));
+    const older = { ...renewed, certificates: { anna: at - 1 } };
+    for (const merged of [mergeStates(state, older), mergeStates(older, state)])
+      expect(merged.ok && merged.value.bundles.anna).toEqual(state.bundles.anna);
+  });
+
+  it("takes a bundle the own side does not know, and the same bundle again, whatever was seen", () => {
+    const max = new Uint8Array(32).fill(7);
+    const theirs = { ...emptyState(root), bundles: { max } };
+    const merged = mergeStates(emptyState(root), theirs);
+    expect(merged.ok && merged.value.bundles).toEqual({ max });
+    expect(mergeStates(theirs, theirs)).toEqual({ ok: true, value: theirs });
+  });
+
+  it("keeps the personal vault's ID from either side, the own first (P-12)", () => {
+    const theirs = { ...emptyState(root), personalVault: "theirs" };
+    const mine = { ...state, personalVault: "mine" };
+    const merged = mergeStates(state, theirs);
+    expect(merged.ok && merged.value.personalVault).toBe("theirs");
+    const both = mergeStates(mine, theirs);
+    expect(both.ok && both.value.personalVault).toBe("mine");
+    const none = mergeStates(state, emptyState(root));
+    expect(none.ok && none.value).not.toHaveProperty("personalVault");
   });
 
   it("keeps the newer policy version and its lock time from either side", () => {

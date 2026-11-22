@@ -1,7 +1,7 @@
 /**
  * The warning that a vault waits for its key rotation (K-307 part b, P-11): someone was removed,
  * and until a manager's client writes the new key nobody writes in that vault, since whoever left
- * still holds the current one. A manager's client catches up by itself after unlock; every other
+ * still holds the current one. So after someone renewed her keys (P-12): the old ones hold it. A manager's client catches up by itself after unlock; every other
  * client only warns. At the top, so it covers neither the tab bar nor the offline notice, and it
  * lets clicks through.
  */
@@ -9,7 +9,16 @@ import { Icon, m } from "@kennwort/ui";
 import { TriangleExclamationPoint } from "@kennwort/ui/icons";
 import { For, Show } from "solid-js";
 
-type Shown = { name: string | undefined; log: { rotationDue: boolean } };
+type Shown = {
+  name: string | undefined;
+  log: { rotationDue: boolean; superseded?: readonly string[] };
+};
+
+/** Why the vault waits: someone left, or someone renewed her keys (P-12) and the log names the old */
+const reason = (vault: Shown) => {
+  const name = vault.name ?? m.vaults_unnamed();
+  return vault.log.superseded?.length ? m.rotation_due_renewed({ name }) : m.rotation_due({ name });
+};
 
 export const RotationNotice = (props: { vaults: readonly Shown[] | undefined }) => {
   const due = () => (props.vaults ?? []).filter((vault) => vault.log.rotationDue);
@@ -23,9 +32,7 @@ export const RotationNotice = (props: { vaults: readonly Shown[] | undefined }) 
                 <span class="text-warning">
                   <Icon icon={TriangleExclamationPoint} size={18} />
                 </span>
-                <p class="flex-1 text-foreground">
-                  {m.rotation_due({ name: vault.name ?? m.vaults_unnamed() })}
-                </p>
+                <p class="flex-1 text-foreground">{reason(vault)}</p>
               </li>
             )}
           </For>

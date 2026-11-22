@@ -7,9 +7,11 @@
  */
 import {
   type AccountState,
+  bytes,
   type Certificate,
   checkMembers,
   createVault,
+  derivedPersonalVault,
   encodeBytes,
   idKey,
   isMember,
@@ -26,7 +28,6 @@ import {
   type VaultRole,
   verifyLog,
 } from "@kennwort/core";
-import { kdf } from "@kennwort/crypto";
 import type { MembersApi } from "../session/members-api.ts";
 import type { OpenAccount, Opened } from "../session/open-account.ts";
 import type { StateDeps } from "../session/state-sync.ts";
@@ -78,10 +79,14 @@ export const trustOf = async (api: VaultDeps, opened: Opened): Promise<Checked |
   if (!root) return undefined;
   const people = checkMembers(root, members, opened.state.certificates);
   const certificates = new Map<string, Certificate>();
-  for (const view of people)
+  // Earlier certificates of accounts that renewed their keys: what their old keys signed (P-12)
+  const history = new Map<string, Certificate[]>();
+  for (const view of people) {
     if (view.status === "certified" && view.certificate)
       certificates.set(idKey(view.accountId), view.certificate);
-  return { trust: { rootPublicKey: root, certificates, now: seconds() }, people };
+    if (view.previous?.length) history.set(idKey(view.accountId), view.previous);
+  }
+  return { trust: { rootPublicKey: root, certificates, history, now: seconds() }, people };
 };
 
 const openOne = async (
@@ -165,13 +170,13 @@ export type CreateError = "uncertified" | "unreachable" | "refused" | "exists";
 
 /**
  * The personal vault's ID, derived from the account key: every device of the account picks the same
- * one, so two devices opening an empty account at once make one personal vault, not two
+ * one, so two devices opening an empty account at once make one personal vault, not two. After the
+ * account renewed its AK (P-12) the state keeps the ID the first AK gave.
  */
-export const personalVaultId = (opened: Opened) =>
-  kdf(opened.accountKey, new Uint8Array(), "kennwort/personal-vault/v1", opened.accountId).slice(
-    0,
-    16,
-  );
+export const personalVaultId = (opened: Opened) => {
+  const kept = bytes(16).safeParse(opened.state.personalVault ?? "");
+  return kept.success ? kept.data : derivedPersonalVault(opened.accountKey, opened.accountId);
+};
 
 const appendedError = (appended: Exclude<Appended, "ok">): CreateError =>
   appended === "unreachable" ? "unreachable" : appended === "stale" ? "exists" : "refused";
