@@ -4,15 +4,18 @@ import { render } from "@solidjs/web";
 import { browserAlarms } from "../account/auto-lock.ts";
 import { createPopupAccount } from "../account/popup-account.ts";
 import { serverApiFor } from "../account/server-api.ts";
+import { warningOf } from "../alert/messages.ts";
 import { tracksVisibility } from "../menu/visibility.ts";
-import type { PromptRequest, SaveAnswer } from "../save/messages.ts";
+import type { Capture, PromptRequest, SaveAnswer } from "../save/messages.ts";
 import { browserSessionArea, KEYS_ITEM } from "../session-keys.ts";
+import { PhishingWarning } from "./phishing-warning.tsx";
 import { SavePrompt } from "./save-prompt.tsx";
 
 // The save prompt's page (K-404), framed hidden by the content script of the top frame with its
 // nonce in the fragment. It takes the submitted login from the service worker once and keeps it
 // only in this page's memory: an unlock or a lock in the popup opens the account anew here without
-// reloading, so the login is not lost. Language and light or dark follow the browser.
+// reloading, so the login is not lost. A phishing warning (K-405) comes the same way and takes
+// the page instead of the login. Language and light or dark follow the browser.
 type Runtime = { sendMessage(message: PromptRequest): Promise<SaveAnswer | undefined> };
 const runtime = (globalThis as { chrome?: { runtime?: Runtime } }).chrome?.runtime;
 const root = document.getElementById("root");
@@ -22,8 +25,9 @@ const start = async (element: HTMLElement, worker: Runtime) => {
   const nonce = location.hash.slice(1);
   const request = (message: PromptRequest) => worker.sendMessage(message).catch(() => undefined);
   const taken = await request({ type: "prompt-take", nonce });
-  if (!taken?.ok || !taken.capture) return void request({ type: "prompt-close", nonce });
-  const capture = taken.capture;
+  const warning = taken?.ok ? warningOf(taken.warning) : undefined;
+  const capture = taken?.ok ? taken.capture : undefined;
+  if (!warning && !capture) return void request({ type: "prompt-close", nonce });
   const area = browserSessionArea();
   const bridge = { nonce, request, now: () => performance.now(), verifiable: tracksVisibility() };
   const show = () => {
@@ -35,7 +39,12 @@ const start = async (element: HTMLElement, worker: Runtime) => {
       movesLock: false,
     });
     return render(
-      () => <SavePrompt account={account} capture={capture} bridge={bridge} />,
+      () =>
+        warning ? (
+          <PhishingWarning account={account} warning={warning} bridge={bridge} />
+        ) : (
+          <SavePrompt account={account} capture={capture as Capture} bridge={bridge} />
+        ),
       element,
     );
   };

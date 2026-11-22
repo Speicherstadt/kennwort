@@ -12,14 +12,15 @@
  * write goes through the web app's entry store: encrypted, signed and bound to entry, vault and
  * version (P-09).
  */
-import { Button, Icon, IconButton, m } from "@kennwort/ui";
-import { Lock, X } from "@kennwort/ui/icons";
+import { Button, m } from "@kennwort/ui";
 import { createEffect, createSignal, Match, onSettled, Show, Switch } from "solid-js";
 import type { PopupAccount } from "../account/popup-account.ts";
-import { ARM_AFTER_MS, createVisibilityGuard, watchVisibility } from "../menu/visibility.ts";
+import { createVisibilityGuard } from "../menu/visibility.ts";
 import type { Capture } from "../save/messages.ts";
 import { frameRequest, type PromptBridge } from "./bridge.ts";
+import { watchPromptFrame } from "./frame-watch.ts";
 import { LoginLine, Offer } from "./offer.tsx";
+import { PromptHeader } from "./prompt-header.tsx";
 
 export type { PromptBridge } from "./bridge.ts";
 
@@ -43,35 +44,7 @@ export const SavePrompt = (props: {
 
   onSettled(() => {
     void props.account.restore();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let visible = false;
-    const stop = root
-      ? watchVisibility(
-          root,
-          guard,
-          (now) => {
-            if (now === visible) return;
-            visible = now;
-            clearTimeout(timer);
-            setArmed(false);
-            if (now)
-              timer = setTimeout(() => setArmed(guard.armed(props.bridge.now())), ARM_AFTER_MS);
-          },
-          props.bridge.Observer,
-        )
-      : () => {};
-    const size = () => {
-      const height = Math.ceil(root?.getBoundingClientRect().height ?? 0);
-      if (height > 0)
-        void props.bridge.request({ type: "prompt-size", nonce: props.bridge.nonce, height });
-    };
-    const resizes = globalThis.ResizeObserver ? new ResizeObserver(size) : undefined;
-    if (root) resizes?.observe(root);
-    return () => {
-      stop();
-      clearTimeout(timer);
-      resizes?.disconnect();
-    };
+    return watchPromptFrame(root, props.bridge, guard, setArmed);
   });
 
   return (
@@ -83,21 +56,10 @@ export const SavePrompt = (props: {
       data-armed={armed() ? "true" : "false"}
       class="flex flex-col overflow-hidden rounded-xl border border-border bg-background text-foreground"
     >
-      <header class="flex items-center gap-2 border-b border-border py-1 pr-1 pl-3">
-        <span class="grid size-6 place-items-center rounded-md bg-primary text-primary-foreground">
-          <Icon icon={Lock} size={12} />
-        </span>
-        <span class="text-[13px] font-semibold">{m.app_name()}</span>
-        <span class="min-w-0 flex-1 truncate text-right font-mono text-xs text-muted-foreground">
-          {props.capture.host}
-        </span>
-        <IconButton
-          label={m.save_prompt_dismiss()}
-          onClick={() => frameRequest(props.bridge, "prompt-close")}
-        >
-          <Icon icon={X} size={14} />
-        </IconButton>
-      </header>
+      <PromptHeader
+        host={props.capture.host}
+        onClose={() => frameRequest(props.bridge, "prompt-close")}
+      />
       <div class="grid gap-2 px-3 py-2">
         <Show when={!props.bridge.verifiable}>
           <p class="text-xs text-warning">{m.save_prompt_unverified()}</p>

@@ -9,7 +9,10 @@
  *
  * Like the inline menu's (fill/messages.ts), every prompt message names the prompt's nonce, which
  * only the content script and its own prompt frame know. The page itself can send none of them.
+ * The phishing warning (K-405) uses the same prompt: `prompt-take` hands it a warning instead of a
+ * login, and it asks to be kept on top of the page (`prompt-pin`).
  */
+import type { Warning } from "../alert/messages.ts";
 
 /** The save prompt's page inside the extension (vite.config.ts builds it, manifest.ts frames it) */
 export const PROMPT_PAGE = "src/prompt/prompt.html";
@@ -32,7 +35,8 @@ export type PromptRequest =
   | { type: "prompt-size"; nonce: string; height: number }
   | { type: "prompt-check"; nonce: string }
   | { type: "prompt-close"; nonce: string }
-  | { type: "prompt-unlock"; nonce: string };
+  | { type: "prompt-unlock"; nonce: string }
+  | { type: "prompt-pin"; nonce: string };
 
 /** From the service worker to the content script of the top frame */
 export type PromptContentMessage =
@@ -40,7 +44,8 @@ export type PromptContentMessage =
   | { type: "kennwort-prompt-show"; nonce: string }
   | { type: "kennwort-prompt-size"; nonce: string; height: number }
   | { type: "kennwort-prompt-check"; nonce: string }
-  | { type: "kennwort-prompt-close"; nonce: string };
+  | { type: "kennwort-prompt-close"; nonce: string }
+  | { type: "kennwort-prompt-pin"; nonce: string };
 
 /** The login the prompt gets: what was submitted, and the page it was submitted on */
 export type Capture = Submitted & {
@@ -61,7 +66,9 @@ export type SaveRefusal =
   | "prompt-hidden"
   | "not-delivered";
 
-export type SaveAnswer = { ok: true; capture?: Capture } | { ok: false; error: SaveRefusal };
+export type SaveAnswer =
+  | { ok: true; capture?: Capture; warning?: Warning }
+  | { ok: false; error: SaveRefusal };
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -98,6 +105,7 @@ export const promptRequest = (value: unknown): PromptRequest | undefined => {
     case "prompt-check":
     case "prompt-close":
     case "prompt-unlock":
+    case "prompt-pin":
       return { type: value.type, nonce };
     case "prompt-size":
       return typeof value.height === "number" && Number.isFinite(value.height)
@@ -117,6 +125,7 @@ export const promptContentMessage = (value: unknown): PromptContentMessage | und
     case "kennwort-prompt-show":
     case "kennwort-prompt-check":
     case "kennwort-prompt-close":
+    case "kennwort-prompt-pin":
       return { type: value.type, nonce };
     case "kennwort-prompt-size":
       return typeof value.height === "number" && Number.isFinite(value.height)

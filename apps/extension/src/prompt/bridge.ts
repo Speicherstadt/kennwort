@@ -33,5 +33,7 @@ export const confirmed = async (bridge: PromptBridge, guard: VisibilityGuard, ev
 };
 
 /** Asks the worker to pass a request for the prompt's frame on to the content script */
-export const frameRequest = (bridge: PromptBridge, type: "prompt-show" | "prompt-close") =>
-  void bridge.request({ type, nonce: bridge.nonce });
+export const frameRequest = (
+  bridge: PromptBridge,
+  type: "prompt-show" | "prompt-close" | "prompt-pin",
+) => void bridge.request({ type, nonce: bridge.nonce });

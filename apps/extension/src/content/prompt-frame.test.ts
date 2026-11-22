@@ -1,6 +1,6 @@
 // @vitest-environment-options {"settings":{"enableIframePageLoading":true}}
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createPromptFrame, PROMPT_WIDTH, promptPlacement } from "./prompt-frame.ts";
+import { createPromptFrame, PIN_EVERY_MS, PROMPT_WIDTH, promptPlacement } from "./prompt-frame.ts";
 
 // K-404: the save prompt is an extension iframe in a closed shadow root like the menu, created
 // hidden and shown only when the prompt asks
@@ -10,6 +10,7 @@ const PROMPT_URL = "about:blank";
 afterEach(() => {
   vi.restoreAllMocks();
   Reflect.deleteProperty(HTMLElement.prototype, "showPopover");
+  Reflect.deleteProperty(HTMLElement.prototype, "hidePopover");
   for (const element of document.querySelectorAll("kennwort-save")) element.remove();
 });
 
@@ -69,5 +70,46 @@ describe("createPromptFrame", () => {
     frame.show();
     frame.resize(100);
     expect(promptElement()).toBeNull();
+  });
+
+  // K-405: the phishing warning keeps itself on top of what the page lays over it
+  it("keeps a pinned prompt on top: raised again and restyled whenever it is not clear", () => {
+    const calls: string[] = [];
+    for (const name of ["showPopover", "hidePopover"])
+      Object.defineProperty(HTMLElement.prototype, name, {
+        value: () => calls.push(name),
+        configurable: true,
+      });
+    let tick: (() => void) | undefined;
+    let clear = true;
+    const stop = vi.fn();
+    const frame = createPromptFrame(document, PROMPT_URL, "Kennwort: Warnung", {
+      repeat: (run, ms) => {
+        expect(ms).toBe(PIN_EVERY_MS);
+        tick = run;
+        return 7;
+      },
+      stop,
+      clear: () => clear,
+    });
+    frame.open(NONCE);
+    frame.pin();
+    // Pinned only once shown
+    expect(tick).toBeUndefined();
+    frame.show();
+    frame.pin();
+    frame.pin();
+    calls.length = 0;
+    tick?.();
+    expect(calls).toEqual([]);
+    const host = promptElement() as HTMLElement;
+    host.style.setProperty("opacity", "0.01", "important");
+    clear = false;
+    tick?.();
+    expect(calls).toEqual(["hidePopover", "showPopover"]);
+    expect(host.style.getPropertyValue("opacity")).toBe("1");
+    expect(host.style.getPropertyValue("top")).toBe("16px");
+    frame.close();
+    expect(stop).toHaveBeenCalledExactlyOnceWith(7);
   });
 });

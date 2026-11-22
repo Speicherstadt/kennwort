@@ -29,6 +29,7 @@ export {
   Settings,
   Share2,
   ShieldCheck,
+  ShieldExclamationPoint,
   SquareTerminal,
   Star,
   StickyNote,

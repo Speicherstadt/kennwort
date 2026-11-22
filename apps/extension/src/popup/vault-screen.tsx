@@ -8,6 +8,7 @@ import { GeneratorPanel } from "@kennwort/ui/generator/generator-panel.tsx";
 import { createMemo, createSignal, Match, onSettled, Show, Switch } from "solid-js";
 import { createEntryLoad } from "../account/load-entries.ts";
 import type { PopupAccount } from "../account/popup-account.ts";
+import { refreshAlertList } from "../alert/alert-refresh.ts";
 import { EntrySection } from "./entry-list.tsx";
 import { forPage, listed } from "./view.ts";
 
@@ -31,7 +32,10 @@ export const VaultScreen = (props: {
   host: () => string | undefined;
   toasts: Toasts;
 }) => {
-  const { load, entries, start } = createEntryLoad(props.account, { policy: true });
+  const { load, entries, start } = createEntryLoad(props.account, {
+    policy: true,
+    onEntries: refreshAlertList,
+  });
   const [search, setSearch] = createSignal("");
   const [favoritesOnly, setFavoritesOnly] = createSignal(false);
   const [generator, setGenerator] = createSignal(false);

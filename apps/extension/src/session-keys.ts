@@ -33,6 +33,11 @@ export const DEVICE_ITEM = "kennwort-device";
  * a lock so a server that plays back an older one cannot throw the device back (review of K-402)
  */
 export const STATE_ITEM = "kennwort-state";
+/**
+ * The alert list of the phishing warning (K-405, alert/alert-list.ts): short tags of the saved
+ * passwords and their hosts, only while unlocked; cleared on lock together with the keys
+ */
+export const ALERT_ITEM = "kennwort-alert";
 
 /** The browser's session area, or undefined where there is none (a page, a test, an old browser) */
 export const browserSessionArea = (): SessionArea | undefined =>
@@ -101,3 +106,10 @@ export const createSessionKeys = (area: SessionArea | undefined, item = KEYS_ITE
 };
 
 export type SessionKeys = ReturnType<typeof createSessionKeys>;
+
+/** Locks the area: the unlocked keys and the alert list made from the open account go */
+export const clearUnlocked = async (area: SessionArea | undefined) => {
+  const cleared = await createSessionKeys(area).clear();
+  await createSessionKeys(area, ALERT_ITEM).clear();
+  return cleared;
+};

@@ -162,7 +162,7 @@ Nur standardisierte Verfahren aus `@noble/*`, nichts selbst gebaut:
 | Hybrid-KEM | X-Wing: X25519 + ML-KEM-768 | draft-connolly-cfrg-xwing-kem, FIPS 203 | `@noble/post-quantum` |
 | Signaturen | Ed25519 | RFC 8032 | `@noble/curves` |
 | Ableitung | HKDF-SHA-512 | RFC 5869 | `@noble/hashes` |
-| Passphrase | Argon2id | RFC 9106 | `@noble/hashes` |
+| Passphrase, Phishing-Warnung | Argon2id | RFC 9106 | `@noble/hashes` |
 | Hash | SHA-512, SHA-512/256; SHA-256 nur für Release-Manifeste (wie Subresource Integrity) | FIPS 180-4 | `@noble/hashes` |
 | Zufall | `crypto.getRandomValues` | Web Crypto | über `@noble/hashes/utils` |
 
@@ -334,6 +334,24 @@ Kontext jedes Pakets; ein Paket für ein anderes Paar öffnet sich nicht. Umgese
 `packages/crypto/src/emergency.ts`; die Testvektoren in `packages/crypto/vectors/emergency-v1.json`
 entstehen ohne den Code, den sie prüfen (HKDF und SHA-512/256 aus `node:crypto`, AEAD und Ed25519 aus
 libsodium, X-Wing gegen die Vektoren des Entwurfs geprüft).
+
+### F-10 Phishing-Warnung v1
+
+```text
+parameter = Argon2id, m = 1 MiB, t = 2, p = 1, 4 Byte Ausgabe                   (fest in v1)
+salt      = 16 zufällige Byte, neu bei jedem Entsperren
+tag       = Argon2id(UTF-8(passwort, wie getippt), salt)
+host-tag  = kdf(salt, "", "kennwort/alert-host/v1", host)[0..16)
+```
+
+Die kurzen Hashes, mit denen die Extension ein eingetipptes Passwort mit den gespeicherten
+vergleicht, ohne dass ein Passwort im Klartext zwischen Seite und Extension wandert
+([P-17](#p-17-ausfullen), K-405). Das Passwort geht so ein, wie es im Feld steht, ohne
+Normalisierung: Nur derselbe Wert soll passen. Der Host ist der exakte Host aus `tldts`; der
+Host-Tag ist ein mit dem Salt geschlüsselter Hash (HKDF), damit der Sitzungsbereich keinen Host im
+Klartext hält. Umgesetzt in `packages/crypto/src/password-alert.ts`; die Testvektoren in
+`packages/crypto/vectors/password-alert-v1.json` entstehen ohne den Code, den sie prüfen (Argon2id
+und HKDF aus `node:crypto`).
 
 ## Schlüsselhierarchie
 
@@ -1611,6 +1629,70 @@ Login zu speichern oder ein geändertes Passwort zu aktualisieren:
 - Restrisiko: Eine fehlgeschlagene Anmeldung, nach der die Seite eine neue Seite lädt, bietet das
   falsche Passwort an; beim Aktualisieren bleibt das richtige dann in der Historie.
 
+**Phishing-Warnung (K-405).** Tippt jemand ein gespeichertes Passwort auf einer Seite ein, deren Host
+zu keinem Eintrag mit diesem Passwort passt, warnt die Extension. Vorbild ist Googles Password Alert
+(`google/password-alert`: ein gesalzener SHA-1, von dem 37 Bit bleiben); anders als dort schickt
+das Content Script keine Tastendrücke an den Service Worker. 1Password und Bitwarden schützen laut
+ihren Sicherheits-Whitepapern über den Abgleich der Adresse beim Ausfüllen, wie K-403 hier; die
+Warnung deckt den Fall ab, in dem jemand das Passwort selbst eintippt oder einfügt.
+
+- Seiten der Extension, die die Einträge entschlüsselt haben (Popup, Inline-Menü, Leiste), legen
+  die Alarmliste an: je Eintrag mit Passwort und Website den F-10-Tag des Passworts und die
+  Host-Tags seiner Websites, unter einem Salt, der bei jedem Entsperren neu ist. Sie liegt nur in
+  `chrome.storage.session` (`kennwort-alert`) und nur, solange Schlüssel dort liegen: Wer sie
+  schreibt, prüft das davor und danach; das Sperren, der Alarm der Sperrzeit und der Service Worker
+  bei jeder Anfrage nehmen sie ohne Schlüssel weg. Weder Service Worker noch Content Script sehen
+  ein gespeichertes Passwort.
+- Das Content Script zählt nur einen Wert, den der Nutzer selbst eingegeben hat, in einem
+  Passwortfeld, das die Seite zeigt (dieselbe Regel wie beim Ausfüllen), nur im obersten Frame oder
+  einem Frame derselben Herkunft wie jeder Frame über ihm. `isTrusted` allein genügt dafür nicht:
+  `document.execCommand("insertText")` löst in Chromium ein vertrauenswürdiges `input` ohne jede
+  Handlung des Nutzers aus (Review von K-405). Tippen, Einfügen und Ziehen melden ihre Änderung
+  vorher mit einem vertrauenswürdigen `beforeinput`, `execCommand` nicht; ein `input` zählt daher nur
+  direkt nach einem `beforeinput` im selben Feld, dessen Auslieferung beendet ist (nicht aus dem
+  Handler der Seite heraus geschrieben) und das die Seite nicht abgebrochen hat. Geprüft wird der
+  Wert direkt nach dieser Eingabe und nur, solange das Feld ihn noch hält: Ändert die Seite ihn
+  danach, prüft es nichts. Erst wenn der Nutzer das Feld verlässt, Enter drückt oder das Formular
+  abschickt, bildet es mit dem Salt (beim Fokus geholt, damit auch ein Absenden, das wegnavigiert,
+  noch prüft) den Tag und schickt nur die vier Byte. Den Wert hält es bis dahin im Speicher, wie das
+  Feld selbst, und nach der Prüfung nicht mehr; danach prüft dasselbe Feld erst nach neuer Eingabe
+  wieder.
+- Der Service Worker prüft den Frame am Frame-Baum des Browsers (`webNavigation`, `frameId`,
+  `documentId`), nimmt den Host von dort (auch einen, der selbst eine öffentliche Endung ist, etwa
+  `s3.amazonaws.com`, oder nur ein Label: Für ihn ist kein Eintrag gespeichert, eine Phishing-Seite in
+  einem Bucket dort warnt also), vergleicht den Tag mit der Liste und den Host-Tag der Seite
+  mit den Host-Tags der passenden Einträge. Warnung nur, wenn der Tag passt und keiner dieser
+  Einträge für genau diesen Host gespeichert ist; einmal je Tab, Host und Passwort, solange
+  entsperrt. Die Warnung (Host, Adresse, IDs der Einträge, kein Geheimnis) hält er wie ein Login
+  zum Speichern im Arbeitsspeicher und bietet sie der Leiste des obersten Frames an; die Leiste lädt
+  die Einträge, prüft den exakten Host noch einmal und erscheint erst dann. Das Login, das auf
+  einer Seite mit Warnung abgeschickt wurde, bietet sie nicht zum Speichern an.
+- Die Leiste mit der Warnung hält sich oben: Liegt etwas der Seite im Top Layer über ihr, hat die
+  Seite das Popover geschlossen oder ihr Element umgestylt, holt das Content Script sie alle 250 ms
+  wieder nach oben und setzt ihren Stil zurück. „Trotzdem fortfahren“ und × zählen nur mit denselben
+  Prüfungen wie das Speichern gegen Clickjacking. Die Seite bleibt bedienbar.
+- **Was die Tags verraten**: Vier Byte trennen ein eingetipptes Passwort von einigen Hundert
+  gespeicherten gut genug (ein Fehlalarm etwa einmal in zehn Millionen Prüfungen, und auch dann nur
+  auf einer fremden Seite), lassen aber zu jedem Tag etwa 2^(Entropie − 32) Passwörter übrig: Ein
+  Tag allein bestätigt kein geratenes Passwort, ein erzeugtes Passwort mit 60 Bit und mehr bleibt
+  ganz offen. Ein schwaches Passwort aus einem Wörterbuch mit weniger als 2^32 Einträgen ließe sich
+  mit Liste und Salt eingrenzen; Argon2id kostet je Versuch 1 MiB und einige Millisekunden, und wer
+  den Sitzungsbereich lesen kann, hat dort ohnehin den Account Key. Der Seite verrät die Warnung nur,
+  dass das getippte Passwort für eine andere Website in Kennwort steht; das Passwort selbst hat sie
+  ja schon. Eine Seite kann nicht durchprobieren: Werte, die sie selbst einsetzt oder nach der
+  Eingabe des Nutzers ändert, prüft die Extension nicht, und je Eingabe des Nutzers gibt es höchstens
+  eine Prüfung. Eine Seite, die eine Taste des Nutzers abfängt und im eigenen `beforeinput`-Handler
+  den Wert umschreibt, bevor der Browser die Taste einfügt, kommt so auf höchstens einen geratenen
+  Wert je Tastendruck.
+- Restrisiko: Eine Seite, die es auf Kennwort anlegt, kann das Element der Warnung aus dem DOM
+  nehmen (lesen oder fälschen kann sie es nicht), oder sie immer wieder überdecken, sodass die
+  Warnung flackert; „trotzdem fortfahren“ zählt dann nicht. Ein Passwort, das jemand so schnell
+  eintippt und abschickt, dass die Alarmliste noch nicht angelegt ist (gleich nach dem Entsperren),
+  wird nicht geprüft. Frühere Passwörter und Einträge ohne Website deckt die Warnung nicht ab, ebenso
+  wenig Formulare in einem fremden Frame. Solange die Warnung oben gehalten wird, füllt das
+  Inline-Menü auf dieser Seite nicht aus (es meldet, es sei verdeckt). In Firefox lässt sich die
+  Warnung nicht wegklicken, weil die Sichtbarkeit nicht prüfbar ist; sie geht mit der Seite.
+
 Getestet mit Playwright und geladener Extension gegen Testseiten (`e2e/extension-fill.spec.ts`):
 Ausfüllen auf dem exakten Host per Klick und per Enter; eine Phishing-Domain (Bindestrich statt
 Punkt) bekommt keine Treffer, und selbst eine erzwungene Anfrage des Menüs lehnt der Service Worker
@@ -1624,8 +1706,15 @@ aktualisiert und das alte steht in der Historie; dasselbe Passwort, ein versteck
 `form.submit()` und `requestSubmit()` eines Skripts, auch nach einem Klick des Nutzers auf ein
 Cookie-Banner oder ein Label daneben, eine Seite auf der Liste „Nie für diese Seite“
 und eine verdeckte Leiste speichern nichts, und weder `chrome.storage.local` noch der
-Sitzungsbereich enthalten Passwort oder Host im Klartext. Die Regeln selbst prüfen Vitest-Tests
-neben dem Code (`apps/extension/src/fill`, `save`, `content`, `menu`, `prompt`, `page`).
+Sitzungsbereich enthalten Passwort oder Host im Klartext. Zur Phishing-Warnung
+(`e2e/extension-alert.spec.ts`): Das Passwort des Portals, eingetippt auf einer ähnlich aussehenden
+Domain, warnt; auf dem Portal selbst, mit einem anderen Passwort, in einem versteckten Feld, für
+einen Wert, den die Seite selbst einsetzt (auch über `execCommand`) oder nach dem Tippen austauscht,
+und gesperrt warnt nichts; eine Seite unter `s3.amazonaws.com` warnt; eine überdeckte oder
+durchsichtig gemachte Warnung kommt wieder nach oben, und „trotzdem fortfahren“ zählt verdeckt
+nicht; der Sitzungsbereich hält weder Passwort noch Host im Klartext und verliert die Alarmliste
+beim Sperren. Die Regeln selbst prüfen Vitest-Tests neben dem Code (`apps/extension/src/fill`,
+`save`, `alert`, `content`, `menu`, `prompt`, `page`) und die Testvektoren von F-10.
 
 **Wehrt ab:** E-14.
 

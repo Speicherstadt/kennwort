@@ -90,6 +90,14 @@ Hauptknopf „Speichern“ oder „Aktualisieren“ und daneben „Nie für dies
 Gesperrt: „Kennwort ist gesperrt“ und der Hauptknopf „Entsperren und speichern“. Danach kurz
 „Gespeichert.“, dann schließt sie sich; ein verweigertes Speichern nennt den Grund in Rot.
 
+**Phishing-Warnung** (Extension, beim Eintippen eines gespeicherten Passworts auf fremder Domain):
+dieselbe Leiste oben rechts, mit Rahmen in `--danger`, sperrt die Seite nicht. Kopf wie dort mit dem
+Host der Seite; darunter ein Schild-Icon und „Ist das wirklich <Host>?“ in `--danger`, ein Satz mit
+dem Titel des Eintrags, seinem Host und dem der Seite, der Hauptknopf „Passwort ändern“ (gefüllt in
+`--danger`, öffnet `/.well-known/change-password` der echten Website), der Link „Eintrag öffnen“ und
+als Ghost-Knopf „Das ist nicht <Host> – trotzdem fortfahren“. Ein verdeckter Klick nennt den Grund in
+Rot.
+
 ## Komponenten
 
 Eigene Komponenten in `packages/ui`, ohne Bibliothek, auf nativen Elementen:

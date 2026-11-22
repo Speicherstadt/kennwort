@@ -116,13 +116,12 @@ for (const { locale, colorScheme, text } of cases) {
       expect(await tab.evaluate(() => document.querySelectorAll("input").length)).toBe(0);
 
       // Keys only in chrome.storage.session, and no other store of the extension holds anything
+      // (kennwort-state: the account state, sealed under AK; kennwort-alert: the tags of the
+      // phishing warning, K-405, made once the entries are loaded)
+      await expect
+        .poll(async () => Object.keys((await storageAreas(context)).session).sort())
+        .toEqual(["kennwort-alert", "kennwort-device", "kennwort-keys", "kennwort-state"]);
       const areas = await storageAreas(context);
-      // (kennwort-state: the account state, sealed under AK)
-      expect(Object.keys(areas.session).sort()).toEqual([
-        "kennwort-device",
-        "kennwort-keys",
-        "kennwort-state",
-      ]);
       expect(areas.local).toEqual({});
       expect(areas.sync).toEqual({});
       expect(
@@ -164,7 +163,7 @@ for (const { locale, colorScheme, text } of cases) {
       await expect(forSubdomain).toContainText(text.noMatches, { timeout: 30_000 });
       await expect(forSubdomain.getByRole("listitem")).toHaveCount(0);
 
-      // Locking clears the keys from the session area and keeps the device
+      // Locking clears the keys and the alert list from the session area and keeps the device
       await again.getByRole("button", { name: text.lock, exact: true }).click();
       await expect(again.getByRole("heading", { level: 1 })).toHaveText(text.lockedTitle);
       expect(Object.keys((await storageAreas(context)).session).sort()).toEqual([
@@ -173,7 +172,7 @@ for (const { locale, colorScheme, text } of cases) {
       ]);
       await expectNoAxeViolations(again);
 
-      // The passphrase alone unlocks again; the lock alarm clears the keys when it rings
+      // The passphrase alone unlocks again; the lock alarm clears keys and alert list when it rings
       await again.getByLabel(text.passphrase, { exact: true }).fill(PASSPHRASE);
       await again.getByRole("button", { name: text.unlock, exact: true }).click();
       await expect(again.getByRole("searchbox", { name: text.search })).toBeVisible({

@@ -4,7 +4,7 @@
  * every use; when it rings, the service worker clears the unlocked keys from the session area
  * (background.ts). A popup that opens after the time ran out finds no alarm and locks as well.
  */
-import { createSessionKeys, type SessionArea } from "../session-keys.ts";
+import { clearUnlocked, type SessionArea } from "../session-keys.ts";
 
 export const LOCK_ALARM = "kennwort-lock";
 
@@ -39,8 +39,8 @@ export const lockStillAhead = async (alarms: AlarmsApi | undefined, now: number)
   return alarm !== undefined && alarm.scheduledTime > now;
 };
 
-/** The service worker's half: when the lock alarm rings, the unlocked keys go */
+/** The service worker's half: when the lock alarm rings, the unlocked keys and the alert list go */
 export const lockOnAlarm = async (area: SessionArea | undefined, alarm: { name: string }) => {
   if (alarm.name !== LOCK_ALARM) return;
-  await createSessionKeys(area).clear();
+  await clearUnlocked(area);
 };

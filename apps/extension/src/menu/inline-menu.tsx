@@ -16,6 +16,7 @@ import { Lock } from "@kennwort/ui/icons";
 import { createMemo, createSignal, For, Match, onSettled, Show, Switch } from "solid-js";
 import { createEntryLoad } from "../account/load-entries.ts";
 import type { PopupAccount } from "../account/popup-account.ts";
+import { refreshAlertList } from "../alert/alert-refresh.ts";
 import type { MenuAnswer, MenuRequest } from "../fill/messages.ts";
 import { urlValues } from "../page/matches.ts";
 import { forPage } from "../popup/view.ts";
@@ -64,7 +65,10 @@ const Entries = (props: {
   guard: VisibilityGuard;
   onNote: (note: string | undefined) => void;
 }) => {
-  const { load, entries, start } = createEntryLoad(props.account, { policy: false });
+  const { load, entries, start } = createEntryLoad(props.account, {
+    policy: false,
+    onEntries: refreshAlertList,
+  });
   const matches = createMemo(() => forPage(entries(), props.host));
   onSettled(() => void start());
 
