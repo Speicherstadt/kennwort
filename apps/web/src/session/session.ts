@@ -235,6 +235,34 @@ const deviceMemory = (deps: SessionDeps) => {
   return { device, setDevice, remember };
 };
 
+/**
+ * Unlocks with the passphrase and the Secret Key this device remembers, or the account ID and
+ * Secret Key typed on a new device; the device then remembers them
+ */
+const unlockWith =
+  (
+    deps: SessionDeps,
+    device: () => DeviceAccount | undefined,
+    remember: (accountId: Uint8Array, secretKey: Uint8Array) => void,
+    open: (value: Opened) => void,
+  ) =>
+  async (
+    passphrase: string,
+    secretKey?: Uint8Array,
+    accountIdText?: string,
+  ): Promise<Outcome<true>> => {
+    const known = device();
+    const key = secretKey ?? known?.secretKey;
+    const id = bytes(16).safeParse(accountIdText ?? known?.accountId);
+    if (!key || !id.success) return { ok: false, error: "wrong-passphrase" };
+    const result = await signInAndUnlock(deps, id.data, passphrase, key);
+    if (!result.ok) return result;
+    remember(id.data, key);
+    open(result.value.opened);
+    if (result.value.stored) void keepAccount(deps.copy, result.value.stored, result.value.opened);
+    return { ok: true, value: true };
+  };
+
 export const createSession = (deps: SessionDeps) => {
   const { opened, setOpened, lock, touch, open, setLockAfter } = createLock(deps);
   const { device, setDevice, remember } = deviceMemory(deps);
@@ -288,23 +316,7 @@ export const createSession = (deps: SessionDeps) => {
         deps.api.uploadKeys(t, account.upload, undefined, mac),
       );
     },
-    unlock: async (
-      passphrase: string,
-      secretKey?: Uint8Array,
-      accountIdText?: string,
-    ): Promise<Outcome<true>> => {
-      const known = device();
-      const key = secretKey ?? known?.secretKey;
-      const id = bytes(16).safeParse(accountIdText ?? known?.accountId);
-      if (!key || !id.success) return { ok: false, error: "wrong-passphrase" };
-      const result = await signInAndUnlock(deps, id.data, passphrase, key);
-      if (!result.ok) return result;
-      remember(id.data, key);
-      open(result.value.opened);
-      if (result.value.stored)
-        void keepAccount(deps.copy, result.value.stored, result.value.opened);
-      return { ok: true, value: true };
-    },
+    unlock: unlockWith(deps, device, remember, open),
     /** The passphrase is forgotten: the Recovery Key opens the account and is renewed (recover.ts) */
     recover: async (
       recoveryKey: Uint8Array,
