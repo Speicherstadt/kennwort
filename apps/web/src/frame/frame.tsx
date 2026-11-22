@@ -32,6 +32,8 @@ export const Frame = (props: {
   importPage?: (() => JSX.Element) | undefined;
   /** Konto → Notfallzugriff (K-307 part d); the app passes it with session, API and vaults */
   emergencyPage?: ((toasts: Toasts) => JSX.Element) | undefined;
+  /** Konto → Schlüssel erneuern (K-307 part e); the app passes it with session, API and vaults */
+  renewPage?: (() => JSX.Element) | undefined;
   /** The company's groups (K-305 part 5); the demo's stand in where the app gives none */
   groupsPage?: (() => JSX.Element) | undefined;
   /** The entries from the vaults (K-306) and what list and detail do with them */
@@ -118,6 +120,7 @@ export const Frame = (props: {
               onVaults={props.vaultsPage ? () => props.nav.go("/vaults") : undefined}
               onImport={props.importPage ? () => props.nav.go("/import") : undefined}
               onEmergency={props.emergencyPage ? () => props.nav.go("/emergency") : undefined}
+              onRenew={props.renewPage ? () => props.nav.go("/renew") : undefined}
               devices={props.devices}
             />
           </main>
@@ -133,6 +136,9 @@ export const Frame = (props: {
         </Match>
         <Match when={route().page === "emergency" && props.emergencyPage}>
           <main class="flex min-h-0 flex-1">{props.emergencyPage?.(toasts)}</main>
+        </Match>
+        <Match when={route().page === "renew" && props.renewPage}>
+          <main class="flex min-h-0 flex-1">{props.renewPage?.()}</main>
         </Match>
         <Match when={route().page === "not-found"}>
           <main class="flex min-h-0 flex-1">

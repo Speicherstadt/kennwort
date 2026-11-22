@@ -1,7 +1,7 @@
 /** The other sections: generator, groups, settings, and a page that does not exist */
 import { Button, getLocale, Icon, type Locale, locales, m, type Toasts } from "@kennwort/ui";
 import { GeneratorPanel } from "@kennwort/ui/generator/generator-panel.tsx";
-import { Archive, Import, LifeBuoy, Lock, Users } from "@kennwort/ui/icons";
+import { Archive, Import, LifeBuoy, Lock, RefreshCw, Users } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { createSignal, For, Show } from "solid-js";
 import { groups } from "../demo.ts";
@@ -78,6 +78,7 @@ export const SettingsPage = (props: {
   onVaults?: (() => void) | undefined;
   onImport?: (() => void) | undefined;
   onEmergency?: (() => void) | undefined;
+  onRenew?: (() => void) | undefined;
   devices?: (() => JSX.Element) | undefined;
 }) => {
   const [theme, setTheme] = createSignal<Theme>(readTheme(globalThis.localStorage));
@@ -132,6 +133,13 @@ export const SettingsPage = (props: {
           {(open) => (
             <Button class="w-fit" onClick={() => open()()}>
               <Icon icon={LifeBuoy} /> {m.settings_emergency()}
+            </Button>
+          )}
+        </Show>
+        <Show when={props.onRenew}>
+          {(open) => (
+            <Button class="w-fit" onClick={() => open()()}>
+              <Icon icon={RefreshCw} /> {m.settings_renew()}
             </Button>
           )}
         </Show>

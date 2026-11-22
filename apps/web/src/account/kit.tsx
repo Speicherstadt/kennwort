@@ -39,10 +39,11 @@ const savePdf = (keys: NewKeys) =>
     "application/pdf",
   );
 
-export const Kit = (props: { keys: NewKeys; onDone: () => void }) => {
+/** The kit's keys, the PDF and the confirmation, on whatever the page puts them */
+export const KitContent = (props: { keys: NewKeys; onDone: () => void }) => {
   const [saved, setSaved] = createSignal(false);
   return (
-    <Card title={m.kit_title()}>
+    <>
       <p class="text-[13px] text-muted-foreground">{m.kit_text()}</p>
       <dl class="grid gap-3">
         <div class="grid gap-1">
@@ -87,6 +88,12 @@ export const Kit = (props: { keys: NewKeys; onDone: () => void }) => {
       <Button variant="primary" disabled={!saved()} onClick={() => props.onDone()}>
         {m.kit_continue()}
       </Button>
-    </Card>
+    </>
   );
 };
+
+export const Kit = (props: { keys: NewKeys; onDone: () => void }) => (
+  <Card title={m.kit_title()}>
+    <KitContent keys={props.keys} onDone={props.onDone} />
+  </Card>
+);

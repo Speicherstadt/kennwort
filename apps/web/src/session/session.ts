@@ -3,6 +3,7 @@
  * dropped on lock and after a while without use. Locking overwrites the account key's bytes, so
  * nothing usable lingers once the references are gone.
  */
+import type { Renewed } from "@kennwort/client/account/renewal.ts";
 import type { AccountApi } from "@kennwort/client/session/api.ts";
 import { type Opened, stateUpdater } from "@kennwort/client/session/open-account.ts";
 import {
@@ -286,6 +287,17 @@ export const createSession = (deps: SessionDeps) => {
       // The server's state, like at every unlock, with what this device kept merged in (E-07)
       openAndKeep({ ...served, ...(await withKeptState(deps.copy, keys.accountId, served)) });
       return { ok: true, value: keys };
+    },
+    /**
+     * The account renewed its keys (P-12): open under them with the same session, remember the new
+     * Secret Key on this device and replace the offline copy, whose boxes the old keys open
+     */
+    renewed: async (value: Renewed) => {
+      const { opened: next, stored, secretKey } = value;
+      await deps.copy?.forget();
+      remember(next.accountId, secretKey);
+      open(next);
+      await keepAccount(deps.copy, stored, next);
     },
     /** A device joined by pairing (P-04): remember it and open the account it was given */
     adopt: (value: Opened, secretKey: Uint8Array) => {

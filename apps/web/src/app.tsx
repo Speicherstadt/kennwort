@@ -6,13 +6,13 @@
 
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { httpServerFor } from "@kennwort/client/entries/entry-store.ts";
-import type { AccountApi } from "@kennwort/client/session/api.ts";
+import type { AccountApi, Api } from "@kennwort/client/session/api.ts";
 import type { DevicesApi } from "@kennwort/client/session/devices-api.ts";
 import type { EmergencyApi } from "@kennwort/client/session/emergency-api.ts";
 import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
 import type { ShareApi } from "@kennwort/client/session/shares-api.ts";
 import type { VaultApi } from "@kennwort/client/session/vaults-api.ts";
-import type { Vault } from "@kennwort/client/vaults/vaults.ts";
+import type { Loaded, Vault } from "@kennwort/client/vaults/vaults.ts";
 import { encodeBytes, exitReport, type MemberView } from "@kennwort/core";
 import { getLocale, type Locale, m, setLocale, type Toasts } from "@kennwort/ui";
 import { QueryClientProvider } from "@tanstack/solid-query";
@@ -22,6 +22,7 @@ import { InvitePage } from "./account/invite-page.tsx";
 import { type PairDeps, PairPage } from "./account/pair-page.tsx";
 import { RecoverCompanyPage } from "./account/recover-company-page.tsx";
 import { RecoverPage } from "./account/recover-page.tsx";
+import { RenewPage } from "./account/renew-page.tsx";
 import { SetupPage } from "./account/setup-page.tsx";
 import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
 import { renewEmergency } from "./emergency/emergency.ts";
@@ -58,12 +59,21 @@ export type AppApi = PairDeps &
   GroupApi &
   ShareApi &
   EmergencyApi &
-  Pick<AccountApi, "replaceUnlock"> & { syncFetch: typeof fetch };
+  Pick<AccountApi, "replaceUnlock"> &
+  Pick<Api, "rekey"> & { syncFetch: typeof fetch };
 
 /** The company's people as the vaults' load checked them; none before it */
 const peopleOf = (store: VaultStore) => {
   const shown = store.shown();
   return shown.state === "ready" ? shown.people : [];
+};
+
+/** The vaults as last loaded, for the renewal of keys to wrap anew (P-12); none before a load */
+const loadedOf = (store: VaultStore): Loaded | undefined => {
+  const shown = store.shown();
+  if (shown.state !== "ready") return undefined;
+  const { state: _, ...loaded } = shown;
+  return loaded;
 };
 
 /** What the frame shows of the vaults: their names, and whether a new entry has a vault to go to */
@@ -229,6 +239,15 @@ const OpenedFrame = (props: {
         )}
         importPage={importPage(props.nav, store, allEntries, () => online(entries.saveNew))}
         emergencyPage={emergencyPage(props, shownVaults)}
+        renewPage={() => (
+          <RenewPage
+            nav={props.nav}
+            session={props.session}
+            api={props.api}
+            loaded={() => loadedOf(store)}
+            onRenewed={reload}
+          />
+        )}
         devices={() => (
           <Show when={props.session.opened()?.token}>
             {(token) => (
