@@ -40,6 +40,9 @@ const HOW_TO: Record<string, () => string> = {
   "chrome-csv": () => m.import_howto_chrome_csv(),
   "firefox-csv": () => m.import_howto_firefox_csv(),
   "safari-csv": () => m.import_howto_safari_csv(),
+  "google-authenticator": () => m.import_howto_google_authenticator(),
+  "aegis-json": () => m.import_howto_aegis_json(),
+  "2fas-json": () => m.import_howto_twofas(),
 };
 
 /** Products the app names with more than core does */
@@ -54,12 +57,25 @@ const ACCEPT: Record<string, string> = {
   CSV: ".csv,text/csv",
   ZIP: ".zip,application/zip",
   "1PUX": ".1pux",
+  "2FAS": ".2fas,.json,application/json",
 };
+
+/** Files the app names with more than core does; a QR code is no file at all */
+const FILE_NAMED: Record<string, () => string> = {
+  QR: () => m.import_file_qr(),
+  "2FAS": () => ".2fas",
+};
+
+/** Google Authenticator exports QR codes: the import scans them or takes the pasted links */
+export const isQr = (choice: VendorChoice) => choice.format?.file === "QR";
 
 const choiceOf = (format: ImportFormat): VendorChoice => ({
   id: format.id,
   label: () =>
-    m.import_vendor({ vendor: NAMED[format.id]?.() ?? format.vendor, file: format.file }),
+    m.import_vendor({
+      vendor: NAMED[format.id]?.() ?? format.vendor,
+      file: FILE_NAMED[format.file]?.() ?? format.file,
+    }),
   howTo: HOW_TO[format.id] ?? (() => m.import_howto_other()),
   accept: ACCEPT[format.file] ?? "",
   format,

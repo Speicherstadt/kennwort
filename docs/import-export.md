@@ -1,9 +1,9 @@
 ---
 title: Import und Export
 description: >-
-  Wie du deine Zugänge aus einem anderen Passwortmanager, Browser oder einer Tabelle importierst –
-  Anbieter, Vorschau, Duplikate, schwache Passwörter –, welche Exportdateien Kennwort liest, was
-  daraus wird und wie die Datei auf dem Gerät bleibt.
+  Wie du deine Zugänge aus einem anderen Passwortmanager, Browser, einer Tabelle oder einer
+  Authenticator-App importierst – Anbieter, Vorschau, Duplikate, schwache Passwörter –, welche
+  Exportdateien Kennwort liest, was daraus wird und wie die Datei auf dem Gerät bleibt.
 ---
 
 # Import und Export
@@ -19,12 +19,13 @@ wie immer nur die fertig verschlüsselten Einträge.
 
 Unter **Einstellungen → Importieren**:
 
-1. **Anbieter wählen**: jeder Manager und Browser aus der Tabelle unten oder „Andere Tabelle (CSV)“.
-   Kennwort zeigt gleich, wo dort der Export ist.
+1. **Anbieter wählen**: jeder Manager, Browser und jede Authenticator-App aus der Tabelle unten oder
+   „Andere Tabelle (CSV)“. Kennwort zeigt gleich, wo dort der Export ist.
 2. **Datei wählen**: Kennwort liest sie auf dem Gerät; ein ZIP des Anbieters (1Passwords 1PUX,
    Dashlane, Proton Pass) wählst du, wie es ist, ohne es zu entpacken. Passt die Datei nicht, sagt
    Kennwort, warum – etwa „Diese Datei ist verschlüsselt – exportiere unverschlüsselt“ oder dass
-   sie zu einem anderen Anbieter gehört.
+   sie zu einem anderen Anbieter gehört. Bei Google Authenticator gibt es keine Datei, sondern
+   QR-Codes; wie das geht, steht unter [Authenticator-Apps](#authenticator-apps).
 3. **Spalten zuordnen** (nur bei „Andere Tabelle“): Für Titel, Benutzername, Passwort, Adresse,
    Einmalcode, Notizen, Ordner und Tags wählst du die Spalte; Kennwort schlägt nach den Namen der
    Spalten schon eine Zuordnung vor. Die Tabelle braucht eine Kopfzeile und Kommas zwischen den
@@ -74,6 +75,9 @@ Kennwort mit Nullen.
 | Firefox | CSV | Logins; der Titel ist die Adresse |
 | Safari / Apple Passwörter | CSV | Logins mit Notiz und Einmalcode |
 | Beliebige Tabelle | CSV | du ordnest die Spalten zu: Titel, Benutzername, Passwort, Adresse, Einmalcode, Notizen, Ordner, Tags |
+| Google Authenticator | Export-QR-Codes („Konten übertragen“), gescannt oder als Link eingefügt | Einmalcodes (TOTP) mit Aussteller, Konto, Algorithmus und Ziffern |
+| Aegis | JSON, unverschlüsselt | Einmalcodes (TOTP) mit allen Einstellungen, Notiz, Favorit, Gruppen als Ordner |
+| 2FAS | Backup-Datei (.2fas), ohne Passwort | Einmalcodes (TOTP) mit allen Einstellungen, Gruppen als Ordner |
 
 Noch nicht dabei und als eigene Teile geplant:
 
@@ -82,6 +86,40 @@ Noch nicht dabei und als eigene Teile geplant:
 - **Verschlüsselte Exporte**: Bitwardens verschlüsseltes und passwortgeschütztes JSON, Proton
   Pass' PGP-Export. Kennwort erkennt sie und sagt, dass sie verschlüsselt sind.
 - **Team Password Manager** und **FIDO Credential Exchange (CXF)**, sobald das Format stabil ist.
+- **Einmalcodes dem passenden Login zuordnen**: Bis dahin wird jeder Code aus einer
+  Authenticator-App ein eigener Login (siehe unten).
+- **Microsoft Authenticator** hat keinen Export: Seine Sicherung geht nur in Microsofts Cloud und
+  lässt sich nur in Microsoft Authenticator wiederherstellen. Richte die Einmalcodes bei den
+  Diensten neu ein – in den Sicherheitseinstellungen des Kontos, mit dem QR-Code, den der Dienst
+  dann zeigt (siehe [Einträge](eintraege.md)). Bietet Microsoft einen Export an, liest Kennwort ihn.
+
+## Authenticator-Apps
+
+Aus Google Authenticator, Aegis und 2FAS nimmst du deine Einmalcodes mit. Jedes Konto wird ein
+Login: Titel ist der Dienst (der Aussteller), Benutzername das Konto, und der Einmalcode steht als
+otpauth-Link im Feld „Einmalcode“ – mit Schlüssel, Algorithmus (SHA-1, SHA-256 oder SHA-512),
+sechs bis acht Ziffern und Dauer. Notizen und Favoriten aus Aegis kommen mit, Gruppen werden
+Ordner und auf Wunsch Tags.
+
+- **Google Authenticator**: In der App „Konten übertragen“ → „Konten exportieren“ wählen. Die App
+  zeigt einen QR-Code, bei vielen Konten mehrere nacheinander. Unter **Importieren** scannst du
+  jeden davon mit der Kamera oder wählst einen Screenshot; Kennwort zählt mit („1 von 2 QR-Codes
+  gelesen“). Statt zu scannen kannst du die Links (`otpauth-migration://offline?data=…`) auch
+  einfügen, einen pro Zeile. Fehlt ein QR-Code eines Exports, sagt Kennwort es und importiert
+  nichts; derselbe QR-Code zweimal zählt einmal, und zwei Exporte auf einmal gehen auch.
+- **Aegis**: „Einstellungen“ → „Importieren & Exportieren“ → „Exportieren“, Format „Aegis (.JSON)“,
+  „Tresor verschlüsseln“ aus.
+- **2FAS**: „Einstellungen“ → „2FAS-Backup“ → „In Datei exportieren“, ohne Passwort.
+
+Ein verschlüsselter Export von Aegis oder ein 2FAS-Backup mit Passwort endet mit „Diese Datei ist
+verschlüsselt“. Kennwort berechnet zeitbasierte Einmalcodes (TOTP). Codes anderer Art – HOTP mit
+Zähler, Steam, mOTP, Yandex – und Codes mit Einstellungen außerhalb dieser Grenzen übernimmt es
+nicht; die Vorschau sagt, wie viele das sind, damit du sie beim Dienst neu einrichten kannst.
+
+Den Inhalt von Googles QR-Codes liest Kennwort selbst, ohne weitere Bibliothek: Er ist ein
+Protocol-Buffers-Datensatz (`MigrationPayload`, wie ihn Aegis dokumentiert), den ein kleiner Leser
+in einem Durchgang ohne Rekursion entschlüsselt und der jede Länge prüft. Wie die Exportdatei
+bleiben auch die QR-Codes und Links auf dem Gerät; lösche danach die Screenshots.
 
 ## Was aus einem Eintrag wird
 
@@ -103,7 +141,7 @@ Noch nicht dabei und als eigene Teile geplant:
 
 Eine Datei, die nicht passt, bricht den Import mit einer klaren Meldung ab: kein Text (kein
 UTF-8), ein Anführungszeichen ohne Ende, kein gültiges JSON oder XML, andere Spalten als beim
-gewählten Anbieter, ein verschlüsselter Export, oder ein ZIP, das beschädigt ist, in einer Form
+gewählten Anbieter, ein verschlüsselter Export, fehlende QR-Codes eines Exports, oder ein ZIP, das beschädigt ist, in einer Form
 gepackt, die Kennwort nicht liest, oder größer als jeder Export. Absturz oder Hänger gibt es nicht: Die Leser
 arbeiten in einem Durchgang ohne Rekursion, lehnen XML mit Dokumenttyp ab, damit keine Entität
 wachsen kann, und werden mit zufälligen und zufällig beschädigten Dateien getestet.

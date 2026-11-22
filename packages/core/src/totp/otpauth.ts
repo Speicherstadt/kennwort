@@ -40,6 +40,23 @@ export const base32Decode = (text: string): Result<Uint8Array, "bad-secret"> => 
   return ok(new Uint8Array(bytes));
 };
 
+/** RFC 4648 Base32 without padding, as otpauth links carry a key */
+export const base32Encode = (bytes: Uint8Array): string => {
+  let text = "";
+  let buffer = 0;
+  let bits = 0;
+  for (const byte of bytes) {
+    buffer = ((buffer << 8) | byte) & 0xfff;
+    bits += 8;
+    while (bits >= 5) {
+      bits -= 5;
+      text += ALPHABET[(buffer >> bits) & 31];
+    }
+  }
+  // The last letter takes the bits left over, padded with zeros on the right
+  return bits > 0 ? text + ALPHABET[(buffer << (5 - bits)) & 31] : text;
+};
+
 const DEFAULTS = {
   issuer: "",
   account: "",
@@ -108,6 +125,26 @@ export const parseTotp = (value: string): Result<TotpKey, TotpError> => {
   return secret.ok && secret.value.length > 0
     ? ok({ ...DEFAULTS, secret: secret.value })
     : err("bad-secret");
+};
+
+/** Text that encodeURIComponent takes: a lone half of a surrogate pair becomes U+FFFD */
+const wellFormed = (text: string) => text.toWellFormed();
+
+/**
+ * The otpauth link of a key, for keys that come without one (authenticator exports, K-503); what
+ * parseTotp reads back. The issuer parameter carries the issuer as it is; the label has it
+ * without colons, as the label splits at the first one, so an account may hold colons. The
+ * algorithm is written as given: whether the settings fit is for parseTotp to say.
+ */
+export const totpLink = (key: Omit<TotpKey, "algorithm"> & { algorithm: string }): string => {
+  const issuer = wellFormed(key.issuer);
+  const label = `${encodeURIComponent(issuer.replaceAll(":", ""))}:${encodeURIComponent(wellFormed(key.account))}`;
+  const params = new URLSearchParams({ secret: base32Encode(key.secret) });
+  if (issuer !== "") params.set("issuer", issuer);
+  params.set("algorithm", key.algorithm);
+  params.set("digits", String(key.digits));
+  params.set("period", String(key.period));
+  return `otpauth://totp/${label}?${params}`;
 };
 
 /** The code of a stored value at a time (milliseconds, as Date.now gives) */

@@ -336,6 +336,33 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
     FIDO Credential Exchange (CXF), sobald der Standard stabil ist. Fertig, wenn: je Format
     Fixtures mit der echten Struktur bestehen und das Fuzzing sie einschließt.
 - [ ] **K-503 Authenticator-Import** – otpauth-migration-QR, Aegis, 2FAS, Microsoft.
+  Fertig, wenn: je App ein Parser in `packages/core/src/import/` jedes TOTP-Konto als Login mit
+  otpauth-Link (Schlüssel, Aussteller, Konto, Algorithmus, Ziffern, Dauer) liefert, was Kennwort
+  nicht berechnet (HOTP, Steam, …), überspringt und zählt, verschlüsselte Exporte als `encrypted`
+  meldet, die Codes dem passenden Login zugeordnet werden können (Projektplan) und Fixtures,
+  Fuzzing und Mutation-Tests wie bei K-502 bestehen. In Teilen, je ein Pull Request; abgehakt wird
+  K-503, wenn alle stehen:
+  - [x] Teil 1: Google Authenticator, Aegis und 2FAS. Fertig, wenn: Fixtures (Weber Haustechnik)
+    für Googles Export aus zwei QR-Codes, Aegis-JSON und 2FAS-Backup, unverschlüsselt und
+    verschlüsselt, bestehen; Googles `MigrationPayload` ein eigener Protobuf-Leser ohne neues
+    Paket liest; QR-Codes eines Exports (`batch_id`, `batch_index`, `batch_size`) in jeder
+    Reihenfolge zusammenkommen, doppelte einmal zählen und fehlende als `incomplete` enden; die
+    Import-Seite die QR-Codes mit dem QR-Scanner von K-306 (Kamera oder Screenshot) liest oder
+    die eingefügten Links nimmt, „1 von 2 QR-Codes gelesen“ zeigt und in der Vorschau sagt, wie
+    viele Codes draußen bleiben; Anleitungen auf Deutsch und Englisch; Fuzzing mit fast-check je
+    Parser und für den Protobuf-Leser ohne Absturz und Hänger läuft; die Mutation-Tests der neuen
+    Dateien bei 100 % stehen; Playwright desktop und `@phone` einen Google-Export aus zwei
+    QR-Code-Screenshots und ein 2FAS-Backup importiert.
+  - [ ] Teil 2: Codes dem passenden Login zuordnen. Fertig, wenn: die Vorschau zu jedem Code aus
+    einer Authenticator-App den Login im Ziel-Tresor mit gleichem Dienst (Titel oder Host der
+    Adresse) und Benutzernamen vorschlägt, der Code auf Wunsch dort ins Feld „Einmalcode“ kommt,
+    statt einen eigenen Login anzulegen, ein vorhandener anderer Code nie still überschrieben
+    wird und Vitest und Playwright desktop und `@phone` das prüfen.
+  - [ ] Teil 3: Microsoft Authenticator. Hat keinen Export (Stand 11/2026): Die Sicherung geht nur
+    in Microsofts Cloud und nur zurück in Microsoft Authenticator; Aegis liest die App-Datenbank
+    (`PhoneFactor`) nur mit Root-Rechten auf Android. Fertig, wenn: Microsoft einen dokumentierten
+    Export anbietet und Kennwort ihn wie Teil 1 liest; bis dahin sagt die Doku, die Codes bei den
+    Diensten neu einzurichten. Steht unter „Zurückgestellt“.
 - [ ] **K-504 Export** – verschlüsseltes JSON, CSV, KDBX; nur Verwalter, im Audit-Log.
 
 ## Phase 6 – Team-Funktionen
@@ -376,6 +403,11 @@ Ganz am Schluss, damit Tauri 3 bis dahin möglichst stabil ist. iOS baut der Loo
 ## Zurückgestellt
 
 Punkte, die dreimal gescheitert sind, mit Grund; der Loop kommt am Ende auf sie zurück.
+
+- **K-503 Teil 3 Microsoft Authenticator** – nicht gescheitert, aber nicht zu bauen: Die App hat
+  keinen Export, nur eine Sicherung in Microsofts Cloud, die sich nur in Microsoft Authenticator
+  wiederherstellen lässt (Aegis' `MicrosoftAuthImporter` liest die Datenbank nur mit Root).
+  Wieder aufnehmen, sobald Microsoft einen Export dokumentiert.
 
 ## Schritte für Menschen
 

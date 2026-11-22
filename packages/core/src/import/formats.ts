@@ -2,6 +2,7 @@
  * Every export Kennwort reads (docs/plan.md, Import und Export), for the import flow (K-501) to
  * offer by vendor. The CSV of any table needs a mapping first and is `parseTableCsv` in table.ts.
  */
+import { parseAegisJson } from "./aegis-json.ts";
 import { parseBitwardenCsv } from "./bitwarden-csv.ts";
 import { parseBitwardenJson } from "./bitwarden-json.ts";
 import { parseChromeCsv } from "./chrome-csv.ts";
@@ -9,6 +10,7 @@ import { parseDashlaneCsv } from "./dashlane-csv.ts";
 import { parseDashlaneZip } from "./dashlane-zip.ts";
 import { parseEnpassJson } from "./enpass-json.ts";
 import { parseFirefoxCsv } from "./firefox-csv.ts";
+import { parseGoogleMigration } from "./google-migration.ts";
 import { parseKeePassCsv, parseKeePassXcCsv } from "./keepass-csv.ts";
 import { parseKeePassXml } from "./keepass-xml.ts";
 import { parseKeeperCsv } from "./keeper-csv.ts";
@@ -20,11 +22,14 @@ import { parsePassboltCsv } from "./passbolt-csv.ts";
 import { parseProtonPassJson } from "./protonpass-json.ts";
 import { parseProtonPassZip } from "./protonpass-zip.ts";
 import { parseSafariCsv } from "./safari-csv.ts";
+import { parseTwoFasJson } from "./twofas-json.ts";
 import type { FileParser } from "./types.ts";
 
 /**
  * `vendor` is the product name only; the import flow says the rest in its own texts (Paraglide).
- * The parsers of ZIP containers answer asynchronously, the others at once.
+ * The parsers of ZIP containers answer asynchronously, the others at once. Google Authenticator's
+ * export is no file but QR codes (`file: "QR"`): the import flow scans them or takes the pasted
+ * links, one per line, and hands those on as text.
  */
 export type ImportFormat = { id: string; vendor: string; file: string; parse: FileParser };
 
@@ -48,4 +53,13 @@ export const IMPORT_FORMATS: readonly ImportFormat[] = [
   { id: "chrome-csv", vendor: "Chrome / Edge", file: "CSV", parse: parseChromeCsv },
   { id: "firefox-csv", vendor: "Firefox", file: "CSV", parse: parseFirefoxCsv },
   { id: "safari-csv", vendor: "Safari", file: "CSV", parse: parseSafariCsv },
+  // i18n-ignore: product name
+  {
+    id: "google-authenticator",
+    vendor: "Google Authenticator",
+    file: "QR",
+    parse: parseGoogleMigration,
+  },
+  { id: "aegis-json", vendor: "Aegis", file: "JSON", parse: parseAegisJson },
+  { id: "2fas-json", vendor: "2FAS", file: "2FAS", parse: parseTwoFasJson },
 ];

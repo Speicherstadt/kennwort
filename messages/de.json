@@ -420,6 +420,9 @@
   "import_howto_chrome_csv": "In Chrome oder Edge „Einstellungen“ → „Passwörter“ (Google Passwortmanager) öffnen, dort „Einstellungen“ → „Passwörter exportieren“ wählen und bestätigen. Brave und Opera exportieren genauso.",
   "import_howto_firefox_csv": "In Firefox „about:logins“ öffnen, über das Menü „…“ „Zugangsdaten exportieren“ wählen und mit dem Passwort des Geräts bestätigen.",
   "import_howto_safari_csv": "Auf dem Mac die App „Passwörter“ öffnen (oder Safari → „Einstellungen“ → „Passwörter“) und „Ablage“ → „Alle Passwörter exportieren“ wählen.",
+  "import_howto_google_authenticator": "In Google Authenticator auf dem Handy „Konten übertragen“ → „Konten exportieren“ wählen und die Konten aussuchen. Die App zeigt einen oder mehrere QR-Codes; scanne jeden davon hier.",
+  "import_howto_aegis_json": "In Aegis „Einstellungen“ → „Importieren & Exportieren“ → „Exportieren“ wählen, das Format „Aegis (.JSON)“ nehmen und „Tresor verschlüsseln“ ausschalten.",
+  "import_howto_twofas": "In 2FAS „Einstellungen“ → „2FAS-Backup“ → „In Datei exportieren“ wählen und ohne Passwort exportieren; 2FAS speichert eine .2fas-Datei.",
   "import_howto_table": "Speichere die Tabelle als CSV mit Kommas zwischen den Spalten und einer Kopfzeile, die jede Spalte benennt. Danach ordnest du die Spalten zu.",
   "import_howto_other": "Exportiere deine Zugänge aus der App unverschlüsselt in eine Datei und wähle sie hier aus.",
   "import_file": "Exportdatei wählen",
@@ -427,6 +430,24 @@
   "import_back": "Zurück",
   "import_next": "Weiter",
   "import_reading": "Datei wird gelesen …",
+  "import_file_qr": "QR-Code",
+  "import_qr_intro": "Halte den Export-QR-Code von Google Authenticator vor die Kamera, oder wähle einen Screenshot davon.",
+  "import_qr_not_migration": "Dieser QR-Code ist kein Export von Google Authenticator.",
+  "import_qr_none": "Noch kein QR-Code gelesen.",
+  "import_qr_read": [
+    {
+      "declarations": ["input read", "input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "{read} von 1 QR-Code gelesen",
+        "n=*": "{read} von {count} QR-Codes gelesen"
+      }
+    }
+  ],
+  "import_qr_paste": "Oder Export-Links einfügen (otpauth-migration://…), einen pro Zeile",
+  "import_qr_hint": "Die QR-Codes bleiben auf diesem Gerät und werden nicht hochgeladen.",
+  "import_qr_empty": "Scanne zuerst einen QR-Code oder füge einen Export-Link ein.",
+  "import_qr_wrong": "Das ist kein Export-Link von Google Authenticator.",
   "import_error_not_text": "Diese Datei ist kein Text. Wähle die Exportdatei selbst, nicht eine Datenbank; für ein ZIP nimm den Anbieter mit „ZIP“ oder „1PUX“.",
   "import_error_bad_csv": "Die CSV-Datei ist beschädigt: Ein Anführungszeichen wird nie geschlossen.",
   "import_error_bad_json": "Das ist keine gültige JSON-Datei. Hast du das richtige Format gewählt?",
@@ -436,6 +457,7 @@
   "import_error_bad_zip": "Das ist keine lesbare ZIP-Datei, oder sie ist beschädigt. Lade den Export neu herunter und wähle ihn, ohne ihn zu entpacken.",
   "import_error_unsupported_zip": "Dieses ZIP ist in einer Form gepackt, die Kennwort nicht liest. Nimm den Export, wie der Anbieter ihn liefert, nicht neu gepackt.",
   "import_error_too_large": "Diese Datei ist größer, als ein Export je ist, oder ungewöhnlich stark gepackt. Kennwort liest sie nicht.",
+  "import_error_incomplete": "Es fehlen QR-Codes dieses Exports. Scanne jeden QR-Code, den Google Authenticator zeigt.",
   "import_error_unreadable": "Die Datei ließ sich nicht öffnen.",
   "import_map_title": "Spalten zuordnen",
   "import_map_intro": "Sag Kennwort, welche Spalte was enthält. Spalten ohne Zuordnung bleiben draußen.",
@@ -487,6 +509,16 @@
       "match": {
         "n=one": "1 schwaches Passwort – du findest es danach unter „Zum Ändern“.",
         "n=*": "{count} schwache Passwörter – du findest sie danach unter „Zum Ändern“."
+      }
+    }
+  ],
+  "import_unsupported": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "1 Code übernimmt Kennwort nicht, weil er kein zeitbasierter Einmalcode (TOTP) ist, etwa HOTP oder Steam. Richte ihn beim Dienst neu ein.",
+        "n=*": "{count} Codes übernimmt Kennwort nicht, weil sie keine zeitbasierten Einmalcodes (TOTP) sind, etwa HOTP oder Steam. Richte sie bei den Diensten neu ein."
       }
     }
   ],

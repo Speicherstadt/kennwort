@@ -3,8 +3,10 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { setUpCompany, test } from "./account.ts";
 import { addEntry } from "./entries.ts";
+import { QR, qrPng } from "./qr.ts";
 
-// K-501: Jonas brings the company's logins from Bitwarden, Chrome and a spreadsheet into Kennwort
+// K-501: Jonas brings the company's logins from Bitwarden, Chrome and a spreadsheet into Kennwort;
+// K-503: and the one-time codes from Google Authenticator and 2FAS
 test.use({ locale: "de-DE" });
 
 const fixture = (name: string) => join(import.meta.dirname, "fixtures", name);
@@ -137,6 +139,60 @@ test.describe("import", { tag: "@phone" }, () => {
     await visibleLink(page, "Einträge").click();
     await option(page, "Werkstatt-WLAN").click();
     await expect(page.getByRole("heading", { level: 1, name: "Werkstatt-WLAN" })).toBeVisible();
+  });
+
+  test("Jonas brings the team's one-time codes from Google Authenticator's two export QR codes", async ({
+    page,
+    browser,
+  }) => {
+    await setUpCompany(page);
+    const sent = recordRequests(page);
+    await visibleLink(page, "Einstellungen").click();
+    await page.getByRole("button", { name: "Importieren" }).click();
+    await page.getByRole("button", { name: "Google Authenticator (QR-Code)", exact: true }).click();
+    // The app has other live regions (notifications); this one counts the codes
+    const progress = page.getByRole("status").filter({ hasText: "QR-Code" });
+    await expect(progress).toHaveText("Noch kein QR-Code gelesen.");
+    await axe(page);
+    const scan = page.getByRole("dialog", { name: "QR-Code scannen" });
+    for (const [code, read] of [
+      [QR.google1, "1 von 2 QR-Codes gelesen"],
+      [QR.google2, "2 von 2 QR-Codes gelesen"],
+    ] as const) {
+      await page.getByRole("button", { name: "QR-Code scannen" }).click();
+      await scan.getByLabel("Bild wählen").setInputFiles({
+        name: "export.png",
+        mimeType: "image/png",
+        buffer: await qrPng(browser, code.rows, 6),
+      });
+      await expect(scan).toBeHidden();
+      await expect(progress).toHaveText(read);
+    }
+    await page.getByRole("button", { name: "Weiter" }).click();
+    await expect(page.getByText("3 Einträge in der Datei")).toBeVisible();
+    await expect(page.getByText("1 Code übernimmt Kennwort nicht")).toBeVisible();
+    await expect(rows(page)).not.toContainText("JBSWY3DPEHPK3PXP");
+    await axe(page);
+    await finish(page, "3 Einträge importieren");
+    expect(sent.join("\n")).not.toContain("JBSWY3DPEHPK3PXP");
+
+    await visibleLink(page, "Einträge").click();
+    await option(page, "DATEV").click();
+    await expect(page.getByRole("region", { name: "Felder" })).toContainText(/\d{3} \d{3}/);
+  });
+
+  test("Jonas imports a 2FAS backup; an encrypted one says so", async ({ page }) => {
+    await setUpCompany(page);
+    await importFile(page, "2FAS (.2fas)", coreFixture("twofas-encrypted.2fas"));
+    await expect(page.getByRole("alert")).toHaveText(
+      "Diese Datei ist verschlüsselt – exportiere unverschlüsselt.",
+    );
+    await page.getByLabel("Exportdatei wählen").setInputFiles(coreFixture("twofas.2fas"));
+    await expect(page.getByText("3 Einträge in der Datei")).toBeVisible();
+    await expect(page.getByText("2 Codes übernimmt Kennwort nicht")).toBeVisible();
+    await finish(page, "3 Einträge importieren");
+    await visibleLink(page, "Einträge").click();
+    await expect(option(page, "Großhandel-Portal")).toBeVisible();
   });
 
   test("a loose CSV chosen as a ZIP says it is not one", async ({ page }) => {

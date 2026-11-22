@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "header": {
+    "slots": null,
+    "params": null
+  },
+  "db": {
+    "version": 3,
+    "entries": [
+      {
+        "type": "totp",
+        "uuid": "6f1d4a52-3b8e-4c1a-9f27-5d0e8b7c2a41",
+        "name": "jonas@weber-haustechnik.example",
+        "issuer": "DATEV",
+        "note": "Kanzlei-Zugang für die Lohnabrechnung",
+        "favorite": true,
+        "icon": null,
+        "icon_mime": null,
+        "icon_hash": null,
+        "info": {
+          "secret": "JBSWY3DPEHPK3PXP",
+          "algo": "SHA1",
+          "digits": 6,
+          "period": 30
+        },
+        "groups": ["0c9b7e64-2f1a-4d3b-8e5c-71a2b4c6d8e0"]
+      },
+      {
+        "type": "totp",
+        "uuid": "b2e8c4d1-7a3f-4e9b-a6c5-1f0d9e8b7a62",
+        "name": "anna@weber-haustechnik.example",
+        "issuer": "Microsoft 365",
+        "note": "",
+        "favorite": false,
+        "icon": null,
+        "icon_mime": null,
+        "icon_hash": null,
+        "info": {
+          "secret": "krugkidrovuwg2zamjzg653oebtg66ba",
+          "algo": "SHA256",
+          "digits": 8,
+          "period": 60
+        },
+        "groups": ["0c9b7e64-2f1a-4d3b-8e5c-71a2b4c6d8e0", "a41f6c2e-9d8b-4b7a-b3e1-6c5d4f3e2a10"]
+      },
+      {
+        "type": "totp",
+        "uuid": "c3f9d5e2-8b4a-4f0c-b7d6-2a1e0f9c8b73",
+        "name": "sandra.becker",
+        "issuer": "Großhandel-Portal",
+        "note": "",
+        "favorite": false,
+        "icon": null,
+        "icon_mime": null,
+        "icon_hash": null,
+        "info": {
+          "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+          "algo": "SHA512",
+          "digits": 7,
+          "period": 30
+        },
+        "groups": []
+      },
+      {
+        "type": "hotp",
+        "uuid": "d4a0e6f3-9c5b-4a1d-88e7-3b2f1a0d9c84",
+        "name": "max",
+        "issuer": "Werkstatt-VPN",
+        "note": "",
+        "favorite": false,
+        "icon": null,
+        "icon_mime": null,
+        "icon_hash": null,
+        "info": {
+          "secret": "MFRGGZDFMZTWQ2LKNNWG23TPOBYXE43U",
+          "algo": "SHA1",
+          "digits": 6,
+          "counter": 5
+        },
+        "groups": []
+      },
+      {
+        "type": "steam",
+        "uuid": "e5b1f7a4-0d6c-4b2e-99f8-4c3a2b1e0d95",
+        "name": "max",
+        "issuer": "Steam",
+        "note": "",
+        "favorite": false,
+        "icon": null,
+        "icon_mime": null,
+        "icon_hash": null,
+        "info": {
+          "secret": "JRZCL47CMXVOQMNPZR2F7J4RGI",
+          "algo": "SHA1",
+          "digits": 5,
+          "period": 30
+        },
+        "groups": []
+      }
+    ],
+    "groups": [
+      {
+        "uuid": "0c9b7e64-2f1a-4d3b-8e5c-71a2b4c6d8e0",
+        "name": "Büro"
+      },
+      {
+        "uuid": "a41f6c2e-9d8b-4b7a-b3e1-6c5d4f3e2a10",
+        "name": "Verwaltung"
+      }
+    ]
+  }
+}

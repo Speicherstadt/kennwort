@@ -111,11 +111,15 @@ describe("error texts", () => {
       "bad-zip",
       "unsupported-zip",
       "too-large",
+      "incomplete",
     ] as const;
     const texts = errors.map(errorText);
     expect(new Set(texts).size).toBe(errors.length);
     expect(errorText("encrypted")).toBe(
       "Diese Datei ist verschlüsselt – exportiere unverschlüsselt.",
+    );
+    expect(errorText("incomplete")).toBe(
+      "Es fehlen QR-Codes dieses Exports. Scanne jeden QR-Code, den Google Authenticator zeigt.",
     );
   });
 });
