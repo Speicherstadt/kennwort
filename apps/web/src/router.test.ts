@@ -28,6 +28,7 @@ describe("routes", () => {
       ["/setup", { page: "setup" }],
       ["/unlock", { page: "unlock" }],
       ["/recover", { page: "recover" }],
+      ["/recover-company", { page: "recover-company" }],
       ["/pair", { page: "pair" }],
       ["/link", { page: "link" }],
       ["/invite/abc%2Fd", { page: "invite", id: "abc/d" }],

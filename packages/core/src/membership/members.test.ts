@@ -63,6 +63,7 @@ describe("CompanyWire", () => {
       id: "weber",
       rootPublicKey: new Uint8Array(32).fill(1),
       policy: null,
+      recoveryPublicKey: null,
     });
     expect(CompanyWire.parse({ id: "weber", rootPublicKey: null }).rootPublicKey).toBeNull();
     expect(CompanyWire.safeParse({ id: "", rootPublicKey: null }).success).toBe(false);

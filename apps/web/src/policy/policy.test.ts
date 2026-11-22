@@ -52,7 +52,12 @@ const companyServer = (j: Awaited<ReturnType<typeof jonas>>, initial: Policy | n
   const saved: Policy[] = [];
   const api: PolicyDeps = {
     ...state.deps,
-    company: async () => ({ id: COMPANY, rootPublicKey: j.rootPublicKey, policy }),
+    company: async () => ({
+      id: COMPANY,
+      rootPublicKey: j.rootPublicKey,
+      policy,
+      recoveryPublicKey: null,
+    }),
     savePolicy: async (_token, next) => {
       saved.push(next);
       policy = next;
@@ -120,6 +125,7 @@ describe("applyPolicy", () => {
         id: COMPANY,
         rootPublicKey: ed25519KeyPair().publicKey,
         policy: null,
+        recoveryPublicKey: null,
       }),
     };
     expect(await loadPolicy(lying, j.opened)).toEqual({ ok: false, error: "root-mismatch" });

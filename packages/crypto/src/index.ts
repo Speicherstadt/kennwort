@@ -19,8 +19,14 @@ export {
 export { BOX_V1, type BoxContext, KEY_LENGTH, type OpenError, open, seal } from "./box.ts";
 export { constantTimeEqual, keyCommitment } from "./commitment.ts";
 export {
+  DEPOSIT_PURPOSE,
   type Deposit,
+  type DepositPlace,
   depositAccountKey,
+  depositCommitment,
+  depositMessage,
+  holdsAccountKey,
+  isSignedDeposit,
   type RecoverError,
   type RecoverInput,
   recoverAccountKey,

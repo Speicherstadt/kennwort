@@ -51,7 +51,12 @@ export const memberCalls = (call: Call) => ({
     const parsed = RootGrantWire.safeParse(answer.json);
     return answer.status === 200 && parsed.success ? parsed.data.rootGrant : undefined;
   },
-  changeRole: async (token: string, certificate: Certificate, rootGrant: Uint8Array | undefined) =>
+  changeRole: async (
+    token: string,
+    certificate: Certificate,
+    rootGrant: Uint8Array | undefined,
+    recoveryGrant?: Uint8Array,
+  ) =>
     (
       await call(
         "PUT",
@@ -59,6 +64,7 @@ export const memberCalls = (call: Call) => ({
         {
           certificate: toWire(certificate),
           ...(rootGrant ? { rootGrant: encodeBytes(rootGrant) } : {}),
+          ...(recoveryGrant ? { recoveryGrant: encodeBytes(recoveryGrant) } : {}),
         },
         token,
       )

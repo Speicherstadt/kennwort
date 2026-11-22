@@ -48,6 +48,7 @@ describe("applyPolicy after a reload (review)", () => {
         id: COMPANY,
         rootPublicKey: ed25519KeyPair(root).publicKey,
         policy: served,
+        recoveryPublicKey: null,
       }),
       savePolicy: async () => true,
     };

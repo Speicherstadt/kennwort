@@ -36,6 +36,7 @@ describe("loadMembers", () => {
         id: "weber",
         rootPublicKey: ed25519KeyPair().publicKey,
         policy: null,
+        recoveryPublicKey: null,
       }),
     };
     expect(await loadMembers(lying, c.opened)).toEqual({ ok: false, error: "root-mismatch" });

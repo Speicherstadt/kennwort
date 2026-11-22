@@ -18,6 +18,8 @@ import {
   invitations,
   loginKeys,
   pairings,
+  recoveryDeposits,
+  recoveryGrants,
   rootGrants,
   vaultKeys,
   vaults,
@@ -133,6 +135,19 @@ const maxKeys = () =>
     .onConflictDoNothing()
     .run();
 
+const maxDeposit = () =>
+  app.db
+    .insert(recoveryDeposits)
+    .values({
+      accountId: "max",
+      pkg: Buffer.alloc(1194),
+      commitment: Buffer.alloc(32),
+      signature: Buffer.alloc(65),
+      storedAt: 1,
+    })
+    .onConflictDoNothing()
+    .run();
+
 const asJonas = (path: string) =>
   app.request(path, { headers: { "x-test-session": "token-jonas" } });
 const jonasSends = (method: string, path: string, body: unknown) =>
@@ -185,6 +200,7 @@ const cases: Record<string, () => Promise<void>> = {
       createdAt: 1,
       rootPublicKey: null,
       policy: null,
+      recoveryPublicKey: null,
     });
   },
   "GET /api/accounts": async () => {
@@ -298,6 +314,46 @@ const cases: Record<string, () => Promise<void>> = {
     await jonasSends("PUT", "/api/company/policy", {});
     const mueller = app.db.select().from(companies).where(eq(companies.id, "mueller")).get();
     expect(mueller?.policy).toBeNull();
+  },
+  // K-307 part c: the company recovery key, its grants and the deposits stay within the company
+  "PUT /api/company/recovery-key": async () => {
+    await jonasSends("PUT", "/api/company/recovery-key", {});
+    const mueller = app.db.select().from(companies).where(eq(companies.id, "mueller")).get();
+    expect(mueller?.recoveryPublicKey).toBeNull();
+  },
+  "GET /api/account/recovery-grant": async () => {
+    app.db
+      .insert(recoveryGrants)
+      .values({ accountId: "max", wrapped: Buffer.alloc(8), createdAt: 1 })
+      .onConflictDoNothing()
+      .run();
+    expect((await asJonas("/api/account/recovery-grant")).status).toBe(404);
+  },
+  "GET /api/account/recovery-deposit": async () => {
+    maxDeposit();
+    expect((await asJonas("/api/account/recovery-deposit")).status).toBe(404);
+  },
+  "PUT /api/account/recovery-deposit": async () => {
+    // Jonas's company has no recovery key; Max's deposit stays as it is
+    maxDeposit();
+    const body = {
+      pkg: encodeBytes(new Uint8Array(1194)),
+      commitment: encodeBytes(new Uint8Array(32)),
+      signature: encodeBytes(new Uint8Array(65)),
+    };
+    expect((await jonasSends("PUT", "/api/account/recovery-deposit", body)).status).toBe(409);
+    const max = app.db
+      .select()
+      .from(recoveryDeposits)
+      .where(eq(recoveryDeposits.accountId, "max"))
+      .get();
+    expect(max?.storedAt).toBe(1);
+  },
+  "GET /api/members/:id/recovery": async () => {
+    // Jonas (owner) cannot load Max's deposit, though Max has keys and one
+    maxKeys();
+    maxDeposit();
+    expect((await asJonas("/api/members/max/recovery")).status).toBe(404);
   },
   "GET /api/devices": async () => {
     // Max's session is not among Jonas's devices

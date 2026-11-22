@@ -37,6 +37,8 @@ describe("database", () => {
       "login_failures",
       "login_keys",
       "pairings",
+      "recovery_deposits",
+      "recovery_grants",
       "root_grants",
       "sqlite_sequence",
       "vault_groups",

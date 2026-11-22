@@ -6,6 +6,7 @@
 
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { httpServerFor } from "@kennwort/client/entries/entry-store.ts";
+import type { AccountApi } from "@kennwort/client/session/api.ts";
 import type { DevicesApi } from "@kennwort/client/session/devices-api.ts";
 import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
 import type { ShareApi } from "@kennwort/client/session/shares-api.ts";
@@ -17,6 +18,7 @@ import { createMemo, createSignal, Match, onSettled, Show, Switch, untrack } fro
 import { AddDevicePage } from "./account/add-device-page.tsx";
 import { InvitePage } from "./account/invite-page.tsx";
 import { type PairDeps, PairPage } from "./account/pair-page.tsx";
+import { RecoverCompanyPage } from "./account/recover-company-page.tsx";
 import { RecoverPage } from "./account/recover-page.tsx";
 import { SetupPage } from "./account/setup-page.tsx";
 import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
@@ -49,7 +51,8 @@ export type AppApi = PairDeps &
   MembersDeps &
   VaultApi &
   GroupApi &
-  ShareApi & { syncFetch: typeof fetch };
+  ShareApi &
+  Pick<AccountApi, "replaceUnlock"> & { syncFetch: typeof fetch };
 
 /** The company's people as the vaults' load checked them; none before it */
 const peopleOf = (store: VaultStore) => {
@@ -298,6 +301,9 @@ export const App = (props: {
           </Match>
           <Match when={route().page === "recover"}>
             <RecoverPage nav={props.nav} session={props.session} />
+          </Match>
+          <Match when={route().page === "recover-company"}>
+            <RecoverCompanyPage nav={props.nav} session={props.session} api={props.api} />
           </Match>
           <Match when={route().page === "pair"}>
             <PairPage nav={props.nav} session={props.session} api={props.api} />

@@ -5,8 +5,10 @@
  * After the Recovery Key was used (P-12) the device replaces the unlock ways: salt, both sign-in
  * keys and the two boxes of AK, in one transaction, and only with a signature by the account's
  * current recovery sign-in key over all of them: a session alone changes nothing (review of K-303).
+ * After company recovery (P-13) the account's own Ed25519 key signs instead.
  */
 import {
+  ACCOUNT_RENEWAL_PURPOSE,
   bytes,
   CertificateWire,
   encodeBytes,
@@ -44,17 +46,21 @@ const UnlockUpdate = z.object({
   proof: bytes(65),
 });
 
-/** True when the account's current recovery sign-in key signed exactly these new values */
+/**
+ * True when the account's current recovery sign-in key signed exactly these new values, or, after
+ * company recovery (P-13), the account's own Ed25519 key, which only AK opens
+ */
 const provenRenewal = (db: Db, accountId: string, update: z.infer<typeof UnlockUpdate>) => {
   const key = db.select().from(loginKeys).where(eq(loginKeys.accountId, accountId)).get();
-  if (!key?.recoveryPublicKey) return false;
+  const keys = db.select().from(accountKeys).where(eq(accountKeys.accountId, accountId)).get();
   const { proof, ...values } = update;
-  return verify(
-    bytes(32).parse(key.recoveryPublicKey),
-    proof,
-    RENEWAL_PURPOSE,
-    ...renewalFields(accountId, values),
-  );
+  const fields = renewalFields(accountId, values);
+  const byRecovery =
+    key?.recoveryPublicKey &&
+    verify(bytes(32).parse(key.recoveryPublicKey), proof, RENEWAL_PURPOSE, ...fields);
+  const byAccount =
+    keys && verify(new Uint8Array(keys.edPublicKey), proof, ACCOUNT_RENEWAL_PURPOSE, ...fields);
+  return Boolean(byRecovery || byAccount);
 };
 const StateUpdate = z.object({ state: bytes(), stateCounter: z.number().int().positive() });
 

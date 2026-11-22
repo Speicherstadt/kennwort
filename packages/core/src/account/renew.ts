@@ -5,7 +5,7 @@
  * the limit: whoever kept the old recovery box opens AK with the old key still, until AK itself is
  * rotated. `upload` is what the server gets, signed by the old Recovery Key's sign-in key, so a
  * session alone cannot replace the unlock ways; passphrase, Secret Key and the new Recovery Key
- * stay with the caller.
+ * stay with the caller. After company recovery (P-13) the account's own Ed25519 key signs instead.
  */
 import {
   ACCOUNT_SALT_LENGTH,
@@ -50,14 +50,14 @@ export type RenewDeps = {
   newRecovery?: () => Uint8Array;
 };
 
-export const renewUnlock = (
+/** The new salt, sign-in keys and boxes of AK for a new passphrase and a new Recovery Key */
+const newUnlockWays = (
   accountKey: Uint8Array,
   accountId: Uint8Array,
   passphrase: string,
   secretKey: Uint8Array,
-  spentRecoveryKey: Uint8Array,
-  deps: RenewDeps = {},
-): { recoveryKey: Uint8Array; upload: UnlockUpload } => {
+  deps: RenewDeps,
+) => {
   const accountSalt = (deps.random ?? randomBytes)(ACCOUNT_SALT_LENGTH);
   const recoveryKey = (deps.newRecovery ?? newRecoveryKey)();
   const derived = (deps.derive ?? passphraseKeys)(passphrase, accountSalt, secretKey, accountId);
@@ -70,10 +70,55 @@ export const renewUnlock = (
       recovery: sealAccountKey(recoveryKey, accountKey, accountId, { kind: "recovery" }),
     },
   };
+  return { recoveryKey, upload, fields: renewalFields(encodeBytes(accountId), upload) };
+};
+
+export const renewUnlock = (
+  accountKey: Uint8Array,
+  accountId: Uint8Array,
+  passphrase: string,
+  secretKey: Uint8Array,
+  spentRecoveryKey: Uint8Array,
+  deps: RenewDeps = {},
+): { recoveryKey: Uint8Array; upload: UnlockUpload } => {
+  const { recoveryKey, upload, fields } = newUnlockWays(
+    accountKey,
+    accountId,
+    passphrase,
+    secretKey,
+    deps,
+  );
   const spentLogin = ed25519KeyPair(recoveryLoginSeed(spentRecoveryKey, accountId));
-  const fields = renewalFields(encodeBytes(accountId), upload);
   return {
     recoveryKey,
     upload: { ...upload, proof: sign(spentLogin.secretKey, RENEWAL_PURPOSE, ...fields) },
+  };
+};
+
+/**
+ * After company recovery (P-13) neither passphrase nor Recovery Key is at hand: the proof is the
+ * account's own Ed25519 key from the key block, which only AK opens and whose public half the
+ * server holds with the account's bundle. Its own purpose keeps it apart from the other proof.
+ */
+export const ACCOUNT_RENEWAL_PURPOSE = "unlock-renewal-account";
+
+export const renewUnlockWithAccountKey = (
+  accountKey: Uint8Array,
+  accountId: Uint8Array,
+  passphrase: string,
+  secretKey: Uint8Array,
+  edSecretKey: Uint8Array,
+  deps: RenewDeps = {},
+): { recoveryKey: Uint8Array; upload: UnlockUpload } => {
+  const { recoveryKey, upload, fields } = newUnlockWays(
+    accountKey,
+    accountId,
+    passphrase,
+    secretKey,
+    deps,
+  );
+  return {
+    recoveryKey,
+    upload: { ...upload, proof: sign(edSecretKey, ACCOUNT_RENEWAL_PURPOSE, ...fields) },
   };
 };

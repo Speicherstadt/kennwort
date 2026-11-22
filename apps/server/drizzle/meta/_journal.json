@@ -141,6 +141,13 @@
       "when": 1795206917661,
       "tag": "0019_members_left",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1795223881874,
+      "tag": "0020_company_recovery",
+      "breakpoints": true
     }
   ]
 }

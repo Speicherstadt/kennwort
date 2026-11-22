@@ -3,16 +3,24 @@
  * the newest and hands it to every member, whose client checks it. The server takes a policy only
  * from an owner, for this company, signed by the root key it was given at setup and with a higher
  * version than the one it has; that keeps honest servers clean, the clients' check keeps the rest.
+ * Company recovery (K-307 part c): a policy with recovery on must name the recovery key the server
+ * holds (a new key comes with its own route); one with recovery off drops the key, its grants and
+ * every deposit.
  */
-import { bytes, encodeBytes, isSignedPolicy, PolicyWire, policyToWire } from "@kennwort/core";
+import { encodeBytes, PolicyWire, policyToWire } from "@kennwort/core";
+import { recoveryFingerprint } from "@kennwort/crypto";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Db } from "../db/database.ts";
 import { companies } from "../db/schema.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
+import { bytesOf, dropRecovery, freshPolicy } from "./company-recovery.ts";
 
-const versionOf = (stored: string | null) =>
-  stored ? (PolicyWire.safeParse(JSON.parse(stored)).data?.version ?? 0) : 0;
+/** The fingerprint of the recovery key the server holds, as text; empty without one */
+const heldFingerprint = (stored: string | null) => {
+  const key = bytesOf(stored, 1216);
+  return key ? encodeBytes(recoveryFingerprint(key)) : "";
+};
 
 export const policyRoutes = ({ db, now }: { db: Db; now: () => number }) =>
   new Hono<TenantEnv>().put("/company/policy", async (c) => {
@@ -23,19 +31,23 @@ export const policyRoutes = ({ db, now }: { db: Db; now: () => number }) =>
     if (!parsed.success) return c.json({ error: "invalid" }, 400);
     const policy = parsed.data;
     const company = scope.company();
-    const root = bytes(32).safeParse(company?.rootPublicKey);
-    if (
-      !company ||
-      !root.success ||
-      encodeBytes(policy.companyId) !== company.id ||
-      !isSignedPolicy(root.data, policy)
-    )
+    const fresh = freshPolicy(company, policy);
+    if (fresh === "invalid") return c.json({ error: "invalid" }, 400);
+    if (fresh === "stale") return c.json({ error: "stale" }, 409);
+    const recovery = policy.companyRecovery;
+    const held = heldFingerprint(company?.recoveryPublicKey ?? null);
+    if (recovery.enabled && encodeBytes(recovery.fingerprint) !== held)
       return c.json({ error: "invalid" }, 400);
-    if (policy.version <= versionOf(company.policy)) return c.json({ error: "stale" }, 409);
-    db.update(companies)
-      .set({ policy: JSON.stringify(policyToWire(policy)) })
-      .where(eq(companies.id, company.id))
-      .run();
+    db.transaction((tx) => {
+      tx.update(companies)
+        .set({
+          policy: JSON.stringify(policyToWire(policy)),
+          ...(recovery.enabled ? {} : { recoveryPublicKey: null }),
+        })
+        .where(eq(companies.id, session.companyId))
+        .run();
+      if (!recovery.enabled) dropRecovery(tx, session.companyId);
+    });
     scope.audit({
       time: now(),
       actor: session.accountId,

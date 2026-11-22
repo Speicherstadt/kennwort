@@ -1,4 +1,5 @@
 /** What the members tests share: Jonas's company, Anna's answer and a server in memory */
+import type { RecoveryApi } from "@kennwort/client/session/recovery-api.ts";
 import {
   type AccountUpload,
   type Certificate,
@@ -79,6 +80,17 @@ export const annaRow = (c: Awaited<ReturnType<typeof jonasCompany>>, secret?: Ui
   return { row, invitation, account: anna };
 };
 
+/** A company without company recovery (K-307 part c): no key, no grant, no deposit */
+export const noRecovery: RecoveryApi = {
+  saveRecoveryKey: async () => false,
+  recoveryGrant: async () => undefined,
+  heldDeposit: async () => undefined,
+  saveDeposit: async () => false,
+  memberRecovery: async () => undefined,
+  answerRecovery: async () => false,
+  auditAction: async () => false,
+};
+
 export const server = (c: Awaited<ReturnType<typeof jonasCompany>>, rows: Row[]) => {
   const state = stateServer(c.upload);
   const calls: string[] = [];
@@ -91,7 +103,12 @@ export const server = (c: Awaited<ReturnType<typeof jonasCompany>>, rows: Row[])
       calls.push("state");
       return state.deps.writeState(...args);
     },
-    company: async () => ({ id: "weber", rootPublicKey: c.rootPublicKey, policy: null }),
+    company: async () => ({
+      id: "weber",
+      rootPublicKey: c.rootPublicKey,
+      policy: null,
+      recoveryPublicKey: null,
+    }),
     members: async () => rows,
     invite: async () => ({ token: "einmal", expiresAt: 1 }),
     certify: async (_token, certificate) => {
@@ -101,6 +118,7 @@ export const server = (c: Awaited<ReturnType<typeof jonasCompany>>, rows: Row[])
     },
     rootGrant: async () => undefined,
     savePolicy: async () => true,
+    ...noRecovery,
     changeRole: async (_token, certificate, rootGrant) => {
       calls.push("role");
       roles.push({ certificate, rootGrant });
