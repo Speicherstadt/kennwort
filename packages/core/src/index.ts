@@ -9,6 +9,14 @@ export {
   type NewCompany,
 } from "./account/create.ts";
 export {
+  EmergencySeen,
+  isReplayed,
+  mergeEmergency,
+  noteGrant,
+  noteObjection,
+  noteRevocation,
+} from "./account/emergency-seen.ts";
+export {
   type DevicePackage,
   openDevicePackage,
   openRecoveryPackage,
@@ -126,6 +134,45 @@ export {
   certify,
   isCertified,
 } from "./membership/certificate.ts";
+export {
+  checkGrant,
+  type GrantError,
+  type GrantKeys,
+  isBehind,
+  isSignedGrant,
+  isSignedStatement,
+  isSignedStatementOf,
+  makeGrant,
+  partiesOf,
+  signStatement,
+} from "./membership/emergency.ts";
+export {
+  checkRelease,
+  type EmergencyAccountError,
+  type EmergencyVaultError,
+  openEmergencyAccount,
+  openEmergencyVault,
+  type ReleaseError,
+} from "./membership/emergency-open.ts";
+export {
+  EMERGENCY_PACKAGE_LENGTH,
+  EmergencyGrant,
+  type EmergencyList,
+  EmergencyListWire,
+  EmergencyPackages,
+  type EmergencyVaults,
+  EmergencyVaultsWire,
+  GrantUpload,
+  grantToWire,
+  ListedGrant,
+  MAX_WAIT_SECONDS,
+  MIN_WAIT_SECONDS,
+  packagesToWire,
+  type Release,
+  ReleaseWire,
+  Statement,
+  statementToWire,
+} from "./membership/emergency-wire.ts";
 export {
   type Exposure as VaultExposure,
   exitReport,

@@ -18,6 +18,7 @@ export {
   ImageUp,
   Import,
   KeyRound,
+  LifeBuoy,
   List,
   Lock,
   Pencil,

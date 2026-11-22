@@ -228,7 +228,7 @@ und die Schritte für Menschen am Ende erledigt sind.
     Schlüssel, wenn ein Inhaber geht. Fertig, wenn: eine Hinterlegung an einen Schlüssel, den die
     Richtlinie nicht nennt, nie entsteht, ein vom Server verpackter AK abgelehnt wird (Test gegen
     den lügenden Server) und Wiederherstellen als Playwright-Test desktop und `@phone` läuft.
-  - [ ] Teil d: Notfallzugriff mit Wartezeit (P-14). Fertig, wenn: die Pakete erst nach Ablauf der
+  - [x] Teil d: Notfallzugriff mit Wartezeit (P-14). Fertig, wenn: die Pakete erst nach Ablauf der
     Wartezeit herauskommen, ein Widerspruch sie sperrt, ein Schlüssel ohne passende Bindung im Log
     abgelehnt wird und Anlegen, Anfragen und Widersprechen als Playwright-Test desktop und `@phone`
     laufen.

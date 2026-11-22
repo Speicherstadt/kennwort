@@ -13,7 +13,7 @@ import {
   ROOT_GRANT_LENGTH,
   toWire,
 } from "@kennwort/core";
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import type { Db } from "../db/database.ts";
@@ -21,6 +21,8 @@ import {
   accountKeys,
   accounts,
   authSession,
+  emergencyGrants,
+  emergencyRevocations,
   entryShares,
   groupMembers,
   invitations,
@@ -157,7 +159,7 @@ const removal = (me: Member | undefined, member: Member | undefined) => {
 /**
  * The account leaves the company (K-307, P-11): marked as left, every session gone, and what only it
  * could use dropped (requests, group memberships, shares to it, a wrapped root or recovery key, its
- * recovery deposit, the open invitations it made). Its keys and certificate stay: the vault logs it signed must still verify.
+ * recovery deposit, emergency access given by or to it, the open invitations it made). Its keys and certificate stay: the vault logs it signed must still verify.
  * The vaults it was in owe a removal and a key rotation, which the next manager client signs; the
  * server cannot.
  */
@@ -172,6 +174,11 @@ const leave = (db: Db, member: Member, at: number) =>
     tx.delete(vaultRequests).where(eq(vaultRequests.accountId, id)).run();
     tx.delete(groupMembers).where(eq(groupMembers.accountId, id)).run();
     tx.delete(entryShares).where(eq(entryShares.recipient, id)).run();
+    // Emergency access given by or to the account ends (P-14)
+    for (const table of [emergencyGrants, emergencyRevocations])
+      tx.delete(table)
+        .where(or(eq(table.grantor, id), eq(table.grantee, id)))
+        .run();
     // Nobody joins on a link they made: they know its token and secret (review of K-307)
     tx.delete(invitations)
       .where(and(eq(invitations.createdBy, id), isNull(invitations.acceptedAt)))

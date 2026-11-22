@@ -8,6 +8,7 @@ import { z } from "zod";
 import { err, ok, type Result } from "../result.ts";
 import { bytes, encodeBytes } from "../sync/bytes.ts";
 import { parseJson } from "../sync/record.ts";
+import { EmergencySeen, mergeEmergency } from "./emergency-seen.ts";
 
 const Remembered = z.object({ seq: z.number().int().nonnegative(), hash: bytes(32) });
 
@@ -43,6 +44,11 @@ export const AccountState = z.object({
    * exact host: kept here so every device of the account knows them and no store on the disk does
    */
   neverSave: z.array(z.string()).default([]),
+  /**
+   * Emergency access granted to this account, by grantor ID (K-307 part d, P-14): the newest grant
+   * seen, whether it was revoked, and the newest request objected to
+   */
+  emergency: z.record(z.string(), EmergencySeen).default({}),
 });
 export type AccountState = z.infer<typeof AccountState>;
 
@@ -154,6 +160,7 @@ export const mergeStates = (
     certificates: newest(mine.certificates, theirs.certificates),
     ...newerPolicy(mine, theirs),
     neverSave: [...new Set([...mine.neverSave, ...theirs.neverSave])].sort(),
+    emergency: mergeEmergency(mine.emergency, theirs.emergency),
   });
 };
 
@@ -171,4 +178,5 @@ export const emptyState = (
   policy: 0,
   policyLock: 10,
   neverSave: [],
+  emergency: {},
 });

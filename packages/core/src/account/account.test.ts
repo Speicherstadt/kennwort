@@ -21,6 +21,7 @@ describe("account state", () => {
     policy: 3,
     policyLock: 4,
     neverSave: ["portal.weber-haustechnik.test"],
+    emergency: { jonas: { grant: 5, revoked: false, objected: 0 } },
   };
   const key = new Uint8Array(32).fill(9);
   const account = new Uint8Array(16).fill(4);
@@ -68,6 +69,10 @@ describe("account state", () => {
       policy: 2,
       policyLock: 30,
       neverSave: ["sparkasse.test", "portal.weber-haustechnik.test"],
+      emergency: {
+        jonas: { grant: 5, revoked: true, objected: 3 },
+        sandra: { grant: 2, revoked: false, objected: 0 },
+      },
     };
     expect(mergeStates(state, theirs)).toEqual({
       ok: true,
@@ -85,6 +90,10 @@ describe("account state", () => {
         policy: 3,
         policyLock: 4,
         neverSave: ["portal.weber-haustechnik.test", "sparkasse.test"],
+        emergency: {
+          jonas: { grant: 5, revoked: true, objected: 3 },
+          sandra: { grant: 2, revoked: false, objected: 0 },
+        },
       },
     });
     expect(mergeStates(state, emptyState(root))).toEqual({ ok: true, value: state });

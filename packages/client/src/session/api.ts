@@ -21,6 +21,7 @@ import {
 } from "@kennwort/core";
 import type { DeviceIdentity } from "./device-identity.ts";
 import { deviceCalls } from "./devices-api.ts";
+import { emergencyCalls } from "./emergency-api.ts";
 import { groupCalls } from "./groups-api.ts";
 import { memberCalls } from "./members-api.ts";
 import { pairingCalls } from "./pairing-api.ts";
@@ -120,6 +121,7 @@ export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity)
     ...requestCalls(call),
     ...groupCalls(call),
     ...shareCalls(call),
+    ...emergencyCalls(call),
     /** The root key's public half goes along, for every member to check certificates (P-07) */
     setup: async (
       code: string,
@@ -201,4 +203,5 @@ export type AccountApi = Omit<
   | keyof ReturnType<typeof requestCalls>
   | keyof ReturnType<typeof groupCalls>
   | keyof ReturnType<typeof shareCalls>
+  | keyof ReturnType<typeof emergencyCalls>
 >;

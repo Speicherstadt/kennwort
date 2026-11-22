@@ -4,7 +4,7 @@
  */
 
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
-import { createToasts, type Locale, Toaster } from "@kennwort/ui";
+import { createToasts, type Locale, Toaster, type Toasts } from "@kennwort/ui";
 import type { JSX } from "@solidjs/web";
 import { Match, Show, Switch } from "solid-js";
 import type { Navigation } from "../navigation.ts";
@@ -30,6 +30,8 @@ export const Frame = (props: {
   vaultsPage?: (() => JSX.Element) | undefined;
   /** The import (K-501); the app passes it with the vaults and the entry store */
   importPage?: (() => JSX.Element) | undefined;
+  /** Konto → Notfallzugriff (K-307 part d); the app passes it with session, API and vaults */
+  emergencyPage?: ((toasts: Toasts) => JSX.Element) | undefined;
   /** The company's groups (K-305 part 5); the demo's stand in where the app gives none */
   groupsPage?: (() => JSX.Element) | undefined;
   /** The entries from the vaults (K-306) and what list and detail do with them */
@@ -115,6 +117,7 @@ export const Frame = (props: {
               onMembers={props.members ? () => props.nav.go("/members") : undefined}
               onVaults={props.vaultsPage ? () => props.nav.go("/vaults") : undefined}
               onImport={props.importPage ? () => props.nav.go("/import") : undefined}
+              onEmergency={props.emergencyPage ? () => props.nav.go("/emergency") : undefined}
               devices={props.devices}
             />
           </main>
@@ -127,6 +130,9 @@ export const Frame = (props: {
         </Match>
         <Match when={route().page === "import" && props.importPage}>
           <main class="flex min-h-0 flex-1">{props.importPage?.()}</main>
+        </Match>
+        <Match when={route().page === "emergency" && props.emergencyPage}>
+          <main class="flex min-h-0 flex-1">{props.emergencyPage?.(toasts)}</main>
         </Match>
         <Match when={route().page === "not-found"}>
           <main class="flex min-h-0 flex-1">

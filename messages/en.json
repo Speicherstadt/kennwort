@@ -607,5 +607,51 @@
   "add_recovery_done": "Access is restored. The device now sets a new passphrase.",
   "add_error_no_key": "You hold no valid company recovery key.",
   "add_error_no_deposit": "No access is deposited for this member.",
-  "add_error_refused": "The deposit fails the check. Access was not restored."
+  "add_error_refused": "The deposit fails the check. Access was not restored.",
+  "settings_emergency": "Emergency access",
+  "emergency_title": "Emergency access",
+  "emergency_intro": "If something happens to you, a person you trust can reach your entries after a waiting time. Until it ends you can object to any request. Your device encrypts the keys for exactly this person; the server cannot open them.",
+  "emergency_give_title": "Give emergency access",
+  "emergency_person": "Person",
+  "emergency_choose": "Choose a person",
+  "emergency_scope": "Scope",
+  "emergency_scope_view": "View: chosen vaults",
+  "emergency_scope_full": "Full access: the whole account",
+  "emergency_scope_view_short": "View",
+  "emergency_scope_full_short": "Full access",
+  "emergency_vaults": "Vaults",
+  "emergency_wait": "Waiting time",
+  "emergency_days": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "1 day",
+        "n=*": "{count} days"
+      }
+    }
+  ],
+  "emergency_view_hint": "The person can read the chosen vaults and change nothing. After a key change your device renews the access the next time it opens.",
+  "emergency_full_hint": "The person gets your account's key and can read all your vaults, your personal one too.",
+  "emergency_give": "Give emergency access",
+  "emergency_given_title": "Given by you",
+  "emergency_received_title": "For you",
+  "emergency_none_given": "You have not given anyone emergency access yet.",
+  "emergency_none_received": "Nobody has given you emergency access.",
+  "emergency_status_idle": "No request",
+  "emergency_status_waiting": "Requested – open from {date}",
+  "emergency_status_objected": "Objected",
+  "emergency_status_released": "Released",
+  "emergency_object": "Object",
+  "emergency_approve": "Release now",
+  "emergency_revoke": "Revoke emergency access for {name}",
+  "emergency_request": "Request access",
+  "emergency_open": "Open",
+  "emergency_failed": "That did not work. Please try again.",
+  "emergency_load_failed": "Emergency access could not be loaded or checked.",
+  "emergency_waiting": "The waiting time is still running.",
+  "emergency_refused": "Kennwort refused the release: it does not match what was requested and signed.",
+  "emergency_vault_refused": "This vault fails the check and stays closed.",
+  "emergency_request_notice": "{name} asks for emergency access. Without an objection it opens on {date}.",
+  "emergency_notice_link": "View"
 }

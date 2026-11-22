@@ -127,5 +127,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795223881874,
     "breakpoints": true,
     "sql": "CREATE TABLE `recovery_deposits` (\n\t`account_id` text PRIMARY KEY NOT NULL,\n\t`pkg` blob NOT NULL,\n\t`commitment` blob NOT NULL,\n\t`signature` blob NOT NULL,\n\t`stored_at` integer NOT NULL,\n\tFOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE TABLE `recovery_grants` (\n\t`account_id` text PRIMARY KEY NOT NULL,\n\t`wrapped` blob NOT NULL,\n\t`created_at` integer NOT NULL,\n\tFOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nALTER TABLE `companies` ADD `recovery_public_key` text;--> statement-breakpoint\nALTER TABLE `pairings` ADD `answered_by` text;"
+  },
+  {
+    "tag": "0021_emergency_access",
+    "when": 1795356298606,
+    "breakpoints": true,
+    "sql": "CREATE TABLE `emergency_grants` (\n\t`grantor` text NOT NULL,\n\t`grantee` text NOT NULL,\n\t`grant` text NOT NULL,\n\t`packages` text NOT NULL,\n\t`time` integer NOT NULL,\n\t`request` text,\n\t`requested_at` integer,\n\t`objection` text,\n\t`approval` text,\n\t`released_at` integer,\n\t`stored_at` integer NOT NULL,\n\tPRIMARY KEY(`grantor`, `grantee`),\n\tFOREIGN KEY (`grantor`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action,\n\tFOREIGN KEY (`grantee`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE TABLE `emergency_revocations` (\n\t`grantor` text NOT NULL,\n\t`grantee` text NOT NULL,\n\t`statement` text NOT NULL,\n\t`stored_at` integer NOT NULL,\n\tPRIMARY KEY(`grantor`, `grantee`),\n\tFOREIGN KEY (`grantor`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action,\n\tFOREIGN KEY (`grantee`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action\n);\n"
   }
 ];

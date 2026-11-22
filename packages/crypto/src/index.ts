@@ -19,6 +19,7 @@ export {
 export { BOX_V1, type BoxContext, KEY_LENGTH, type OpenError, open, seal } from "./box.ts";
 export { constantTimeEqual, keyCommitment } from "./commitment.ts";
 export {
+  type Certified,
   DEPOSIT_PURPOSE,
   type Deposit,
   type DepositPlace,
@@ -34,6 +35,29 @@ export {
 export { DERIVED_LENGTH, kdf } from "./derive.ts";
 export { deviceCode, deviceFingerprint } from "./device.ts";
 export { DIGEST_LENGTH, digest, sha256 } from "./digest.ts";
+export {
+  EMERGENCY_PURPOSE,
+  EMERGENCY_STATEMENTS,
+  type EmergencyGrantRef,
+  type EmergencyItem,
+  type EmergencyKeyError,
+  type EmergencyParties,
+  type EmergencyReader,
+  type EmergencyScope,
+  type EmergencyStatement,
+  type EmergencyTerms,
+  type EmergencyVaultPlace,
+  emergencyAccountCommitment,
+  emergencyGrantDigest,
+  emergencyGrantMessage,
+  emergencyStatementMessage,
+  type TakeOverError,
+  type TakeOverInput,
+  unwrapEmergencyAccountKey,
+  unwrapEmergencyVaultKey,
+  wrapEmergencyAccountKey,
+  wrapEmergencyVaultKey,
+} from "./emergency.ts";
 export { decode, encode, type Part } from "./encoding.ts";
 export { bundleFingerprint, recoveryFingerprint, rootFingerprint } from "./fingerprint.ts";
 export {

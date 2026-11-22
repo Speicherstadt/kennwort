@@ -18,7 +18,14 @@ export const invitationBody = (label: string) => ({
 });
 
 export const signInSetup = async (
-  options: { rateLimit?: number; behindProxy?: boolean; setupCode?: string; empty?: boolean } = {},
+  options: {
+    rateLimit?: number;
+    behindProxy?: boolean;
+    setupCode?: string;
+    empty?: boolean;
+    /** The API runs on the test's clock too, not only sign-in (emergency access, K-307 part d) */
+    apiClock?: boolean;
+  } = {},
 ) => {
   const db = openDatabase(":memory:");
   migrate(db);
@@ -40,6 +47,7 @@ export const signInSetup = async (
     log: createLog("error", () => {}),
     authenticate: authenticateWith(auth),
     signIn,
+    ...(options.apiClock ? { now: clock.now } : {}),
   });
   // A fresh server for the first owner's setup has no company yet
   if (!options.empty)

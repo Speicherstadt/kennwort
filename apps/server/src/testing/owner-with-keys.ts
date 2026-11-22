@@ -8,8 +8,13 @@ import { signInSetup } from "./sign-in-setup.ts";
 export const quick = (p: string, salt: Uint8Array, key: Uint8Array, account: Uint8Array) =>
   passphraseKeysWith({ m: 8, t: 1, p: 1 }, p, salt, key, account);
 
-export const ownerWithKeys = async (code: string, passphrase: string, uploadKeys = true) => {
-  const setup = await signInSetup({ setupCode: code, empty: true });
+export const ownerWithKeys = async (
+  code: string,
+  passphrase: string,
+  uploadKeys = true,
+  apiClock = false,
+) => {
+  const setup = await signInSetup({ setupCode: code, empty: true, apiClock });
   const company = createCompany(passphrase, { derive: quick });
   const { owner } = company;
   const response = await setup.request("/auth/setup", {

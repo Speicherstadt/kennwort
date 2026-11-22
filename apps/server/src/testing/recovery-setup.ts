@@ -39,8 +39,8 @@ const keysBody = (upload: ReturnType<typeof createAccount>["upload"]) => ({
   stateCounter: 0,
 });
 
-export const weberWithAnna = async () => {
-  const o = await ownerWithKeys(CODE, PASSPHRASE);
+export const weberWithAnna = async (apiClock = false) => {
+  const o = await ownerWithKeys(CODE, PASSPHRASE, true, apiClock);
   const root = o.owner.state.rootSecretKey;
   if (!root) throw new Error("the owner holds the root key");
   const made = await o.setup.request("/api/invitations", {
