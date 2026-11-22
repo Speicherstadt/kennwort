@@ -1257,6 +1257,20 @@ Vergleichscode und dem Inhaber, dem es den QR-Code zeigt. Einen Server, der die 
 löscht oder verweigert, erkennt der Client und hinterlegt neu, kann ihn aber nicht zwingen, sie zu
 behalten.
 
+Weitere Restrisiken (Review von K-307 Teil c):
+
+- **Wurzelschlüssel schlägt Inhaber-Rolle:** Den Wurzelschlüssel, der die Richtlinie signiert,
+  halten auch Admins. Ein Admin kann zusammen mit einem bösartigen Server eine Richtlinie
+  signieren, die seinen eigenen Recovery-Schlüssel nennt, und so alle AK einsammeln. Die Grenze
+  zwischen Inhaber und Admin setzt bis zu einem neuen Wurzelschlüssel (K-307 Teil f) nur der
+  Server durch.
+- **Ältere Richtlinie für neue Mitglieder:** Ein Konto, das noch keine Richtlinie gesehen hat,
+  nimmt jede ältere, von der Wurzel signierte an. Das gibt niemandem mehr als den Wurzelschlüssel,
+  den ein ausgetretener Inhaber ohnehin noch hat, bis Teil f ihn wechselt.
+- **Erneuerung wiederholbar:** Eine Erneuerung, die mit dem eigenen Ed25519-Schlüssel des Kontos
+  signiert ist, ist nicht an den aktuellen Stand der Entsperrwege gebunden; wer eine Sitzung und
+  die mitgeschnittene Anfrage hat, kann sie wiederholen.
+
 **Wehrt ab:** E-01, E-02, E-10.
 
 ### P-14 Notfallzugriff
