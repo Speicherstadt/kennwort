@@ -84,10 +84,19 @@ export const memberCalls = (call: Call) => ({
    */
   replaceRoot: async (token: string, rotation: Omit<RootRotation, "rootSecretKey">) =>
     (await call("PUT", "/api/company/root", rootRotationToWire(rotation), token)).status === 200,
-  /** The key block under AK, written anew once it names a new root (P-07) */
-  writeKeyBlock: async (token: string, sealed: Uint8Array) =>
-    (await call("PUT", "/api/account/key-block", { keyBlock: encodeBytes(sealed) }, token))
-      .status === 200,
+  /**
+   * The key block under AK, written anew once it names a new root (P-07), with the account's own
+   * signature over it (key-block-proof.ts)
+   */
+  writeKeyBlock: async (token: string, sealed: Uint8Array, proof: Uint8Array) =>
+    (
+      await call(
+        "PUT",
+        "/api/account/key-block",
+        { keyBlock: encodeBytes(sealed), proof: encodeBytes(proof) },
+        token,
+      )
+    ).status === 200,
   /** The sealed account state under the next counter; stale when another device wrote first */
   writeState: async (token: string, sealed: Uint8Array, counter: number): Promise<StateWrite> => {
     const answer = await call(

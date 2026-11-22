@@ -13,6 +13,7 @@ import {
   checkPolicy,
   encodeBytes,
   followRoot,
+  proveKeyBlock,
   type RootView,
   rootOf,
   rotateRoot,
@@ -44,11 +45,12 @@ export const loadRoot = async (
 };
 
 /** The key block under AK, naming the root the account state pinned, written back (P-07) */
-const keepKeyBlock = (api: Pick<RootDeps, "writeKeyBlock">, opened: Opened) =>
-  api.writeKeyBlock(
-    opened.token,
-    sealKeyBlock(opened.accountKey, opened.accountId, followRoot(opened.keyBlock, opened.state)),
-  );
+const keepKeyBlock = (api: Pick<RootDeps, "writeKeyBlock">, opened: Opened) => {
+  const block = followRoot(opened.keyBlock, opened.state);
+  const sealed = sealKeyBlock(opened.accountKey, opened.accountId, block);
+  const proof = proveKeyBlock(block.ed.secretKey, encodeBytes(opened.accountId), sealed);
+  return api.writeKeyBlock(opened.token, sealed, proof);
+};
 
 /**
  * The person compared the new root's code with an owner and confirmed it: the change goes into the

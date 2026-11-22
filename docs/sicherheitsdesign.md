@@ -906,7 +906,9 @@ persönlich oder am Telefon. Jeder sieht den Code des Schlüssels, den sein Kont
 der Client keinem Mitglied, prüft keine Richtlinie und öffnet keinen Tresor. Danach steht der neue
 Fingerabdruck im Kontozustand, der alte Schlüssel mit seinem Nachfolger und der Zeit des Wechsels
 in `retiredRoots`, und im Schlüsselblock unter AK, den der Client neu schreibt
-(`PUT /api/account/key-block`, nur in der Größe eines Schlüsselblocks). Jedes Gerät des Kontos folgt
+(`PUT /api/account/key-block`, nur in der Größe eines Schlüsselblocks und nur mit einer Signatur des
+eigenen Ed25519-Schlüssels über Konto und Schlüsselblock, Zweck `key-block`: Der Schlüsselblock hält
+die privaten Schlüssel, und eine Sitzung allein darf ihn so wenig ersetzen wie die Entsperr-Wege). Jedes Gerät des Kontos folgt
 beim Zusammenführen des Kontozustands; ein Schlüsselblock, der noch den alten nennt, folgt beim
 Entsperren der bestätigten Kette (`followRoot`). Den alten privaten Schlüssel vergisst der
 Kontozustand; ein Inhaber oder Admin holt den neuen wie bei einer Rolle ab

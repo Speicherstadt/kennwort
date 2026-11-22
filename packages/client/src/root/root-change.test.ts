@@ -4,6 +4,8 @@ import {
   createAccount,
   emptyState,
   encodeBytes,
+  KEY_BLOCK_PURPOSE,
+  keyBlockFields,
   type RootRotation,
   type Stored,
 } from "@kennwort/core";
@@ -15,6 +17,7 @@ import {
   type RootChange,
   rootFingerprint,
   signRootChange,
+  verify,
 } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
 import type { StateWrite } from "../session/members-api.ts";
@@ -76,7 +79,10 @@ const serverFor = (account: ReturnType<typeof accountOf>, accept = true) => {
       company.policy = rotation.policy;
       return true;
     },
-    writeKeyBlock: async (_token, sealed) => {
+    // As the real server: only with the account's own signature over the block (found in review)
+    writeKeyBlock: async (_token, sealed, proof) => {
+      const fields = keyBlockFields(encodeBytes(account.accountId), sealed);
+      if (!verify(account.keyBlock.ed.publicKey, proof, KEY_BLOCK_PURPOSE, ...fields)) return false;
       blocks.push(sealed);
       return true;
     },

@@ -19,12 +19,14 @@ import {
   encodeBytes,
   isCertified,
   isSignedPolicy,
+  KEY_BLOCK_PURPOSE,
+  keyBlockFields,
   PolicyWire,
   policyToWire,
   RootRotationWire,
   toWire,
 } from "@kennwort/core";
-import { isSignedRootChange, recoveryFingerprint } from "@kennwort/crypto";
+import { isSignedRootChange, recoveryFingerprint, verify } from "@kennwort/crypto";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
@@ -182,12 +184,22 @@ const putRoot = (db: Db, now: () => number) => async (c: Context<TenantEnv>) => 
 
 // A sealed key block: version, nonce, three 32-byte keys each with its length, and the tag (F-01)
 const SEALED_KEY_BLOCK = 1 + 24 + 3 * (4 + 32) + 16;
-const KeyBlockUpdate = z.object({ keyBlock: bytes(SEALED_KEY_BLOCK) });
+const KeyBlockUpdate = z.object({ keyBlock: bytes(SEALED_KEY_BLOCK), proof: bytes(65) });
 
-/** PUT /api/account/key-block: the account's key block under AK, written anew after a root change */
+/**
+ * PUT /api/account/key-block: the account's key block under AK, written anew after a root change,
+ * only with a signature of the account's own Ed25519 key over it: the block holds the private
+ * keys, and a session alone must not replace them (key-block-proof.ts)
+ */
 const putKeyBlock = (db: Db, now: () => number) => async (c: Context<TenantEnv>) => {
   const parsed = KeyBlockUpdate.safeParse(await c.req.json().catch(() => undefined));
   if (!parsed.success) return c.json({ error: "invalid" }, 400);
+  const { accountId } = c.var.session;
+  const keys = db.select().from(accountKeys).where(eq(accountKeys.accountId, accountId)).get();
+  if (!keys) return c.json({ error: "not-found" }, 404);
+  const fields = keyBlockFields(accountId, parsed.data.keyBlock);
+  if (!verify(new Uint8Array(keys.edPublicKey), parsed.data.proof, KEY_BLOCK_PURPOSE, ...fields))
+    return c.json({ error: "not-proven" }, 403);
   const stored = db
     .update(accountKeys)
     .set({ keyBlock: Buffer.from(parsed.data.keyBlock), updatedAt: now() })
