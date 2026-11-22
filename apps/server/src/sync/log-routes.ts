@@ -86,15 +86,13 @@ const refusal = (
   const prev = rows.at(-1)?.hash ?? Buffer.from(GENESIS_HASH);
   if (entry.seq !== rows.length || encodeBytes(entry.prevHash) !== encodeBytes(prev))
     return "stale";
-  // verifyLog counts rights at the entry's signed time; the server also wants a manager now, so
-  // no one whose access ran out appends with a backdated entry (review of K-305)
+  // verifyLog counts rights at the entry's signed time; the server also wants a current member
+  // now, so no one whose access ran out appends with a backdated entry (review of K-305). Signed
+  // times never go back, so a current member's rights are those verifyLog checks: a manager
+  // anything, any member her own rekey with her renewed keys (P-12)
   const entries = s.entriesOf(rows);
   if (rows.length > 0) {
-    const signer = membersOf(entries).get(accountId);
-    // A current member renews her own keys in the log with the new ones (P-12), whatever her role
-    const ownRekey = entry.action === "rekey" && encodeBytes(entry.accountId) === accountId;
-    const rights = signer?.role === "manage" || (ownRekey && signer !== undefined);
-    if (!rights || !isCurrent(signer, s.seconds())) return "forbidden";
+    if (!isCurrent(membersOf(entries).get(accountId), s.seconds())) return "forbidden";
   } else if (s.vaultOf(companyId, encodeBytes(entry.vaultId))?.createdBy !== accountId) {
     // Only who created the vault writes its genesis: no colleague takes a new vault over
     return "forbidden";

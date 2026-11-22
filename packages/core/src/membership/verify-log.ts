@@ -101,14 +101,14 @@ export const certificateFor = (
   trust: Trust,
   accountId: Uint8Array,
   fingerprint: Uint8Array,
-  time?: number,
+  time = Number.NEGATIVE_INFINITY,
 ) => {
   const current = certificateOf(trust, accountId);
   const all = [...earlierOf(trust, accountId, current), ...(current ? [current] : [])];
+  // No certificate of this bundle: index -1, and all[-1] is none
   const index = all.findIndex((c) => sameBundle(c, fingerprint));
-  if (index < 0) return undefined;
   const next = all.slice(index + 1).find((c) => !sameBundle(c, fingerprint));
-  const retired = next && time !== undefined && time >= next.issuedAt + CLOCK_SKEW_SECONDS;
+  const retired = next && time >= next.issuedAt + CLOCK_SKEW_SECONDS;
   return retired ? undefined : all[index];
 };
 

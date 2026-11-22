@@ -109,7 +109,7 @@ const pendingOf = (member: MemberWire): PendingMember | undefined =>
 
 /** The new keys of an account that has an earlier certificate but no current one (P-12) */
 const renewedOf = (member: MemberWire, previous: Certificate[]): RenewedBundle | undefined =>
-  previous.length > 0 && member.xwingPublicKey && member.edPublicKey && !member.invitation
+  previous.length > 0 && member.xwingPublicKey && member.edPublicKey
     ? {
         accountId: member.id,
         xwingPublicKey: member.xwingPublicKey,

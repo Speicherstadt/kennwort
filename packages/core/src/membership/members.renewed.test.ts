@@ -123,6 +123,11 @@ describe("certifyRenewed", () => {
     expect(certifyRenewed(root.secretKey, unlisted, company, 1, 0)?.issuedAt).toBe(1);
   });
 
+  it("certifies nothing for a member whose status is not renewed, whatever bundle the view carries", () => {
+    const certified = { ...viewOf(), status: "certified" as const };
+    expect(certifyRenewed(root.secretKey, certified, company, 50, 0)).toBeUndefined();
+  });
+
   it("certifies nothing for a member who did not renew", () => {
     expect(
       certifyRenewed(root.secretKey, viewOf({ previous: [] }), company, 50, 0),

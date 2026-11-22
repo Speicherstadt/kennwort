@@ -146,9 +146,20 @@ describe("account state", () => {
     };
     for (const merged of [mergeStates(state, renewed), mergeStates(renewed, state)])
       expect(merged.ok && merged.value.bundles.anna).toEqual(new Uint8Array(32).fill(9));
+    const unseen = { ...state, certificates: {} };
+    for (const merged of [mergeStates(unseen, renewed), mergeStates(renewed, unseen)])
+      expect(merged.ok && merged.value.bundles.anna).toEqual(new Uint8Array(32).fill(9));
     const older = { ...renewed, certificates: { anna: at - 1 } };
     for (const merged of [mergeStates(state, older), mergeStates(older, state)])
       expect(merged.ok && merged.value.bundles.anna).toEqual(state.bundles.anna);
+  });
+
+  it("takes a bundle the own side does not know, and the same bundle again, whatever was seen", () => {
+    const max = new Uint8Array(32).fill(7);
+    const theirs = { ...emptyState(root), bundles: { max } };
+    const merged = mergeStates(emptyState(root), theirs);
+    expect(merged.ok && merged.value.bundles).toEqual({ max });
+    expect(mergeStates(theirs, theirs)).toEqual({ ok: true, value: theirs });
   });
 
   it("keeps the personal vault's ID from either side, the own first (P-12)", () => {

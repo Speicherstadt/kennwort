@@ -120,10 +120,11 @@ export type AuditProblem =
 export type AuditCheck = {
   companyId: string;
   /**
-   * The actor's Ed25519 public key from its certificate, for client actions; after the account
-   * renewed its keys (P-12) its earlier keys as well, which signed the events before
+   * The actor's Ed25519 public keys from its certificates, for client actions: the current one,
+   * and after the account renewed its keys (P-12) its earlier ones, which signed the events before;
+   * none for an unknown actor
    */
-  publicKeyOf: (actor: string) => Uint8Array | readonly Uint8Array[] | undefined;
+  publicKeysOf: (actor: string) => readonly Uint8Array[];
   remembered?: AuditHead;
 };
 
@@ -140,7 +141,7 @@ const checkEvent = (
   if (!constantTimeEqual(event.hash, auditHash(prevHash, event))) return "changed";
   if (!isClientAction(event.action)) return undefined;
   // An unknown actor has no key, and no key verifies nothing
-  const keys = [check.publicKeyOf(event.actor) ?? []].flat();
+  const keys = check.publicKeysOf(event.actor);
   const fields = signedFields({ ...event, action: event.action });
   const signed = keys.some((key) => verify(key, event.signature, "audit", ...fields));
   return signed ? undefined : "bad-signature";

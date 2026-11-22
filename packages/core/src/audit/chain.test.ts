@@ -24,7 +24,13 @@ const keys = new Map([
   [ids.jonas, jonas.ed.publicKey],
   [ids.anna, anna.ed.publicKey],
 ]);
-const check = { companyId: company, publicKeyOf: (actor: string) => keys.get(actor) };
+const check = {
+  companyId: company,
+  publicKeysOf: (actor: string) => {
+    const key = keys.get(actor);
+    return key ? [key] : [];
+  },
+};
 
 type Step = { actor: string; action: AuditAction; subject: string; signedBy?: Uint8Array };
 const steps: Step[] = [
@@ -138,7 +144,7 @@ describe("verifyAudit", () => {
       ok: false,
       error: { problem: "bad-signature", seq: 4 },
     });
-    expect(verifyAudit(events, { ...check, publicKeyOf: () => undefined })).toEqual({
+    expect(verifyAudit(events, { ...check, publicKeysOf: () => [] })).toEqual({
       ok: false,
       error: { problem: "bad-signature", seq: 4 },
     });
@@ -146,14 +152,14 @@ describe("verifyAudit", () => {
 
   it("checks a client action against each key of an actor who renewed her keys (P-12)", () => {
     const events = build(steps);
-    const renewed = { ...check, publicKeyOf: () => [anna.ed.publicKey, jonas.ed.publicKey] };
+    const renewed = { ...check, publicKeysOf: () => [anna.ed.publicKey, jonas.ed.publicKey] };
     expect(verifyAudit(events, renewed).ok).toBe(true);
-    const others = { ...check, publicKeyOf: () => [anna.ed.publicKey] };
+    const others = { ...check, publicKeysOf: () => [anna.ed.publicKey] };
     expect(verifyAudit(events, others)).toEqual({
       ok: false,
       error: { problem: "bad-signature", seq: 4 },
     });
-    expect(verifyAudit(events, { ...check, publicKeyOf: () => [] })).toEqual({
+    expect(verifyAudit(events, { ...check, publicKeysOf: () => [] })).toEqual({
       ok: false,
       error: { problem: "bad-signature", seq: 4 },
     });

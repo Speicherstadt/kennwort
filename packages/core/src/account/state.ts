@@ -145,8 +145,8 @@ const mergeBundles = (mine: AccountState, theirs: AccountState) => {
     if (!known || constantTimeEqual(known, fingerprint)) continue;
     const mineAt = mine.certificates[id] ?? 0;
     const theirsAt = theirs.certificates[id] ?? 0;
-    if (mineAt === theirsAt) return undefined;
     if (theirsAt > mineAt) merged[id] = fingerprint;
+    else if (theirsAt === mineAt) return undefined;
   }
   return merged;
 };

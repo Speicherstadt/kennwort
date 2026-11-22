@@ -746,8 +746,10 @@ annimmt – mit dem Wurzelschlüssel der Firma und den Zertifikaten, die er häl
 Server dieselben Regeln wie im Client: gültige Signatur, Verwalter zur signierten Zeit, `aufnehmen`
 nur für Nicht-Mitglieder, `rolle` und `entfernen` nur für Mitglieder, Zeiten, die nie zurückgehen
 und höchstens fünf Minuten vor seiner Uhr liegen. Dazu muss der Unterzeichner nach der Uhr des
-Servers gerade Verwalter sein: Ein Verwalter, dessen Zugriff abgelaufen ist, hängt auch mit einer
+Servers gerade Mitglied sein: Ein Verwalter, dessen Zugriff abgelaufen ist, hängt auch mit einer
 zurückdatierten Zeit nichts mehr an (das Restrisiko oben bleibt nur gegen einen bösartigen Server).
+Welche Rechte ein aktuelles Mitglied hat, entscheidet `verifyLog` zur signierten Zeit, die nie
+zurückgeht: ein Verwalter jeden Eintrag, jedes Mitglied die eigene `schlüsselerneuerung`.
 Wer entfernt und wieder aufgenommen wird, bekommt den Schlüssel neu verpackt. Einen
 `schlüsselwechsel` nimmt er nur mit dem neuen VK für genau die Mitglieder des Logs
 ([P-11](#p-11-austritt-und-schlusselwechsel)). Ob ein

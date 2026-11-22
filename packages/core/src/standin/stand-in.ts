@@ -138,11 +138,11 @@ const appendLog = (
   if (entry.seq !== vault.log.length || encodeBytes(entry.prevHash) !== prev)
     return json({ error: "stale", seq: vault.log.length }, 409);
   const now = company.now();
-  const role = roleOf(vault, session.accountId, now);
-  // A current member renews her own keys in the log with the new ones (P-12), whatever her role
-  const ownRekey = entry.action === "rekey" && idKey(entry.accountId) === idKey(entry.signerId);
+  // After the genesis only a current member by the stand-in's own clock, so no one whose time ran
+  // out appends with a backdated entry; what each may sign verifyLog decides: a manager anything,
+  // any member her own rekey with her renewed keys (P-12)
   const allowed = last
-    ? role === "manage" || (ownRekey && role !== undefined)
+    ? roleOf(vault, session.accountId, now) !== undefined
     : vault.createdBy === session.accountId;
   if (!allowed) return json({ error: "forbidden" }, 403);
   const trust = {
