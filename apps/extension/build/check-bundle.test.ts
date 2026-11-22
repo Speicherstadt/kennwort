@@ -39,9 +39,19 @@ describe("the bundle check", () => {
 
   it("runs after every build script, for each browser it builds", () => {
     const { scripts } = JSON.parse(readFileSync(join(extension, "package.json"), "utf8"));
-    expect(scripts.build).toMatch(/&& bun build\/check-bundle\.ts chrome firefox$/);
+    expect(scripts.build).toMatch(/&& bun build\/check-bundle\.ts chrome firefox safari$/);
     expect(scripts["build:chrome"]).toMatch(/&& bun build\/check-bundle\.ts chrome$/);
     expect(scripts["build:firefox"]).toMatch(/&& bun build\/check-bundle\.ts firefox$/);
+    expect(scripts["build:safari"]).toMatch(/&& bun build\/check-bundle\.ts safari$/);
+  });
+
+  // K-407: Mozilla's linter (what `web-ext lint` runs) checks the Firefox build like
+  // addons.mozilla.org does; errors fail the build
+  it("lints the Firefox build with addons-linter", () => {
+    const { scripts } = JSON.parse(readFileSync(join(extension, "package.json"), "utf8"));
+    expect(scripts["lint:firefox"]).toBe("addons-linter --self-hosted dist/firefox");
+    expect(scripts.build).toContain("vite build --mode safari && bun run lint:firefox");
+    expect(scripts["build:firefox"]).toContain("&& bun run lint:firefox &&");
   });
 });
 

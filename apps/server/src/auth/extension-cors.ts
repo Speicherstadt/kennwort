@@ -1,6 +1,6 @@
 /**
  * CORS for the browser extension (K-402): its popup runs under its own origin
- * (chrome-extension://<id>, moz-extension://<uuid>) and reaches the company's server across
+ * (chrome-extension://<id>, moz-extension://<uuid>, safari-web-extension://<uuid>) and reaches the company's server across
  * origins. Only such an origin gets CORS headers, only for the paths the popup calls (the API and
  * the sign-in key), and never with credentials: every call carries a bearer token, so opening the
  * API to an extension's origin hands it nothing it does not already hold. Web pages get no CORS
@@ -9,11 +9,15 @@
 import type { MiddlewareHandler } from "hono";
 import { cors } from "hono/cors";
 
-// Chrome and Edge: 32 letters a-p; Firefox: a random UUID per installation
-const EXTENSION_ORIGIN =
-  /^(chrome-extension:\/\/[a-p]{32}|moz-extension:\/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+// Chrome and Edge: 32 letters a-p; Firefox: a random UUID per installation, in small letters
+const EXTENSION_ORIGIN = new RegExp(`^(chrome-extension://[a-p]{32}|moz-extension://${UUID})$`);
+// Safari (K-407): a random UUID that changes with every launch; WebKit writes it in capitals,
+// either case is taken (MDN, web_accessible_resources)
+const SAFARI_ORIGIN = new RegExp(`^safari-web-extension://${UUID}$`, "i");
 
-export const isExtensionOrigin = (origin: string) => EXTENSION_ORIGIN.test(origin);
+export const isExtensionOrigin = (origin: string) =>
+  EXTENSION_ORIGIN.test(origin) || SAFARI_ORIGIN.test(origin);
 
 const PATHS = [/^\/api(\/|$)/, /^\/auth\/login-key\//];
 

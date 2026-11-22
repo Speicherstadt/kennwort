@@ -8,7 +8,7 @@
  * been visible without a break for ARM_AFTER_MS,
  * so a page cannot slide the menu under the pointer just before a click (DOM-based extension
  * clickjacking, Marek Tóth, DEF CON 33, 2025; the defence Chrome documents for embedded frames).
- * Where the browser lacks v2 (Firefox), the menu never arms and fills nothing: it says so instead.
+ * Where the browser lacks v2 (Firefox, Safari), the menu never arms and fills nothing: it says so instead.
  */
 
 export const ARM_AFTER_MS = 500;

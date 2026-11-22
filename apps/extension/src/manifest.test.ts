@@ -2,7 +2,18 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { MENU_PAGE } from "./fill/messages.ts";
-import { CONTENT_SECURITY_POLICY, E2E_HOSTS, GECKO_ID, manifest, WEB_PAGES } from "./manifest.ts";
+import {
+  BROWSERS,
+  type Browser,
+  CONTENT_SECURITY_POLICY,
+  E2E_HOSTS,
+  FIREFOX_ANDROID_MIN_VERSION,
+  FIREFOX_MIN_VERSION,
+  GECKO_ID,
+  manifest,
+  SAFARI_MIN_VERSION,
+  WEB_PAGES,
+} from "./manifest.ts";
 import { PROMPT_PAGE } from "./save/messages.ts";
 
 type Manifest = Record<string, unknown> & {
@@ -11,12 +22,12 @@ type Manifest = Record<string, unknown> & {
   content_scripts: Record<string, unknown>[];
   web_accessible_resources: Record<string, unknown>[];
 };
-const built = (browser: "chrome" | "firefox") => manifest(browser) as unknown as Manifest;
+const built = (browser: Browser) => manifest(browser) as unknown as Manifest;
 const locales = join(import.meta.dirname, "..", "public", "_locales");
 const messages = (locale: string): Record<string, { message: string }> =>
   JSON.parse(readFileSync(join(locales, locale, "messages.json"), "utf8"));
 
-describe.each(["chrome", "firefox"] as const)("the manifest for %s", (browser) => {
+describe.each(BROWSERS)("the manifest for %s", (browser) => {
   it("asks for the session area, the lock alarm, the active tab and the frame tree, no hosts", () => {
     expect(built(browser).permissions).toEqual(["storage", "alarms", "activeTab", "webNavigation"]);
     expect(built(browser)).not.toHaveProperty("host_permissions");
@@ -103,6 +114,55 @@ it("runs the background as a module service worker in Chrome and Edge", () => {
 it("runs the background from scripts with a fixed ID in Firefox", () => {
   expect(built("firefox").background).toEqual({ scripts: ["src/background.ts"] });
   expect(built("firefox").browser_specific_settings).toMatchObject({ gecko: { id: GECKO_ID } });
+});
+
+// K-407: Firefox for Android installs only what names gecko_android; 142 is the first Android
+// version that reads data_collection_permissions (addons-linter, KEY_FIREFOX_ANDROID_UNSUPPORTED…)
+it("offers the Firefox build on Android too, from the version that reads every key", () => {
+  expect(built("firefox").browser_specific_settings).toEqual({
+    gecko: {
+      id: GECKO_ID,
+      strict_min_version: FIREFOX_MIN_VERSION,
+      data_collection_permissions: { required: ["none"] },
+    },
+    gecko_android: { strict_min_version: FIREFOX_ANDROID_MIN_VERSION },
+  });
+  expect([FIREFOX_MIN_VERSION, FIREFOX_ANDROID_MIN_VERSION]).toEqual(["140.0", "142.0"]);
+});
+
+// K-407: Safari runs MV3 service workers (15.4), module workers (16.4), setAccessLevel on the
+// session area (17.1) and content scripts in the page's world (18), which the passkeys need
+// (MDN browser-compat-data 8.1.10)
+it("runs the background as a module service worker in Safari, from Safari 18", () => {
+  expect(built("safari").background).toEqual({
+    service_worker: "src/background.ts",
+    type: "module",
+  });
+  expect(built("safari").browser_specific_settings).toEqual({
+    safari: { strict_min_version: SAFARI_MIN_VERSION },
+  });
+  expect(SAFARI_MIN_VERSION).toBe("18.0");
+});
+
+// Safari's base URL changes with every launch anyway (MDN, web_accessible_resources); Firefox has
+// no use_dynamic_url and gives each profile its own random address instead
+it.each(["firefox", "safari"] as const)("carries no key only Chrome reads into %s", (browser) => {
+  expect(built(browser).web_accessible_resources).toEqual([
+    { resources: [MENU_PAGE, PROMPT_PAGE], matches: WEB_PAGES },
+  ]);
+  expect(JSON.stringify(built(browser))).not.toContain("use_dynamic_url");
+});
+
+it("gives every browser the same permissions, content scripts, texts and policy", () => {
+  const shared = (browser: Browser) => {
+    const { background, browser_specific_settings, web_accessible_resources, ...rest } =
+      built(browser);
+    return rest;
+  };
+  expect(shared("firefox")).toEqual(shared("chrome"));
+  expect(shared("safari")).toEqual(shared("chrome"));
+  expect(built("safari")).not.toHaveProperty("browser_specific_settings.gecko");
+  expect(built("chrome")).not.toHaveProperty("browser_specific_settings");
 });
 
 it("gives only the end-to-end build access to the test pages under .test", () => {

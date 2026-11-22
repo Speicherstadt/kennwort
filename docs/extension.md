@@ -1,7 +1,7 @@
 ---
 title: Browser-Extension
 description: >-
-  Die Browser-Extension von Kennwort für Chrome, Edge und Firefox: verbinden und entsperren, Treffer
+  Die Browser-Extension von Kennwort für Chrome, Edge, Firefox (auch Android) und Safari: verbinden und entsperren, Treffer
   für die Seite, Suche, Favoriten und Generator im Popup, Ausfüllen über das Inline-Menü, neue und
   geänderte Logins speichern, vor Phishing warnen, Passkeys für Websites anlegen und damit anmelden,
   wo sie entsperrte Schlüssel ablegt und wie man sie zum Entwickeln entpackt lädt.
@@ -27,8 +27,34 @@ neue Logins speichern, vor Phishing warnen und Passkeys für Websites halten. Ih
 | --- | --- | --- |
 | Chrome, Edge | `apps/extension/dist/chrome` | Manifest V3 mit Service Worker |
 | Firefox (ab 140) | `apps/extension/dist/firefox` | Manifest V3 mit Hintergrundskript und fester Extension-ID |
+| Firefox für Android (ab 142) | `apps/extension/dist/firefox` | derselbe Build; `gecko_android` bietet ihn auf Android an |
+| Safari auf macOS und iOS (ab 18) | `apps/extension/dist/safari` | Manifest V3 mit Service Worker; der Ordner, aus dem Xcode die App macht (unten) |
 
-Safari und Firefox für Android kommen später mit eigenen Tests.
+Die Mindestversionen sind die ersten, die alles können, was die Extension braucht: Firefox 140
+(die aktuelle ESR) liest als erste Version die Angaben zur Datenerhebung, die addons.mozilla.org
+verlangt, Firefox für Android erst ab 142; Safari 18 führt als erste Version ein Skript im Kontext
+der Seite aus, das die Passkeys brauchen.
+
+### Was je Browser anders ist
+
+| | Chrome, Edge | Firefox | Firefox für Android | Safari |
+| --- | --- | --- | --- | --- |
+| Popup: entsperren, Treffer, Suche, Kopieren, Generator | ja | ja | ja | ja |
+| Inline-Menü zeigt Einträge | ja | ja | ja | ja |
+| Inline-Menü füllt aus | ja | nein, verweist aufs Kopieren | nein, verweist aufs Kopieren | nein, verweist aufs Kopieren |
+| Login speichern, Passkeys signieren | ja | nein, verweist auf Web-App oder anderes Gerät | nein | nein |
+| Phishing-Warnung | ja | ja, bleibt bis zum Verlassen der Seite | ja, bleibt bis zum Verlassen der Seite | ja, bleibt bis zum Verlassen der Seite |
+| Adresse der Seiten von Menü und Leiste | wechselt je Browser-Sitzung | zufällig je Profil | zufällig je Profil | wechselt bei jedem Start |
+
+Ausfüllen, Speichern und Signieren brauchen die Bestätigung des Browsers, dass Menü oder Leiste
+wirklich sichtbar sind (IntersectionObserver v2). Die gibt es nur in Chromium; Firefox und Safari
+kennen sie nicht. Dort zeigt die Extension, was sie hat, schreibt aber nichts in eine Seite und
+signiert nichts, statt das ohne diesen Schutz gegen Clickjacking zu tun. Warum, steht im
+[Sicherheitsdesign](sicherheitsdesign.md#p-17-ausfullen).
+
+Firefox für Android und Safari auf iOS kennen keine Browserfenster für Extensions. Das Popup nimmt
+dort die Seite, über der du es öffnest, als aktiven Tab; **Zum Entsperren öffnen** im Inline-Menü
+öffnet das Popup, wo der Browser es nicht über die Seite legen kann, in einem eigenen Tab.
 
 ## Berechtigungen
 
@@ -115,7 +141,7 @@ Was die Extension dabei sicherstellt:
 - **Die Sperrzeit läuft weiter**: Das Menü schiebt das automatische Sperren nicht hinaus; nur das
   Popup tut das.
 
-In Firefox kann die Extension noch nicht prüfen, ob das Menü sichtbar ist (dafür fehlt
+In Firefox und Safari kann die Extension noch nicht prüfen, ob das Menü sichtbar ist (dafür fehlt
 IntersectionObserver v2); dort zeigt das Menü die Einträge, füllt aber nicht aus und verweist aufs
 Kopieren im Popup. Wie die Prüfungen genau laufen, steht im
 [Sicherheitsdesign](sicherheitsdesign.md#p-17-ausfullen).
@@ -175,8 +201,8 @@ Wann ist die Anmeldung fertig? Lädt die Seite danach eine neue Seite, fragt die
 Bleibt die Seite (Anmeldung per Skript), fragt sie, sobald das abgeschickte Passwortfeld
 verschwindet oder ausgeblendet wird; bleibt es stehen, gilt das als fehlgeschlagene Anmeldung, und
 die Extension fragt nicht. Meldest du dich in einem Frame derselben Herkunft an, fragt sie erst,
-wenn die Seite drumherum neu lädt. In Firefox kann die Leiste wie das Menü nicht prüfen, ob sie
-sichtbar ist; dort speichert sie nicht und verweist auf die Web-App.
+wenn die Seite drumherum neu lädt. In Firefox und Safari kann die Leiste wie das Menü nicht
+prüfen, ob sie sichtbar ist; dort speichert sie nicht und verweist auf die Web-App.
 
 ## Phishing-Warnung
 
@@ -221,7 +247,7 @@ Was die Extension dabei sicherstellt:
   durchsichtig ist, mit denselben Prüfungen wie das Speichern; sonst sagt sie: „Die Warnung war
   verdeckt oder durchsichtig.“
 
-Wie in der Leiste zum Speichern kann Firefox nicht bestätigen, dass die Warnung sichtbar ist; dort
+Wie in der Leiste zum Speichern können Firefox und Safari nicht bestätigen, dass die Warnung sichtbar ist; dort
 bleibt sie stehen, bis du die Seite verlässt. Wie die Hashes genau gebildet werden und was sie
 verraten, steht im [Sicherheitsdesign](sicherheitsdesign.md#p-17-ausfullen).
 
@@ -277,7 +303,7 @@ Was die Extension dabei sicherstellt:
 
 Nicht von Kennwort, sondern vom Browser beantwortet werden außerdem Passkeys im Autofill-Menü der
 Seite (`mediation: "conditional"`), Seiten ohne HTTPS (außer `localhost`) und Websites, die kein
-ES256 annehmen. In Firefox kann die Leiste wie beim Speichern nicht prüfen, ob sie sichtbar ist; dort
+ES256 annehmen. In Firefox und Safari kann die Leiste wie beim Speichern nicht prüfen, ob sie sichtbar ist; dort
 signiert sie nicht und verweist auf ein anderes Gerät. Wie die Prüfungen genau laufen, steht im
 [Sicherheitsdesign](sicherheitsdesign.md#p-17-ausfullen).
 
@@ -315,7 +341,7 @@ Zum Entwickeln baust du die Extension und lädst den Ordner direkt in den Browse
 
 ```sh
 bun install
-bun run --cwd apps/extension build:chrome    # oder build:firefox, oder build für beide
+bun run --cwd apps/extension build:chrome    # oder build:firefox, build:safari, oder build für alle
 ```
 
 - **Chrome, Edge**: `chrome://extensions` (Edge: `edge://extensions`) öffnen, den
@@ -323,7 +349,25 @@ bun run --cwd apps/extension build:chrome    # oder build:firefox, oder build f�
   wählen.
 - **Firefox**: `about:debugging#/runtime/this-firefox` öffnen, **Temporäres Add-on laden** und
   die Datei `apps/extension/dist/firefox/manifest.json` wählen. Firefox entfernt das Add-on beim
-  nächsten Neustart wieder.
+  nächsten Neustart wieder. `build:firefox` prüft den Build danach mit `addons-linter` von Mozilla
+  (dem Prüfer hinter `web-ext lint` und addons.mozilla.org); ein Fehler bricht den Build ab.
+- **Firefox für Android**: Auf dem Rechner `npx web-ext run -t firefox-android
+  --source-dir apps/extension/dist/firefox --android-device <Gerät>` mit einem per USB verbundenen
+  Telefon, auf dem Firefox (oder Firefox Nightly) läuft und in den Einstellungen unter
+  **Remote-Debugging über USB** eingeschaltet ist (`adb devices` zeigt das Gerät). Veröffentlicht
+  wird über addons.mozilla.org, für Desktop und Android mit derselben Datei.
+- **Safari** (macOS mit Xcode, Schritte einer Person): Den Ordner `apps/extension/dist/safari` mit
+  `xcrun safari-web-extension-converter apps/extension/dist/safari --project-location <Ordner>
+  --app-name Kennwort --bundle-identifier <Bundle-ID des Teams> --no-open` in ein Xcode-Projekt
+  wandeln, das eine kleine App für macOS und iOS um die Extension legt. In Xcode unter
+  **Signing & Capabilities** das eigene Team wählen und die App einmal starten. Danach in Safari
+  unter **Einstellungen → Erweiterungen** Kennwort einschalten und den Zugriff auf Websites
+  erlauben. Ohne Signatur geht das nur mit **Entwickler → Nicht signierte Erweiterungen erlauben**
+  (das Menü „Entwickler“ unter **Einstellungen → Erweitert** einblenden); Safari vergisst das beim
+  Beenden. Auf iOS und iPadOS wird die Extension unter **Einstellungen → Apps → Safari →
+  Erweiterungen** eingeschaltet. Für den App Store signiert eine Person mit dem Zertifikat des
+  Teams und reicht die App über App Store Connect ein. Die Schleife baut und prüft nur den Ordner:
+  Xcode, Signatur und App Store brauchen einen Mac.
 
 Nach einer Änderung baust du neu und lädst die Extension im Browser neu.
 
@@ -336,7 +380,10 @@ eigenen Paraglide-Laufzeit ohne `localStorage` (`apps/extension/paraglide`, erze
 Für die End-to-End-Tests baut `bun run --cwd apps/extension build:e2e` nach `dist/e2e` eine Fassung,
 die zusätzlich die Adressen der Testseiten unter `.test` lesen darf: `activeTab` gibt die Adresse
 nur nach einem echten Klick auf das Symbol frei, und den kann Playwright nicht machen. Ein Release
-trägt diese Berechtigung nie. Die Tests des Inline-Menüs (`e2e/extension-fill.spec.ts`) füllen auf
+trägt diese Berechtigung nie. Jeder Build prüft außerdem sein fertiges Manifest
+(`apps/extension/build/manifest-rules.ts`): dieselben Berechtigungen in jedem Browser, kein
+Schlüssel, den nur ein anderer Browser liest (etwa `use_dynamic_url` nur für Chrome,
+`browser_specific_settings.gecko` nur für Firefox), und kein Host, den nur der Test-Build darf. Die Tests des Inline-Menüs (`e2e/extension-fill.spec.ts`) füllen auf
 Testseiten aus und spielen die Angriffe nach: Phishing-Domain, fremdes iFrame, verdecktes und
 durchsichtiges Menü. Die Tests zum Speichern (`e2e/extension-save.spec.ts`) melden sich auf
 Testseiten an, speichern und aktualisieren und prüfen, dass dasselbe Passwort, ein verstecktes
@@ -351,3 +398,24 @@ einer Testseite, die mit dem Server von SimpleWebAuthn prüft, einen Passkey an 
 an; eine ähnlich aussehende Domain, die die rpId des Portals beansprucht, bekommt `SecurityError`,
 ein fremdes iFrame, „Anderes Gerät verwenden“ und ein gesperrtes Kennwort gehen an einen virtuellen
 Authenticator des Browsers, und eine verdeckte Leiste signiert nichts.
+
+## Tests in Firefox und Safari
+
+Playwright lädt Extensions nur in Chromium. Die Tests unter `e2e/engines`
+(`bun run e2e:engines`, Konfiguration `playwright.engines.config.ts`) laufen darum in
+Playwrights Firefox und WebKit, das für Safari steht, und nehmen jeweils den Build dieses Browsers:
+
+- **Popup** (`e2e/engines/popup.spec.ts`): Das gebaute Popup aus `dist/firefox` in Firefox und aus
+  `dist/safari` in WebKit verbindet sich mit dem Test-Server, entsperrt, zeigt den Eintrag für den
+  exakten Host, legt die Schlüssel nur in den Sitzungsbereich, stellt den Sperr-Alarm und sperrt
+  wieder. Die Schnittstellen des Browsers (Sitzungsbereich, Alarme, Tabs) stellt der Test nach, in
+  Firefox wie auf Android ohne `windows` und ohne `setAccessLevel`.
+- **Ausfüllen** (`e2e/engines/fill.spec.ts`, mit `apps/extension/harness/engine-harness.ts`): Der
+  Code des Content Scripts und des Service Workers in der Engine selbst. Das Menü öffnet nur auf
+  einen echten Klick, gefüllt wird nur der exakte Host und ein Frame derselben Herkunft, nie ein
+  fremder Frame, nichts bei verdecktem oder durchsichtigem Menü und nichts in ein verstecktes Feld.
+  Nur der Weg der Nachrichten zwischen den Frames ist nachgestellt.
+
+In CI laufen beide Engines nebeneinander. Was nur im echten Browser geht – die Extension
+installieren, Menü und Leiste als echte Extension-Seiten, Firefox auf einem Android-Gerät, Safari
+auf dem Mac –, prüfen diese Tests nicht; das bleibt Handarbeit vor einem Release.

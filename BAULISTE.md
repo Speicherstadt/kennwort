@@ -313,7 +313,22 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   Leiste. Der Schlüssel hat ein Format mit Version (F-12) und Testvektoren aus `node:crypto`, die
   WebAuthn-Strukturen bestehen die Prüfung von SimpleWebAuthn in Vitest, Texte auf Deutsch und
   Englisch.
-- [ ] **K-407 Firefox für Android und Safari** – Build und Tests je Browser.
+- [x] **K-407 Firefox für Android und Safari** – Build und Tests je Browser.
+  Fertig, wenn: `build:firefox` den Firefox-Build für Desktop und Android baut (`gecko` mit fester
+  ID ab 140, `gecko_android` ab 142, Hintergrundskript) und `addons-linter` ihn ohne Fehler prüft,
+  `build:safari` nach `dist/safari` den Ordner für `xcrun safari-web-extension-converter` baut
+  (Service Worker, Safari ab 18, ohne `use_dynamic_url`), jeder Build sein fertiges Manifest prüft
+  (gleiche vier Berechtigungen, keine Hosts, kein Schlüssel eines anderen Browsers), Vitest die
+  Manifeste je Browser prüft, der Service Worker Menü und Leiste unter `moz-extension:` und
+  `safari-web-extension:` annimmt und der Server CORS für Safaris Herkunft beantwortet, das Popup
+  ohne `windows`-API (Firefox für Android, Safari auf iOS) die Seite findet und zum Entsperren
+  notfalls einen Tab öffnet, Playwright in Firefox und WebKit (`e2e/engines`, in CI nebeneinander)
+  das gebaute Popup des jeweiligen Builds gegen den e2e-Server entsperren und sperren lässt und
+  den Code von Content Script und Service Worker beim Ausfüllen prüft (exakter Host, kein fremder
+  Frame, nur auf echten Klick, nichts bei verdecktem oder durchsichtigem Menü, nichts in versteckte
+  Felder, kein IntersectionObserver v2 außerhalb von Chromium), und `docs/extension.md`,
+  `docs/sicherheitsdesign.md` (P-17, „Je Browser“) und `docs/plan.md` Unterschiede, Restrisiken
+  und die Schritte einer Person (Xcode, Signatur, App Store, Android-Gerät) beschreiben.
 - [ ] **K-408 Reproduzierbarer Build** – zweimal bauen, Hashes vergleichen, in CI.
 
 ## Phase 5 – Import und Export
