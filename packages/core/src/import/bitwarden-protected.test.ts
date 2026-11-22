@@ -62,10 +62,11 @@ describe("Bitwarden's password-protected JSON (K-502 Teil 4)", () => {
     // fast-check seeds -738442150, 1865286675, -1004477976 and -1922047663 of
     // bitwarden-protected.property.test.ts, unshrunk and shrunk
     const text = new TextDecoder().decode(withParts({}));
-    for (const [encrypted, passwordProtected] of [
+    const renames: readonly (readonly [string, string])[] = [
       ['"encr=ypted"', '"passwor+Protected"'],
       ['"Ancrypted"', '"AasswordProtected"'],
-    ]) {
+    ];
+    for (const [encrypted, passwordProtected] of renames) {
       const renamed = text
         .replace('"encrypted"', encrypted)
         .replace('"passwordProtected"', passwordProtected);
