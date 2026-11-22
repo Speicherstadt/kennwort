@@ -10,6 +10,7 @@ export type EntryType = EntryContent["type"];
 export type FieldKindChoice = "text" | "secret" | "url" | "email" | "note" | "totp";
 export type TemplateField = { id: string; kind: FieldKindChoice; label: () => string };
 
+/** The types someone can pick for an entry; passkeys come only from a website (K-406) */
 export const ENTRY_TYPES: readonly EntryType[] = [
   "login",
   "note",
@@ -19,6 +20,10 @@ export const ENTRY_TYPES: readonly EntryType[] = [
   "api-key",
   "identity",
 ];
+
+/** The types to pick from for an entry of this type: a passkey keeps its own type on the list */
+export const typeChoices = (current: EntryType): readonly EntryType[] =>
+  ENTRY_TYPES.includes(current) ? ENTRY_TYPES : [...ENTRY_TYPES, current];
 
 const field = (id: string, kind: FieldKindChoice, label: () => string): TemplateField => ({
   id,
@@ -58,6 +63,16 @@ export const TEMPLATES: Record<EntryType, readonly TemplateField[]> = {
     field("phone", "text", m.field_phone),
     field("address", "note", m.field_address),
   ],
+  // The fields of F-12 (packages/core/src/webauthn/passkey-entry.ts)
+  passkey: [
+    field("rp-id", "text", m.field_rp_id),
+    field("username", "text", m.field_username),
+    field("display-name", "text", m.field_display_name),
+    field("user-handle", "text", m.field_user_handle),
+    field("credential-id", "text", m.field_credential_id),
+    field("private-key", "secret", m.field_private_key),
+    field("counter", "text", m.field_counter),
+  ],
 };
 
 export const typeLabel = (type: EntryType): string =>
@@ -69,6 +84,7 @@ export const typeLabel = (type: EntryType): string =>
     "ssh-key": m.type_ssh_key,
     "api-key": m.type_api_key,
     identity: m.type_identity,
+    passkey: m.type_passkey,
   })[type]();
 
 const KIND_LABELS: Record<FieldKindChoice, () => string> = {

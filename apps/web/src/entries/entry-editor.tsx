@@ -5,7 +5,7 @@
  */
 
 import type { SaveError } from "@kennwort/client/entries/entry-store.ts";
-import { ENTRY_TYPES, type EntryType, typeLabel } from "@kennwort/client/entries/entry-types.ts";
+import { type EntryType, typeChoices, typeLabel } from "@kennwort/client/entries/entry-types.ts";
 import { encodeBytes } from "@kennwort/core";
 import { randomBytes } from "@kennwort/crypto";
 import { Button, Dialog, Icon, Input, m } from "@kennwort/ui";
@@ -90,7 +90,7 @@ export const EntryEditor = (props: {
               <Choice
                 label={m.entry_editor_type()}
                 value={input().type}
-                options={ENTRY_TYPES.map((t) => ({ value: t, label: typeLabel(t) }))}
+                options={typeChoices(input().type).map((t) => ({ value: t, label: typeLabel(t) }))}
                 onChange={(type) => update((now) => withType(now, type as EntryType))}
               />
             </div>

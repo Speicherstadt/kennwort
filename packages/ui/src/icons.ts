@@ -13,6 +13,7 @@ export {
   Ellipsis,
   Eye,
   EyeOff,
+  FingerprintPattern,
   Globe,
   IdCard,
   ImageUp,

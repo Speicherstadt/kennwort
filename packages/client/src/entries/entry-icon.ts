@@ -3,6 +3,7 @@
 import {
   Braces,
   CreditCard,
+  FingerprintPattern,
   type IconNode,
   IdCard,
   KeyRound,
@@ -20,4 +21,5 @@ export const entryIcon: Record<EntryType, IconNode> = {
   "ssh-key": SquareTerminal,
   "api-key": Braces,
   identity: IdCard,
+  passkey: FingerprintPattern,
 };

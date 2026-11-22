@@ -1,0 +1,74 @@
+{
+  "keys": [
+    {
+      "name": "RFC 6979 A.2.5 key",
+      "key": "01c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721",
+      "publicKey": "0460fed4ba255a9d31c961eb74c6356d68c049b8923b61fa6ce669622e60f29fb67903fe1008b8bc99a41ae9e95628bc64f2f1b20c2d7e9f5177a3c294d4462299"
+    },
+    {
+      "name": "smallest scalar (d = 1, the base point)",
+      "key": "010000000000000000000000000000000000000000000000000000000000000001",
+      "publicKey": "046b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c2964fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5"
+    },
+    {
+      "name": "largest scalar (d = n - 1)",
+      "key": "01ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632550",
+      "publicKey": "046b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296b01cbd1c01e58065711814b583f061e9d431cca994cea1313449bf97c840ae0a"
+    },
+    {
+      "name": "scalar with a leading zero byte",
+      "key": "01005a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+      "publicKey": "049e4838bb6bda6457514d9f54f5d87bd87ed9f13fd068c1a1fa75a4eda6781a29d2aca2b907164ea2fa36d62d95e1a4c47bbb2a411ecaf06cee3c9639dd0d0de1"
+    }
+  ],
+  "signatures": {
+    "key": "01c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721",
+    "cases": [
+      {
+        "message": "73616d706c65",
+        "signature": "3045022100efd48b2aacb6a8fd1140dd9cd45e81d69d2c877b56aaf991c34d0ea84eaf371602200834e36ad29a83bf2bc9385e491d6099c8fdf9d1ed67aa7ea5f51f93782857a9"
+      },
+      {
+        "message": "74657374",
+        "signature": "3045022100f1abb023518351cd71d881567b1ea663ed3efcf6c5132b354f28d3b0b7d383670220019f4113742a2b14bd25926b49c649155f267e60d3814b4c0cc84250e46f0083"
+      }
+    ]
+  },
+  "invalid": [
+    {
+      "name": "unknown version",
+      "key": "02c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721",
+      "error": "unknown-version"
+    },
+    {
+      "name": "version 0",
+      "key": "00c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721",
+      "error": "unknown-version"
+    },
+    {
+      "name": "too short",
+      "key": "01afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721",
+      "error": "invalid-key"
+    },
+    {
+      "name": "too long",
+      "key": "01c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f672100",
+      "error": "invalid-key"
+    },
+    {
+      "name": "zero scalar",
+      "key": "010000000000000000000000000000000000000000000000000000000000000000",
+      "error": "invalid-key"
+    },
+    {
+      "name": "scalar n",
+      "key": "01ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551",
+      "error": "invalid-key"
+    },
+    {
+      "name": "scalar above n",
+      "key": "01ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "error": "invalid-key"
+    }
+  ]
+}

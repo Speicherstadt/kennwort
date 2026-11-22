@@ -69,6 +69,15 @@ export {
 } from "./invite.ts";
 export { hotp, OTP_ALGORITHMS, type OtpAlgorithm, type TotpOptions, totp } from "./otp.ts";
 export {
+  ES256,
+  newPasskeyKey,
+  PASSKEY_KEY_LENGTH,
+  PASSKEY_KEY_V1,
+  type PasskeyKeyError,
+  passkeyPublicKey,
+  passkeySign,
+} from "./passkey.ts";
+export {
   ACCOUNT_SALT_LENGTH,
   PASSPHRASE_V1,
   type PassphraseKeys,
