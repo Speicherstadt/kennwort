@@ -116,6 +116,7 @@ const createImportFlow = (save: ImportDeps["save"]) => {
     const keyFile = request.keyFile && (await readBytes(request.keyFile));
     if (!bytes || (keyFile === undefined && request.keyFile)) {
       bytes?.fill(0);
+      keyFile?.fill(0);
       return setStep({ step: "file", choice, error: m.import_error_unreadable() });
     }
     const result = await unlock(bytes, { password: request.password, keyFile });

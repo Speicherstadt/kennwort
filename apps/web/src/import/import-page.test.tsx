@@ -364,6 +364,29 @@ describe("ImportPage with a KeePass database (K-502 Teil 3)", () => {
     expect(root.querySelector('input[type="password"]')).not.toBeNull();
   });
 
+  it("zeroes the key file's bytes when the database cannot be read", async () => {
+    const root = await show(deps().deps);
+    await choose(root, "KeePass / KeePassXC (KDBX)");
+    const keyBuffer = bytesOf("kdbx-key-v1.key").buffer.slice(0);
+    const database = new File([], "weber.kdbx");
+    Object.defineProperty(database, "arrayBuffer", { value: () => Promise.reject(new Error()) });
+    const keyFile = new File([], "weber.key");
+    // The very buffer the page reads, to see what is left in it afterwards
+    Object.defineProperty(keyFile, "arrayBuffer", { value: async () => keyBuffer });
+    for (const [name, file] of [
+      ["database", database],
+      ["key-file", keyFile],
+    ] as const) {
+      const input = root.querySelector<HTMLInputElement>(`input[name="${name}"]`);
+      Object.defineProperty(input, "files", { value: [file], configurable: true });
+    }
+    await click(button(root, "Datenbank öffnen"));
+    expect(root.querySelector('[role="alert"]')?.textContent).toBe(
+      "Die Datei ließ sich nicht öffnen.",
+    );
+    expect(new Uint8Array(keyBuffer).every((b) => b === 0)).toBe(true);
+  });
+
   it("asks for the database first", async () => {
     const root = await show(deps().deps);
     await choose(root, "KeePass / KeePassXC (KDBX)");
