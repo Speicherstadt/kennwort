@@ -371,6 +371,14 @@ bun run --cwd apps/extension build:chrome    # oder build:firefox, build:safari,
 
 Nach einer Änderung baust du neu und lädst die Extension im Browser neu.
 
+Der Build ist reproduzierbar (K-408): Derselbe Commit ergibt in jedem Browser-Ordner dieselben
+Bytes, egal wann, wo und in welcher Zeitzone gebaut. `bun run reproducible` im Wurzelordner baut
+alles zweimal und nennt jede Datei, die abweicht. CI tut das bei jedem Pull Request. Ein
+entpacktes Store-Paket lässt sich Datei für Datei mit dem Nachbau vergleichen; Dateien, die der
+Store selbst hinzufügt (bei Chrome `_metadata/`), gehören nicht zum Build. Wie man ein Release der Web-App
+nachbaut und mit seinem signierten Manifest vergleicht, steht im
+[Sicherheitsdesign](sicherheitsdesign.md#nachbauen-und-vergleichen-k-408).
+
 Name, Beschreibung und der Text des Knopfs in der Symbolleiste stehen in
 `apps/extension/public/_locales`, weil Browser und Stores sie selbst lesen. Alle anderen Texte
 kommen wie in der Web-App aus `messages/de.json` und `messages/en.json`, übersetzt von einer

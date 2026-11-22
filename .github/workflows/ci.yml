@@ -74,6 +74,10 @@ jobs:
         run: bunx checks pr
       - run: bun run test
       - run: bun run build
+      # K-408: a second build of the same commit, in another time zone and locale, must match the
+      # first byte for byte: web app with release.json and release.sig, the extension for every
+      # browser, the compiled server. One build more: about 8 s here (unit job about 2 min before)
+      - run: bun run reproducible --reuse
       # The compiled server starts with an empty database and answers /health
       - run: bun run --cwd apps/server smoke
       # Known vulnerabilities in the dependencies fail the run

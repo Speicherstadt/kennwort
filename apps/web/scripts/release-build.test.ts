@@ -1,9 +1,10 @@
-import { ed25519KeyPair } from "@kennwort/crypto";
+import { ed25519KeyPair, sign } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
-import { toHex } from "../src/sw/release.ts";
+import { newRelease, RELEASE_PURPOSE, serializeRelease, toHex } from "../src/sw/release.ts";
 import {
   browserPath,
   listedPaths,
+  sequenceAlong,
   sequenceOf,
   signingKeys,
   TEST_RELEASE_SEED,
@@ -53,13 +54,82 @@ describe("trustedKey", () => {
 });
 
 describe("sequenceOf", () => {
-  it("takes SOURCE_DATE_EPOCH, else the build's time in seconds", () => {
-    expect(sequenceOf({ SOURCE_DATE_EPOCH: "1700000000" }, 5_000)).toBe(1700000000);
-    expect(sequenceOf({}, 1_700_000_000_999)).toBe(1700000000);
-    expect(sequenceOf({ SOURCE_DATE_EPOCH: "" }, 5_000)).toBe(5);
-    expect(sequenceOf({ SOURCE_DATE_EPOCH: "-1" }, 5_000)).toBe(5);
-    expect(sequenceOf({ SOURCE_DATE_EPOCH: "1.5" }, 5_000)).toBe(5);
-    expect(sequenceOf({ SOURCE_DATE_EPOCH: "0" }, 5_000)).toBe(0);
+  const at = (history: string | undefined, nowMs = 5_000) => ({ history, nowMs });
+
+  it("takes SOURCE_DATE_EPOCH first", () => {
+    expect(sequenceOf({ SOURCE_DATE_EPOCH: "1700000000" }, at("1800000000\n"))).toEqual({
+      sequence: 1700000000,
+      source: "SOURCE_DATE_EPOCH",
+    });
+    expect(sequenceOf({ SOURCE_DATE_EPOCH: "0" }, at(undefined)).sequence).toBe(0);
+  });
+
+  // K-408: two builds of the same commit sign the same release.json, whenever they run
+  it("else the time of a single commit, so a rebuild of the same commit gets the same number", () => {
+    expect(sequenceOf({}, at("1763800000\n", 1_900_000_000_000))).toEqual({
+      sequence: 1763800000,
+      source: "commit",
+    });
+    expect(sequenceOf({ SOURCE_DATE_EPOCH: "" }, at("1763800000")).sequence).toBe(1763800000);
+  });
+
+  it("else from the whole first-parent history, so a later commit always gets a higher number", () => {
+    expect(sequenceOf({}, at("1763800000\n1763700000\n1763700000\n"))).toEqual({
+      sequence: 1763800002,
+      source: "commit",
+    });
+  });
+
+  it("else the build's own time in seconds, outside a git checkout", () => {
+    expect(sequenceOf({}, at(undefined, 1_700_000_000_999))).toEqual({
+      sequence: 1700000000,
+      source: "clock",
+    });
+    for (const history of ["", "not a time", "-1", "1.5", "17e8", "1763800000\nx\n"])
+      expect(sequenceOf({}, at(history)).sequence).toBe(5);
+    for (const given of ["-1", "1.5", "x"])
+      expect(sequenceOf({ SOURCE_DATE_EPOCH: given }, at(undefined)).sequence).toBe(5);
+  });
+});
+
+describe("sequenceAlong", () => {
+  it("takes each commit's time, but at least one more than the commit before", () => {
+    expect(sequenceAlong([])).toBeUndefined();
+    expect(sequenceAlong([100])).toBe(100);
+    expect(sequenceAlong([100, 200])).toBe(200);
+    expect(sequenceAlong([100, 100])).toBe(101);
+    expect(sequenceAlong([200, 100, 150, 300])).toBe(300);
+    expect(sequenceAlong([200, 100, 150])).toBe(202);
+  });
+
+  it("grows with every commit added to the history", () => {
+    const times = [500, 400, 400, 600, 100, 100];
+    const sequences = times.map((_, i) => sequenceAlong(times.slice(0, i + 1)) ?? -1);
+    for (let i = 1; i < sequences.length; i++)
+      expect(sequences[i]).toBeGreaterThan(sequences[i - 1] ?? Infinity);
+  });
+});
+
+describe("a signed release (K-408)", () => {
+  const bytes = (text: string) => new TextEncoder().encode(text);
+
+  it("is the same, byte for byte, whatever order the build read its files in", () => {
+    const files: [string, Uint8Array][] = [
+      ["/index.html", bytes("<!doctype html>")],
+      ["/assets/index-abc.js", bytes("console.log(1)")],
+      ["/icon.svg", bytes("<svg/>")],
+    ];
+    const one = serializeRelease(newRelease(new Map(files), 1763800000));
+    const other = serializeRelease(newRelease(new Map([...files].reverse()), 1763800000));
+    expect(toHex(other)).toBe(toHex(one));
+  });
+
+  it("carries the same signature twice: Ed25519 has no randomness (RFC 8032)", () => {
+    const keys = signingKeys({});
+    if (!keys.ok) throw new Error(keys.error);
+    const manifest = serializeRelease(newRelease(new Map([["/a", bytes("a")]]), 1));
+    const signature = () => toHex(sign(keys.value.secretKey, RELEASE_PURPOSE, manifest));
+    expect(signature()).toBe(signature());
   });
 });
 
