@@ -12,7 +12,7 @@
  * leading `=` stays, so a password survives the round trip; open the file in a spreadsheet only
  * with care.
  */
-import { type FlatEntry, flatEntry } from "./flat.ts";
+import { type FlatEntry, flatCarries, flatEntry } from "./flat.ts";
 import type { ExportVault } from "./payload.ts";
 
 export const BITWARDEN_COLUMNS = [
@@ -77,7 +77,9 @@ const rowOf = (folder: string, entry: FlatEntry) => [
 export const writeBitwardenCsv = (vaults: readonly ExportVault[]): string =>
   [
     BITWARDEN_COLUMNS,
-    ...vaults.flatMap((vault) => vault.entries.map((e) => rowOf(vault.name, flatEntry(e)))),
+    ...vaults.flatMap((vault) =>
+      vault.entries.filter(flatCarries).map((e) => rowOf(vault.name, flatEntry(e))),
+    ),
   ]
     .map(csvLine)
     .join("\r\n")

@@ -11,6 +11,7 @@ import {
   type ExportScope,
   exportSubject,
   exportVaults,
+  flatCarries,
   KDBX_EXPORT_ARGON2,
   type MemberView,
   writeBitwardenCsv,
@@ -109,6 +110,12 @@ export type ExportOutcome =
 const tryBuild = (request: ExportRequest, vaults: readonly SourceVault[], now: number) =>
   buildExport(request.format, vaults, request.passphrase, now).catch(() => undefined);
 
+/** The entries the file holds: CSV and KDBX carry no passkeys */
+const countIn = (format: ExportFormat, vaults: readonly SourceVault[]) =>
+  vaults
+    .flatMap((v) => v.entries)
+    .filter((entry) => format === "kennwort-json" || flatCarries(entry)).length;
+
 /** Audit first, then the file, then the download; nothing is written if the log refused it */
 export const runExport = async (
   deps: ExportDeps,
@@ -122,5 +129,5 @@ export const runExport = async (
   if (!file) return { ok: false, error: "failed" };
   const name = file.name;
   deps.save(file);
-  return { ok: true, count: vaults.reduce((sum, v) => sum + v.entries.length, 0), name };
+  return { ok: true, count: countIn(request.format, vaults), name };
 };

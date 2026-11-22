@@ -82,7 +82,9 @@ const pair = (key: string, value: string, secret: boolean): XmlPart[] =>
 const ownKeys = (fields: FlatField[]): string[] => {
   const used = new Set(STANDARD);
   return fields.map(({ name }) => {
-    const base = name.startsWith("KP2A_URL") ? `(${name})` : name;
+    // Unique as written: KeePassXC refuses a database with a key twice, and an empty key is none
+    const written = xml10(name) || "Field";
+    const base = written.startsWith("KP2A_URL") ? `(${written})` : written;
     let key = base;
     for (let n = 2; used.has(key); n++) key = `${base} (${n})`;
     used.add(key);

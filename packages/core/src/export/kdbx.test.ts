@@ -138,9 +138,7 @@ describe("KDBX and passkeys", () => {
       password: "Kessel Rohr",
     });
     if (!result.ok) throw new Error(result.error);
-    expect(result.value.map((e) => e.content.title)).toEqual(
-      BUERO.entries.map((e) => e.title),
-    );
+    expect(result.value.map((e) => e.content.title)).toEqual(BUERO.entries.map((e) => e.title));
   });
 });
 

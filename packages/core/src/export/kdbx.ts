@@ -23,7 +23,7 @@ import {
   sha256,
 } from "@kennwort/crypto";
 import { INNER_STREAMS, joinBytes } from "../import/kdbx-payload.ts";
-import { flatEntry } from "./flat.ts";
+import { flatCarries, flatEntry } from "./flat.ts";
 import { kdbxXml, protectXml, type Random } from "./kdbx-xml.ts";
 import type { ExportVault } from "./payload.ts";
 
@@ -128,7 +128,10 @@ export const writeKdbx = async (
   const iv = random(12);
   const streamKey = random(64);
   const head = header(masterSeed, iv, kdf);
-  const groups = vaults.map((v) => ({ name: v.name, entries: v.entries.map(flatEntry) }));
+  const groups = vaults.map((v) => ({
+    name: v.name,
+    entries: v.entries.filter(flatCarries).map(flatEntry),
+  }));
   const xml = protectXml(kdbxXml(groups, random, now), (length) =>
     kdbxInnerKeystream(INNER_STREAMS[CHACHA20_STREAM] as KdbxInnerStream, streamKey, length),
   );

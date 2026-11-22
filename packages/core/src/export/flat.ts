@@ -23,6 +23,12 @@ export type FlatEntry = {
   passwords: { value: string; replacedAt: number }[];
 };
 
+/**
+ * Whether CSV and KDBX carry the entry: a passkey goes into Kennwort's encrypted JSON only, as
+ * its key (F-12) is Kennwort's own and of no use to another manager (docs/import-export.md)
+ */
+export const flatCarries = (entry: Pick<ExportedEntry, "type">) => entry.type !== "passkey";
+
 const isUrl = (id: string) => /^website(-\d+)?$/.test(id);
 const MAIN = new Set(["username", "password", "totp", "note"]);
 
