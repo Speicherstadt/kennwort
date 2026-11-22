@@ -28,7 +28,13 @@ import {
   withheldTrust,
 } from "../membership/test/renewed.ts";
 import { openVaultKey } from "../membership/vault-ops.ts";
-import { idKey, remember, type Trust, verifyLog } from "../membership/verify-log.ts";
+import {
+  certificateFor,
+  idKey,
+  remember,
+  type Trust,
+  verifyLog,
+} from "../membership/verify-log.ts";
 import { encodeBytes } from "../sync/bytes.ts";
 import { edit, emptyDevice, pull, rotateEntries, sync } from "../sync/device.ts";
 import { memoryServer } from "../sync/memory-server.ts";
@@ -188,6 +194,44 @@ describe("the server withholds Anna's new certificate", () => {
     expect(server.pull()).toEqual([]);
   });
 
+  it("from a client that saw it: her old certificate does not come back without a time limit", () => {
+    // Found in review: the server lists no current certificate, only the old one as earlier
+    const seen = { [encodeBytes(anna.id)]: RENEWED_AT };
+    const row = {
+      id: anna.id,
+      role: "member" as const,
+      name: "Anna",
+      xwingPublicKey: annaNew.xwing.publicKey,
+      edPublicKey: annaNew.ed.publicKey,
+      certificate: null,
+      invitation: null,
+      previous: [certificate(anna)],
+    };
+    const view = checkMembers(root.publicKey, [row], seen)[0];
+    expect(view).toMatchObject({ status: "invalid", previous: [] });
+    // As trustOf builds it: nothing of hers verifies until the server serves what it hid
+    const history = new Map(view?.previous?.length ? [[idKey(anna.id), view.previous]] : []);
+    const hidden = { ...withheldTrust(), history };
+    const oldBundle = certificateFingerprint(certificate(anna));
+    expect(certificateFor(hidden, anna.id, oldBundle, at)).toBeUndefined();
+  });
+
+  it("as a certificate that does not check out: her old one does not count in its place", () => {
+    // Found in review: the server lists another role, so the new certificate fails the check
+    const row = {
+      id: anna.id,
+      role: "admin" as const,
+      name: "Anna",
+      xwingPublicKey: annaNew.xwing.publicKey,
+      edPublicKey: annaNew.ed.publicKey,
+      certificate: renewedCertificate,
+      invitation: null,
+      previous: [certificate(anna)],
+    };
+    const view = checkMembers(root.publicKey, [row], {})[0];
+    expect(view).toMatchObject({ status: "invalid", previous: [] });
+  });
+
   it("lets no log with her rekey verify", async () => {
     const { entries } = await renewed();
     expect(verifyLog(vaultId, entries, withheldTrust())).toEqual({
@@ -305,5 +349,46 @@ describe("the server skips a vault's rotation", () => {
       older: [],
     });
     expect(pulled.refused.map((r) => r.error)).toEqual(["newer-epoch"]);
+  });
+});
+
+describe("what Anna wrote with her old keys before the renewal", () => {
+  // Found in review: once the log names her new bundle, a device that had not pulled her last edit
+  // refused it, and the rotation that follows wrote the older version over it
+  it("still opens after her rekey, until the rotation, for a device that had not pulled it", async () => {
+    const trust = renewedTrust();
+    const server = memoryServer();
+    const before = verified(logEntries, trust);
+    // Written before the renewal, as the log and certificates stood then
+    const written = await sync(edit(emptyDevice(), id(0xe1), bank), server, contextFor(anna));
+    expect(written.device.queue).toEqual([]);
+    const own = rekeyMember(
+      { accountId: anna.id, edSecretKey: annaNew.ed.secretKey },
+      before,
+      vaultId,
+      renewedCertificate,
+      at,
+    );
+    if (!own.ok) throw new Error(own.error);
+    const rekeyed = verified([...logEntries, own.value], trust);
+    const pulled = await pull(emptyDevice(), server, { ...contextFor(jonas), trust, log: rekeyed });
+    expect(pulled.refused).toEqual([]);
+    expect(pulled.device.known.get(idKey(id(0xe1)))?.content).toEqual(bank);
+  });
+
+  it("opens no more once the rotation wrote every entry anew", async () => {
+    const { server, ctx } = await renewed();
+    // Whoever has the old keys and the old vault key files a new entry under the old epoch
+    const forged = sealRecord(
+      { id: anna.id, edSecretKey: anna.ed.secretKey },
+      ring0,
+      id(0xe2),
+      1,
+      bank,
+      new Uint8Array(),
+    );
+    const lying = lyingServer(server, { pull: (records) => [...records, forged] });
+    const pulled = await pull(emptyDevice(), lying, ctx(jonas));
+    expect(pulled.refused.map((r) => r.error)).toEqual(["bad-signature"]);
   });
 });

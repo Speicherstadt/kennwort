@@ -143,13 +143,18 @@ export const openRecordWithKey = (
   if (record.version <= knownVersion) return err("stale");
   // Signed by the company root for this author, and the very certificate the signed log names for
   // the member: a server cannot file another key under an editor (E-05, found by K-206). After the
-  // author renewed her keys (P-12) that is her old bundle until a rekey entry names the new one
+  // author renewed her keys (P-12) that is her old bundle until a rekey entry names the new one,
+  // and either until the rotation, for what she wrote before (found in review)
   const member = log.members.get(idKey(record.author));
-  const certificate = member
-    ? certificateFor(trust, record.author, member.fingerprint)
-    : certificateOf(trust, record.author);
-  if (!certificate) return err("uncertified-author");
-  if (!isSignedBy(certificate, record)) return err("bad-signature");
+  const certificates = member
+    ? [member.fingerprint, member.replaced].flatMap((fingerprint) => {
+        const found = fingerprint && certificateFor(trust, record.author, fingerprint);
+        return found ? [found] : [];
+      })
+    : [certificateOf(trust, record.author)].filter((c) => c !== undefined);
+  if (certificates.length === 0) return err("uncertified-author");
+  if (!certificates.some((certificate) => isSignedBy(certificate, record)))
+    return err("bad-signature");
   if (member?.role !== "edit" && member?.role !== "manage") return err("not-editor");
   const at = { vaultId: record.vaultId, entryId: record.entryId, epoch: record.epoch };
   const entryKey = openEntryKey(ring.vaultKey, record.entryKey, at);

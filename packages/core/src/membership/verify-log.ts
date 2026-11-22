@@ -8,7 +8,16 @@ import { err, ok, type Result } from "../result.ts";
 import { type Certificate, certificateFingerprint, isCertified } from "./certificate.ts";
 import { entryBytes, entryHash, GENESIS_HASH, type LogEntry, type VaultRole } from "./log-entry.ts";
 
-export type Member = { role: VaultRole; fingerprint: Uint8Array; validUntil: number };
+export type Member = {
+  role: VaultRole;
+  fingerprint: Uint8Array;
+  validUntil: number;
+  /**
+   * The bundle a `rekey` in this epoch replaced (P-12): what the member wrote with it before the
+   * renewal still opens until the rotation, so the rotation does not write an older version over it
+   */
+  replaced?: Uint8Array;
+};
 export type LogState = {
   seq: number;
   /** Signed time of the newest entry */
@@ -123,12 +132,15 @@ export const isSuperseded = (trust: Trust, accountId: Uint8Array, fingerprint: U
     : earlierOf(trust, accountId, undefined).some((c) => sameBundle(c, fingerprint));
 };
 
-const isManager = (state: LogState, accountId: Uint8Array, now: number) => {
+const isManager = (state: Chain, accountId: Uint8Array, now: number) => {
   const member = state.members.get(idKey(accountId));
   return member?.role === "manage" && (member.validUntil === 0 || member.validUntil > now);
 };
 
-const genesisState = (): LogState => ({
+/** The log's state while its entries are checked; which bundles are superseded comes at the end */
+type Chain = Omit<LogState, "superseded">;
+
+const genesisState = (): Chain => ({
   seq: -1,
   time: 0,
   hash: GENESIS_HASH,
@@ -136,11 +148,10 @@ const genesisState = (): LogState => ({
   members: new Map(),
   commitments: new Map(),
   rotationDue: false,
-  superseded: [],
 });
 
 /** The state after one entry, or what is wrong with the entry's meaning */
-const apply = (state: LogState, entry: LogEntry, trust: Trust): Result<LogState, LogError> => {
+const apply = (state: Chain, entry: LogEntry, trust: Trust): Result<Chain, LogError> => {
   const members = new Map(state.members);
   const commitments = new Map(state.commitments);
   const next = {
@@ -195,6 +206,8 @@ const apply = (state: LogState, entry: LogEntry, trust: Trust): Result<LogState,
       if (entry.epoch !== state.epoch + 1 || entry.vkCommitment.length === 0)
         return err("bad-epoch");
       commitments.set(entry.epoch, entry.vkCommitment);
+      // After the rotation the old keys' versions count no more: every entry is written anew
+      for (const [key, { replaced: _, ...kept }] of members) members.set(key, kept);
       return ok({ ...next, epoch: entry.epoch, rotationDue: false });
     }
     case "rekey":
@@ -207,7 +220,7 @@ const apply = (state: LogState, entry: LogEntry, trust: Trust): Result<LogState,
  * certificate of the root for the new bundle at the entry's time and later than the one of the
  * bundle it replaces. The old keys hold this epoch's vault key: a rotation is due.
  */
-const applyRekey = (next: LogState, entry: LogEntry, trust: Trust): Result<LogState, LogError> => {
+const applyRekey = (next: Chain, entry: LogEntry, trust: Trust): Result<Chain, LogError> => {
   const subject = idKey(entry.accountId);
   const existing = next.members.get(subject);
   if (
@@ -222,7 +235,11 @@ const applyRekey = (next: LogState, entry: LogEntry, trust: Trust): Result<LogSt
   const replaced = certificateFor(trust, entry.accountId, existing.fingerprint);
   if (!renewed || !replaced || renewed.issuedAt <= replaced.issuedAt)
     return err("uncertified-member");
-  next.members.set(subject, { ...existing, fingerprint: entry.fingerprint });
+  next.members.set(subject, {
+    ...existing,
+    fingerprint: entry.fingerprint,
+    replaced: existing.replaced ?? existing.fingerprint,
+  });
   return ok({ ...next, rotationDue: true });
 };
 
@@ -236,7 +253,7 @@ const isOwnRekey = (entry: LogEntry) =>
  * names no certificate of its signer verifies under the current one and fails as uncertified
  * member. A signer the log does not name has no rights: its current certificate, then not-manager.
  */
-const signerOf = (state: LogState, entry: LogEntry, trust: Trust) => {
+const signerOf = (state: Chain, entry: LogEntry, trust: Trust) => {
   const current = () => certificateOf(trust, entry.signerId);
   if (entry.action === "create")
     return certificateFor(trust, entry.signerId, entry.fingerprint, entry.time) ?? current();
@@ -247,11 +264,11 @@ const signerOf = (state: LogState, entry: LogEntry, trust: Trust) => {
 };
 
 const step = (
-  state: LogState,
+  state: Chain,
   entry: LogEntry,
   vaultId: Uint8Array,
   trust: Trust,
-): Result<LogState, LogError> => {
+): Result<Chain, LogError> => {
   if (!constantTimeEqual(entry.vaultId, vaultId)) return err("wrong-vault");
   if (entry.seq !== state.seq + 1 || !constantTimeEqual(entry.prevHash, state.hash))
     return err(state.seq === -1 ? "bad-genesis" : "gap");

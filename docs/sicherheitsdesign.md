@@ -777,7 +777,11 @@ durchgelassen hat.
   führt der Server die Zertifikate der ersetzten Bündel weiter (Tabelle `superseded_certificates`,
   in `GET /api/members` als `previous`), damit die Logs und Datensätze verifizieren, die die alten
   Schlüssel signiert haben; jeder Client prüft auch sie unter dem gemerkten Wurzelschlüssel und
-  nimmt nur solche, die älter sind als das aktuelle. Ein neues Bündel für ein bekanntes Konto nimmt
+  nimmt nur solche, die älter sind als das aktuelle. Liefert der Server ein aktuelles, das nicht
+  stimmt, oder keines, obwohl der Client ein neueres gesehen hat als das neueste der früheren, hat
+  er das Zertifikat versteckt oder verfälscht, das die früheren begrenzt: Das Konto gilt dann als
+  ungültig, und die früheren zählen nicht, statt dass die alten Schlüssel wieder ohne Grenze
+  signieren. Ein neues Bündel für ein bekanntes Konto nimmt
   ein Client nur mit einem neueren Zertifikat; im Kontozustand gewinnt beim Zusammenführen das
   Bündel der Seite, die das neuere Zertifikat gesehen hat, sonst bleibt ein anderes Bündel ein
   Angriff. Ein Gerät, das die neuere Rolle nie gesehen hat, kann der Server so
@@ -1285,7 +1289,8 @@ anderen Geräte ab; anders als dort bezeugt hier nicht der alte Schlüssel das n
    durch den bisherigen Ed25519-Schlüssel, nur auf dem Zähler, den er hält (sonst `409`), und nur mit
    Tresor-Schlüsseln, die das Konto schon hält, je einmal. Er legt das bisherige Zertifikat in die
    Geschichte (`superseded_certificates`), führt das Konto ohne Zertifikat, löscht alle anderen
-   Sitzungen (die anderen Geräte koppeln neu, P-04) und alles, was die alten Schlüssel öffnen oder
+   Sitzungen (die anderen Geräte koppeln neu, P-04), alle Passkeys des Kontos (wer das Kit hatte,
+   konnte mit einer Sitzung der alten Schlüssel einen eigenen anlegen) und alles, was die alten Schlüssel öffnen oder
    signiert haben: die Hinterlegung der Firmen-Recovery, an das alte Bündel verpackte Wurzel- und
    Recovery-Schlüssel, Freigaben und Notfallzugriffe an das Konto und von ihm. Gegen jemanden, der
    die alten Geheimtexte schon kopiert hat, hilft das Löschen nicht, nur gegen einen späteren
@@ -1321,7 +1326,9 @@ gemerkten Wurzelschlüssels (P-07); ein Server, der das alte weiter als aktuelle
 entlarvt, sobald der Client das neue einmal gesehen hat (ungültig), und ein Log mit einer
 `schlüsselerneuerung` verifiziert ohne das neue Zertifikat nicht. Mit dem alten Schlüssel signierte
 Log-Einträge gelten nur bis zur Ausstellung des neuen Zertifikats (P-06), Datensätze nur, solange das
-Log das alte Bündel nennt (P-09, ohne signierte Zeit). Freigaben und Notfallzugriffe, die der alte
+Log das alte Bündel nennt, und danach bis zum Wechsel (P-09, ohne signierte Zeit): Was die Person
+vorher schrieb, muss ein Gerät, das es noch nicht hatte, vor dem Wechsel öffnen, sonst schriebe der
+Wechsel eine ältere Fassung darüber. Freigaben und Notfallzugriffe, die der alte
 Schlüssel signiert hat, gelten nicht mehr: Wer das Kit hat, kann mit ihm beliebig zurückdatierte
 signieren, und ein Client, der sie mit dem neuen Schlüssel neu verpackte, bezeugte die Fälschungen.
 Die Person gibt sie neu; die Seite sagt das vorher.
@@ -1337,9 +1344,10 @@ Restrisiken:
   Server nimmt vom alten Schlüssel nichts mehr an, weil die alten Anmelde-Schlüssel und Sitzungen weg
   sind; ein bösartiger Server, der mit dem Dieb zusammenarbeitet, kann bis dahin Log-Einträge im
   Namen der Person einschieben. Die Tresore schreiben in dieser Zeit nichts.
-- **Datensätze ohne Zeit:** Bis ein Tresor die `schlüsselerneuerung` hat, nimmt ein Client einen
-  Datensatz, den der alte Schlüssel signiert, als von der Person. Ein ehrlicher Server nimmt ihn
-  nicht (keine Sitzung), und niemand schreibt in dem Tresor, bis Erneuerung und Wechsel stehen.
+- **Datensätze ohne Zeit:** Bis ein Tresor nach der `schlüsselerneuerung` den Wechsel hat, nimmt
+  ein Client einen Datensatz, den der alte Schlüssel signiert, als von der Person. Ein ehrlicher
+  Server nimmt ihn nicht (keine Sitzung, kein Passkey), und niemand schreibt in dem Tresor, bis
+  Erneuerung und Wechsel stehen.
 - **Zurückdatierte Log-Einträge** des alten Schlüssels sind möglich, solange im Tresor seit dem neuen
   Zertifikat niemand geschrieben hat und die Zeit noch vor dem Zertifikat liegt (wie das Restrisiko
   abgelaufener Verwalter in P-06).

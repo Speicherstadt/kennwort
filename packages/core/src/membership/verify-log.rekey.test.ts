@@ -121,6 +121,11 @@ describe("a log after a member renewed her keys (P-12)", () => {
     expect(verifyLog(vault, before, renewed()).ok).toBe(true);
   });
 
+  it("still verifies a vault she created with her old keys", () => {
+    const hers = append([], [{ action: "create", subject: anna, signer: anna, role: "manage" }]);
+    expect(expectOk(verifyLog(vault, hers, renewed())).superseded).toEqual([idKey(anna.id)]);
+  });
+
   it("names her superseded bundle and wants no writing until a rekey and a rotation", () => {
     const state = expectOk(verifyLog(vault, before, renewed()));
     expect(state.superseded).toEqual([idKey(anna.id)]);
@@ -140,6 +145,7 @@ describe("a log after a member renewed her keys (P-12)", () => {
       role: "manage",
       fingerprint: fp(annaNew),
       validUntil: 0,
+      replaced: fp(anna),
     });
     expect(state.superseded).toEqual([]);
     expect(state.rotationDue).toBe(true);
@@ -150,6 +156,28 @@ describe("a log after a member renewed her keys (P-12)", () => {
     const after = expectOk(verifyLog(vault, rotated, renewed()));
     expect(after.rotationDue).toBe(false);
     expect(after.epoch).toBe(1);
+    // The old bundle's versions count no more once every entry is written anew
+    expect(after.members.get(idKey(anna.id))).toEqual({
+      role: "manage",
+      fingerprint: fp(annaNew),
+      validUntil: 0,
+    });
+  });
+
+  it("keeps the first bundle a rekey replaced when she renews twice before the rotation", () => {
+    const annaThird = keysOf(0x20, 0x22);
+    const trust = renewed(RENEWED_AT + 1000, [certificate(anna), certificate(annaNew, RENEWED_AT)]);
+    trust.certificates.set(idKey(anna.id), certificate(annaThird, RENEWED_AT + 200));
+    const twice = append(before, [
+      { ...ownRekey, signer: jonas },
+      { ...ownRekey, subject: annaThird, signer: jonas, time: at + 200 },
+    ]);
+    expect(expectOk(verifyLog(vault, twice, trust)).members.get(idKey(anna.id))).toEqual({
+      role: "manage",
+      fingerprint: fp(annaThird),
+      validUntil: 0,
+      replaced: fp(anna),
+    });
   });
 
   it("takes a rekey that another manager signs for her", () => {
