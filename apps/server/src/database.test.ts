@@ -27,6 +27,8 @@ describe("database", () => {
       "auth_verification",
       "companies",
       "device_sessions",
+      "emergency_grants",
+      "emergency_revocations",
       "entry_records",
       "entry_shares",
       "group_members",

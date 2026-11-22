@@ -12,6 +12,8 @@ import {
   authSession,
   authUser,
   companies,
+  emergencyGrants,
+  emergencyRevocations,
   entryShares,
   groupMembers,
   groups,
@@ -188,6 +190,35 @@ app.db
   })
   .run();
 const muellerShares = `/api/vaults/${muellerVault}/entries/e/shares`;
+
+// K-307 part d: a grant by Max (Müller Elektro) naming Jonas, released, and a revocation to him
+app.db
+  .insert(emergencyGrants)
+  .values({
+    grantor: "max",
+    grantee: "jonas",
+    grant: "{}",
+    packages: '{"vaults":[]}',
+    time: 1,
+    request: "{}",
+    requestedAt: 0,
+    approval: "{}",
+    releasedAt: 1,
+    storedAt: 1,
+  })
+  .run();
+app.db
+  .insert(emergencyRevocations)
+  .values({ grantor: "max", grantee: "jonas", statement: "{}", storedAt: 1 })
+  .run();
+const maxGrantStays = () =>
+  expect(
+    app.db
+      .select()
+      .from(emergencyGrants)
+      .all()
+      .map((row) => row.grantor),
+  ).toEqual(["max"]);
 
 /**
  * One case per route under /api: Jonas (Weber Haustechnik) asks for what belongs to Müller Elektro.
@@ -520,6 +551,37 @@ const cases: Record<string, () => Promise<void>> = {
   },
   "GET /api/shared/:vaultId/:entryId": async () => {
     expect((await asJonas(`/api/shared/${muellerVault}/e`)).status).toBe(404);
+  },
+  // K-307 part d: emergency access between accounts of another company does not exist here
+  "GET /api/emergency": async () => {
+    expect(await (await asJonas("/api/emergency")).json()).toEqual({
+      given: [],
+      received: [],
+      revocations: [],
+    });
+  },
+  "PUT /api/emergency/:grantee": async () => {
+    expect((await jonasSends("PUT", "/api/emergency/max", {})).status).toBe(400);
+    maxGrantStays();
+  },
+  "DELETE /api/emergency/:grantee": async () => {
+    expect((await jonasSends("DELETE", "/api/emergency/max", {})).status).toBe(404);
+    maxGrantStays();
+  },
+  "POST /api/emergency/:grantee/objection": async () => {
+    expect((await jonasSends("POST", "/api/emergency/max/objection", {})).status).toBe(404);
+  },
+  "POST /api/emergency/:grantee/approval": async () => {
+    expect((await jonasSends("POST", "/api/emergency/max/approval", {})).status).toBe(404);
+  },
+  "POST /api/emergency/:grantor/request": async () => {
+    expect((await jonasSends("POST", "/api/emergency/max/request", {})).status).toBe(404);
+  },
+  "GET /api/emergency/:grantor/release": async () => {
+    expect((await asJonas("/api/emergency/max/release")).status).toBe(404);
+  },
+  "GET /api/emergency/:grantor/vaults": async () => {
+    expect((await asJonas("/api/emergency/max/vaults")).status).toBe(404);
   },
   "POST /api/vaults/:vaultId/log": async () => {
     expect((await jonasSends("POST", `/api/vaults/${muellerVault}/log`, {})).status).toBe(404);

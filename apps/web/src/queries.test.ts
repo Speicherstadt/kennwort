@@ -26,6 +26,7 @@ describe("the query cache", () => {
   it("names its data without a token, a key or a secret", () => {
     expect(Object.values(queryKeys).flat()).toEqual([
       "devices",
+      "emergency",
       "groups",
       "members",
       "policy",

@@ -100,18 +100,22 @@ export type RecoverError =
   | "wrong-key-block"
   | "wrong-root";
 
+/** An account's bundle as the company root certified it */
+export type Certified = { xwingPublicKey: Uint8Array; edPublicKey: Uint8Array };
+
 export type RecoverInput = {
   companyRecovery: { secretKey: Uint8Array; fingerprint: Uint8Array };
   deposit: Deposit;
   place: DepositPlace;
   /** The employee's bundle as the company root certified it */
-  certified: { xwingPublicKey: Uint8Array; edPublicKey: Uint8Array };
+  certified: Certified;
   sealedKeyBlock: Uint8Array;
   /** The owner's own pinned root fingerprint */
   rootFingerprint: Uint8Array;
 };
 
-const matchesBundle = (block: KeyBlock, certified: RecoverInput["certified"]) =>
+/** The key block holds exactly the certified bundle (also for emergency access, P-14) */
+export const matchesBundle = (block: KeyBlock, certified: Certified) =>
   constantTimeEqual(
     bundleFingerprint(block.xwing.publicKey, block.ed.publicKey),
     bundleFingerprint(certified.xwingPublicKey, certified.edPublicKey),

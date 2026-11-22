@@ -607,5 +607,51 @@
   "add_recovery_done": "Der Zugang ist wiederhergestellt. Das Gerät legt jetzt eine neue Passphrase fest.",
   "add_error_no_key": "Du hast keinen gültigen Recovery-Schlüssel der Firma.",
   "add_error_no_deposit": "Für dieses Mitglied ist kein Zugang hinterlegt.",
-  "add_error_refused": "Die Hinterlegung besteht die Prüfung nicht. Der Zugang wurde nicht wiederhergestellt."
+  "add_error_refused": "Die Hinterlegung besteht die Prüfung nicht. Der Zugang wurde nicht wiederhergestellt.",
+  "settings_emergency": "Notfallzugriff",
+  "emergency_title": "Notfallzugriff",
+  "emergency_intro": "Wenn dir etwas zustößt, kann eine Person deines Vertrauens nach einer Wartezeit auf deine Einträge zugreifen. Bis die Wartezeit endet, kannst du jeder Anfrage widersprechen. Dein Gerät verschlüsselt die Schlüssel für genau diese Person; der Server kann sie nicht öffnen.",
+  "emergency_give_title": "Notfallzugriff geben",
+  "emergency_person": "Person",
+  "emergency_choose": "Person wählen",
+  "emergency_scope": "Umfang",
+  "emergency_scope_view": "Ansehen: ausgewählte Tresore",
+  "emergency_scope_full": "Vollzugriff: das ganze Konto",
+  "emergency_scope_view_short": "Ansehen",
+  "emergency_scope_full_short": "Vollzugriff",
+  "emergency_vaults": "Tresore",
+  "emergency_wait": "Wartezeit",
+  "emergency_days": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "1 Tag",
+        "n=*": "{count} Tage"
+      }
+    }
+  ],
+  "emergency_view_hint": "Die Person kann die gewählten Tresore lesen, nichts ändern. Nach einem Schlüsselwechsel erneuert dein Gerät den Zugriff beim nächsten Öffnen.",
+  "emergency_full_hint": "Die Person bekommt den Schlüssel deines Kontos und kann alle deine Tresore lesen, auch deinen persönlichen.",
+  "emergency_give": "Notfallzugriff geben",
+  "emergency_given_title": "Von dir gegeben",
+  "emergency_received_title": "Für dich",
+  "emergency_none_given": "Du hast noch niemandem Notfallzugriff gegeben.",
+  "emergency_none_received": "Niemand hat dir Notfallzugriff gegeben.",
+  "emergency_status_idle": "Keine Anfrage",
+  "emergency_status_waiting": "Angefragt – frei ab {date}",
+  "emergency_status_objected": "Widersprochen",
+  "emergency_status_released": "Freigegeben",
+  "emergency_object": "Widersprechen",
+  "emergency_approve": "Jetzt freigeben",
+  "emergency_revoke": "Notfallzugriff für {name} zurückziehen",
+  "emergency_request": "Zugriff anfragen",
+  "emergency_open": "Öffnen",
+  "emergency_failed": "Das hat nicht geklappt. Versuch es noch einmal.",
+  "emergency_load_failed": "Der Notfallzugriff ließ sich nicht laden oder nicht prüfen.",
+  "emergency_waiting": "Die Wartezeit läuft noch.",
+  "emergency_refused": "Kennwort hat die Freigabe abgelehnt: Sie passt nicht zu dem, was angefragt und unterschrieben wurde.",
+  "emergency_vault_refused": "Dieser Tresor besteht die Prüfung nicht und bleibt zu.",
+  "emergency_request_notice": "{name} bittet um Notfallzugriff. Ohne Widerspruch wird er am {date} frei.",
+  "emergency_notice_link": "Ansehen"
 }

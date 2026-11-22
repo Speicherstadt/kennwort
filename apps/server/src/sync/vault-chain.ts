@@ -81,7 +81,8 @@ export const chainRefusal = (
   return forbidden.includes(checked.error) ? "forbidden" : "invalid";
 };
 
-const storedEntries = (db: Db, vaultId: string) =>
+/** The stored log of a vault, entry by entry */
+export const storedEntries = (db: Db, vaultId: string) =>
   db
     .select()
     .from(vaultLog)

@@ -2,8 +2,8 @@
 title: Konto und Entsperren
 description: >-
   Wie man in Kennwort eine Firma anlegt, eine Einladung annimmt, das Recovery-Kit sichert, auf
-  einem neuen Gerät entsperrt, wann Kennwort sich selbst sperrt, wie man es als App installiert und
-  was ohne Verbindung geht.
+  einem neuen Gerät entsperrt, Notfallzugriff gibt, wann Kennwort sich selbst sperrt, wie man es als
+  App installiert und was ohne Verbindung geht.
 ---
 
 # Konto und Entsperren
@@ -198,6 +198,41 @@ Inhaber oder nimmt ihm die Rolle, legt Kennwort sofort einen neuen Recovery-Schl
 hinterlegen beim nächsten Entsperren neu. Von Hand geht das mit **Neuen Recovery-Schlüssel
 anlegen**. Was der Gehende schon öffnen konnte, schützt erst ein Wechsel des Account Key (ein
 späterer Teil von K-307).
+
+## Notfallzugriff
+
+Wenn dir etwas zustößt, kann eine Person deines Vertrauens aus der Firma nach einer Wartezeit an
+deine Einträge, ähnlich wie beim Notfallzugriff von Bitwarden. Unter **Einstellungen →
+Notfallzugriff**:
+
+1. Wähle unter **Notfallzugriff geben** eine **Person**. Angeboten werden nur Mitglieder, die
+   **Bestätigt** sind.
+2. Wähle den **Umfang**: **Ansehen** für ausgewählte Tresore oder **Vollzugriff** für das ganze
+   Konto, auch deinen persönlichen Tresor.
+3. Wähle eine **Wartezeit** zwischen einem Tag und 30 Tagen und dann **Notfallzugriff geben**.
+
+Dein Gerät verschlüsselt die Schlüssel für genau diese Person und unterschreibt die Freigabe; der
+Server kann die Schlüssel nicht öffnen und keine eigenen unterschieben.
+
+**Wenn die Person anfragt**, siehst du das unter **Von dir gegeben** und als Hinweis oben auf jeder
+Seite, mit dem Tag, an dem die Wartezeit endet. Bis dahin kannst du **Widersprechen**: Diese
+Anfrage bleibt dann gesperrt, und die Person muss neu anfragen, mit neuer Wartezeit. Mit **Jetzt
+freigeben** gibst du den Zugriff sofort frei. **Notfallzugriff zurückziehen** beendet die Freigabe.
+
+**Wer Notfallzugriff hat**, sieht ihn unter **Für dich** und wählt im Notfall **Zugriff anfragen**.
+Nach der Wartezeit, oder sobald der Gebende freigibt, öffnet **Öffnen** die Tresore zum Lesen. Dein
+Gerät prüft vorher, dass der Gebende genau das unterschrieben hat, dass deine Anfrage nicht
+widersprochen wurde und dass jeder Schlüssel zum Protokoll seines Tresors passt; jede Öffnung steht
+im Audit-Log.
+
+!!! note "Was du wissen solltest"
+    - Die Wartezeit zählt der Server. Ein Server, der lügt, könnte sie verkürzen, aber nur für die
+      Person, die du selbst gewählt hast.
+    - Ansehen gilt für die Schlüssel, die die Tresore gerade haben. Nach einem Schlüsselwechsel
+      erneuert dein Gerät den Notfallzugriff beim nächsten Öffnen von selbst.
+    - Vollzugriff gibt der Person den Schlüssel deines Kontos. Nimmst du ihn zurück, nachdem sie ihn
+      schon geöffnet hat, hilft erst ein neuer Kontoschlüssel.
+    - Verlässt du oder die Person die Firma, endet der Notfallzugriff.
 
 ## Automatisch sperren
 

@@ -8,11 +8,13 @@ import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { httpServerFor } from "@kennwort/client/entries/entry-store.ts";
 import type { AccountApi } from "@kennwort/client/session/api.ts";
 import type { DevicesApi } from "@kennwort/client/session/devices-api.ts";
+import type { EmergencyApi } from "@kennwort/client/session/emergency-api.ts";
 import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
 import type { ShareApi } from "@kennwort/client/session/shares-api.ts";
 import type { VaultApi } from "@kennwort/client/session/vaults-api.ts";
+import type { Vault } from "@kennwort/client/vaults/vaults.ts";
 import { encodeBytes, exitReport, type MemberView } from "@kennwort/core";
-import { getLocale, type Locale, m, setLocale } from "@kennwort/ui";
+import { getLocale, type Locale, m, setLocale, type Toasts } from "@kennwort/ui";
 import { QueryClientProvider } from "@tanstack/solid-query";
 import { createMemo, createSignal, Match, onSettled, Show, Switch, untrack } from "solid-js";
 import { AddDevicePage } from "./account/add-device-page.tsx";
@@ -22,6 +24,9 @@ import { RecoverCompanyPage } from "./account/recover-company-page.tsx";
 import { RecoverPage } from "./account/recover-page.tsx";
 import { SetupPage } from "./account/setup-page.tsx";
 import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
+import { renewEmergency } from "./emergency/emergency.ts";
+import { EmergencyNotice } from "./emergency/emergency-notice.tsx";
+import { EmergencyPage } from "./emergency/emergency-page.tsx";
 import { createEntries, writableVaults } from "./entries/entries-wiring.tsx";
 import { markToChange } from "./entries/to-change.ts";
 import { DevicesSection } from "./frame/devices-section.tsx";
@@ -52,6 +57,7 @@ export type AppApi = PairDeps &
   VaultApi &
   GroupApi &
   ShareApi &
+  EmergencyApi &
   Pick<AccountApi, "replaceUnlock"> & { syncFetch: typeof fetch };
 
 /** The company's people as the vaults' load checked them; none before it */
@@ -107,6 +113,13 @@ const importPage =
     return <ImportPage nav={nav} deps={deps} />;
   };
 
+/** Konto → Notfallzugriff (K-307 part d) with the vaults it may grant and the frame's toasts */
+const emergencyPage =
+  (props: { api: AppApi; session: Session }, vaults: () => Vault[] | undefined) =>
+  (toasts: Toasts) => (
+    <EmergencyPage api={props.api} session={props.session} vaults={vaults} toasts={toasts} />
+  );
+
 /**
  * The stores of an open account: the vaults, their entries, the shares and the exits. Every load
  * of the vaults loads their entries and shares; then a manager's client catches up on what its
@@ -123,6 +136,8 @@ const createStores = (props: { session: Session; api: AppApi; copy: LocalCopy | 
     await Promise.all([entries.load(loaded.vaults, loaded.trust), sharing.load(loaded)]);
     // Not awaited: the catch-up reloads itself, and waits for an exit that runs (createExits)
     void exits.catchUp(loaded);
+    // Emergency grants behind a key rotation are made anew with the current keys (P-14)
+    void renewEmergency(props.api, props.session, loaded);
   });
   return { entries, sharing, exits, store };
 };
@@ -213,6 +228,7 @@ const OpenedFrame = (props: {
           />
         )}
         importPage={importPage(props.nav, store, allEntries, () => online(entries.saveNew))}
+        emergencyPage={emergencyPage(props, shownVaults)}
         devices={() => (
           <Show when={props.session.opened()?.token}>
             {(token) => (
@@ -232,6 +248,7 @@ const OpenedFrame = (props: {
       <ShareDialog vaults={store} />
       <OfflineNotice offline={offline()} syncedAt={props.copy?.syncedAt()} />
       <RotationNotice vaults={shownVaults()} />
+      <EmergencyNotice api={props.api} session={props.session} nav={props.nav} />
     </QueryClientProvider>
   );
 };

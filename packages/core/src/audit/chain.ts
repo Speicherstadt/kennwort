@@ -21,8 +21,14 @@ export const SERVER_ACTIONS = [
   "policy-changed",
   "signed-in",
   "vault-created",
+  // Emergency access (K-307 part d, P-14): the server records each step it takes
+  "emergency-granted",
+  "emergency-revoked",
+  "emergency-requested",
+  "emergency-objected",
+  "emergency-released",
 ] as const;
-export const CLIENT_ACTIONS = ["export", "recovery", "key-rotation"] as const;
+export const CLIENT_ACTIONS = ["export", "recovery", "key-rotation", "emergency-access"] as const;
 export const AuditAction = z.enum([...SERVER_ACTIONS, ...CLIENT_ACTIONS]);
 export type AuditAction = z.infer<typeof AuditAction>;
 export type ClientAction = (typeof CLIENT_ACTIONS)[number];

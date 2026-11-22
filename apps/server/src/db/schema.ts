@@ -44,5 +44,6 @@ export const accounts = sqliteTable(
 export * from "./account-schema.ts";
 export * from "./audit-schema.ts";
 export * from "./auth-schema.ts";
+export * from "./emergency-schema.ts";
 export * from "./recovery-schema.ts";
 export * from "./sync-schema.ts";

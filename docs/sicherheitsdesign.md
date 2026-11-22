@@ -141,6 +141,10 @@ nennt seinen Angriff, und der Client muss ihn ablehnen und sagen, warum.
 | E-26 alter Schlüssel für das ausgetretene Mitglied | `adversary/exit.test.ts`, `apps/server/src/sync/rotation-routes.test.ts` | neuere Epoche, falsche Epoche, kein Bearbeiter |
 | E-16 alter Tresor-Schlüssel als neuer ausgegeben | `adversary/exit.test.ts` | Bindung passt nicht |
 | E-07 Log auf vor den Austritt zurückgespielt | `adversary/exit.test.ts` | Rückfall, neuere Epoche, unbekannte Epoche |
+| E-04 Notfall-Pakete vor der Wartezeit oder nach einem Widerspruch herausgegeben | `adversary/emergency.test.ts`, `packages/client/src/emergency/emergency.test.ts` | Wartezeit läuft, widersprochen, nicht die eigene Anfrage |
+| E-05 vertauschter Schlüssel der Vertrauensperson | `adversary/emergency.test.ts`, `apps/server/src/account/emergency.test.ts` | nicht für mich |
+| E-16 gefälschte Bindung, Schlüssel ohne Bindung im Log | `adversary/emergency.test.ts`, `membership/emergency-open.test.ts` | falsche Signatur, nicht im Log, Bindung passt nicht |
+| E-04 alte Freigabe nach einer Rücknahme zurückgespielt | `adversary/emergency.test.ts`, `packages/client/src/emergency/emergency.test.ts` | wiederholt |
 | E-08, E-26 Mitglied vom Wechsel ferngehalten, seine Versionen unter dem alten Schlüssel nach dem Wechsel ausgeliefert | `adversary/epoch-order.test.ts`, gegen die Offline-Kopie `apps/web/src/offline/local-copy.test.ts` | ältere Epoche, kein Bearbeiter |
 
 Die übrigen folgen mit den Funktionen, die sie betreffen (Konto-Recovery, Teilen, Geräte, Austritt,
@@ -224,7 +228,7 @@ bindung(schlüssel, zweck, kontext…) = kdf(schlüssel, leer, "kennwort/key-com
 ```
 
 Die Bindung verrät den Schlüssel nicht (HKDF ist eine Einwegfunktion) und steht im signierten
-Log-Eintrag, in der signierten Freigabe, im signierten Notfall-Paket oder in der signierten
+Log-Eintrag, in der signierten Freigabe, in der signierten Notfall-Freigabe (F-09) oder in der signierten
 Firmen-Recovery-Hinterlegung (F-08). Ein Paket ohne passende signierte Bindung wird verworfen (E-16).
 Zwei Fälle prüfen anders:
 
@@ -300,6 +304,29 @@ geprüft). Die beiden anderen Verpackungen der Firmen-Recovery – der Recovery-
 Inhaber (Zweck `company-recovery-key`) und AK an das neue Gerät (Zweck `recovery-device`) – sind
 F-02 und stehen mit eigenen Vektoren in `wrap-v1.json`.
 
+### F-09 Notfall-Freigabe v1
+
+```text
+ansehen:     paket    = F-02(person, VKₑ, zweck "emergency", kontext tresor-ID, epoche, geber-ID, person-ID)
+             bindung  = bindung(VKₑ, "vault-key", tresor-ID, epoche)      (dieselbe wie im Log, P-06)
+vollzugriff: paket    = F-02(person, AK, zweck "emergency-account", kontext geber-ID, person-ID)
+             bindung  = bindung(AK, "emergency-account", geber-ID)
+freigabe  = enc("kennwort/emergency/v1", firmen-ID, geber-ID, person-ID, fp(person), umfang
+                ("view" oder "full"), wartezeit (sekunden), zeit, bindung von AK oder leer,
+                enc(enc(tresor-ID, epoche, bindung)…))
+signatur  = F-03(geber, "emergency", freigabe)
+aussage   = F-03(wer, zweck, enc("kennwort/emergency-statement/v1", firmen-ID, geber-ID, person-ID, zeit))
+            zweck: emergency-request (person, zeit der anfrage), emergency-objection und
+            emergency-approval (geber, zeit der anfrage), emergency-revocation (geber, zeit der freigabe)
+```
+
+Die Signatur deckt die Bindungen, nicht die Pakete: So prüft die Person die Freigabe, bevor der
+Server die Pakete herausgibt, und jedes Paket danach an seiner Bindung. Geber und Person stehen im
+Kontext jedes Pakets; ein Paket für ein anderes Paar öffnet sich nicht. Umgesetzt in
+`packages/crypto/src/emergency.ts`; die Testvektoren in `packages/crypto/vectors/emergency-v1.json`
+entstehen ohne den Code, den sie prüfen (HKDF und SHA-512/256 aus `node:crypto`, AEAD und Ed25519 aus
+libsodium, X-Wing gegen die Vektoren des Entwurfs geprüft).
+
 ## Schlüsselhierarchie
 
 ```text
@@ -323,7 +350,7 @@ Eintrags-Schlüssel EK ─► Eintrag (alle Felder in einem Geheimtext, F-01)
 
 Umgesetzt in `packages/crypto/src/account.ts` (AK, Schlüsselblock, Entsperr-Wege),
 `vault.ts` (Tresor- und Eintrags-Schlüssel, Inhalt mit Auffüllen auf 256 Byte),
-`commitment.ts` (Bindungen) und `company-recovery.ts` (P-13).
+`commitment.ts` (Bindungen), `company-recovery.ts` (P-13) und `emergency.ts` (P-14).
 
 Was ein Client sich merkt, um den Server zu prüfen, liegt im **Kontozustand**: Fingerabdruck des
 Firmen-Wurzelschlüssels, bekannte Schlüsselbündel, der letzte Stand jedes Mitgliedschafts-Logs,
@@ -1088,7 +1115,7 @@ Restrisiken:
   Freigabe eines Eintrags, den ein anderes Gerät mitten im Wechsel geschrieben hat, öffnet die
   neue Version nicht mehr und muss neu geteilt werden.
 - War die Person der einzige Verwalter eines Tresors, kann niemand den Schlüssel wechseln; das löst
-  erst der Notfallzugriff oder die Firmen-Recovery (Teil c, d).
+  erst die Firmen-Recovery (Teil c); der Notfallzugriff (Teil d) lässt nur lesen.
 
 **Wehrt ab:** E-26, E-16, E-07.
 
@@ -1275,41 +1302,98 @@ Weitere Restrisiken (Review von K-307 Teil c):
 
 ### P-14 Notfallzugriff
 
-1. Der Gebende wählt eine Person mit zertifiziertem Bündel, Tresore und eine Wartezeit; sein Client
-   verpackt die VKₑ dieser Tresore an sie (F-02, Zweck `emergency`) und signiert die Freigabe mit
-   Wartezeit und den Bindungen der verpackten Schlüssel.
-2. Fragt die Person an, benachrichtigt der Server den Gebenden; widerspricht er nicht innerhalb der
-   Wartezeit, gibt der Server die Pakete heraus.
-3. Die Person prüft Signatur und Zertifikat, entpackt und vergleicht jeden Schlüssel mit seiner
-   Bindung. Nach einem Schlüsselwechsel erneuert der Client des Gebenden die Pakete.
+Eine Person des Vertrauens kommt nach einer Wartezeit an die Einträge des Gebenden, wenn ihm etwas
+zustößt. Vorbild ist der „Emergency Access“ von Bitwarden (eine Vertrauensperson, eine Wartezeit, in
+der der Gebende widersprechen kann, „View“ oder „Takeover“) und das Notfall-Kit von 1Password; die
+Verpackung ist F-02 (X-Wing als KEM wie im Basismodus von RFC 9180, an den Empfänger gebunden).
+Anders als bei Bitwarden kann der Server keinen eigenen Schlüssel unterschieben: Jeder Schlüssel
+muss zu einer Bindung passen, die der Gebende signiert hat (F-09), bei Tresor-Schlüsseln zusätzlich
+zu der im Log des Tresors.
 
-Restrisiko: Die Wartezeit setzt der Server durch; ein bösartiger Server kann sie verkürzen, aber nur
-zugunsten einer Person, die der Gebende selbst gewählt hat (E-04 ist damit auf die Wartezeit
-begrenzt, nie auf eine fremde Person).
+**Geben.** Der Gebende wählt unter **Einstellungen → Notfallzugriff** eine Person, deren Bündel der
+gemerkte Wurzelschlüssel zertifiziert hat (E-05), einen Umfang und eine Wartezeit von einem bis 30
+Tagen:
 
-Plan für den Bau (K-307 Teil d):
+- **Ansehen**: ausgewählte Tresore. Sein Client verpackt den aktuellen VKₑ jedes Tresors an die
+  Person (F-09, Zweck `emergency`).
+- **Vollzugriff**: das ganze Konto. Sein Client verpackt AK an die Person (Zweck
+  `emergency-account`); mit AK öffnet sie den Schlüsselblock und damit jeden Tresor, in dem der
+  Gebende Mitglied ist, auch den persönlichen.
 
-```text
-paket   = F-02(zertifiziertes Bündel der Person, VKₑ, zweck = "emergency",
-               kontext = tresor-ID, epoche, geber-ID, person-ID)
-freigabe = F-03(geber, "emergency", geber-ID, person-ID, wartezeit (Sekunden), zeit,
-                [ (tresor-ID, epoche, bindung(VKₑ, "vault-key", tresor-ID, epoche)) … ])
-```
+Er signiert die Freigabe (F-09) über Firma, beide Konten, den Fingerabdruck des Bündels der Person,
+Umfang, Wartezeit, Zeit und die Bindungen der Schlüssel. `PUT /api/emergency/:person` nimmt sie nur
+vom Gebenden, für ein anderes Mitglied derselben Firma, mit einer gültigen Signatur seines
+Ed25519-Schlüssels, für das Bündel, das der Server für die Person hält, mit einem Paket für genau
+jeden genannten Tresor, in dem der Gebende gerade Mitglied ist, und nur mit einer neueren Zeit als
+die Freigabe, die er schon hält (je Paar gibt es eine). Die Pakete legt der Server getrennt ab;
+`GET /api/emergency` zeigt beiden Seiten die Freigabe ohne sie.
 
-- Die Bindung ist dieselbe wie im Log (P-06); die Person nimmt einen Schlüssel nur, wenn er zu ihr
-  passt und das Log des Tresors dieselbe Bindung für die Epoche signiert hat. So kann der Gebende
-  nur Tresore weitergeben, deren Schlüssel er wirklich hat.
-- Der Server legt Freigabe und Pakete ab (`PUT /api/emergency/:person`), nimmt eine Anfrage der
-  Person an (`POST /api/emergency/:geber/request`), benachrichtigt den Gebenden (K-602) und gibt
-  die Pakete erst nach Ablauf der Wartezeit heraus, wenn der Gebende nicht widersprochen hat
-  (`DELETE …/request`). Die Wartezeit liegt zwischen einem und 30 Tagen; die Person sieht sie in der
-  signierten Freigabe und zeigt sie an.
-- Nach jedem Schlüsselwechsel (P-11) erneuert der Client des Gebenden die Pakete für die neue
-  Epoche; bis dahin öffnet der Notfallzugriff nur ältere Versionen. Verlässt der Gebende oder die
-  Person die Firma, löscht der Server die Freigabe.
-- Nutzt die Person den Zugriff, ist das ein signiertes Ereignis im Audit-Log.
+**Anfragen, widersprechen, früher freigeben.** Die Person fragt mit einer Anfrage an, die sie mit
+ihrer eigenen Uhrzeit signiert (Zweck `emergency-request`); der Server nimmt sie nur, wenn die Zeit
+höchstens fünf Minuten von seiner abweicht, und startet die Wartezeit. Er zeigt die Anfrage dem
+Gebenden: auf der Seite und als Hinweis über jeder Seite der App, solange sie läuft (geladen beim
+Öffnen, mit der Seite und alle fünf Minuten). Bis zum Ende der Wartezeit kann der Gebende
+**widersprechen** (Zweck `emergency-objection`) oder **jetzt freigeben** (Zweck
+`emergency-approval`), beides signiert und an die Zeit der Anfrage gebunden. Ein Widerspruch sperrt
+diese Anfrage für immer; eine neue Anfrage beginnt eine neue Wartezeit. **Zurückziehen** löscht die
+Freigabe; die signierte Rücknahme (Zweck `emergency-revocation`, an die Zeit der Freigabe gebunden)
+bleibt für die Person sichtbar.
 
-**Wehrt ab:** E-04, E-05.
+**Herausgeben.** `GET /api/emergency/:geber/release` gibt die Pakete erst heraus, wenn eine Anfrage
+läuft, ihr nicht widersprochen wurde und die Wartezeit nach der Uhr des Servers vorbei ist oder der
+Gebende früher freigegeben hat; beim Vollzugriff dazu den versiegelten Schlüsselblock des Gebenden.
+`GET /api/emergency/:geber/vaults` gibt danach die genannten Tresore (beim Vollzugriff alle, in
+denen der Gebende Mitglied ist, mit seinen verpackten Schlüsseln) mit Log, Namen und der neuesten
+Version jedes Eintrags.
+
+**Prüfen.** Der Client der Person nimmt eine Freigabe nur (`checkGrant`), wenn sie an ihr Konto und
+genau ihr Bündel geht, ein vom gemerkten Wurzelschlüssel zertifiziertes Mitglied derselben Firma
+sie signiert hat und sie nicht älter ist als die neueste Freigabe dieses Gebenden, die sie gesehen
+hat, und nicht genau diese nach einer Rücknahme. Was sie gesehen hat, merkt sie sich im
+Kontozustand (`emergency`: je Gebendem die Zeit der neuesten Freigabe, ob sie zurückgenommen ist,
+und die neueste Anfrage, der widersprochen wurde). Die herausgegebenen Pakete nutzt sie nur
+(`checkRelease`), wenn die Anfrage ihre eigene ist, ihr nach dem, was sie gesehen hat, nicht
+widersprochen wurde und die Wartezeit nach ihrer eigenen Uhr vorbei ist oder eine signierte
+Freigabe des Gebenden für genau diese Anfrage vorliegt. Dann prüft sie jedes Log mit `verifyLog`
+und nimmt einen Tresor-Schlüssel nur, wenn er zur Bindung der Freigabe passt und das Log dieselbe
+Bindung für die Epoche signiert hat (`openEmergencyVault`; so gibt der Gebende nur Schlüssel
+weiter, die er wirklich hat), AK nur, wenn er den Schlüsselblock des Gebenden öffnet, dessen
+Schlüssel dem Zertifikat und dessen Wurzel-Fingerabdruck dem eigenen gleichen
+(`openEmergencyAccount`, wie P-13 eine Hinterlegung prüft). Die Einträge zeigt sie nur zum Lesen;
+jede Öffnung signiert sie als Ereignis `emergency-access` ins Audit-Log.
+
+**Nach einem Schlüsselwechsel** (P-11) erneuert der Client des Gebenden nach jedem Laden der Tresore
+jede Ansehen-Freigabe, die einen älteren VKₑ trägt, mit den aktuellen Schlüsseln und denselben
+Bedingungen (`renewGrants`); der Server behält dann eine laufende Anfrage. Bis dahin öffnet der
+Notfallzugriff nur, was vor dem Wechsel geschrieben wurde. Verlässt der Gebende oder die Person die
+Firma, löscht der Server Freigabe und Rücknahme.
+
+**Audit-Log** (P-20): Der Server schreibt `emergency-granted`, `emergency-revoked`,
+`emergency-requested`, `emergency-objected` und `emergency-released` (bei früherer Freigabe mit dem
+Gebenden als Handelndem, sonst beim ersten Abholen nach der Wartezeit); die Person signiert
+`emergency-access` selbst.
+
+Umgesetzt in `packages/crypto/src/emergency.ts` (F-09), `packages/core/src/membership/emergency.ts`,
+`emergency-open.ts` und `emergency-wire.ts`, `packages/core/src/account/emergency-seen.ts`,
+`apps/server/src/account/emergency.ts`, `emergency-store.ts` und `emergency-vaults.ts`,
+`packages/client/src/emergency/` und in der Web-App in `apps/web/src/emergency/`.
+
+Restrisiken:
+
+- **Die Wartezeit setzt der Server durch.** Ein bösartiger Server kann sie verkürzen oder einen
+  Widerspruch verschweigen, den die Person noch nicht gesehen hat, aber nur zugunsten der Person,
+  die der Gebende selbst gewählt hat: E-04 ist damit auf die Wartezeit begrenzt, nie auf eine fremde
+  Person. Ein ehrlicher Client der Person zählt die Wartezeit nach seiner eigenen Uhr ab der Zeit,
+  die er selbst signiert hat; eine Person, die mit dem Server zusammenarbeitet, umgeht das.
+- **Eine Rücknahme, die die Person nie gesehen hat,** kann der Server verschweigen und die alte
+  Freigabe weiter herausgeben. Wer sicher gehen will, wechselt nach der Rücknahme die Schlüssel der
+  Tresore (P-11): Der alte VKₑ öffnet dann nichts Neues mehr. Beim Vollzugriff hilft das nicht
+  gegen eine Person, die AK schon hat; dafür ist der Wechsel von AK da (P-12, Teil e).
+- **Vollzugriff gibt AK heraus.** Wer AK hat, kann im Namen des Gebenden signieren; der Server lässt
+  die Person nur lesen, aber nach der Freigabe ist das ein Versprechen, keine Grenze. Darum steht der
+  Vollzugriff in der Oberfläche als „das ganze Konto“ da.
+
+**Wehrt ab:** E-04, E-05, E-16.
 
 ### P-15 Was der Server sieht
 
@@ -1559,15 +1643,17 @@ und lesen sie nicht.
 ### P-20 Audit-Log
 
 Jedes Ereignis ist ein Glied einer Hash-Kette (`hash = SHA-512/256(enc("kennwort/audit/v1",
-vorgänger-hash, ereignis))`); Ereignisse, die ein Client auslöst (Export, Recovery, Schlüsselwechsel),
-signiert er. Clients merken sich den letzten Stand, der Export für Prüfer enthält die Kette, und die
-Prüfung findet jede geänderte, fehlende oder eingeschobene Zeile.
+vorgänger-hash, ereignis))`); Ereignisse, die ein Client auslöst (Export, Recovery,
+Schlüsselwechsel, Zugriff im Notfall), signiert er. Clients merken sich den letzten Stand, der
+Export für Prüfer enthält die Kette, und die Prüfung findet jede geänderte, fehlende oder
+eingeschobene Zeile.
 
 Ein Ereignis ist `enc("kennwort/audit-event/v1", firma, nr, zeit, wer, was, worum, signatur)`; die
 Kette beginnt bei 32 Null-Bytes und hat je Firma eigene Nummern ab 0. Der Server schreibt selbst:
-Anmeldung (jede neue Sitzung), Einladung erstellt und angenommen, Tresor angelegt. Ein Client
-signiert `sign("audit", firma, wer, was, worum)` mit seinem Ed25519-Schlüssel; `worum` ist eine ID,
-die er einmal wählt, dieselbe Handlung mit derselben ID zweimal gilt als wiederholt.
+Anmeldung (jede neue Sitzung), Einladung erstellt und angenommen, Tresor angelegt und die Schritte
+des Notfallzugriffs (P-14). Ein Client signiert `sign("audit", firma, wer, was, worum)` mit seinem
+Ed25519-Schlüssel; `worum` ist eine ID, die er einmal wählt, dieselbe Handlung mit derselben ID
+zweimal gilt als wiederholt.
 
 Text steht in jeder Zeile wohlgeformt und schon in NFC, sonst gilt die Zeile als fehlerhaft: So haben
 dieselben Worte nur eine Form, und eine wiederholte Handlung lässt sich nicht hinter einer anderen
