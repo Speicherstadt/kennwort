@@ -138,6 +138,25 @@ const answerFor = (
     : { error: "not-found", status: 404 };
 };
 
+/**
+ * A recovery is confirmed only by an owner who still is one, and only once that owner signed it into
+ * the audit log (P-13, P-20): a modified client must not hand out a session for a member without a
+ * trace, nor one who lost the role after answering (review of K-307 part c)
+ */
+const recoveryRefusal = (
+  { scope, session }: TenantEnv["Variables"],
+  accountId: string | null,
+  pairingId: string,
+): { error: string; status: 403 | 409 } | undefined => {
+  if (scope.account(session.accountId)?.role !== "owner")
+    return { error: "forbidden", status: 403 };
+  const subject = `${accountId}/${pairingId}`;
+  const signed = scope
+    .auditLog()
+    .some((e) => e.action === "recovery" && e.subject === subject && e.actor === session.accountId);
+  return signed ? undefined : { error: "not-signed", status: 409 };
+};
+
 /** For an unlocked device: load the one-time key, answer with the package, confirm the code */
 export const pairingApiRoutes = ({ db, now }: Pick<PairingDeps, "db" | "now">) =>
   new Hono<TenantEnv>()
@@ -182,18 +201,18 @@ export const pairingApiRoutes = ({ db, now }: Pick<PairingDeps, "db" | "now">) =
       return answered ? c.json({ stored: true }) : c.json({ error: "not-found" }, 404);
     })
     .post("/pairings/:id/confirm", (c) => {
-      const confirmed = db
-        .update(pairings)
-        .set({ confirmed: true })
-        .where(
-          and(
-            eq(pairings.id, c.req.param("id")),
-            eq(pairings.answeredBy, c.var.session.accountId),
-            isNotNull(pairings.package),
-            gt(pairings.expiresAt, now()),
-          ),
-        )
-        .returning()
-        .get();
+      const id = c.req.param("id");
+      const me = c.var.session.accountId;
+      const open = and(
+        eq(pairings.id, id),
+        eq(pairings.answeredBy, me),
+        isNotNull(pairings.package),
+        gt(pairings.expiresAt, now()),
+      );
+      const row = db.select().from(pairings).where(open).get();
+      if (!row) return c.json({ error: "not-found" }, 404);
+      const refused = row.accountId === me ? undefined : recoveryRefusal(c.var, row.accountId, id);
+      if (refused) return c.json({ error: refused.error }, refused.status);
+      const confirmed = db.update(pairings).set({ confirmed: true }).where(open).returning().get();
       return confirmed ? c.json({ confirmed: true }) : c.json({ error: "not-found" }, 404);
     });

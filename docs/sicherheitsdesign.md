@@ -1222,7 +1222,9 @@ Fingerabdruck des Einmal-Schlüssels und dem Kopplungs-Geheimnis `r`. Der Inhabe
 
 Beide Geräte zeigen den Vergleichscode aus P-04. Erst nach „Code stimmt“ auf beiden signiert der
 Inhaber das Ereignis `recovery` ins Audit-Log (P-20, Gegenstand Konto-ID und Kopplungs-ID) und
-bestätigt; nur wer geantwortet hat, kann bestätigen, und die nächste Abfrage gibt dem neuen Gerät
+bestätigt; nur wer geantwortet hat, kann bestätigen, nur solange er Inhaber ist und erst, wenn sein
+Ereignis `recovery` für genau diese Kopplung im Log steht (sonst lehnt der Server ab; eine
+Wiederherstellung ohne Spur im Audit-Log gibt es so nicht). Die nächste Abfrage gibt dem neuen Gerät
 eine Sitzung für das Mitglied. Das neue Gerät öffnet nur ein Paket, das an `r` gebunden ist – ein
 AK, den der Server selbst an den Einmal-Schlüssel verpackt, scheitert. Dann prüft es: Konto-ID und
 Hash des Kontozustands passen zu dem, was der Server liefert, AK öffnet Schlüsselblock und
