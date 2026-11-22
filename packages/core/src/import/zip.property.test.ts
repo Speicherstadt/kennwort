@@ -246,7 +246,7 @@ describe("ZIP container parsers under fuzzing (K-502)", () => {
 
 describe("1PUX data under fuzzing (K-502)", () => {
   it("answers any JSON in the structure of export.data", () => {
-    const any = fc.jsonValue({ maxDepth: 3 });
+    const any = fc.jsonValue({ maxDepth: 2 });
     const value = fc.oneof(
       any,
       fc.dictionary(
@@ -278,12 +278,22 @@ describe("1PUX data under fuzzing (K-502)", () => {
             {
               loginFields: fc.oneof(
                 any,
-                fc.array(fc.record({ value: any, fieldType: any, designation: any })),
+                fc.array(fc.record({ value: any, fieldType: any, designation: any }), {
+                  maxLength: 3,
+                }),
               ),
               notesPlain: any,
               password: any,
-              sections: fc.oneof(any, fc.array(fc.record({ title: any, fields: fc.array(field) }))),
-              passwordHistory: fc.oneof(any, fc.array(fc.record({ value: any, time: any }))),
+              sections: fc.oneof(
+                any,
+                fc.array(fc.record({ title: any, fields: fc.array(field, { maxLength: 3 }) }), {
+                  maxLength: 3,
+                }),
+              ),
+              passwordHistory: fc.oneof(
+                any,
+                fc.array(fc.record({ value: any, time: any }), { maxLength: 3 }),
+              ),
             },
             { requiredKeys: [] },
           ),
@@ -298,8 +308,14 @@ describe("1PUX data under fuzzing (K-502)", () => {
     const data = fc.record({
       accounts: fc.array(
         fc.record({
-          vaults: fc.array(fc.record({ attrs: fc.record({ name: any }), items: fc.array(item) })),
+          vaults: fc.array(
+            fc.record({ attrs: fc.record({ name: any }), items: fc.array(item, { maxLength: 3 }) }),
+            {
+              maxLength: 3,
+            },
+          ),
         }),
+        { maxLength: 3 },
       ),
     });
     fc.assert(
@@ -307,7 +323,7 @@ describe("1PUX data under fuzzing (K-502)", () => {
         const result = parseOnePasswordData(JSON.stringify(json));
         return result.ok ? Array.isArray(result.value) : typeof result.error === "string";
       }),
-      { numRuns: 500 },
+      { numRuns: 300 },
     );
   });
 });

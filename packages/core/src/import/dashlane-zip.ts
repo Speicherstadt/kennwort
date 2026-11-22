@@ -7,16 +7,14 @@
 import { err, ok } from "../result.ts";
 import { parseDashlaneCsv } from "./dashlane-csv.ts";
 import type { ImportedEntry, ZipParser } from "./types.ts";
-import { readZip } from "./zip.ts";
+import { parseEachZipped } from "./zip.ts";
 
 export const parseDashlaneZip: ZipParser = async (bytes) => {
-  const zip = await readZip(bytes, (name) => name.endsWith(".csv"));
-  if (!zip.ok) return zip;
+  const files = await parseEachZipped(bytes, (name) => name.endsWith(".csv"), parseDashlaneCsv);
+  if (!files.ok) return files;
   const entries: ImportedEntry[] = [];
   let known = 0;
-  for (const file of zip.value) {
-    const parsed = parseDashlaneCsv(file.bytes);
-    file.bytes.fill(0);
+  for (const parsed of files.value) {
     if (parsed.ok) {
       known++;
       entries.push(...parsed.value);

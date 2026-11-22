@@ -21,12 +21,16 @@ export const TABLE_PARTS = [
 
 export type TablePart = (typeof TABLE_PARTS)[number];
 
-/** The entries of the file; a table only with a mapping that names at least one column */
-export const parseChoice = (
+/**
+ * The entries of the file; a table only with a mapping that names at least one column. Unpacking
+ * a ZIP container (1PUX, Dashlane, Proton Pass) is asynchronous, so the answer always is.
+ */
+export const parseChoice = async (
   choice: VendorChoice,
   bytes: Uint8Array,
   columns: Columns = {},
-): ImportResult => (choice.format ? choice.format.parse(bytes) : parseTableCsv(columns)(bytes));
+): Promise<ImportResult> =>
+  choice.format ? choice.format.parse(bytes) : parseTableCsv(columns)(bytes);
 
 /** Column names that usually hold a part, lowercased, in German and English */
 const NAMES: Record<TablePart, readonly string[]> = {
@@ -62,6 +66,9 @@ const ERROR_TEXT: Record<ImportError, () => string> = {
   "bad-xml": () => m.import_error_bad_xml(),
   "wrong-format": () => m.import_error_wrong_format(),
   encrypted: () => m.import_error_encrypted(),
+  "bad-zip": () => m.import_error_bad_zip(),
+  "unsupported-zip": () => m.import_error_unsupported_zip(),
+  "too-large": () => m.import_error_too_large(),
 };
 
 export const errorText = (error: ImportError) => ERROR_TEXT[error]();

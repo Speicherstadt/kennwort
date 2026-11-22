@@ -45,5 +45,7 @@ describe("vendor choices", () => {
     expect(accept("bitwarden-json")).toBe(".json,application/json");
     expect(accept("keepass-xml")).toBe(".xml,text/xml,application/xml");
     expect(accept(TABLE)).toBe(".csv,text/csv");
+    expect(accept("dashlane-zip")).toBe(".zip,application/zip");
+    expect(accept("1password-1pux")).toBe(".1pux");
   });
 });

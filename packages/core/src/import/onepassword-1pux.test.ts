@@ -205,6 +205,9 @@ describe("1Password 1PUX (K-502)", () => {
     expect(value({ url: "https://weber-haustechnik.example" })).toEqual([
       ["field-1", "Wert", "https://weber-haustechnik.example", "url"],
     ]);
+    expect(value({ address: { street: "Hafenstraße 12", zip: "20457", city: "Hamburg" } })).toEqual(
+      [["field-1", "Wert", "Hafenstraße 12\n20457 Hamburg", "note"]],
+    );
     expect(value({ totp: "otpauth://totp/x?secret=A" })).toEqual([
       ["field-1", "Wert", "otpauth://totp/x?secret=A", "totp"],
     ]);

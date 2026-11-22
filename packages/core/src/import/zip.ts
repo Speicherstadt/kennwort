@@ -227,17 +227,30 @@ export const readZip = async (
 };
 
 /**
- * A parser for an export that is one file in a ZIP: that file to `parse`, then overwritten, since
- * it holds every secret in plain text; an archive without it is not this vendor's export.
+ * Each file of the archive `wanted` picks, handed to `parse` and overwritten right after, since it
+ * holds every secret in plain text.
  */
+export const parseEachZipped = async (
+  bytes: Uint8Array,
+  wanted: (name: string) => boolean,
+  parse: (file: Uint8Array) => ImportResult,
+): Promise<Result<ImportResult[], ZipError>> => {
+  const zip = await readZip(bytes, wanted);
+  if (!zip.ok) return zip;
+  return ok(
+    zip.value.map((file) => {
+      const parsed = parse(file.bytes);
+      file.bytes.fill(0);
+      return parsed;
+    }),
+  );
+};
+
+/** A parser for an export that is one file in a ZIP; an archive without it is another's */
 export const parseZipped =
   (name: string, parse: (file: Uint8Array) => ImportResult) =>
   async (bytes: Uint8Array): Promise<ImportResult> => {
-    const zip = await readZip(bytes, (entry) => entry === name);
-    if (!zip.ok) return zip;
-    const [file] = zip.value;
-    if (!file) return err("wrong-format");
-    const parsed = parse(file.bytes);
-    file.bytes.fill(0);
-    return parsed;
+    const parsed = await parseEachZipped(bytes, (entry) => entry === name, parse);
+    if (!parsed.ok) return parsed;
+    return parsed.value[0] ?? err("wrong-format");
   };

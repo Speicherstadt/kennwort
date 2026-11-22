@@ -85,7 +85,7 @@ const rows = (root: ParentNode) =>
 describe("ImportPage up to the file", () => {
   it("offers every vendor and shows how to export from the chosen one", async () => {
     const root = await show(deps().deps);
-    expect(root.querySelectorAll("li button").length).toBe(17);
+    expect(root.querySelectorAll("li button").length).toBe(20);
     await choose(root, "Bitwarden (JSON)");
     expect(root.textContent).toContain("Werkzeuge");
     expect(root.querySelector<HTMLInputElement>('input[type="file"]')?.accept).toBe(

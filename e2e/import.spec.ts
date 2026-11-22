@@ -8,6 +8,9 @@ import { addEntry } from "./entries.ts";
 test.use({ locale: "de-DE" });
 
 const fixture = (name: string) => join(import.meta.dirname, "fixtures", name);
+/** The ZIP containers of K-502 Teil 2, as the parsers' own tests read them */
+const coreFixture = (name: string) =>
+  join(import.meta.dirname, "..", "packages", "core", "src", "import", "fixtures", name);
 
 const axe = async (page: Page) => {
   const { violations } = await new AxeBuilder({ page }).analyze();
@@ -27,7 +30,7 @@ const importFile = async (page: Page, vendor: string, file: string) => {
   await expect(page.getByRole("heading", { level: 1, name: "Importieren" })).toBeVisible();
   await page.getByRole("button", { name: vendor, exact: true }).click();
   await expect(page.getByText("So kommst du an die Exportdatei")).toBeVisible();
-  await page.getByLabel("Exportdatei wählen").setInputFiles(fixture(file));
+  await page.getByLabel("Exportdatei wählen").setInputFiles(file);
 };
 
 /** Everything the page sent to the server, as text */
@@ -51,7 +54,7 @@ test.describe("import", { tag: "@phone" }, () => {
   }) => {
     await setUpCompany(page);
     const sent = recordRequests(page);
-    await importFile(page, "Bitwarden (JSON)", "import-bitwarden.json");
+    await importFile(page, "Bitwarden (JSON)", fixture("import-bitwarden.json"));
     await expect(page.getByText("3 Einträge in der Datei")).toBeVisible();
     await expect(page.getByRole("list", { name: "Arten" })).toContainText("Login: 2");
     const router = rows(page).getByRole("listitem").filter({ hasText: "Router Lager" });
@@ -87,7 +90,7 @@ test.describe("import", { tag: "@phone" }, () => {
       password: "Rohr-Ventil-Pumpe-2026!",
       website: "https://sparkasse.test",
     });
-    await importFile(page, "Chrome / Edge / Brave / Opera (CSV)", "import-chrome.csv");
+    await importFile(page, "Chrome / Edge / Brave / Opera (CSV)", fixture("import-chrome.csv"));
     const sparkasse = rows(page).getByRole("listitem").filter({ hasText: "Sparkasse" });
     await expect(sparkasse).toContainText("doppelt");
     await expect(page.getByText("1 Eintrag gibt es schon und wird übersprungen.")).toBeVisible();
@@ -103,7 +106,7 @@ test.describe("import", { tag: "@phone" }, () => {
 
   test("Jonas maps the columns of a spreadsheet and imports it", async ({ page }) => {
     await setUpCompany(page);
-    await importFile(page, "Andere Tabelle (CSV)", "import-table.csv");
+    await importFile(page, "Andere Tabelle (CSV)", fixture("import-table.csv"));
     await expect(page.getByRole("heading", { name: "Spalten zuordnen" })).toBeVisible();
     await page.getByLabel("Titel").selectOption("Bezeichnung");
     await page.getByLabel("Benutzername").selectOption("Kennung");
@@ -119,9 +122,34 @@ test.describe("import", { tag: "@phone" }, () => {
     await expect(page.getByRole("heading", { level: 1, name: "NAS Büro" })).toBeVisible();
   });
 
+  test("Jonas imports the company's 1PUX from 1Password, unpacked in the browser", async ({
+    page,
+  }) => {
+    await setUpCompany(page);
+    const sent = recordRequests(page);
+    await importFile(page, "1Password (1PUX)", coreFixture("onepassword.1pux"));
+    await expect(page.getByText("12 Einträge in der Datei")).toBeVisible();
+    await expect(rows(page)).toContainText("Großhandel-Portal");
+    await expect(rows(page)).not.toContainText("Sommer2026!Heizung");
+    await finish(page, "12 Einträge importieren");
+    expect(sent.join("\n")).not.toContain("Sommer2026!Heizung");
+
+    await visibleLink(page, "Einträge").click();
+    await option(page, "Werkstatt-WLAN").click();
+    await expect(page.getByRole("heading", { level: 1, name: "Werkstatt-WLAN" })).toBeVisible();
+  });
+
+  test("a loose CSV chosen as a ZIP says it is not one", async ({ page }) => {
+    await setUpCompany(page);
+    await importFile(page, "Dashlane (ZIP)", fixture("import-chrome.csv"));
+    await expect(page.getByRole("alert")).toHaveText(
+      "Das ist keine lesbare ZIP-Datei, oder sie ist beschädigt. Lade den Export neu herunter und wähle ihn, ohne ihn zu entpacken.",
+    );
+  });
+
   test("a file of another vendor says what is wrong", async ({ page }) => {
     await setUpCompany(page);
-    await importFile(page, "Bitwarden (JSON)", "import-chrome.csv");
+    await importFile(page, "Bitwarden (JSON)", fixture("import-chrome.csv"));
     await expect(page.getByRole("alert")).toHaveText(
       "Das ist keine gültige JSON-Datei. Hast du das richtige Format gewählt?",
     );

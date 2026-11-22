@@ -24,12 +24,15 @@ const HOW_TO: Record<string, () => string> = {
   "bitwarden-json": () => m.import_howto_bitwarden_json(),
   "bitwarden-csv": () => m.import_howto_bitwarden_csv(),
   "lastpass-csv": () => m.import_howto_lastpass_csv(),
+  "1password-1pux": () => m.import_howto_onepassword_1pux(),
   "1password-csv": () => m.import_howto_onepassword_csv(),
   "keepass-xml": () => m.import_howto_keepass_xml(),
   "keepassxc-csv": () => m.import_howto_keepassxc_csv(),
   "keepass-csv": () => m.import_howto_keepass_csv(),
   "passbolt-csv": () => m.import_howto_passbolt_csv(),
+  "dashlane-zip": () => m.import_howto_dashlane_zip(),
   "dashlane-csv": () => m.import_howto_dashlane_csv(),
+  "protonpass-zip": () => m.import_howto_protonpass_zip(),
   "protonpass-json": () => m.import_howto_protonpass_json(),
   "keeper-csv": () => m.import_howto_keeper_csv(),
   "nordpass-csv": () => m.import_howto_nordpass_csv(),
@@ -49,6 +52,8 @@ const ACCEPT: Record<string, string> = {
   JSON: ".json,application/json",
   XML: ".xml,text/xml,application/xml",
   CSV: ".csv,text/csv",
+  ZIP: ".zip,application/zip",
+  "1PUX": ".1pux",
 };
 
 const choiceOf = (format: ImportFormat): VendorChoice => ({

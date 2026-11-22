@@ -74,7 +74,7 @@ const createImportFlow = (save: ImportDeps["save"]) => {
     const bytes = await readBytes(file);
     if (!bytes) return setStep({ step: "file", choice, error: m.import_error_unreadable() });
     if (choice.format) {
-      const result = parseChoice(choice, bytes);
+      const result = await parseChoice(choice, bytes);
       bytes.fill(0);
       return parsed(choice, result);
     }
@@ -92,10 +92,10 @@ const createImportFlow = (save: ImportDeps["save"]) => {
     });
   };
 
-  const onMapped = (map: Extract<Step, { step: "map" }>) => {
+  const onMapped = async (map: Extract<Step, { step: "map" }>) => {
     if (Object.keys(map.mapping).length === 0)
       return setStep({ ...map, error: m.import_map_empty() });
-    const result = parseChoice(map.choice, map.bytes, map.mapping);
+    const result = await parseChoice(map.choice, map.bytes, map.mapping);
     if (!result.ok) return setStep({ ...map, error: errorText(result.error) });
     map.bytes.fill(0);
     parsed(map.choice, result);

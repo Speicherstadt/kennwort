@@ -28,7 +28,7 @@ describe("Dashlane ZIP (K-502)", () => {
   it("leaves out a CSV of a kind it does not know and everything that is not a CSV", async () => {
     const zip = buildZip([
       { name: "passkeys.csv", data: "rpId,credentialId\nportal.example,abc\n" },
-      { name: "README.txt", data: "username,title,password,url\n" },
+      { name: "README.txt", data: "username,title,password,url\nmax,Lager,Pumpe-7,\n" },
       { name: "credentials.csv", data: fixture("dashlane-credentials.csv") },
     ]);
     expect(compact(await parseDashlaneZip(zip.bytes))).toEqual(

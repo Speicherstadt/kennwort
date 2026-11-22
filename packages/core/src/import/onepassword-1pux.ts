@@ -160,7 +160,7 @@ const address = (a: Value["address"]) =>
   joinLines(a.street, `${a.zip} ${a.city}`, a.state, a.country.toUpperCase());
 
 /** A section field's value and kind, by the one key its value has; none for an empty one */
-const valueOf = (v: Value): [string, Kind] | undefined => {
+const fieldValue = (v: Value): [string, Kind] | undefined => {
   const candidates: [string, Kind][] = [
     [v.concealed || v.creditCardNumber, "secret"],
     [v.totp, "totp"],
@@ -185,7 +185,7 @@ const sectionField =
   (type: EntryType, sectionTitle: string) =>
   (field: SectionField): DraftField[] => {
     if (field.value.sshKey.metadata.privateKey !== "") return sshKey(field.value.sshKey);
-    const found = valueOf(field.value);
+    const found = fieldValue(field.value);
     if (!found) return [];
     const [value, kind] = found;
     const totp = type === "login" && kind === "totp" ? "totp" : undefined;

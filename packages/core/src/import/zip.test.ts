@@ -14,7 +14,11 @@ const text = new TextDecoder();
 const bytesOf = (value: string) => new TextEncoder().encode(value).length;
 
 /** The files as names and texts, or the error */
-const read = async (bytes: Uint8Array, wanted = everything, limits?: ZipLimits) => {
+const read = async (
+  bytes: Uint8Array,
+  wanted: (name: string) => boolean = everything,
+  limits?: ZipLimits,
+) => {
   const zip = await readZip(bytes, wanted, limits);
   return zip.ok ? zip.value.map((f) => [f.name, text.decode(f.bytes)]) : zip.error;
 };

@@ -21,9 +21,10 @@ Unter **Einstellungen → Importieren**:
 
 1. **Anbieter wählen**: jeder Manager und Browser aus der Tabelle unten oder „Andere Tabelle (CSV)“.
    Kennwort zeigt gleich, wo dort der Export ist.
-2. **Datei wählen**: Kennwort liest sie auf dem Gerät. Passt sie nicht, sagt es, warum – etwa
-   „Diese Datei ist verschlüsselt – exportiere unverschlüsselt“ oder dass sie zu einem anderen
-   Anbieter gehört.
+2. **Datei wählen**: Kennwort liest sie auf dem Gerät; ein ZIP des Anbieters (1Passwords 1PUX,
+   Dashlane, Proton Pass) wählst du, wie es ist, ohne es zu entpacken. Passt die Datei nicht, sagt
+   Kennwort, warum – etwa „Diese Datei ist verschlüsselt – exportiere unverschlüsselt“ oder dass
+   sie zu einem anderen Anbieter gehört.
 3. **Spalten zuordnen** (nur bei „Andere Tabelle“): Für Titel, Benutzername, Passwort, Adresse,
    Einmalcode, Notizen, Ordner und Tags wählst du die Spalte; Kennwort schlägt nach den Namen der
    Spalten schon eine Zuordnung vor. Die Tabelle braucht eine Kopfzeile und Kommas zwischen den
@@ -56,12 +57,15 @@ Kennwort mit Nullen.
 | Bitwarden / Vaultwarden | JSON (Tresor oder Organisation) | alle Arten (Login, Notiz, Karte, Identität, SSH-Schlüssel), eigene Felder, Ordner bzw. Sammlungen, Favoriten, frühere Passwörter |
 | Bitwarden / Vaultwarden | CSV (Tresor oder Organisation) | Logins und Notizen, eigene Felder, mehrere Adressen, Ordner bzw. Sammlungen, Favoriten |
 | LastPass | CSV aus dem Web-Tresor | Logins, sichere Notizen, Kreditkarten, Adressen als Identität, andere Notiz-Arten mit ihren Feldern, Ordner und geteilte Ordner, Favoriten |
+| 1Password | 1PUX (1Password 8) | alle Kategorien: Logins, Passwörter, Server und Datenbanken als Login, Karten, Identitäten, WLAN-Router, API-Zugänge, SSH-Schlüssel, alles andere als Notiz mit seinen Feldern; Abschnitte als eigene Felder, Einmalcodes, mehrere Adressen, Tresore als Ordner, Tags, Favoriten, frühere Passwörter, archivierte Einträge; Anhänge und Häkchen aus Anmeldeformularen bleiben draußen |
 | 1Password | CSV (1Password 8) | Logins mit Einmalcode, Tags, Favoriten |
 | KeePass / KeePassXC | KeePass-2-XML | Gruppen als Ordner, geschützte Felder als geheime Felder, Einmalcodes (KeePassXC und KeePass 2.47+), weitere Adressen, Tags, frühere Passwörter; der Papierkorb bleibt draußen |
 | KeePassXC | CSV | Gruppen als Ordner, Einmalcodes; der Papierkorb bleibt draußen |
 | KeePass 2 | CSV | Logins mit Notizen |
 | Passbolt | CSV (KeePass-Layout) | Ordner, Einmalcodes |
+| Dashlane | ZIP des CSV-Exports, so wie es geladen wird | alles aus den CSV-Dateien darin (siehe nächste Zeile); eine CSV-Datei einer Art, die Kennwort nicht kennt, bleibt draußen |
 | Dashlane | CSV (jede Datei aus dem ZIP einzeln) | Zugangsdaten mit Einmalcode und Kategorie, sichere Notizen, Karten und Bankkonten, Ausweise und persönliche Daten |
+| Proton Pass | ZIP des JSON-Exports, so wie es geladen wird | alles aus `Proton Pass/data.json` darin (siehe nächste Zeile); Anhänge bleiben draußen |
 | Proton Pass | JSON (`data.json` aus dem ZIP) | alle Arten (Login, Alias, Karte, Notiz, Identität, SSH-Schlüssel, WLAN), eigene Felder und Abschnitte, Tresore als Ordner, Angeheftete als Favoriten; der Papierkorb bleibt draußen |
 | Keeper | CSV | Ordner und geteilte Ordner, eigene Felder, Einmalcode |
 | NordPass | CSV | Logins mit mehreren Adressen und eigenen Feldern, Karten, Identitäten, Notizen, Ordner |
@@ -73,8 +77,6 @@ Kennwort mit Nullen.
 
 Noch nicht dabei und als eigene Teile geplant:
 
-- **ZIP-Dateien**: 1Passwords 1PUX, Dashlane und Proton Pass als ganzes ZIP. Bis dahin liest
-  Kennwort bei Dashlane und Proton Pass die Dateien aus dem ZIP.
 - **KDBX 4**, die verschlüsselte Datenbank von KeePass und KeePassXC, auch aus Passbolt. Bis dahin
   geht der Weg über den XML-Export.
 - **Verschlüsselte Exporte**: Bitwardens verschlüsseltes und passwortgeschütztes JSON, Proton
@@ -101,9 +103,28 @@ Noch nicht dabei und als eigene Teile geplant:
 
 Eine Datei, die nicht passt, bricht den Import mit einer klaren Meldung ab: kein Text (kein
 UTF-8), ein Anführungszeichen ohne Ende, kein gültiges JSON oder XML, andere Spalten als beim
-gewählten Anbieter, oder ein verschlüsselter Export. Absturz oder Hänger gibt es nicht: Die Leser
+gewählten Anbieter, ein verschlüsselter Export, oder ein ZIP, das beschädigt ist, in einer Form
+gepackt, die Kennwort nicht liest, oder größer als jeder Export. Absturz oder Hänger gibt es nicht: Die Leser
 arbeiten in einem Durchgang ohne Rekursion, lehnen XML mit Dokumenttyp ab, damit keine Entität
 wachsen kann, und werden mit zufälligen und zufällig beschädigten Dateien getestet.
+
+### ZIP-Dateien
+
+Die ZIP-Dateien entpackt Kennwort selbst, mit dem `DecompressionStream` des Browsers und ohne
+weitere Bibliothek, nach PKWAREs Spezifikation (APPNOTE.TXT). Entpackt werden nur die Dateien, die
+der Anbieter braucht – Anhänge nie. Kennwort traut keiner Zahl im ZIP:
+
+- **Nicht gelesen** werden ZIP64, auf mehrere Datenträger verteilte und verschlüsselte ZIPs sowie
+  andere Packverfahren als „gespeichert“ und „Deflate“; so packt kein Anbieter seinen Export.
+- **Zip-Bomben** enden, bevor etwas entpackt wird: höchstens 10 000 Dateien im ZIP, höchstens
+  64 MiB entpackt für die gelesenen Dateien zusammen und höchstens 1 : 200 gepackt – ein Export
+  mit allen Einträgen eines Teams hat wenige Megabyte, Text packt Deflate weit weniger dicht.
+- **Längen und Prüfsummen**: Jeder Versatz muss in der Datei liegen, das Entpacken stoppt, sobald
+  mehr herauskommt als angegeben, und was herauskommt, muss Länge und CRC-32 haben, die das ZIP
+  nennt.
+- **Namen** dienen nur dem Finden einer Datei, nie als Pfad. Ein ZIP mit einem Namen, der aus
+  seinem Ordner führt (`..`, `/` am Anfang, `\`, ein Laufwerksbuchstabe), oder mit einem Namen
+  zweimal lehnt Kennwort trotzdem ab.
 
 ## Export
 
