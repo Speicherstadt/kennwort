@@ -146,9 +146,11 @@ const createLock = (deps: SessionDeps) => {
     current?.loginKey?.fill(0);
     setOpened(undefined);
   };
+  // Clamped to the lock time: Date.now follows the wall clock, and one set back would otherwise
+  // put the last use in the future and keep the account open longer
   const scheduleLock = () => {
     cancel(timer);
-    timer = schedule(lock, Math.max(0, lastUse + lockAfter - now()));
+    timer = schedule(lock, Math.min(lockAfter, Math.max(0, lastUse + lockAfter - now())));
   };
   /** Any use of the app pushes the automatic lock back */
   const touch = () => {
