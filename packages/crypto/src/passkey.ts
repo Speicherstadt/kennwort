@@ -64,7 +64,7 @@ export const passkeySign = (
   const scalar = scalarOf(key);
   if (!scalar.ok) return scalar;
   try {
-    return ok(p256.sign(message, scalar.value, { prehash: true, lowS: true, format: "der" }));
+    return ok(p256.sign(message, scalar.value, { prehash: true, lowS: true, format: "der" })); // i18n-ignore: a signature format
   } finally {
     scalar.value.fill(0);
   }
