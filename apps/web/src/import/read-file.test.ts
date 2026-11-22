@@ -113,7 +113,7 @@ describe("error texts", () => {
       "too-large",
       "incomplete",
     ] as const;
-    const texts = errors.map(errorText);
+    const texts = errors.map((error) => errorText(error));
     expect(new Set(texts).size).toBe(errors.length);
     expect(errorText("encrypted")).toBe(
       "Diese Datei ist verschlüsselt – exportiere unverschlüsselt.",
@@ -121,5 +121,15 @@ describe("error texts", () => {
     expect(errorText("incomplete")).toBe(
       "Es fehlen QR-Codes dieses Exports. Scanne jeden QR-Code, den Google Authenticator zeigt.",
     );
+  });
+
+  // K-504: Kennwort's own export has a passphrase, not a key file, and versions of its own
+  it("speak of the passphrase and a newer Kennwort for Kennwort's own export", () => {
+    expect(errorText("wrong-key", "kennwort-json")).toBe(
+      "Die Passphrase passt nicht zu diesem Export.",
+    );
+    expect(errorText("unsupported", "kennwort-json")).toContain("neueren Version von Kennwort");
+    expect(errorText("wrong-key", "keepass-kdbx")).toBe(errorText("wrong-key"));
+    expect(errorText("bad-json", "kennwort-json")).toBe(errorText("bad-json"));
   });
 });

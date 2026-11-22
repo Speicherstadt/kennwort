@@ -164,7 +164,7 @@ Nur standardisierte Verfahren aus `@noble/*`, nichts selbst gebaut:
 | Signaturen | Ed25519 | RFC 8032 | `@noble/curves` |
 | Passkeys für Websites | ECDSA P-256 mit SHA-256 (ES256), k nach RFC 6979 | FIPS 186-5, RFC 6979, WebAuthn Level 3 | `@noble/curves` |
 | Ableitung | HKDF-SHA-512 | RFC 5869 | `@noble/hashes` |
-| Passphrase, Phishing-Warnung | Argon2id | RFC 9106 | `@noble/hashes` |
+| Passphrase, Phishing-Warnung, Export | Argon2id | RFC 9106 | `@noble/hashes` |
 | Hash | SHA-512, SHA-512/256; SHA-256 nur für Release-Manifeste (wie Subresource Integrity) | FIPS 180-4 | `@noble/hashes` |
 | Zufall | `crypto.getRandomValues` | Web Crypto | über `@noble/hashes/utils` |
 
@@ -403,6 +403,31 @@ Attestation „none“. Umgesetzt in `packages/crypto/src/passkey.ts`; die Testv
 `packages/crypto/vectors/passkey-v1.json` entstehen ohne den Code, den sie prüfen (öffentliche
 Schlüssel aus `node:crypto`, Signaturen aus RFC 6979, Anhang A.2.5, von `node:crypto` geprüft). Die
 Strukturen prüft in Vitest der Server von SimpleWebAuthn, wie eine Relying Party es täte.
+
+### F-13 Verschlüsselter Export v1
+
+```text
+parameter = Argon2id, m = 64 MiB, t = 3, p = 1, 32 Byte Ausgabe                  (fest in v1)
+salt      = 16 zufällige Byte, neu bei jedem Export
+p₁        = Argon2id(NFKC(export-passphrase), salt)
+schlüssel = kdf(p₁, leer, "kennwort/export/v1")
+geheim    = 0x01 ‖ salt ‖ F-01(schlüssel, inhalt, zweck "export", kontext salt)
+datei     = {"kennwort":"export","version":1,"data":base64url(geheim)}
+inhalt    = JSON {version 1, exportedAt, vaults: [{name, entries: [Inhalt nach P-09 ohne toChange]}]}
+```
+
+Kennworts eigener Export ([P-19](#p-19-import-und-export), K-504), nach dem Vorbild von Bitwardens
+passwortgeschütztem Export (Salt und Schlüsselableitung neben einem AEAD-Geheimtext), aber nur aus
+Kennworts Bausteinen. Die Parameter gehören zur Version und stehen nicht in der Datei: Eine Datei
+kann ein Gerät nicht zu mehr Arbeit zwingen, als v1 vorsieht, und keiner kann sie senken (E-18);
+stärkere Parameter heißen v2. Die Passphrase geht wie bei F-05 in NFKC ein, eine leere oder nicht
+wohlgeformte schreibt Kennwort nicht; die App verlangt mindestens 12 Zeichen. Gelesen wird nur
+Version 1, und Version und Länge werden vor der Schlüsselableitung geprüft; eine falsche
+Passphrase und jedes geänderte Byte scheitern am Tag von XChaCha20-Poly1305, eine unbekannte
+Version ist ein Fehler (E-17). Umgesetzt in `packages/crypto/src/export-file.ts`, die Datei
+drumherum in `packages/core/src/export/kennwort-json.ts`; die Testvektoren in
+`packages/crypto/vectors/export-v1.json` entstehen ohne den Code, den sie prüfen (Argon2id und
+HKDF aus `node:crypto`, AEAD aus libsodium).
 
 ## Schlüsselhierarchie
 
@@ -1949,9 +1974,31 @@ durch.
 ### P-19 Import und Export
 
 Der Import liest die Datei nur im Client und verschlüsselt jeden Eintrag nach
-[P-09](#p-09-eintrage-speichern-und-lesen). Der eigene Export ist ein F-01-Geheimtext unter einem
-Schlüssel aus einer Export-Passphrase (F-05-Parameter, eigenes Salt); exportieren dürfen nur
-Verwalter, der Client signiert dafür einen Audit-Eintrag.
+[P-09](#p-09-eintrage-speichern-und-lesen).
+
+Exportieren dürfen nur Inhaber und Admins der Firma (K-504), einen Tresor oder alle, die ihr Gerät
+öffnet. Der Ablauf:
+
+1. Der Client prüft die eigene Rolle am Zertifikat, das der gemerkte Wurzelschlüssel bestätigt;
+   wer nicht Inhaber oder Admin ist, bekommt keinen Export angeboten.
+2. Er signiert das Audit-Ereignis `export` ([P-20](#p-20-audit-log)) mit dem Gegenstand
+   `format/umfang/export-ID`, also etwa `kdbx/vault:<tresor-ID>/<16 zufällige Byte>` oder
+   `kennwort-json/all/…`, und schickt es mit `POST /api/audit`. Der Server nimmt es nur von
+   Inhabern und Admins, nur mit einem Gegenstand dieser Form und nur für einen Tresor der eigenen
+   Firma (`apps/server/src/audit/export-access.ts`).
+3. Erst wenn der Server das Ereignis angenommen hat, schreibt der Client die Datei, auf dem
+   Gerät: das eigene verschlüsselte JSON ([F-13](#f-13-verschlusselter-export-v1)), KDBX 4
+   (Argon2id mit 64 MiB und drei Durchläufen, ChaCha20 für Inhalt und inneren Strom, ohne
+   Packen, mit denselben Bausteinen aus `packages/crypto/src/kdbx.ts` wie der Leser) oder CSV in
+   Bitwardens Spalten, unverschlüsselt und nur nach einer Warnung.
+4. Die Datei geht als Blob direkt in den Download, die Adresse widerruft der Client sofort, die
+   Bytes überschreibt er mit Nullen. Zum Server geht nichts außer dem Ereignis.
+
+Restrisiko: Was ein Gerät entschlüsseln kann, kann ein veränderter Client auch ohne Ereignis
+aufschreiben; die Prüfung des Servers hält den ehrlichen Client an das Log, nicht einen, der es
+umgeht. Gegen einen Server, der ein Ereignis annimmt und später verschweigt, hilft die Hash-Kette
+mit dem gemerkten Stand (P-20). Eine Exportdatei ist so sicher wie ihre Passphrase; die CSV-Datei
+ist es gar nicht, die App warnt und verlangt eine Bestätigung.
 
 Die Parser (`packages/core/src/import/`, K-502) sind reine Funktionen ohne Netz, Speicher oder
 Logs: Datei rein, Einträge raus, Fehler als Werte. Kaputte oder böswillige Dateien lassen sie weder
@@ -1964,7 +2011,7 @@ HMAC-Block werden vor dem Entschlüsseln geprüft; die Kosten der Schlüsselable
 1 GiB, 100 Durchläufe, 8 GiB Arbeit, 256 Lanes; AES-KDF bis 100 Millionen Runden) und die entpackte Größe
 (64 MiB) haben Grenzen, damit eine böswillige Datei das Gerät nicht lahmlegt.
 
-**Wehrt ab:** E-21.
+**Wehrt ab:** E-17, E-18, E-21, E-23.
 
 ### P-20 Audit-Log
 
@@ -1981,7 +2028,9 @@ des Notfallzugriffs (P-14). Ein Client signiert `sign("audit", firma, wer, was, 
 Ed25519-Schlüssel (Handlungen: `export`, `recovery`, `key-rotation`, `emergency-access` und seit
 K-307 Teil e `account-rekey`); nach einer Erneuerung der Schlüssel (P-12) prüft `verifyAudit` eine
 Handlung gegen jeden Schlüssel, den das Konto hatte; `worum` ist eine ID, die er einmal wählt, dieselbe Handlung mit derselben ID
-zweimal gilt als wiederholt.
+zweimal gilt als wiederholt. Beim Export nennt `worum` auch Format und Umfang
+(`format/umfang/export-ID`, P-19, `packages/core/src/audit/export-subject.ts`), so steht unter der
+Signatur, wer was wann exportiert hat.
 
 Text steht in jeder Zeile wohlgeformt und schon in NFC, sonst gilt die Zeile als fehlerhaft: So haben
 dieselben Worte nur eine Form, und eine wiederholte Handlung lässt sich nicht hinter einer anderen

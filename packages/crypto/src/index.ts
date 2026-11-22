@@ -60,6 +60,16 @@ export {
 } from "./emergency.ts";
 export { decode, encode, type Part } from "./encoding.ts";
 export {
+  EXPORT_ARGON2_V1,
+  EXPORT_SALT_LENGTH,
+  EXPORT_V1,
+  type ExportOpenError,
+  openExport,
+  openExportWith,
+  sealExport,
+  sealExportWith,
+} from "./export-file.ts";
+export {
   bundleFingerprint,
   comparisonCode,
   recoveryFingerprint,
@@ -82,6 +92,7 @@ export {
   kdbxBlockMac,
   kdbxCompositeKey,
   kdbxDecrypt,
+  kdbxEncrypt,
   kdbxInnerKeystream,
   kdbxKeys,
   kdbxPasswordPart,
@@ -99,6 +110,7 @@ export {
 } from "./passkey.ts";
 export {
   ACCOUNT_SALT_LENGTH,
+  type ArgonParams,
   PASSPHRASE_V1,
   type PassphraseKeys,
   passphraseKeys,

@@ -3,7 +3,8 @@ title: Import und Export
 description: >-
   Wie du deine Zugänge aus einem anderen Passwortmanager, Browser, einer Tabelle oder einer
   Authenticator-App importierst – Anbieter, Vorschau, Duplikate, schwache Passwörter –, welche
-  Exportdateien Kennwort liest, was daraus wird und wie die Datei auf dem Gerät bleibt.
+  Exportdateien Kennwort liest, was daraus wird und wie die Datei auf dem Gerät bleibt; und wie
+  Inhaber und Admins als verschlüsseltes JSON, KDBX oder CSV exportieren.
 ---
 
 # Import und Export
@@ -57,6 +58,7 @@ Kennwort mit Nullen.
 
 | Von | Datei | Was mitkommt |
 | --- | --- | --- |
+| Kennwort | verschlüsseltes JSON aus „Exportieren“, mit seiner Passphrase | alles, wie es war: alle Arten und Felder, Verlauf, Tags, Favoriten, Einmalcodes und Passkeys; der Name des Tresors wird der Ordner (siehe [Export](#export)) |
 | Bitwarden / Vaultwarden | JSON (Tresor oder Organisation) | alle Arten (Login, Notiz, Karte, Identität, SSH-Schlüssel), eigene Felder, Ordner bzw. Sammlungen, Favoriten, frühere Passwörter |
 | Bitwarden / Vaultwarden | CSV (Tresor oder Organisation) | Logins und Notizen, eigene Felder, mehrere Adressen, Ordner bzw. Sammlungen, Favoriten |
 | LastPass | CSV aus dem Web-Tresor | Logins, sichere Notizen, Kreditkarten, Adressen als Identität, andere Notiz-Arten mit ihren Feldern, Ordner und geteilte Ordner, Favoriten |
@@ -210,5 +212,66 @@ Bytes und zufällig beschädigten Dateien.
 
 ## Export
 
-Exportieren dürfen nur Verwalter eines Tresors, und es landet im Audit-Log. Der eigene Export ist
-ein verschlüsseltes JSON mit eigener Passphrase; CSV und KDBX folgen ([Projektplan](plan.md)).
+Unter **Einstellungen → Exportieren** nimmst du einen Tresor oder alle Tresore, die dein Gerät
+öffnet, aus Kennwort mit – zum Sichern, für einen Umzug oder für einen Prüfer.
+
+- **Wer**: nur Inhaber und Admins der Firma. Mitglieder sehen den Punkt nicht; wer die Seite
+  trotzdem aufruft, liest, dass nur Inhaber und Admins exportieren dürfen.
+- **Audit-Log zuerst**: Bevor ein einziger Eintrag in eine Datei kommt, signiert dein Gerät ein
+  Ereignis `export` mit Umfang und Format ins [Audit-Log](sicherheitsdesign.md#p-20-audit-log),
+  und der Server muss es annehmen; er nimmt es nur von Inhabern und Admins. Ohne Eintrag – etwa
+  offline – gibt es keinen Export. So steht jeder Export mit wer, was und wann im Log.
+- **Nur auf dem Gerät**: Die Datei entsteht im Browser und geht direkt in den Download; die
+  Adresse der Datei widerruft Kennwort sofort nach dem Klick, die Bytes überschreibt es mit
+  Nullen. Zum Server geht nichts außer dem Audit-Ereignis, weder ein Eintrag noch die Passphrase.
+- **Passphrase**: Das verschlüsselte JSON und die KDBX-Datei schützt eine Passphrase mit
+  mindestens 12 Zeichen, die du zweimal eingibst. Kennwort merkt sie sich nicht; die Felder sind
+  leer, sobald du „Exportieren“ wählst. Ohne sie öffnet niemand die Datei, auch Kennwort nicht.
+
+### Formate des Exports
+
+| Format | Für | Was drin ist | Schutz |
+| --- | --- | --- | --- |
+| Verschlüsseltes JSON (empfohlen) | Kennwort selbst, als Sicherung oder für eine andere Installation | jeder Eintrag, wie er gespeichert ist: alle Arten und Felder, Verlauf, Tags, Favoriten, Einmalcodes und Passkeys; je Tresor sein Name | Argon2id und XChaCha20-Poly1305 ([F-13](sicherheitsdesign.md#f-13-verschlusselter-export-v1)) |
+| KeePass (KDBX 4) | KeePass 2, KeePassXC und alles, was KDBX liest | eine Gruppe je Tresor; Titel, Benutzername, Passwort, Adresse, Notizen, Einmalcode (`otp`), weitere Adressen (`KP2A_URL`), jedes andere Feld unter seinem Namen, geheime Felder geschützt, Tags und frühere Passwörter | Argon2id (64 MiB, 3 Durchläufe) und ChaCha20 |
+| CSV im Bitwarden-Format | andere Passwortmanager (Bitwarden, Vaultwarden, Proton Pass und alle, die Bitwardens CSV lesen) | Spalten `folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp`; der Ordner ist der Tresor, eigene Felder stehen als `Name: Wert` in `fields` | **keiner** |
+
+**Die CSV-Datei ist nicht verschlüsselt.** Jeder, der sie öffnet, sieht alle Passwörter,
+Einmalcodes und Notizen; Kennwort warnt deshalb deutlich und will es bestätigt haben. Lade sie
+gleich in den anderen Manager und lösche sie danach, auch aus Downloads und Papierkorb. Öffne sie
+nicht in einer Tabellenkalkulation: Kennwort schreibt jeden Wert so, wie er ist, auch ein
+Passwort, das mit `=` beginnt, damit es beim Umzug gleich bleibt – eine Tabellenkalkulation
+könnte so etwas als Formel lesen.
+
+Was CSV und KDBX nicht kennen, geht unterwegs verloren oder ändert seine Form: Beide kennen keine
+Arten, eine Karte oder ein SSH-Schlüssel wird ein Login mit eigenen Feldern. Bitwardens CSV kennt
+nur Logins und Notizen und eigene Felder nur auf einer Zeile; ein Feld über mehrere Zeilen (ein
+privater Schlüssel) oder mit `: ` im Wert kommt deshalb mit seinem Namen in die Notizen. KDBX hat
+keine Favoriten und einen Verlauf nur für das Passwort. Passkeys trägt nur das verschlüsselte
+JSON. Für einen Umzug zu einer anderen Kennwort-Installation nimm deshalb immer das JSON.
+
+### Wieder importieren
+
+Das verschlüsselte JSON ist ein Format wie jedes andere unter **Importieren**: „Kennwort (JSON)“
+wählen, die Datei und ihre Passphrase. Jeder Eintrag kommt so zurück, wie er war, mit allen
+Feldern, Verlauf, Tags und Favoriten; der Name seines Tresors wird sein Ordner und auf Wunsch ein
+Tag. Markierungen „Zum Ändern“ nach einem Austritt nimmt der Export nicht mit, sie nennen Personen
+der alten Firma. Eine falsche Passphrase endet mit „Die Passphrase passt nicht zu diesem Export“,
+ein Export einer neueren Version von Kennwort mit dem Hinweis, Kennwort zu aktualisieren. Auch
+KDBX und CSV liest Kennwort wieder, über „KeePass / KeePassXC (KDBX)“ und „Bitwarden (CSV)“.
+
+Die Datei des verschlüsselten Exports ist eine Zeile JSON, die sagt, was sie ist, und sonst nichts
+im Klartext verrät:
+
+```json
+{"kennwort":"export","version":1,"data":"AW0Jv4yYw8HECDKOAwbr…"}
+```
+
+`data` ist der Geheimtext nach [F-13](sicherheitsdesign.md#f-13-verschlusselter-export-v1) in
+Base64url. Wie beim Import prüft Kennwort Version und Länge, bevor es die Schlüsselableitung
+rechnet; eine beschädigte oder fremde Datei endet mit einer Meldung, nie mit einem Absturz – das
+Fuzzing prüft auch diesen Leser mit zufälligen und zufällig geänderten Dateien.
+
+Die KDBX-Datei schreibt Kennwort nach dem Aufbau, den KeePassXC liest (`Kdbx4Writer.cpp`), mit
+denselben Bausteinen aus `@noble` wie der Leser; getestet wird jeder Export mit Kennworts eigenem
+Leser und, wo installiert, mit `keepassxc-cli`.

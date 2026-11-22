@@ -74,7 +74,7 @@ const STREAM_ID = 1;
 const STREAM_KEY = 2;
 const BINARY = 3;
 /** KeePass2::ProtectedStreamAlgo; ArcFourVariant (1) KeePassXC refuses as well */
-const STREAMS: Record<number, KdbxInnerStream> = { 2: "salsa20", 3: "chacha20" };
+export const INNER_STREAMS: Record<number, KdbxInnerStream> = { 2: "salsa20", 3: "chacha20" };
 
 /**
  * The inner header's stream and its key, and the XML after it. Attachments (field 3) stay out of
@@ -98,7 +98,7 @@ export const readInnerHeader = (
       return stream && key ? ok({ stream, key, xml: payload.subarray(at) }) : err("bad-kdbx");
     if (id === STREAM_ID) {
       if (length !== 4) return err("bad-kdbx");
-      stream = STREAMS[view.getUint32(at - 4, true)];
+      stream = INNER_STREAMS[view.getUint32(at - 4, true)];
       if (!stream) return err("unsupported");
     }
     if (id === STREAM_KEY) key = value;

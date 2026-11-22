@@ -2,6 +2,7 @@
  * Every export Kennwort reads (docs/plan.md, Import und Export), for the import flow (K-501) to
  * offer by vendor. The CSV of any table needs a mapping first and is `parseTableCsv` in table.ts.
  */
+import { checkKennwortExport, unlockKennwortExport } from "../export/kennwort-json.ts";
 import { parseAegisJson } from "./aegis-json.ts";
 import { parseBitwardenCsv } from "./bitwarden-csv.ts";
 import { parseBitwardenJson } from "./bitwarden-json.ts";
@@ -31,7 +32,7 @@ import type { FileParser, LockedParser } from "./types.ts";
  * The parsers of ZIP containers answer asynchronously, the others at once. Google Authenticator's
  * export is no file but QR codes (`file: "QR"`): the import flow scans them or takes the pasted
  * links, one per line, and hands those on as text. An encrypted file with `unlock` (KeePass's
- * KDBX) needs its password first: `parse` only checks the file, `unlock` opens it.
+ * KDBX, Kennwort's own export) needs its password first: `parse` only checks the file, `unlock` opens it.
  */
 export type ImportFormat = {
   id: string;
@@ -42,6 +43,14 @@ export type ImportFormat = {
 };
 
 export const IMPORT_FORMATS: readonly ImportFormat[] = [
+  // Kennwort's own encrypted export (K-504, F-13), opened with its passphrase
+  {
+    id: "kennwort-json",
+    vendor: "Kennwort",
+    file: "JSON",
+    parse: checkKennwortExport,
+    unlock: unlockKennwortExport,
+  },
   { id: "bitwarden-json", vendor: "Bitwarden", file: "JSON", parse: parseBitwardenJson },
   { id: "bitwarden-csv", vendor: "Bitwarden", file: "CSV", parse: parseBitwardenCsv },
   { id: "lastpass-csv", vendor: "LastPass", file: "CSV", parse: parseLastPassCsv },

@@ -1,11 +1,25 @@
 // K-205 "Fertig, wenn": a manipulated line stands out when the export is checked
 import { describe, expect, it } from "bun:test";
-import { AuditExport, type AuditHead, encodeBytes, signAudit, verifyAudit } from "@kennwort/core";
+import {
+  AuditExport,
+  type AuditHead,
+  encodeBytes,
+  exportSubject,
+  signAudit,
+  verifyAudit,
+} from "@kennwort/core";
 import { ed25519KeyPair } from "@kennwort/crypto";
 import { sql } from "drizzle-orm";
 import { invitationBody, signInSetup } from "../testing/sign-in-setup.ts";
 
 const jonasKeys = ed25519KeyPair(new Uint8Array(32).fill(0x10));
+const vault = encodeBytes(new Uint8Array(16).fill(0xb0));
+/** Jonas exports the vault as Kennwort's encrypted JSON (K-504) */
+const EXPORT = exportSubject({
+  format: "kennwort-json",
+  scope: { kind: "vault", vaultId: vault },
+  id: encodeBytes(new Uint8Array(16).fill(1)),
+});
 
 /** Weber Haustechnik: Jonas signs in, invites Anna, she accepts, Jonas creates a vault and exports */
 const history = async () => {
@@ -27,7 +41,6 @@ const history = async () => {
     },
   });
   const anna = (await accepted.json()) as { accountId: string; token: string };
-  const vault = encodeBytes(new Uint8Array(16).fill(0xb0));
   expect(
     (await setup.request("/api/vaults", { token: jonas.token, body: { id: vault } })).status,
   ).toBe(201);
@@ -35,13 +48,13 @@ const history = async () => {
     companyId: "weber",
     actor: jonas.id,
     action: "export" as const,
-    subject: "export-1",
+    subject: EXPORT,
   };
   const signed = await setup.request("/api/audit", {
     token: jonas.token,
     body: {
       action: "export",
-      subject: "export-1",
+      subject: EXPORT,
       signature: encodeBytes(signAudit(jonasKeys.secretKey, exportEvent)),
     },
   });
@@ -105,7 +118,7 @@ describe("audit log", () => {
     const { setup, jonas } = await history();
     const post = (body: unknown) => setup.request("/api/audit", { token: jonas.token, body });
     const signature = encodeBytes(new Uint8Array(65).fill(1));
-    expect((await post({ action: "export", subject: "export-1", signature })).status).toBe(409);
+    expect((await post({ action: "export", subject: EXPORT, signature })).status).toBe(409);
     expect((await post({ action: "signed-in", subject: "x", signature })).status).toBe(400);
     expect((await post({ action: "recovery", subject: "", signature })).status).toBe(400);
     expect((await post({ action: "recovery", subject: "r-1", signature: "AAAA" })).status).toBe(

@@ -1,7 +1,7 @@
 /** The other sections: generator, groups, settings, and a page that does not exist */
 import { Button, getLocale, Icon, type Locale, locales, m, type Toasts } from "@kennwort/ui";
 import { GeneratorPanel } from "@kennwort/ui/generator/generator-panel.tsx";
-import { Archive, Import, LifeBuoy, Lock, RefreshCw, Users } from "@kennwort/ui/icons";
+import { Archive, Download, Import, LifeBuoy, Lock, RefreshCw, Users } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { createSignal, For, Show } from "solid-js";
 import { groups } from "../demo.ts";
@@ -77,6 +77,7 @@ export const SettingsPage = (props: {
   onMembers?: (() => void) | undefined;
   onVaults?: (() => void) | undefined;
   onImport?: (() => void) | undefined;
+  onExport?: (() => void) | undefined;
   onEmergency?: (() => void) | undefined;
   onRenew?: (() => void) | undefined;
   devices?: (() => JSX.Element) | undefined;
@@ -126,6 +127,13 @@ export const SettingsPage = (props: {
           {(open) => (
             <Button class="w-fit" onClick={() => open()()}>
               <Icon icon={Import} /> {m.settings_import()}
+            </Button>
+          )}
+        </Show>
+        <Show when={props.onExport}>
+          {(open) => (
+            <Button class="w-fit" onClick={() => open()()}>
+              <Icon icon={Download} /> {m.settings_export()}
             </Button>
           )}
         </Show>

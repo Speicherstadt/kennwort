@@ -76,6 +76,8 @@ export const createEntries = (serverFor: ServerFor, session: Session, copy?: Ent
     behind: store.behind,
     /** The vaults and entries as this device knows them, for the exit report */
     seen: store.seen,
+    /** Every entry with its decrypted content, for the export (K-504) */
+    stored: store.entries,
     editor,
     /** New entries from an import, a batch in one sync (K-501) */
     saveNew: store.saveNew,

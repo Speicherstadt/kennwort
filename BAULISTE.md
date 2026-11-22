@@ -387,7 +387,21 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
     (`PhoneFactor`) nur mit Root-Rechten auf Android. Fertig, wenn: Microsoft einen dokumentierten
     Export anbietet und Kennwort ihn wie Teil 1 liest; bis dahin sagt die Doku, die Codes bei den
     Diensten neu einzurichten. Steht unter „Zurückgestellt“.
-- [ ] **K-504 Export** – verschlüsseltes JSON, CSV, KDBX; nur Verwalter, im Audit-Log.
+- [x] **K-504 Export** – verschlüsseltes JSON, CSV, KDBX; nur Verwalter, im Audit-Log.
+  Fertig, wenn: die Seite „Exportieren“ (aus den Einstellungen) nur Inhabern und Admins der Firma
+  erscheint und einen Tresor oder alle, die das Gerät öffnen kann, als verschlüsseltes JSON (F-13:
+  Argon2id und XChaCha20-Poly1305 aus `packages/crypto`, Version im Format, Testvektoren aus einem
+  unabhängigen Generator), als CSV mit den Spalten von Bitwarden (mit deutlicher Warnung vor dem
+  Klartext) oder als KDBX 4 (Argon2id, ChaCha20, mit denselben Bausteinen wie der Leser aus K-502
+  Teil 3) schreibt; das JSON trägt alle Felder, Verlauf, Tags, Favoriten, Einmalcodes und Passkeys
+  und lässt sich als eigener Eintrag in `IMPORT_FORMATS` wieder importieren; vor dem Schreiben ein
+  signiertes Audit-Ereignis `export` (wer, Umfang, Format, wann) beim Server liegt, den der Server
+  nur von Inhabern und Admins annimmt; die Datei auf dem Gerät entsteht und direkt als Download
+  geht (Blob, URL sofort widerrufen) und nichts außer dem Audit-Ereignis zum Server geht;
+  Rundläufe aller drei Formate (KDBX auch mit `keepassxc-cli`, wo vorhanden), Fuzzing des
+  F-13-Lesers, Mutation-Tests der geänderten Dateien in `packages/crypto` und `packages/core` bei
+  100 % und Playwright desktop und `@phone` bestehen: ein Admin exportiert ein verschlüsseltes JSON
+  und importiert es wieder, ein Mitglied sieht keinen Export, und das Audit-Log nennt den Export.
 
 ## Phase 6 – Team-Funktionen
 

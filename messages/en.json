@@ -718,5 +718,73 @@
   "members_renewed_text": "{name} renewed their keys. Compare this code with the one {name} sees on their own device, ideally in person or on the phone. Confirm only if every digit matches.",
   "members_renewed_confirm": "Code matches",
   "members_renewed_failed": "The new keys could not be confirmed.",
-  "rotation_due_renewed": "Someone in the vault {name} has new keys because a recovery kit got into other hands. Until they are confirmed and the vault has a new key, nobody can change anything in it."
+  "rotation_due_renewed": "Someone in the vault {name} has new keys because a recovery kit got into other hands. Until they are confirmed and the vault has a new key, nobody can change anything in it.",
+  "settings_export": "Export",
+  "export_title": "Export",
+  "export_intro": "Take one vault, or every vault this device opens, out of Kennwort: as an encrypted file for Kennwort, as a KeePass database or as a spreadsheet for other password managers. The file is made on this device only.",
+  "export_not_allowed": "Only owners and admins of the company may export. Ask them if you need an export.",
+  "export_scope": "What to export",
+  "export_scope_all": "All vaults",
+  "export_format": "Format",
+  "export_format_json": "Encrypted JSON (recommended)",
+  "export_format_json_hint": "For Kennwort, with everything: fields, history, tags, favorites, one-time codes and passkeys. Protected by a passphrase.",
+  "export_format_kdbx": "KeePass (KDBX 4)",
+  "export_format_kdbx_hint": "For KeePass, KeePassXC and anything that reads KDBX. Protected by a password; favorites and passkeys stay out.",
+  "export_format_csv": "CSV in Bitwarden's format (not encrypted)",
+  "export_format_csv_hint": "For other password managers. Not protected: every value is in the file in plain text.",
+  "export_passphrase": "Passphrase for the file",
+  "export_passphrase_hint": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "At least 1 character. Without it the file cannot be opened – not even by Kennwort.",
+        "n=*": "At least {count} characters. Without it the file cannot be opened – not even by Kennwort."
+      }
+    }
+  ],
+  "export_passphrase_repeat": "Repeat passphrase",
+  "export_passphrase_short": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "The passphrase needs at least 1 character.",
+        "n=*": "The passphrase needs at least {count} characters."
+      }
+    }
+  ],
+  "export_passphrase_mismatch": "The two passphrases do not match.",
+  "export_csv_warning": "Warning: the CSV file is not encrypted. Anyone who opens it sees every password, one-time code and note. Load it into the other password manager right away and delete it afterwards, from Downloads and the trash too. Do not open it in a spreadsheet.",
+  "export_csv_confirm": "I understand that the file is not encrypted.",
+  "export_csv_confirm_missing": "First confirm that you want an unencrypted file.",
+  "export_audit_hint": "Every export goes into the audit log with your name, the scope and the format before the file is made.",
+  "export_start": "Export",
+  "export_busy": "Recording the export in the audit log and making the file – this can take a few seconds …",
+  "export_error_empty": "There is no vault this device can open in this scope.",
+  "export_error_refused": "The server did not record the export in the audit log. Without an entry there is no export – check the connection and try again.",
+  "export_done_title": "Export done",
+  "export_done": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "1 entry is in {name}.",
+        "n=*": "{count} entries are in {name}."
+      }
+    }
+  ],
+  "export_done_keep": "Keep the file and its passphrase apart and safe.",
+  "export_done_csv": "Delete the CSV file as soon as the other password manager has read it – from Downloads and the trash too.",
+  "export_again": "Another export",
+  "import_howto_kennwort_json": "Choose the file Kennwort wrote as encrypted JSON under “Settings” → “Export”, and enter its passphrase.",
+  "import_kennwort_file": "Choose export file (.json)",
+  "import_kennwort_passphrase": "Passphrase of the export",
+  "import_kennwort_open": "Open export",
+  "import_kennwort_opening": "Decrypting the export …",
+  "import_kennwort_hint": "File and passphrase stay on this device; Kennwort does not store the passphrase.",
+  "import_kennwort_no_file": "Choose the export file first.",
+  "import_error_kennwort_wrong_key": "The passphrase does not match this export.",
+  "import_error_kennwort_unsupported": "This export comes from a newer version of Kennwort. Update Kennwort and try again.",
+  "export_error_failed": "The file could not be written. The export is already in the audit log; try again."
 }

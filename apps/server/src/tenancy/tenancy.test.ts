@@ -493,10 +493,12 @@ const cases: Record<string, () => Promise<void>> = {
   },
   "POST /api/audit": async () => {
     const signature = encodeBytes(new Uint8Array(65).fill(1));
-    const body = { action: "export", subject: "export-t", signature };
+    // An export names format, scope and its ID (K-504)
+    const subject = `kdbx/all/${encodeBytes(new Uint8Array(16).fill(7))}`;
+    const body = { action: "export", subject, signature };
     expect((await jonasSends("POST", "/api/audit", body)).status).toBe(201);
     const rows = app.db.select().from(auditEvents).all();
-    expect(rows.find((row) => row.subject === "export-t")?.companyId).toBe("weber");
+    expect(rows.find((row) => row.subject === subject)?.companyId).toBe("weber");
   },
   "POST /api/vaults": async () => {
     // Müller Elektro's vault ID cannot be taken over; a new vault lands in Jonas's company

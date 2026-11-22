@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import bitwardenJson from "../../../../packages/core/src/import/fixtures/bitwarden.json?raw";
 import chromeCsv from "../../../../packages/core/src/import/fixtures/chrome.csv?raw";
 import google from "../../../../packages/core/src/import/fixtures/google-authenticator.txt?raw";
+import exportFile from "../../../../packages/core/src/import/fixtures/kennwort-export.json?raw";
 import twofas from "../../../../packages/core/src/import/fixtures/twofas.2fas?raw";
 import type { Navigation } from "../navigation.ts";
 import { type ImportDeps, ImportPage } from "./import-page.tsx";
@@ -88,7 +89,7 @@ const rows = (root: ParentNode) =>
 describe("ImportPage up to the file", () => {
   it("offers every vendor and shows how to export from the chosen one", async () => {
     const root = await show(deps().deps);
-    expect(root.querySelectorAll("li button").length).toBe(24);
+    expect(root.querySelectorAll("li button").length).toBe(25);
     await choose(root, "Bitwarden (JSON)");
     expect(root.textContent).toContain("Werkzeuge");
     expect(root.querySelector<HTMLInputElement>('input[type="file"]')?.accept).toBe(
@@ -393,4 +394,57 @@ describe("ImportPage with a KeePass database (K-502 Teil 3)", () => {
     await click(button(root, "Datenbank öffnen"));
     expect(root.querySelector('[role="alert"]')?.textContent).toBe("Wähle zuerst die Datenbank.");
   });
+});
+
+describe("ImportPage with Kennwort's own export (K-504)", () => {
+  /** Until the step shows what it waits for: Argon2id with 64 MiB takes a while */
+  const until = async (done: () => boolean) => {
+    for (let i = 0; i < 400 && !done(); i++) {
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      flush();
+    }
+  };
+  const open = async (root: ParentNode, passphrase: string) => {
+    const input = root.querySelector<HTMLInputElement>('input[name="database"]');
+    Object.defineProperty(input, "files", {
+      value: [new File([exportFile], "kennwort-export.json")],
+      configurable: true,
+    });
+    const field = root.querySelector<HTMLInputElement>('input[type="password"]');
+    if (!field) throw new Error("no passphrase field");
+    field.value = passphrase;
+    await click(button(root, "Export öffnen"));
+    await until(
+      () => root.querySelector('[role="status"]')?.textContent !== "Export wird entschlüsselt …",
+    );
+    return field;
+  };
+
+  it("asks for the export's passphrase only, no key file, then previews every entry", async () => {
+    const root = await show(deps().deps);
+    await choose(root, "Kennwort (JSON)");
+    expect(root.textContent).toContain("Passphrase des Exports");
+    expect(root.textContent).toContain("„Einstellungen“ → „Exportieren“");
+    expect(root.querySelector('input[name="key-file"]')).toBeNull();
+    expect(root.querySelector<HTMLInputElement>('input[name="database"]')?.accept).toBe(
+      ".json,application/json",
+    );
+    const field = await open(root, "Weber-Haustechnik-2026");
+    await until(() => root.querySelector("h2")?.textContent === "Vorschau");
+    expect(field.value).toBe("");
+    expect(root.querySelector("h2")?.textContent).toBe("Vorschau");
+    expect(rows(root).some((r) => r.includes("Online-Banking Sparkasse"))).toBe(true);
+    expect(root.textContent).toContain("4 Einträge in der Datei");
+    expect(root.textContent).not.toContain("Sp@rkasse");
+  }, 30_000);
+
+  it("says when the passphrase does not fit, in its own words", async () => {
+    const root = await show(deps().deps);
+    await choose(root, "Kennwort (JSON)");
+    await open(root, "falsch");
+    await until(() => root.querySelector('[role="alert"]') !== null);
+    expect(root.querySelector('[role="alert"]')?.textContent).toBe(
+      "Die Passphrase passt nicht zu diesem Export.",
+    );
+  }, 30_000);
 });

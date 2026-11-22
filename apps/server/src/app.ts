@@ -112,7 +112,7 @@ export const createApp = ({
   };
   api.use(requireSession);
   api.route("/", companyRoutes());
-  api.route("/", auditRoutes({ now }));
+  api.route("/", auditRoutes({ db, now }));
   api.route("/", accountRoutes({ db, now }));
   api.route("/", rekeyRoutes({ db, now }));
   api.route("/", memberRoutes({ db, now }));

@@ -77,4 +77,11 @@ const ERROR_TEXT: Record<ImportError, () => string> = {
   "bad-key-file": () => m.import_error_bad_key_file(),
 };
 
-export const errorText = (error: ImportError) => ERROR_TEXT[error]();
+/** Errors that read otherwise for Kennwort's own export (K-504): a passphrase, not a key file */
+const OWN_ERROR_TEXT: Partial<Record<ImportError, () => string>> = {
+  "wrong-key": () => m.import_error_kennwort_wrong_key(),
+  unsupported: () => m.import_error_kennwort_unsupported(),
+};
+
+export const errorText = (error: ImportError, formatId?: string) =>
+  ((formatId === "kennwort-json" && OWN_ERROR_TEXT[error]) || ERROR_TEXT[error])();
