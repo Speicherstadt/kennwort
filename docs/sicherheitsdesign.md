@@ -405,6 +405,13 @@ Attestation „none“. Umgesetzt in `packages/crypto/src/passkey.ts`; die Testv
 Schlüssel aus `node:crypto`, Signaturen aus RFC 6979, Anhang A.2.5, von `node:crypto` geprüft). Die
 Strukturen prüft in Vitest der Server von SimpleWebAuthn, wie eine Relying Party es täte.
 
+Ein Passkey aus einer CXF-Datei (K-502 Teil 5, `packages/core/src/import/cxf-passkey.ts`) wird nur
+dann ein Schlüssel in F-12, wenn sein PKCS#8 (RFC 5958) `id-ecPublicKey` mit `secp256r1` nennt
+(RFC 5480), der `ECPrivateKey` (RFC 5915) genau 32 Byte Skalar trägt, der Skalar im Bereich
+1 ≤ d < n liegt und ein mitgelieferter öffentlicher Schlüssel genau d·G ist; jeder andere Schlüssel
+bleibt draußen und wird gezählt. Der DER-Leser kennt nur kurze Längen und eine Längenangabe nach
+0x81 und prüft jede gegen die Datei.
+
 ### F-13 Verschlüsselter Export v1
 
 ```text

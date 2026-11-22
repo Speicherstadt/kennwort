@@ -348,7 +348,7 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   Playwright desktop und `@phone` importiert ein Bitwarden-JSON und ein Chrome-CSV, überspringt
   ein Duplikat, markiert ein schwaches Passwort, zeigt den Hinweis zum Löschen und ordnet bei
   „Andere Tabelle“ Spalten zu.
-- [ ] **K-502 Parser** – je Format aus dem Projektplan eine reine Funktion in `packages/core`.
+- [x] **K-502 Parser** – je Format aus dem Projektplan eine reine Funktion in `packages/core`.
   Fertig, wenn: je Anbieter echte, anonymisierte Fixtures bestehen und Fuzzing ohne Absturz läuft.
   In Teilen, je ein Pull Request; abgehakt wird K-502, wenn alle stehen:
   - [x] Teil 1: Textformate – Bitwarden JSON und CSV, LastPass CSV, 1Password CSV, KeePass-2-XML,
@@ -371,9 +371,11 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   - [x] Teil 4: Verschlüsselte Fremdexporte – Bitwardens verschlüsseltes und passwortgeschütztes
     JSON (PBKDF2/Argon2id, AES-CBC mit HMAC). Fertig, wenn: Fixtures mit Testvektoren aus
     Bitwardens Exporten bestehen und ein falsches Passwort als Fehler endet.
-  - [ ] Teil 5: Team Password Manager CSV (Projekte als Tresore) nach dessen Export-Doku und
+  - [x] Teil 5: Team Password Manager CSV (Projekte als Tresore) nach dessen Export-Doku und
     FIDO Credential Exchange (CXF), sobald der Standard stabil ist. Fertig, wenn: je Format
-    Fixtures mit der echten Struktur bestehen und das Fuzzing sie einschließt.
+    Fixtures mit der echten Struktur bestehen und das Fuzzing sie einschließt. CXF ist seit dem
+    14.08.2025 Proposed Standard der FIDO Alliance (Errata 09.03.2026, geprüft am 22.11.2026) und
+    damit stabil genug; gelesen wird das unverschlüsselte JSON, CXP nicht.
 - [ ] **K-503 Authenticator-Import** – otpauth-migration-QR, Aegis, 2FAS, Microsoft.
   Fertig, wenn: je App ein Parser in `packages/core/src/import/` jedes TOTP-Konto als Login mit
   otpauth-Link (Schlüssel, Aussteller, Konto, Algorithmus, Ziffern, Dauer) liefert, was Kennwort

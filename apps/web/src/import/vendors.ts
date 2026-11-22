@@ -39,6 +39,8 @@ const HOW_TO: Record<string, () => string> = {
   "keeper-csv": () => m.import_howto_keeper_csv(),
   "nordpass-csv": () => m.import_howto_nordpass_csv(),
   "enpass-json": () => m.import_howto_enpass_json(),
+  "tpm-csv": () => m.import_howto_tpm_csv(),
+  "cxf-json": () => m.import_howto_cxf_json(),
   "chrome-csv": () => m.import_howto_chrome_csv(),
   "firefox-csv": () => m.import_howto_firefox_csv(),
   "safari-csv": () => m.import_howto_safari_csv(),
@@ -51,6 +53,7 @@ const HOW_TO: Record<string, () => string> = {
 const NAMED: Record<string, () => string> = {
   "safari-csv": () => m.import_vendor_safari(),
   "chrome-csv": () => m.import_vendor_chrome(),
+  "cxf-json": () => m.import_vendor_cxf(),
 };
 
 const ACCEPT: Record<string, string> = {

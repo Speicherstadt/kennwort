@@ -145,4 +145,10 @@ describe("error texts", () => {
     expect(errorText("too-costly", "bitwarden-json")).toContain("2 Millionen Iterationen");
     expect(errorText("too-costly", "keepass-kdbx")).toBe(errorText("too-costly"));
   });
+
+  // K-502 Teil 5: a CXF file of a later major version
+  it("speak of the format's version for a CXF file", () => {
+    expect(errorText("unsupported", "cxf-json")).toContain("Credential Exchange Format");
+    expect(errorText("wrong-format", "cxf-json")).toBe(errorText("wrong-format"));
+  });
 });

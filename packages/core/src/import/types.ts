@@ -49,10 +49,11 @@ export type ImportError =
 
 /**
  * The entries, or why not. An authenticator's export can hold codes Kennwort cannot work out
- * (HOTP, Steam and the like); its parser leaves them out and says how many in `skipped`.
+ * (HOTP, Steam and the like); its parser leaves them out and says how many in `skipped`. A CXF
+ * file can hold passkeys whose keys Kennwort cannot keep (not ES256); `skippedPasskeys` counts them.
  */
 export type ImportResult =
-  | { ok: true; value: ImportedEntry[]; skipped?: number }
+  | { ok: true; value: ImportedEntry[]; skipped?: number; skippedPasskeys?: number }
   | { ok: false; error: ImportError };
 export type Parser = (input: string | Uint8Array) => ImportResult;
 /** A parser of a ZIP container: unpacking is asynchronous (`DecompressionStream`) */

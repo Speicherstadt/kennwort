@@ -7,6 +7,7 @@ import { parseAegisJson } from "./aegis-json.ts";
 import { parseBitwardenCsv } from "./bitwarden-csv.ts";
 import { checkBitwardenJson, unlockBitwardenJson } from "./bitwarden-protected.ts";
 import { parseChromeCsv } from "./chrome-csv.ts";
+import { parseCxfJson } from "./cxf-json.ts";
 import { parseDashlaneCsv } from "./dashlane-csv.ts";
 import { parseDashlaneZip } from "./dashlane-zip.ts";
 import { parseEnpassJson } from "./enpass-json.ts";
@@ -24,6 +25,7 @@ import { parsePassboltCsv } from "./passbolt-csv.ts";
 import { parseProtonPassJson } from "./protonpass-json.ts";
 import { parseProtonPassZip } from "./protonpass-zip.ts";
 import { parseSafariCsv } from "./safari-csv.ts";
+import { parseTpmCsv } from "./tpm-csv.ts";
 import { parseTwoFasJson } from "./twofas-json.ts";
 import type { FileParser, LockedParser } from "./types.ts";
 
@@ -88,6 +90,10 @@ export const IMPORT_FORMATS: readonly ImportFormat[] = [
   { id: "keeper-csv", vendor: "Keeper", file: "CSV", parse: parseKeeperCsv },
   { id: "nordpass-csv", vendor: "NordPass", file: "CSV", parse: parseNordPassCsv },
   { id: "enpass-json", vendor: "Enpass", file: "JSON", parse: parseEnpassJson },
+  // Projects become folders (K-502 Teil 5)
+  { id: "tpm-csv", vendor: "Team Password Manager", file: "CSV", parse: parseTpmCsv },
+  // FIDO Credential Exchange Format, unencrypted; passkeys with ES256 keys come along
+  { id: "cxf-json", vendor: "CXF", file: "JSON", parse: parseCxfJson },
   { id: "chrome-csv", vendor: "Chrome / Edge", file: "CSV", parse: parseChromeCsv },
   { id: "firefox-csv", vendor: "Firefox", file: "CSV", parse: parseFirefoxCsv },
   { id: "safari-csv", vendor: "Safari", file: "CSV", parse: parseSafariCsv },

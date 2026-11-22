@@ -78,6 +78,8 @@ Kennwort mit Nullen.
 | Keeper | CSV | Ordner und geteilte Ordner, eigene Felder, Einmalcode |
 | NordPass | CSV | Logins mit mehreren Adressen und eigenen Feldern, Karten, Identitäten, Notizen, Ordner |
 | Enpass | JSON | Logins, Karten, Notizen, Identitäten, alle Felder, Ordner mit Unterordnern, Favoriten; der Papierkorb bleibt draußen |
+| Team Password Manager | CSV (alle Passwörter oder ein Projekt) | Logins mit Zugang, E-Mail, Notizen, Tags, den zehn eigenen Feldern und dem Ablaufdatum; Projekte als Ordner (siehe [Team Password Manager](#team-password-manager)) |
+| Jeder Manager mit FIDO Credential Exchange | CXF als unverschlüsseltes JSON | alle Arten (Login, Einmalcode, Notiz, Karte, WLAN, SSH-Schlüssel, API-Schlüssel, Adresse und Name als Identität, Ausweise mit ihren Feldern), eigene Felder, Adressen, Tags, Favoriten, Sammlungen als Ordner, Passkeys mit ES256-Schlüssel; Anhänge bleiben draußen (siehe [CXF](#fido-credential-exchange-cxf)) |
 | Chrome, Edge, Brave, Opera | CSV | Logins mit Notiz |
 | Firefox | CSV | Logins; der Titel ist die Adresse |
 | Safari / Apple Passwörter | CSV | Logins mit Notiz und Einmalcode |
@@ -89,13 +91,82 @@ Kennwort mit Nullen.
 Noch nicht dabei und als eigene Teile geplant:
 
 - **Proton Pass' PGP-Export**: Kennwort erkennt ihn und sagt, dass er verschlüsselt ist.
-- **Team Password Manager** und **FIDO Credential Exchange (CXF)**, sobald das Format stabil ist.
+- **CXP**, die verschlüsselte Übertragung zwischen zwei Managern auf einem Gerät: Kennwort liest
+  die CXF-Datei, die du gespeichert hast.
 - **Einmalcodes dem passenden Login zuordnen**: Bis dahin wird jeder Code aus einer
   Authenticator-App ein eigener Login (siehe unten).
 - **Microsoft Authenticator** hat keinen Export: Seine Sicherung geht nur in Microsofts Cloud und
   lässt sich nur in Microsoft Authenticator wiederherstellen. Richte die Einmalcodes bei den
   Diensten neu ein – in den Sicherheitseinstellungen des Kontos, mit dem QR-Code, den der Dienst
   dann zeigt (siehe [Einträge](eintraege.md)). Bietet Microsoft einen Export an, liest Kennwort ihn.
+
+## Team Password Manager
+
+Als Admin exportierst du in Team Password Manager unter **Passwörter → Exportieren** alle
+Passwörter, als IT-Nutzer die, auf die du Zugriff hast; im Projekt exportiert **Exportieren** nur
+dessen Passwörter. Wähle in Kennwort „Team Password Manager (CSV)“ und die geladene Datei. Kennwort
+liest die Spalten nach ihrem Platz, wie [die Export-Doku von Team Password Manager](https://teampasswordmanager.com/docs/export/)
+sie nennt; die Beschriftung der Kopfzeile darf sich je nach Version und Sprache unterscheiden.
+
+| Spalte im Export | In Kennwort |
+| --- | --- |
+| Projektname | Ordner, in der Vorschau auf Wunsch Tag |
+| Name | Titel |
+| Zugangsinformation | Adresse, wenn sie keine Leerzeichen hat (Link, Host, IP-Adresse); sonst ein eigenes Feld „Access“ (etwa „Bedienteil im Flur“) |
+| Benutzername | Benutzername |
+| E-Mail | eigenes Feld „Email“; ohne Benutzername wird sie der Benutzername |
+| Passwort | Passwort |
+| Notizen | Notizen |
+| Tags | Tags (durch Kommas getrennt) |
+| Namen der eigenen Felder | die Namen der eigenen Felder 1 bis 10, durch Kommas getrennt |
+| Eigenes Feld 1 bis 10 | eigene Felder unter ihrem Namen (ohne Namen „Custom 1“ usw.), **geheim** |
+| Ablaufdatum (mm-dd-yyyy) | eigenes Feld „Expiry date“ als JJJJ-MM-TT |
+
+Der Export sagt nicht, welche eigenen Felder in Team Password Manager verschlüsselt waren; darum
+hält Kennwort alle geheim. Ein Eintrag nur mit Notizen wird eine Notiz. Projekte werden keine
+eigenen Tresore: Alle Einträge kommen in den Tresor, den du in der Vorschau wählst. Willst du je
+Projekt einen Tresor, exportiere die Projekte einzeln und importiere jedes in seinen Tresor.
+
+## FIDO Credential Exchange (CXF)
+
+Das Credential Exchange Format der FIDO Alliance ist ein gemeinsames Format, mit dem
+Passwortmanager Zugangsdaten samt Passkeys weitergeben. Es ist seit dem 14. August 2025 ein
+Proposed Standard (Version 1.0, Errata vom 9. März 2026). Kennwort liest eine CXF-Datei als
+unverschlüsseltes JSON, die du im anderen Manager gespeichert hast: „FIDO Credential Exchange
+(JSON)“ wählen und die Datei nehmen. Die verschlüsselte Übertragung zwischen zwei Apps (CXP) liest
+Kennwort nicht.
+
+| In der Datei | In Kennwort |
+| --- | --- |
+| Sammlung (`collections`), auch verschachtelt | Ordner, `Büro/Banken`; ein Eintrag in zwei Sammlungen bekommt beide |
+| `basic-auth` | Login mit Benutzername und Passwort |
+| `totp` | Einmalcode des Logins; sein Konto wird der Benutzername, wenn kein Login einen nennt |
+| `note` | Notizen |
+| `credit-card` | Karte: Inhaber, Nummer, Ablauf (MM/JJJJ), Prüfnummer, PIN; Kartentyp und „gültig ab“ als eigene Felder |
+| `wifi` | WLAN: SSID, Passwort, Sicherheit; „versteckt“ als eigenes Feld |
+| `ssh-key` | SSH-Schlüssel, der private Schlüssel als PEM; Typ, Kommentar und Daten als eigene Felder |
+| `api-key` | API-Schlüssel mit Endpunkt und Benutzername |
+| `address`, `person-name` | Identität mit Adresse, Telefon und Name |
+| `drivers-license`, `passport`, `identity-document` | Identität, jedes Feld als eigenes Feld unter seiner Beschriftung |
+| `custom-fields` | eigene Felder; verborgene (`concealed-string`) bleiben geheim |
+| `generated-password` | eigenes, geheimes Feld |
+| `scope.urls`, Android-Apps | Adressen; die App-Kennung als eigenes Feld |
+| `passkey` | eigener Passkey-Eintrag (siehe unten) |
+| `file`, `item-reference` | bleiben draußen |
+
+**Passkeys**: Ein Passkey kommt als Eintrag der Art „Passkey“ mit rpId, Benutzername, Anzeigename,
+Benutzer-ID, Credential-ID und privatem Schlüssel, mit Titel, Favorit, Tags und Ordnern seines
+Eintrags; der Zähler beginnt bei 0, wie CXF es verlangt. Kennwort meldet nur mit ES256 an (P-256,
+[F-12](sicherheitsdesign.md#f-12-passkey-schlussel-v1)). Darum übernimmt es einen Passkey nur, wenn
+sein Schlüssel ein P-256-Schlüssel im PKCS#8-Format ist, der Skalar im gültigen Bereich liegt und
+ein mitgelieferter öffentlicher Schlüssel genau der ist, den der Skalar ergibt. Einen Passkey mit
+Ed25519-, P-384- oder RSA-Schlüssel oder mit fehlender rpId, Credential-ID oder Benutzer-ID lässt
+es weg; die Vorschau sagt, wie viele das sind. Melde dich dort mit dem Passwort an und lege einen
+neuen Passkey an. Ebenso zählt sie Einmalcodes, die Kennwort nicht berechnen kann.
+
+Eine Datei mit einer neueren Hauptversion als 1 endet mit einer Meldung; Felder und Arten, die
+Kennwort nicht kennt, überliest es, wie die Spezifikation es verlangt. Wie die Datei bleibt auch
+der private Schlüssel eines Passkeys auf dem Gerät, bis er im verschlüsselten Eintrag liegt.
 
 ## Authenticator-Apps
 

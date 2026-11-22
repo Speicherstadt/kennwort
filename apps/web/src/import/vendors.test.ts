@@ -55,6 +55,15 @@ describe("vendor choices", () => {
     expect(choice("google-authenticator")?.label()).toBe("Google Authenticator (QR code)");
   });
 
+  it("names Team Password Manager and the FIDO Credential Exchange Format (K-502 Teil 5)", () => {
+    const label = (id: string) =>
+      vendorChoices()
+        .find((c) => c.id === id)
+        ?.label();
+    expect(label("tpm-csv")).toBe("Team Password Manager (CSV)");
+    expect(label("cxf-json")).toBe("FIDO Credential Exchange (JSON)");
+  });
+
   it("asks for a password with the file, or for Bitwarden's JSON once it says so (K-502)", () => {
     const ids = (keep: (choice: ReturnType<typeof vendorChoices>[number]) => boolean) =>
       vendorChoices()

@@ -54,7 +54,7 @@ type Step =
       mapping: Columns;
       error?: string | undefined;
     }
-  | { step: "preview"; entries: ImportedEntry[]; unsupported: number }
+  | { step: "preview"; entries: ImportedEntry[]; unsupported: number; passkeysLeftOut: number }
   | { step: "importing"; done: number; total: number }
   | { step: "done"; outcome: ImportOutcome; weak: number };
 
@@ -76,7 +76,12 @@ const createImportFlow = (save: ImportDeps["save"]) => {
   const parsed = (choice: VendorChoice, result: ImportResult, locked?: File) =>
     setStep(
       result.ok
-        ? { step: "preview", entries: result.value, unsupported: result.skipped ?? 0 }
+        ? {
+            step: "preview",
+            entries: result.value,
+            unsupported: result.skipped ?? 0,
+            passkeysLeftOut: result.skippedPasskeys ?? 0,
+          }
         : { step: "file", choice, error: errorText(result.error, choice.id), locked },
     );
 
@@ -243,6 +248,7 @@ export const ImportPage = (props: { nav: Navigation; deps: ImportDeps }) => {
             <PreviewStep
               entries={preview().entries}
               unsupported={preview().unsupported}
+              passkeysLeftOut={preview().passkeysLeftOut}
               vaults={props.deps.vaults()}
               existing={props.deps.existing}
               canWrite={props.deps.save() !== undefined}
