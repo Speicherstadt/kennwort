@@ -278,3 +278,10 @@ describe("AuditExport", () => {
       expect(AuditExport.safeParse(bad({ action })).success).toBe(true);
   });
 });
+
+describe("server actions", () => {
+  it("name the steps of a one-time link the server records (K-601)", () => {
+    for (const action of ["link-created", "link-opened", "link-revoked"])
+      expect(SERVER_ACTIONS).toContain(action);
+  });
+});

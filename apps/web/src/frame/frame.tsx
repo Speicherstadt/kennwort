@@ -45,6 +45,10 @@ export const Frame = (props: {
   onNewEntry?: (() => void) | undefined;
   onEditEntry?: ((entry: ShownEntry) => void) | undefined;
   onShareEntry?: ((entry: ShownEntry) => void) | undefined;
+  /** A one-time link to an entry for someone without an account (K-601) */
+  onLinkEntry?: ((entry: ShownEntry) => void) | undefined;
+  /** Einstellungen → „Einmal-Links“ (K-601): a link for a free text and the account's links */
+  linksPage?: (() => JSX.Element) | undefined;
   onFavoriteEntry?: ((entry: ShownEntry) => Promise<Saved>) | undefined;
   /** A vault link this account cannot open: what shows instead of its entries (K-305) */
   noAccess?: ((vaultId: string) => JSX.Element | undefined) | undefined;
@@ -84,6 +88,7 @@ export const Frame = (props: {
                       vaultName={props.vaultName}
                       onEdit={props.onEditEntry}
                       onShare={props.onShareEntry}
+                      onLink={props.onLinkEntry}
                       onFavorite={props.onFavoriteEntry}
                       nav={props.nav}
                       filter={entries().filter}
@@ -126,6 +131,7 @@ export const Frame = (props: {
                 props.exportPage && props.canExport ? () => props.nav.go("/export") : undefined
               }
               onEmergency={props.emergencyPage ? () => props.nav.go("/emergency") : undefined}
+              onLinks={props.linksPage ? () => props.nav.go("/links") : undefined}
               onRenew={props.renewPage ? () => props.nav.go("/renew") : undefined}
               devices={props.devices}
             />
@@ -145,6 +151,9 @@ export const Frame = (props: {
         </Match>
         <Match when={route().page === "emergency" && props.emergencyPage}>
           <main class="flex min-h-0 flex-1">{props.emergencyPage?.(toasts)}</main>
+        </Match>
+        <Match when={route().page === "links" && props.linksPage}>
+          <main class="flex min-h-0 flex-1">{props.linksPage?.()}</main>
         </Match>
         <Match when={route().page === "renew" && props.renewPage}>
           <main class="flex min-h-0 flex-1">{props.renewPage?.()}</main>

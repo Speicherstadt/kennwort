@@ -38,6 +38,7 @@ describe("database", () => {
       "login_challenges",
       "login_failures",
       "login_keys",
+      "one_time_links",
       "pairings",
       "recovery_deposits",
       "recovery_grants",

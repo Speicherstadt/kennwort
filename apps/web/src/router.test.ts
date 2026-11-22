@@ -33,6 +33,8 @@ describe("routes", () => {
       ["/pair", { page: "pair" }],
       ["/link", { page: "link" }],
       ["/invite/abc%2Fd", { page: "invite", id: "abc/d" }],
+      ["/links", { page: "links" }],
+      ["/s/AQEBAQEBAQEBAQEBAQEBAQ", { page: "secret", id: "AQEBAQEBAQEBAQEBAQEBAQ" }],
     ];
     for (const [path, route] of cases) {
       expect(parseRoute(path)).toEqual(route);
@@ -56,6 +58,9 @@ describe("routes", () => {
       "/invite",
       "/invite/a/b",
       "/invite/%E0",
+      "/s",
+      "/s/a/b",
+      "/links/x",
       "/setup/x",
       "/unlock/x",
       "/recover/x",

@@ -145,5 +145,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795373353913,
     "breakpoints": true,
     "sql": "CREATE TABLE `root_changes` (\n\t`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,\n\t`company_id` text NOT NULL,\n\t`change` text NOT NULL,\n\t`created_at` integer NOT NULL,\n\tFOREIGN KEY (`company_id`) REFERENCES `companies`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE INDEX `root_changes_company` ON `root_changes` (`company_id`);"
+  },
+  {
+    "tag": "0024_one_time_links",
+    "when": 1795384046380,
+    "breakpoints": true,
+    "sql": "CREATE TABLE `one_time_links` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`fetch_hash` text NOT NULL,\n\t`company_id` text NOT NULL,\n\t`created_by` text NOT NULL,\n\t`ciphertext` blob NOT NULL,\n\t`created_at` integer NOT NULL,\n\t`expires_at` integer NOT NULL,\n\t`max_fetches` integer NOT NULL,\n\t`remaining` integer NOT NULL,\n\tFOREIGN KEY (`company_id`) REFERENCES `companies`(`id`) ON UPDATE no action ON DELETE no action,\n\tFOREIGN KEY (`created_by`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE UNIQUE INDEX `one_time_links_fetch_hash_unique` ON `one_time_links` (`fetch_hash`);--> statement-breakpoint\nCREATE INDEX `one_time_links_creator` ON `one_time_links` (`created_by`);--> statement-breakpoint\nCREATE INDEX `one_time_links_expiry` ON `one_time_links` (`expires_at`);"
   }
 ];

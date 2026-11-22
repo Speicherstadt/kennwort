@@ -20,6 +20,7 @@ import {
   groups,
   invitations,
   loginKeys,
+  oneTimeLinks,
   pairings,
   recoveryDeposits,
   recoveryGrants,
@@ -212,6 +213,30 @@ app.db
   .insert(emergencyRevocations)
   .values({ grantor: "max", grantee: "jonas", statement: "{}", storedAt: 1 })
   .run();
+// K-601: a one-time link of Max (Müller Elektro), which Jonas may neither list nor revoke
+app.db
+  .insert(oneTimeLinks)
+  .values({
+    id: "max-link",
+    fetchHash: "0".repeat(64),
+    companyId: "mueller",
+    createdBy: "max",
+    ciphertext: Buffer.alloc(60),
+    createdAt: 1,
+    expiresAt: Date.now() + 3_600_000,
+    maxFetches: 1,
+    remaining: 1,
+  })
+  .run();
+const maxLinkStays = () =>
+  expect(
+    app.db
+      .select()
+      .from(oneTimeLinks)
+      .all()
+      .filter((row) => row.companyId === "mueller")
+      .map((row) => row.id),
+  ).toEqual(["max-link"]);
 const maxGrantStays = () =>
   expect(
     app.db
@@ -656,6 +681,28 @@ const cases: Record<string, () => Promise<void>> = {
   },
   "GET /api/emergency/:grantor/vaults": async () => {
     expect((await asJonas("/api/emergency/max/vaults")).status).toBe(404);
+  },
+  "GET /api/links": async () => {
+    expect(await (await asJonas("/api/links")).json()).toEqual({ links: [] });
+  },
+  "POST /api/links": async () => {
+    const body = {
+      ciphertext: encodeBytes(new Uint8Array(60)),
+      expiresInMs: 3_600_000,
+      maxFetches: 1,
+    };
+    expect((await jonasSends("POST", "/api/links", body)).status).toBe(201);
+    const mine = app.db
+      .select()
+      .from(oneTimeLinks)
+      .all()
+      .filter((row) => row.createdBy === "jonas");
+    expect(mine.map((row) => row.companyId)).toEqual(["weber"]);
+    maxLinkStays();
+  },
+  "DELETE /api/links/:id": async () => {
+    expect((await jonasSends("DELETE", "/api/links/max-link", undefined)).status).toBe(404);
+    maxLinkStays();
   },
   "POST /api/vaults/:vaultId/log": async () => {
     expect((await jonasSends("POST", `/api/vaults/${muellerVault}/log`, {})).status).toBe(404);

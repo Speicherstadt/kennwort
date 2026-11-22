@@ -23,6 +23,7 @@ import type { DeviceIdentity } from "./device-identity.ts";
 import { deviceCalls } from "./devices-api.ts";
 import { emergencyCalls } from "./emergency-api.ts";
 import { groupCalls } from "./groups-api.ts";
+import { linkCalls } from "./links-api.ts";
 import { memberCalls } from "./members-api.ts";
 import { pairingCalls } from "./pairing-api.ts";
 import { policyCalls } from "./policy-api.ts";
@@ -80,7 +81,7 @@ const identityHeaders = (identity: DeviceIdentity | undefined): Record<string, s
     : {};
 
 /** Status 0 when the server cannot be reached: errors are values here too (review of K-303) */
-const callerOf =
+export const callerOf =
   (send: typeof fetch, identity: DeviceIdentity | undefined): Call =>
   async (method, path, body, token) => {
     const response = await send(path, {
@@ -124,6 +125,7 @@ export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity)
     ...shareCalls(call),
     ...emergencyCalls(call),
     ...renewalCalls(call),
+    ...linkCalls(call),
     /** The root key's public half goes along, for every member to check certificates (P-07) */
     setup: async (
       code: string,
@@ -209,4 +211,5 @@ export type AccountApi = Omit<
   | keyof ReturnType<typeof groupCalls>
   | keyof ReturnType<typeof shareCalls>
   | keyof ReturnType<typeof emergencyCalls>
+  | keyof ReturnType<typeof linkCalls>
 >;

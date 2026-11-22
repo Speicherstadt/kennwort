@@ -147,6 +147,7 @@ nennt seinen Angriff, und der Client muss ihn ablehnen und sagen, warum.
 | E-04 alte Freigabe nach einer Rücknahme zurückgespielt | `adversary/emergency.test.ts`, `packages/client/src/emergency/emergency.test.ts` | wiederholt |
 | E-08, E-26 Mitglied vom Wechsel ferngehalten, seine Versionen unter dem alten Schlüssel nach dem Wechsel ausgeliefert | `adversary/epoch-order.test.ts`, gegen die Offline-Kopie `apps/web/src/offline/local-copy.test.ts` | ältere Epoche, kein Bearbeiter |
 | E-10 Wurzelschlüssel gegabelt (zweiter Wechsel vom alten Schlüssel), Wechsel wiederholt oder in eine andere Firma getragen, alter Wurzelschlüssel weiter ausgeliefert, nach dem Wechsel ausgestelltes Zertifikat des alten | `apps/server/src/adversary/root-attacks.test.ts`, `membership/root-change.test.ts`, `membership/verify-log.root.test.ts`, `apps/server/src/account/root.test.ts` | Gabelung, ersetzter Wurzelschlüssel, passt nicht, ungültig, nicht zertifizierter Unterzeichner |
+| E-20 Einmal-Link mitgelesen, fremder Geheimtext untergeschoben, Passphrase abgestreift, öfter ausgeliefert als erlaubt | `apps/server/src/adversary/link-attacks.test.ts`, `packages/crypto/src/one-time-link.test.ts`, `apps/server/src/links/links.test.ts` | Schlüssel und Inhalt nie beim Server; passt nicht (falscher Schlüssel); öfter ausgeliefert öffnet weiter – Restrisiko, siehe [P-18](#p-18-einmal-links) |
 | E-01, E-05 nach einem Kit in fremden Händen: altes Bündel weiter ausgeliefert, neues Zertifikat zurückgehalten, altes Kit nach dem Wechsel, Tresor ohne Erneuerung oder Wechsel | `adversary/rekey.test.ts`, `membership/verify-log.rekey.test.ts`, `apps/server/src/account/rekey.test.ts` | ungültig, nicht zertifiziert, Wechsel steht aus, falsche Signatur, Rückfall, neuere Epoche |
 
 Die übrigen folgen mit den Funktionen, die sie betreffen (Konto-Recovery, Teilen, Geräte, Austritt,
@@ -165,7 +166,7 @@ Nur standardisierte Verfahren aus `@noble/*`, nichts selbst gebaut:
 | Signaturen | Ed25519 | RFC 8032 | `@noble/curves` |
 | Passkeys für Websites | ECDSA P-256 mit SHA-256 (ES256), k nach RFC 6979 | FIPS 186-5, RFC 6979, WebAuthn Level 3 | `@noble/curves` |
 | Ableitung | HKDF-SHA-512 | RFC 5869 | `@noble/hashes` |
-| Passphrase, Phishing-Warnung, Export | Argon2id | RFC 9106 | `@noble/hashes` |
+| Passphrase, Phishing-Warnung, Export, Einmal-Links | Argon2id | RFC 9106 | `@noble/hashes` |
 | Hash | SHA-512, SHA-512/256; SHA-256 nur für Release-Manifeste (wie Subresource Integrity) | FIPS 180-4 | `@noble/hashes` |
 | Zufall | `crypto.getRandomValues` | Web Crypto | über `@noble/hashes/utils` |
 
@@ -450,6 +451,42 @@ mit einem Inhaber verglichen hat (P-07). Umgesetzt in
 `packages/crypto/src/root-change.ts`; die Testvektoren in `packages/crypto/vectors/root-change-v1.json`
 entstehen ohne den Code, den sie prüfen (Ed25519 aus libsodium, SHA-512/256 aus `node:crypto`,
 `generate-root-change.ts`).
+
+### F-15 Einmal-Link v1
+
+```text
+geheimnis = 32 zufällige Byte, neu je Link, nur im Fragment des Links
+ohne Passphrase:
+  schlüssel = kdf(geheimnis, leer, "kennwort/link/v1", 0x00)
+  link      = 0x01 ‖ 0x00 ‖ F-01(schlüssel, inhalt, zweck "link", kontext 0x00)
+mit Passphrase:
+  parameter = Argon2id, m = 64 MiB, t = 3, p = 1, 32 Byte Ausgabe              (fest in v1)
+  salt      = 16 zufällige Byte
+  p₁        = Argon2id(NFKC(passphrase), salt)
+  schlüssel = kdf(geheimnis, p₁, "kennwort/link/v1", 0x01, salt)
+  link      = 0x01 ‖ 0x01 ‖ salt ‖ F-01(schlüssel, inhalt, zweck "link", kontext 0x01, salt)
+inhalt    = JSON {version 1, title, fields: [{label, value, secret}]}, mit Leerzeichen auf ein
+            Vielfaches von 256 Byte aufgefüllt
+adresse   = <origin>/s/<abruf-ID>#base64url(geheimnis)
+```
+
+Der Geheimtext eines Einmal-Links ([P-18](#p-18-einmal-links), K-601), nach dem Vorbild von
+Bitwarden Send (ein Schlüssel je Send im Fragment, ein optionales Passwort dazu), aber nur aus
+Kennworts Bausteinen. Das zweite Byte sagt, ob eine Passphrase dazugehört; es steht in der
+Ableitung und in der AAD, ein Server, der es umschreibt, bekommt einen Geheimtext, den kein
+Schlüssel öffnet. Ohne Passphrase genügt HKDF: Das Geheimnis hat volle 256 Bit. Mit Passphrase
+geht Argon2id der Passphrase als Salt in HKDF ein; wer nur den Link hat, braucht die Passphrase,
+wer nur die Passphrase hat, das Geheimnis. Die Parameter gehören zur Version und stehen nicht im
+Link, kein Server kann sie senken (E-18). Version, Art und Länge werden vor jeder Ableitung
+geprüft; ein falsches Geheimnis, eine falsche Passphrase und jedes geänderte Byte scheitern am
+Tag von XChaCha20-Poly1305, eine unbekannte Version oder Art ist ein Fehler (E-17). Eine
+Passphrase in NFKC, leer oder nicht wohlgeformt schreibt Kennwort nicht. Der Inhalt trägt nichts
+vom Tresor (keine IDs, kein Verlauf, keine Tags) und nie den Schlüssel eines Einmalcodes; der
+Empfänger liest ihn erst nach der Prüfung des Schemas. Umgesetzt in
+`packages/crypto/src/one-time-link.ts`, der Inhalt und die Adresse in `packages/core/src/links/`;
+die Testvektoren in `packages/crypto/vectors/one-time-link-v1.json` entstehen ohne den Code, den
+sie prüfen (Argon2id und HKDF aus `node:crypto`, AEAD aus libsodium,
+`generate-one-time-link.ts`).
 
 ## Schlüsselhierarchie
 
@@ -2171,10 +2208,59 @@ durch etwas Gleichwertiges ersetzt; wo nicht, steht das Restrisiko hier.
 
 ### P-18 Einmal-Links
 
-Der Client erzeugt einen Schlüssel (256 Bit), verschlüsselt den Inhalt (F-01, Zweck `link`) und
-legt den Schlüssel ins Fragment des Links. Der Server speichert nur den Geheimtext, den Ablauf und
-die Zahl der Abrufe und löscht ihn danach. Restrisiko: Ablauf und Zahl der Abrufe setzt der Server
-durch.
+Ein Mitglied schickt einen Eintrag oder einen freien Text an jemanden ohne Konto (K-601):
+
+1. **Erstellen.** Der Client baut den Inhalt (beim Eintrag jedes Feld mit Wert außer dem Schlüssel
+   eines Einmalcodes), zieht ein neues Geheimnis und verschlüsselt nach
+   [F-15](#f-15-einmal-link-v1), auf Wunsch zusätzlich unter einer Passphrase. Er schickt nur den
+   Geheimtext mit Ablauf (5 Minuten bis 7 Tage) und Zahl der Abrufe (1 bis 10) an
+   `POST /api/links`. Der Server nimmt das nur mit Sitzung, höchstens 64 KiB, je Konto
+   höchstens 50 gültige Links und mit Ratenbegrenzung je Konto, und antwortet mit zwei zufälligen
+   IDs zu 128 Bit: die öffentliche ID, unter der der Ersteller den Link sieht und widerruft, und
+   die Abruf-ID für die Adresse. Von der Abruf-ID speichert er nur SHA-256, so verrät weder die
+   Datenbank noch das Timing der Suche eine Adresse. Der Client setzt die Adresse
+   `/s/<abruf-ID>#<geheimnis>` zusammen und zeigt sie einmal. Ein Link aus einem Eintrag geht nur
+   für Einträge eines Tresors, in dem das Konto bearbeiten oder verwalten darf, wie beim Teilen
+   ([P-10](#p-10-einzelnen-eintrag-teilen)).
+2. **Öffnen.** Die Seite `/s/<abruf-ID>` der Web-App braucht kein Konto. Die App nimmt das
+   Fragment vor dem ersten Rendern aus Adresse, Verlauf und Router (`takeStartFragment`, wie beim
+   Kit, der Kopplung und der Einladung) und lädt sonst nichts. Erst ein Klick auf **Anzeigen**
+   ruft `POST /auth/links/<abruf-ID>/open` auf. Zwei Schritte mit Absicht: Linkvorschauen in
+   Chats und Mailprogrammen und Scanner, die jede Adresse laden, holen nur die statische Seite,
+   und selbst wer sie mit JavaScript rendert, klickt nicht; der Abruf ist ein POST, den kein
+   Prefetch und kein Cache von sich aus schickt. Der Abruf läuft unter `/auth` wie das Abfragen
+   der Kopplung (P-04), weil alles unter `/api` eine Sitzung braucht und der Service Worker nur
+   `/api` und `/auth` an den Server lässt. Er geht ohne Geräte-ID und ohne Sitzung.
+3. **Zählen.** Der Server zieht einen Abruf in einer Transaktion ab, nur solange der Link gilt und
+   Abrufe übrig hat (`UPDATE … WHERE remaining > 0 AND expires_at > now`); der Abruf, der den
+   letzten nimmt, löscht die Zeile, ebenso jeder Versuch auf einen abgelaufenen Link, und jeder
+   Aufruf von Erstellen und Liste räumt Abgelaufenes ab. Unbekannte, falsch geformte,
+   abgelaufene, verbrauchte und widerrufene IDs bekommen dieselbe Antwort (404 mit
+   `{"error":"not-found"}`) auf demselben Weg (die ID wird immer gehasht und gesucht); die
+   Ratenbegrenzung je Adresse bremst das Raten, das bei 128 Bit ohnehin aussichtslos ist.
+   Antworten zu Links tragen `Cache-Control: no-store` und `Referrer-Policy: no-referrer`, die
+   Web-App setzt `no-referrer` für jede Seite; CORS gibt es für diese Wege nicht.
+4. **Lesen.** Der Client prüft den Geheimtext nach F-15 und den Inhalt nach seinem Schema. Fragt
+   der Link nach einer Passphrase, bleibt der abgerufene Geheimtext im Speicher; eine falsche
+   Passphrase kostet keinen weiteren Abruf. Geheime Felder stehen als Punkte bis zum Aufdecken.
+5. **Widerrufen und Audit.** `GET /api/links` zeigt dem Ersteller seine gültigen Links (ohne
+   Adresse), `DELETE /api/links/:id` löscht einen davon, nur den eigenen. Erstellen, jeder
+   erfolgreiche Abruf und jeder Widerruf stehen im Audit-Log ([P-20](#p-20-audit-log)) als
+   `link-created`, `link-opened`, `link-revoked` mit dem Ersteller und der öffentlichen ID, nie mit
+   Abruf-ID, Geheimnis oder Inhalt.
+
+Der Server sieht den Geheimtext, seine ungefähre Länge (auf 256 Byte), Ablauf, Zahl der Abrufe,
+wer den Link erstellt hat und wann er abgerufen wurde, und von wo. Er sieht nie das Geheimnis,
+die Passphrase oder den Inhalt.
+
+Restrisiko, ehrlich: **Ablauf und Zahl der Abrufe setzt nur ein ehrlicher Server durch**, wie bei
+Bitwarden Send und jedem Dienst dieser Art. Ein bösartiger Server kann den Geheimtext öfter und
+länger ausliefern, ihn zurückhalten oder einem Abruf einen anderen Geheimtext geben; öffnen kann
+er ihn nicht, und einen fremden oder veränderten Geheimtext erkennt der Empfänger am Tag
+(`apps/server/src/adversary/link-attacks.test.ts`). Wer den ganzen Link hat, liest den Inhalt,
+solange der Server ihn ausliefert; dagegen hilft nur die Passphrase auf einem zweiten Weg. Ein
+Gerät, das die Seite geöffnet hat, behält, was es angezeigt hat. Eine Firmen-Richtlinie für
+Einmal-Links (etwa sie abzuschalten) gibt es noch nicht.
 
 **Wehrt ab:** E-20.
 

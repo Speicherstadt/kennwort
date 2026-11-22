@@ -29,6 +29,10 @@ export const SERVER_ACTIONS = [
   "emergency-requested",
   "emergency-objected",
   "emergency-released",
+  // One-time links (K-601, P-18): made, fetched and revoked; the subject is the link's public ID
+  "link-created",
+  "link-opened",
+  "link-revoked",
 ] as const;
 export const CLIENT_ACTIONS = [
   "export",

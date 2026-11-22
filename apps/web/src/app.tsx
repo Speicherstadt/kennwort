@@ -10,11 +10,12 @@ import type { AccountApi, Api } from "@kennwort/client/session/api.ts";
 import type { DevicesApi } from "@kennwort/client/session/devices-api.ts";
 import type { EmergencyApi } from "@kennwort/client/session/emergency-api.ts";
 import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
+import type { LinkApi } from "@kennwort/client/session/links-api.ts";
 import type { ShareApi } from "@kennwort/client/session/shares-api.ts";
 import type { VaultApi } from "@kennwort/client/session/vaults-api.ts";
 import type { Vault } from "@kennwort/client/vaults/vaults.ts";
-import { encodeBytes, exitReport, type MemberView } from "@kennwort/core";
-import { getLocale, type Locale, m, setLocale, type Toasts } from "@kennwort/ui";
+import { exitReport } from "@kennwort/core";
+import { getLocale, type Locale, setLocale, type Toasts } from "@kennwort/ui";
 import { QueryClientProvider } from "@tanstack/solid-query";
 import { createMemo, createSignal, Match, onSettled, Show, Switch, untrack } from "solid-js";
 import { AddDevicePage } from "./account/add-device-page.tsx";
@@ -36,6 +37,8 @@ import { DevicesSection } from "./frame/devices-section.tsx";
 import { Frame } from "./frame/frame.tsx";
 import { GroupsPage } from "./groups/groups-page.tsx";
 import { type ImportDeps, ImportPage } from "./import/import-page.tsx";
+import { createLinks } from "./links/links-wiring.tsx";
+import { SecretPage } from "./links/secret-page.tsx";
 import type { MemberExits } from "./members/member-exit.tsx";
 import type { MembersDeps } from "./members/members.ts";
 import { MembersPage } from "./members/members-page.tsx";
@@ -52,6 +55,7 @@ import { NoAccess } from "./vaults/no-access.tsx";
 import { RotationNotice } from "./vaults/rotation-notice.tsx";
 import { requestAccess, vaultIdOf } from "./vaults/vault-members.ts";
 import { createVaultStore, type VaultStore } from "./vaults/vault-store.ts";
+import { namedMarks, peopleOf, vaultViews } from "./vaults/vault-views.ts";
 import { VaultsPage } from "./vaults/vaults-page.tsx";
 
 export type AppApi = PairDeps &
@@ -61,49 +65,9 @@ export type AppApi = PairDeps &
   GroupApi &
   ShareApi &
   EmergencyApi &
+  LinkApi &
   Pick<AccountApi, "replaceUnlock"> &
   Pick<Api, "rekey"> & { syncFetch: typeof fetch };
-
-/** The company's people as the vaults' load checked them; none before it */
-const peopleOf = (store: VaultStore) => {
-  const shown = store.shown();
-  return shown.state === "ready" ? shown.people : [];
-};
-
-/** What the frame shows of the vaults: their names, and whether a new entry has a vault to go to */
-const vaultViews = (store: VaultStore) => {
-  /** A new entry needs a vault this account may write in, loaded, with no rotation due (P-11) */
-  const canWrite = () => {
-    const shown = store.shown();
-    return (
-      shown.state === "ready" && shown.vaults.some((v) => v.role !== "read" && !v.log.rotationDue)
-    );
-  };
-  const vaultName = (id: string) => {
-    const shown = store.shown();
-    const vault = shown.state === "ready" ? shown.vaults.find((v) => v.idText === id) : undefined;
-    return vault?.name ?? m.vaults_unnamed();
-  };
-  const shownVaults = () => {
-    const shown = store.shown();
-    return shown.state === "ready" ? shown.vaults : undefined;
-  };
-  return { canWrite, vaultName, shownVaults };
-};
-
-/** The names of whom the change marks name, from the company's members list (K-307) */
-const namedMarks = (entries: ShownEntry[], people: MemberView[]) =>
-  entries.map((entry) =>
-    entry.marks?.length
-      ? {
-          ...entry,
-          marks: entry.marks.map((mark) => ({
-            ...mark,
-            name: people.find((p) => encodeBytes(p.accountId) === mark.account)?.name ?? null,
-          })),
-        }
-      : entry,
-  );
 
 /** The import (K-501) with where it may write, what is there already, and the write */
 const importPage =
@@ -123,6 +87,20 @@ const emergencyPage =
   (toasts: Toasts) => (
     <EmergencyPage api={props.api} session={props.session} vaults={vaults} toasts={toasts} />
   );
+
+/** What shows for a vault link this account cannot open: a way to ask for access (K-305) */
+const noAccessFor =
+  (props: { api: AppApi; session: Session }, store: VaultStore) => (vaultId: string) => {
+    const shown = store.shown();
+    // A vault refused for any reason but a time run out is this account's: no "no access" then
+    const known =
+      shown.state !== "ready" ||
+      shown.vaults.some((v) => v.idText === vaultId) ||
+      shown.refused.some((r) => r.idText === vaultId && r.error !== "expired");
+    const id = vaultIdOf(vaultId);
+    if (known || !id) return undefined;
+    return <NoAccess onRequest={() => requestAccess(props.api, props.session, id)} />;
+  };
 
 /**
  * The stores of an open account: the vaults, their entries, the shares, the exits and the export.
@@ -145,7 +123,8 @@ const createStores = (props: { session: Session; api: AppApi; copy: LocalCopy | 
   });
   // The export (K-504) reads the vaults and their entries' content as loaded
   const exporting = exportDeps(props.api, props.session, store, entries.stored);
-  return { entries, sharing, exits, store, exporting };
+  const links = createLinks(props.api, props.session);
+  return { entries, sharing, exits, store, exporting, links };
 };
 
 /**
@@ -163,7 +142,7 @@ const OpenedFrame = (props: {
   onLocale: (next: Locale) => void;
 }) => {
   const queries = createAccountQueries();
-  const { entries, sharing, exits, store, exporting } = createStores(props);
+  const { entries, sharing, exits, store, exporting, links } = createStores(props);
   // Loaded once the frame is on screen: an effect's compute would load anew on every change of the
   // account state, and the frame lives only as long as the account is open
   onSettled(() => void store.reload());
@@ -203,17 +182,9 @@ const OpenedFrame = (props: {
         onEditEntry={online(entries.startChange)}
         onFavoriteEntry={online(entries.toggleFavorite)}
         onShareEntry={online(sharing.start)}
-        noAccess={(vaultId) => {
-          const shown = store.shown();
-          // A vault refused for any reason but a time run out is this account's: no "no access" then
-          const known =
-            shown.state !== "ready" ||
-            shown.vaults.some((v) => v.idText === vaultId) ||
-            shown.refused.some((r) => r.idText === vaultId && r.error !== "expired");
-          const id = vaultIdOf(vaultId);
-          if (known || !id) return undefined;
-          return <NoAccess onRequest={() => requestAccess(props.api, props.session, id)} />;
-        }}
+        onLinkEntry={online(links.start)}
+        linksPage={links.page}
+        noAccess={noAccessFor(props, store)}
         groupsPage={() => (
           <GroupsPage
             api={props.api}
@@ -255,12 +226,30 @@ const OpenedFrame = (props: {
       />
       <Editor nav={props.nav} vaults={store} />
       <ShareDialog vaults={store} />
+      {links.dialog()}
       <OfflineNotice offline={offline()} syncedAt={props.copy?.syncedAt()} />
       <RotationNotice vaults={shownVaults()} />
       <EmergencyNotice api={props.api} session={props.session} nav={props.nav} />
     </QueryClientProvider>
   );
 };
+
+/** The fragment meant for a page, empty for any other */
+const hashFor = (shown: TakenFragment, page: TakenFragment["page"]) =>
+  shown.page === page ? shown.hash : "";
+
+/** A one-time link (K-601): no account, anew for every link taken; it fetches only on a click */
+const secretRoute = (
+  fetchId: string,
+  link: () => TakenFragment,
+  fetchLink: LinkApi["fetchLink"],
+) => (
+  <Show when={link()} keyed>
+    {(shown) => (
+      <SecretPage fetchId={fetchId} hash={hashFor(shown, "secret")} fetchLink={fetchLink} />
+    )}
+  </Show>
+);
 
 export const App = (props: {
   nav: Navigation;
@@ -270,6 +259,8 @@ export const App = (props: {
   hash: string;
   /** The device's offline copy (K-308 part b); without it the app needs the server */
   copy?: LocalCopy;
+  /** A one-time link's fetch (K-601), made without the device's name; the API's own by default */
+  fetchLink?: LinkApi["fetchLink"];
 }) => {
   const [otherAccount, setOtherAccount] = createSignal(false);
   const [locale, setShownLocale] = createSignal(getLocale());
@@ -288,9 +279,6 @@ export const App = (props: {
     hash: untrack(() => props.hash),
   });
   onSettled(() => props.nav.onFragment((taken) => setLink(taken)));
-  /** The fragment meant for a page, empty for any other */
-  const hashFor = (shown: TakenFragment, page: TakenFragment["page"]) =>
-    shown.page === page ? shown.hash : "";
   // Every key press or click pushes the automatic lock back (P-03); added once the app is on
   // screen and removed with it
   onSettled(() => {
@@ -306,6 +294,10 @@ export const App = (props: {
     const r = route();
     return r.page === "invite" ? r : undefined;
   };
+  const secret = () => {
+    const r = route();
+    return r.page === "secret" ? r : undefined;
+  };
   return (
     <Show when={locale()} keyed>
       {(_locale) => (
@@ -313,6 +305,9 @@ export const App = (props: {
           {/* Each secret page anew for every link taken, as its form reads the link once:
               the kit's link carries the Secret Key (P-12), the pairing link the pairing secret
               (P-04), the invitation its secret (P-08) */}
+          <Match when={secret()}>
+            {(r) => secretRoute(r().id, link, props.fetchLink ?? props.api.fetchLink)}
+          </Match>
           <Match when={route().page === "unlock"}>
             <Show when={link()} keyed>
               {(shown) => (

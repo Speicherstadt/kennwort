@@ -430,7 +430,23 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
 
 ## Phase 6 – Team-Funktionen
 
-- [ ] **K-601 Einmal-Links** – mit Ablauf und begrenzten Abrufen.
+- [x] **K-601 Einmal-Links** – mit Ablauf und begrenzten Abrufen.
+  Fertig, wenn: ein Mitglied aus einem Eintrag (Felder mit Wert, nie ein TOTP-Schlüssel, nur wo es
+  bearbeiten darf) oder für freien Text einen Link erstellt, mit Ablauf bis sieben Tage, 1 bis 10
+  Abrufen und optionaler Passphrase; der Client nach F-15 verschlüsselt (eigenes 256-Bit-Geheimnis
+  nur im Fragment, Argon2id für die Passphrase, Version im Format, Testvektoren aus einem
+  unabhängigen Generator, Property-Tests, Mutation-Tests der neuen Dateien in `packages/crypto` und
+  `packages/core` bei 100 %); der Server nur Geheimtext, Ablauf und Abrufe hält, mit Sitzung,
+  Grenzen und Ratenbegrenzung annimmt, einen Abruf ohne Konto atomar abzieht (auch bei vielen
+  gleichzeitigen), danach und nach dem Ablauf mit 404 antwortet und löscht, unbekannte, falsche,
+  abgelaufene und widerrufene IDs nicht unterscheidet, nur den Ersteller widerrufen lässt und
+  Erstellen, Abruf und Widerruf ohne Geheimnis ins Audit-Log schreibt (Test je Punkt); die Seite
+  `/s/<id>` das Fragment sofort aus der Adresse nimmt, erst nach „Anzeigen“ abruft, ohne Konto,
+  ohne Referrer und auf Deutsch und Englisch; „Einstellungen → Einmal-Links“ die eigenen Links mit
+  Widerruf zeigt; ein Test des bösartigen Servers zeigt, dass er Geheimnis und Inhalt nie sieht;
+  Playwright desktop und `@phone`: Jonas erstellt einen Link mit zwei Abrufen, eine Vorschau
+  verbraucht keinen, ein Externer öffnet ihn zweimal, beim dritten Mal „abgelaufen“, das Fragment
+  ist weg und nichts Geheimes erreicht den Server; dazu Passphrase und Widerruf.
 - [ ] **K-602 Benachrichtigungen** – in der App, Web-Push, optional Mail.
 - [ ] **K-603 Sicherheits-Übersicht** – schwache, mehrfache, geleakte Passwörter (k-Anonymität),
   monatlicher Bericht; „Zum Ändern“ mit `/.well-known/change-password`.

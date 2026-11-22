@@ -125,6 +125,17 @@ describe("the fragment the app was opened with", () => {
     expect(nav.route()).toEqual({ page: "invite", id: "abc" });
   });
 
+  it("leaves the address, the history entry and the router at once on a one-time link (K-601)", async () => {
+    const nav = openAt("/s/AQEBAQEBAQEBAQEBAQEBAQ#S3CR3T-L1NK");
+    expect(takeStartFragment(nav, window)).toBe("#S3CR3T-L1NK");
+    expect(address()).toBe("/s/AQEBAQEBAQEBAQEBAQEBAQ");
+    expect(remembered()).not.toContain("S3CR3T");
+    await app?.router.load();
+    flush();
+    expect(remembered()).not.toContain("S3CR3T");
+    expect(nav.route()).toEqual({ page: "secret", id: "AQEBAQEBAQEBAQEBAQEBAQ" });
+  });
+
   it("stays anywhere else", () => {
     const nav = openAt("/entries#x");
     expect(takeStartFragment(nav, window)).toBe("#x");
@@ -143,6 +154,7 @@ describe("a fragment that arrives while the app is open", () => {
       ["/link", "link"],
       ["/unlock", "unlock"],
       ["/invite/abc", "invite"],
+      ["/s/AQEBAQEBAQEBAQEBAQEBAQ", "secret"],
     ] as const) {
       const nav = openAt(path);
       const taken: unknown[] = [];

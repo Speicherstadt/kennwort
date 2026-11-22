@@ -107,6 +107,19 @@ export {
   kdbxPasswordPart,
   kdbxTransformKey,
 } from "./kdbx.ts";
+export {
+  LINK_ARGON2_V1,
+  LINK_SALT_LENGTH,
+  LINK_SECRET_LENGTH,
+  LINK_V1,
+  type LinkOpenError,
+  type LinkSealInput,
+  linkNeedsPassphrase,
+  openLink,
+  openLinkWith,
+  sealLink,
+  sealLinkWith,
+} from "./one-time-link.ts";
 export { hotp, OTP_ALGORITHMS, type OtpAlgorithm, type TotpOptions, totp } from "./otp.ts";
 export {
   ES256,

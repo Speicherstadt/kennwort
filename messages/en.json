@@ -811,5 +811,69 @@
   "root_change_title": "New company key",
   "root_change_text": "Your company has a new company key. Compare this code with an owner, best in person or on the phone. Take it only if every digit matches.",
   "root_change_confirm": "Code matches, take it",
-  "root_change_failed": "The new company key could not be taken."
+  "root_change_failed": "The new company key could not be taken.",
+  "detail_link": "One-time link",
+  "settings_links": "One-time links",
+  "secret_title": "A shared secret",
+  "secret_intro": "Someone sent you something confidential with Kennwort. The link opens only a limited number of times: show the content only when you need it.",
+  "secret_reveal": "Show",
+  "secret_retry": "Try again",
+  "secret_gone": "This link has expired, was revoked or has been opened as often as allowed. Ask for a new one.",
+  "secret_damaged": "The content does not match this link. It was changed on the way, or the link is incomplete.",
+  "secret_broken": "This link is incomplete. Copy all of it from the message again.",
+  "secret_passphrase_intro": "This link is also protected by a passphrase. You got it another way, by phone for example.",
+  "secret_passphrase": "Passphrase",
+  "secret_passphrase_wrong": "The passphrase is wrong.",
+  "secret_unlock": "Open",
+  "secret_used_up": "The link is now used up. Copy what you need: once you close the page, the content is gone.",
+  "secret_remaining": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "The link can be opened 1 more time.",
+        "n=*": "The link can be opened {count} more times."
+      }
+    }
+  ],
+  "secret_footer": "Kennwort decrypted the content on your device only. The server does not know it.",
+  "link_title": "One-time link for {title}",
+  "link_intro": "A link for someone without an account. It expires and opens only as often as you choose. Anyone with the whole link can read the content.",
+  "link_fields": "In the link: {fields}",
+  "link_nothing": "This entry has no fields that can go into a one-time link.",
+  "link_expiry": "Valid for",
+  "link_expiry_hour": "1 hour",
+  "link_expiry_days": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "1 day",
+        "n=*": "{count} days"
+      }
+    }
+  ],
+  "link_fetches": "Fetches",
+  "link_passphrase": "Passphrase (optional)",
+  "link_passphrase_hint": "Pass it on another way, by phone for example. Without it the link opens nothing.",
+  "link_create": "Create link",
+  "link_address": "One-time link",
+  "link_made_note": "The link is valid until {date}. Kennwort shows it only now: copy it and send it on.",
+  "link_copied": "Link copied.",
+  "link_copy": "Copy link",
+  "link_done": "Done",
+  "link_too_large": "Too much for a one-time link. Shorten the text or share fewer fields.",
+  "link_failed": "The link could not be created. Try again.",
+  "links_title": "One-time links",
+  "links_intro": "Send a secret to someone without an account, a craftsman or the tax adviser for example. Kennwort encrypts it on your device; the key is only in the link.",
+  "links_text_title": "Title (optional)",
+  "links_text_label": "Secret",
+  "links_active": "Your active links",
+  "links_none": "No active links.",
+  "links_failed": "The links could not be loaded or revoked.",
+  "links_created": "Created on {date}",
+  "links_left": "{remaining} of {max} fetches left",
+  "links_until": "valid until {date}",
+  "links_revoke": "Revoke",
+  "links_revoke_of": "Revoke link of {date}"
 }

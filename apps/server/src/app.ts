@@ -19,6 +19,7 @@ import { pairingApiRoutes, pairingPublicRoutes } from "./auth/pairings.ts";
 import { setupRoute } from "./auth/setup.ts";
 import type { Db } from "./db/database.ts";
 import { accounts } from "./db/schema.ts";
+import { linkApiRoutes, linkPublicRoutes } from "./links/routes.ts";
 import type { Log } from "./log.ts";
 import { groupRoutes } from "./sync/group-routes.ts";
 import { createHub, type Hub } from "./sync/hub.ts";
@@ -131,9 +132,12 @@ export const createApp = ({
     const deps = { db, ...signIn };
     api.route("/", createInvitationRoute(deps));
     api.route("/", pairingApiRoutes(deps));
+    api.route("/", linkApiRoutes(deps));
     // Public: sign-in key, accepting an invitation, and Better Auth (passkeys, sessions) for the rest
     app.route("/auth/login-key", loginKeyRoutes(deps));
     app.route("/auth/pairings", pairingPublicRoutes(deps));
+    // One-time links (K-601): fetched without an account, by the ID in the link's address
+    app.route("/auth/links", linkPublicRoutes(deps));
     app.route("/auth", acceptInvitationRoute(deps));
     app.route("/auth", setupRoute({ ...deps, setupCode: signIn.setupCode }));
     app.on(["GET", "POST"], "/auth/*", (c) => {
