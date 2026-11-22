@@ -1,9 +1,18 @@
-import { emptyState, encodeBytes, type Statement, signStatement } from "@kennwort/core";
+import {
+  type AccountState,
+  emptyState,
+  encodeBytes,
+  type Statement,
+  sealState,
+  signStatement,
+} from "@kennwort/core";
 import { anna, jonas, root, sandra } from "@kennwort/core/testing";
 import { rootFingerprint } from "@kennwort/crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { saveState } from "../session/state-sync.ts";
 import type { Vault } from "../vaults/vaults.ts";
 import {
+  accountKeyOf,
   DAY,
   jonasGrants,
   listedOf,
@@ -17,6 +26,7 @@ import {
 import {
   approveEarly,
   grantAccess,
+  loadEmergency,
   objectTo,
   renewGrants,
   requestAccess,
@@ -87,6 +97,36 @@ describe("emergency access on the client (P-14)", () => {
     const replayed = await load(s.api, sandraSession);
     expect(replayed.ok && replayed.value.received).toEqual([]);
     expect(sandraSession.opened().state.emergency[encodeBytes(jonas.id)]?.revoked).toBe(true);
+  });
+
+  it("never writes back over a revocation or objection another device of Sandra saw", async () => {
+    // Review of K-307 part d: the memory is merged into the newer state, never written over it
+    const s = server();
+    const made = await jonasGrants(s);
+    const fresh = emptyState(rootFingerprint(root.publicKey));
+    const known = { grant: NOW, revoked: true, objected: NOW - 9 };
+    const elsewhere: AccountState = { ...fresh, emergency: { [encodeBytes(jonas.id)]: known } };
+    const stateApi = {
+      keys: async () => ({
+        stateCounter: 3,
+        state: sealState(accountKeyOf(sandra), sandra.id, 3, elsewhere),
+      }),
+      writeState: async () => ({ ok: true as const }),
+    };
+    const opened = openedAs(sandra, fresh);
+    let written: AccountState | undefined;
+    const updateState = async (
+      _api: unknown,
+      change: (st: AccountState) => AccountState | undefined,
+    ) => {
+      const saved = await saveState(stateApi as never, opened, change);
+      if (saved.ok) written = saved.value;
+      return saved;
+    };
+    // the server hides the revocation from this device and serves the grant again
+    s.served.listed = [listedOf(made)];
+    await loadEmergency(s.api, opened, updateState as never);
+    expect(written?.emergency[encodeBytes(jonas.id)]).toEqual(known);
   });
 
   it("signs request, objection, approval and revocation for the right grant and time", async () => {

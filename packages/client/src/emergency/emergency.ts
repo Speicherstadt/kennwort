@@ -23,6 +23,7 @@ import {
   type ListedGrant,
   type MemberView,
   makeGrant,
+  mergeEmergency,
   noteGrant,
   noteObjection,
   noteRevocation,
@@ -135,7 +136,8 @@ export const loadEmergency = async (
   if (!sameSeen(seen, opened.state.emergency))
     await updateState(api, (state: AccountState) => ({
       ...state,
-      emergency: { ...state.emergency, ...seen },
+      // Merged, never written over: another device may have seen a revocation or objection since
+      emergency: mergeEmergency(state.emergency, seen),
     }));
   const given = list.given
     .filter((g) => isSignedGrant(opened.keyBlock.ed.publicKey, g.grant))
