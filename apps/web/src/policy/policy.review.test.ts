@@ -30,6 +30,8 @@ describe("applyPolicy after a reload (review)", () => {
       storage,
       derive,
       schedule: (_run, ms) => firstScheduled.push(ms),
+      // No time passes here; the lock time counts from the last use (session.ts)
+      now: () => 0,
       cancel: () => {},
     });
     await first.setUp("richtiger-code", PASSPHRASE);
@@ -65,6 +67,8 @@ describe("applyPolicy after a reload (review)", () => {
       storage,
       derive,
       schedule: (_run, ms) => scheduled.push(ms),
+      // No time passes here; the lock time counts from the last use (session.ts)
+      now: () => 0,
       cancel: () => {},
     });
     expect((await reloaded.unlock(PASSPHRASE)).ok).toBe(true);

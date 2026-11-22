@@ -30,6 +30,8 @@ const jonas = async (lockAfterMs?: number) => {
     derive,
     ...(lockAfterMs ? { lockAfterMs } : {}),
     schedule: (_run, ms) => scheduled.push(ms),
+    // No time passes here; the lock time counts from the last use (session.ts)
+    now: () => 0,
     cancel: () => {},
   });
   await session.setUp("richtiger-code", PASSPHRASE);
