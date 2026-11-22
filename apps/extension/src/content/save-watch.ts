@@ -20,10 +20,12 @@
  *
  * The phishing warning (K-405) uses the same prompt: the worker pushes `kennwort-alert-open` to the
  * top frame, which opens the prompt hidden with a new nonce; the prompt's page takes the warning
- * and asks to be pinned on top of the page (prompt-frame.ts).
+ * and asks to be pinned on top of the page (prompt-frame.ts). A passkey ceremony (K-406) opens the
+ * prompt the same way (`kennwort-passkey-open`).
  */
 import { alertOpenMessage } from "../alert/messages.ts";
 import { newNonce } from "../fill/messages.ts";
+import { passkeyOpenMessage } from "../passkey/messages.ts";
 import {
   type CaptureRequest,
   type PromptContentMessage,
@@ -208,7 +210,8 @@ export const createSaveWatch = (deps: SaveWatchDeps) => {
     /** A runtime message about the prompt; the answer goes back to the worker */
     onMessage: (raw: unknown, sender: Sender): { ok: boolean } | undefined => {
       if (sender.id !== deps.extensionId || sender.tab !== undefined) return undefined;
-      if (alertOpenMessage(raw)) {
+      // A warning (K-405) or a passkey ceremony (K-406): a new prompt, which asks the worker why
+      if (alertOpenMessage(raw) || passkeyOpenMessage(raw)) {
         if (!deps.frame) return undefined;
         openPrompt(deps.frame);
         return { ok: true };

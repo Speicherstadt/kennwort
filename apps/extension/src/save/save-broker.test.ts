@@ -255,4 +255,36 @@ describe("the save broker", () => {
     deps.frames.mockRejectedValue(new Error("no tab"));
     expect(await broker(submit, content(topFrame))).toEqual({ ok: false, error: "unknown-frame" });
   });
+
+  // K-406: a passkey ceremony goes to the prompt before a warning or a login, and its answer back
+  it("hands the prompt a passkey ceremony first and passes its answer to the passkey broker", async () => {
+    const { deps, broker } = setup();
+    const ceremony = {
+      kind: "get" as const,
+      origin: "https://portal.weber-haustechnik.test",
+      rpId: "portal.weber-haustechnik.test",
+      challenge: "q83v",
+      allow: [],
+      userVerification: "preferred" as const,
+    };
+    const passkeys = { take: vi.fn(() => ceremony), finish: vi.fn(() => true) };
+    const withPasskeys = createSaveBroker({ ...deps, passkeys });
+    expect(await withPasskeys({ type: "prompt-take", nonce: NONCE }, prompt)).toEqual({
+      ok: true,
+      ceremony,
+    });
+    expect(passkeys.take).toHaveBeenCalledWith(3);
+    const answer = { type: "prompt-passkey", nonce: NONCE, answer: { outcome: "fallback" } };
+    expect(await withPasskeys(answer, prompt)).toEqual({ ok: true });
+    expect(passkeys.finish).toHaveBeenCalledWith(3, { outcome: "fallback" });
+    passkeys.finish.mockReturnValue(false);
+    expect(await withPasskeys(answer, prompt)).toEqual({ ok: false, error: "nothing" });
+    // Only the prompt answers, with an answer of the right shape, and without passkeys nothing
+    expect(await withPasskeys(answer, content(topFrame))).toEqual({
+      ok: false,
+      error: "not-prompt",
+    });
+    expect(await withPasskeys({ ...answer, answer: { outcome: "x" } }, prompt)).toBeUndefined();
+    expect(await broker(answer, prompt)).toEqual({ ok: false, error: "nothing" });
+  });
 });

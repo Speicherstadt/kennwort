@@ -4,7 +4,8 @@
  * is open, answers the inline menu: which page it sits on, and a fill, which it hands only to
  * the frame it checked (fill/broker.ts, K-403), holds a login the user submitted until the save
  * prompt takes it (save/save-broker.ts, K-404), and compares the tag of a typed password with the
- * alert list for the phishing warning (alert/alert-broker.ts, K-405).
+ * alert list for the phishing warning (alert/alert-broker.ts, K-405), and holds a passkey ceremony
+ * a page started until the prompt answers it after the user's click (passkey/passkey-broker.ts, K-406).
  */
 import { browserAlarms, lockOnAlarm } from "./account/auto-lock.ts";
 import { type AlertContentMessage, createAlertBroker } from "./alert/alert-broker.ts";
@@ -12,6 +13,8 @@ import { alertRequest, type Warning } from "./alert/messages.ts";
 import { createFillBroker } from "./fill/broker.ts";
 import type { FillTarget, FrameInfo } from "./fill/frames.ts";
 import { type ContentMessage, MENU_PAGE, menuRequest } from "./fill/messages.ts";
+import { abortRequest, pageRequest } from "./passkey/messages.ts";
+import { createPasskeyBroker } from "./passkey/passkey-broker.ts";
 import { createCaptures } from "./save/captures.ts";
 import {
   captureRequest,
@@ -41,7 +44,11 @@ type Chrome = {
   tabs: {
     sendMessage(
       tabId: number,
-      message: ContentMessage | PromptContentMessage | AlertContentMessage,
+      message:
+        | ContentMessage
+        | PromptContentMessage
+        | AlertContentMessage
+        | { type: "kennwort-passkey-open" },
       options: { frameId: number; documentId?: string },
     ): Promise<unknown>;
     onRemoved: { addListener(listener: (tabId: number) => void): void };
@@ -68,7 +75,11 @@ if (chrome?.webNavigation && chrome.tabs) {
   // documentId pins the one document the frame tree showed: a frame that navigated gets nothing
   const send = (
     tabId: number,
-    message: ContentMessage | PromptContentMessage | AlertContentMessage,
+    message:
+      | ContentMessage
+      | PromptContentMessage
+      | AlertContentMessage
+      | { type: "kennwort-passkey-open" },
     target: FillTarget,
   ) =>
     browser.tabs.sendMessage(
@@ -107,25 +118,37 @@ if (chrome?.webNavigation && chrome.tabs) {
     send,
     warnings,
   });
+  // A passkey ceremony waits in memory only, for the prompt's answer (K-406)
+  const passkeys = createPasskeyBroker({
+    extensionId: browser.runtime.id,
+    frames,
+    send,
+    schedule: (run, ms) => setTimeout(run, ms),
+    cancel: (timer) => clearTimeout(timer as ReturnType<typeof setTimeout>),
+  });
   browser.tabs.onRemoved.addListener((tabId) => {
     captures.drop(tabId);
     alerts.drop(tabId);
+    passkeys.drop(tabId);
   });
   const saving = createSaveBroker({
     extensionId: browser.runtime.id,
     promptPath: `/${PROMPT_PAGE}`,
     captures,
     warnings,
+    passkeys,
     frames,
     send,
     openPopup,
   });
   browser.runtime.onMessage.addListener((message, sender, respond) => {
-    // The menu's messages, those about saving and the warning's are the only ones it answers
+    // The menu's messages, those about saving, the warning's and the passkeys' are the only ones it answers
     if (menuRequest(message)) void broker(message, sender).then(respond);
     else if (captureRequest(message) || promptRequest(message))
       void saving(message, sender).then(respond);
     else if (alertRequest(message)) void alerts(message, sender).then(respond);
+    else if (pageRequest(message) || abortRequest(message))
+      void passkeys(message, sender).then(respond);
     else return undefined;
     // The answer comes later
     return true;

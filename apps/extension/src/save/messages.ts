@@ -10,9 +10,11 @@
  * Like the inline menu's (fill/messages.ts), every prompt message names the prompt's nonce, which
  * only the content script and its own prompt frame know. The page itself can send none of them.
  * The phishing warning (K-405) uses the same prompt: `prompt-take` hands it a warning instead of a
- * login, and it asks to be kept on top of the page (`prompt-pin`).
+ * login, and it asks to be kept on top of the page (`prompt-pin`). A passkey ceremony (K-406) too:
+ * `prompt-take` hands the prompt the ceremony, and the prompt answers it with `prompt-passkey`.
  */
 import type { Warning } from "../alert/messages.ts";
+import { type Ceremony, type PasskeyAnswer, passkeyAnswer } from "../passkey/messages.ts";
 
 /** The save prompt's page inside the extension (vite.config.ts builds it, manifest.ts frames it) */
 export const PROMPT_PAGE = "src/prompt/prompt.html";
@@ -36,7 +38,8 @@ export type PromptRequest =
   | { type: "prompt-check"; nonce: string }
   | { type: "prompt-close"; nonce: string }
   | { type: "prompt-unlock"; nonce: string }
-  | { type: "prompt-pin"; nonce: string };
+  | { type: "prompt-pin"; nonce: string }
+  | { type: "prompt-passkey"; nonce: string; answer: PasskeyAnswer };
 
 /** From the service worker to the content script of the top frame */
 export type PromptContentMessage =
@@ -67,7 +70,7 @@ export type SaveRefusal =
   | "not-delivered";
 
 export type SaveAnswer =
-  | { ok: true; capture?: Capture; warning?: Warning }
+  | { ok: true; capture?: Capture; warning?: Warning; ceremony?: Ceremony }
   | { ok: false; error: SaveRefusal };
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -111,6 +114,10 @@ export const promptRequest = (value: unknown): PromptRequest | undefined => {
       return typeof value.height === "number" && Number.isFinite(value.height)
         ? { type: "prompt-size", nonce, height: value.height }
         : undefined;
+    case "prompt-passkey": {
+      const answer = passkeyAnswer(value.answer);
+      return answer && { type: "prompt-passkey", nonce, answer };
+    }
     default:
       return undefined;
   }

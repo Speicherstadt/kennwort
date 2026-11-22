@@ -300,7 +300,7 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   des getippten Werts, nie den Wert selbst und nie etwas an den Server; die Hashes liegen nur
   entsperrt in `chrome.storage.session` und verschwinden beim Sperren und nach der Sperrzeit (Test);
   weder `chrome.storage.local` noch der Sitzungsbereich enthalten Passwort oder Host im Klartext.
-- [ ] **K-406 Passkey-Anbieter** – Passkeys in Kennwort speichern und damit anmelden.
+- [x] **K-406 Passkey-Anbieter** – Passkeys in Kennwort speichern und damit anmelden.
   Fertig, wenn: Playwright mit geladener Extension gegen den e2e-Server auf einer Testseite, die
   mit SimpleWebAuthn prüft, einen Passkey anlegt (ES256 aus `@noble/curves`, Attestation „none“,
   verschlüsselt als Eintrag der Art „Passkey“ im gewählten Tresor) und sich damit anmeldet, beides

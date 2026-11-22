@@ -326,4 +326,14 @@ describe("the prompt's messages", () => {
     expect(child.watch.onMessage({ type: "kennwort-alert-open" }, WORKER)).toBeUndefined();
     expect(frame.open).toHaveBeenCalledOnce();
   });
+
+  // K-406: the worker opens the prompt for a passkey ceremony the same way
+  it("opens the prompt hidden when the worker pushes a passkey ceremony", () => {
+    const { watch, frame } = setup();
+    expect(watch.onMessage({ type: "kennwort-passkey-open" }, WORKER)).toEqual({ ok: true });
+    expect(frame.open).toHaveBeenCalledExactlyOnceWith(NONCE);
+    expect(watch.onMessage({ type: "kennwort-passkey-open" }, { id: ID, tab: {} })).toBeUndefined();
+    const child = setup({ frame: undefined });
+    expect(child.watch.onMessage({ type: "kennwort-passkey-open" }, WORKER)).toBeUndefined();
+  });
 });
