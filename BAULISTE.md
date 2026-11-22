@@ -288,6 +288,18 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   kurzer Zeit (Test); Leser und Tresore mit ausstehendem Schlüsselwechsel speichern nichts.
 - [ ] **K-405 Phishing-Warnung** – Warnung beim Eintippen eines gespeicherten Passworts auf fremder
   Domain.
+  Fertig, wenn: Playwright mit geladener Extension gegen den e2e-Server warnt, sobald jemand das
+  gespeicherte Passwort eines Eintrags auf einer ähnlich aussehenden Domain selbst eintippt und das
+  Feld verlässt oder absendet – oben rechts, ohne die Seite zu sperren, mit „Das ist nicht <Host> –
+  trotzdem fortfahren“, „Passwort ändern“ und einem Link zum Eintrag, auf Deutsch und Englisch –,
+  aber nicht auf dem exakten Host eines Eintrags mit diesem Passwort, nicht bei einem anderen
+  Passwort, nicht in einem versteckten Feld, nicht für einen Wert, den die Seite selbst einsetzt,
+  und nicht gesperrt; eine verdeckte oder durchsichtig gemachte Warnung kommt wieder nach oben und
+  „trotzdem fortfahren“ zählt verdeckt nicht. Das Content Script hält keine gespeicherten Passwörter
+  und schickt dem Service Worker nur einen kurzen, gesalzenen, langsamen Hash (F-09, Testvektoren)
+  des getippten Werts, nie den Wert selbst und nie etwas an den Server; die Hashes liegen nur
+  entsperrt in `chrome.storage.session` und verschwinden beim Sperren und nach der Sperrzeit (Test);
+  weder `chrome.storage.local` noch der Sitzungsbereich enthalten Passwort oder Host im Klartext.
 - [ ] **K-406 Passkey-Anbieter** – Passkeys in Kennwort speichern und damit anmelden.
 - [ ] **K-407 Firefox für Android und Safari** – Build und Tests je Browser.
 - [ ] **K-408 Reproduzierbarer Build** – zweimal bauen, Hashes vergleichen, in CI.
