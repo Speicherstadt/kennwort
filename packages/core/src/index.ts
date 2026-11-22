@@ -96,14 +96,6 @@ export {
   verifyAudit,
 } from "./audit/chain.ts";
 export {
-  EXPORT_FORMATS,
-  type ExportFormat,
-  type ExportScope,
-  type ExportSubject,
-  exportSubject,
-  parseExportSubject,
-} from "./audit/export-subject.ts";
-export {
   answerChallenge,
   answerRecoveryChallenge,
   type Derive,
@@ -115,10 +107,7 @@ export {
   signInWithPassphrase,
   signInWithRecoveryKey,
 } from "./auth/sign-in.ts";
-export { BITWARDEN_COLUMNS, writeBitwardenCsv } from "./export/csv.ts";
-export { KDBX_EXPORT_ARGON2, type KdbxArgon2Cost, writeKdbx } from "./export/kdbx.ts";
-export { writeKennwortExport } from "./export/kennwort-json.ts";
-export { ExportPayload, type ExportVault, exportVaults } from "./export/payload.ts";
+export * from "./export/index.ts";
 export {
   DIGITS,
   LOWER,
