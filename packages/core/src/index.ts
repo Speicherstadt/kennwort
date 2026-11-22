@@ -109,6 +109,7 @@ export {
   UPPER,
 } from "./generator/generator.ts";
 export { IMPORT_FORMATS, type ImportFormat } from "./import/formats.ts";
+export { migrationBatch } from "./import/google-migration.ts";
 export { type Columns, csvColumns, parseTableCsv } from "./import/table.ts";
 export type {
   FileParser,
@@ -325,8 +326,10 @@ export {
 } from "./sync/wire.ts";
 export {
   base32Decode,
+  base32Encode,
   parseTotp,
   type TotpError,
   type TotpKey,
   totpCode,
+  totpLink,
 } from "./totp/otpauth.ts";

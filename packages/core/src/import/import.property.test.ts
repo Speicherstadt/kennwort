@@ -33,6 +33,11 @@ const FIXTURES = [
   "keeper.csv",
   "dashlane-payments.csv",
   "chrome.csv",
+  "google-authenticator.txt",
+  "aegis.json",
+  "aegis-encrypted.json",
+  "twofas.2fas",
+  "twofas-encrypted.2fas",
 ];
 
 /** An answer is entries or one of the parsers' errors, never anything else */
@@ -78,6 +83,12 @@ const markupText = fc
       "url,username,password,extra,name,grouping",
       "http://sn",
       "NoteType:Credit Card",
+      "otpauth-migration://offline?data=",
+      "CiAKCkhlbGxvId6tvu8SBWpvbmFz",
+      '{"version":1,"header":{},"db":{"entries":[',
+      '{"type":"totp","info":{"secret":"JBSWY3DPEHPK3PXP"',
+      '{"schemaVersion":4,"services":[',
+      '{"secret":"JBSWY3DPEHPK3PXP","otp":{',
       "a",
       "ä",
       "0",
@@ -110,7 +121,7 @@ const brokenFixture = fc
     return new Uint8Array(bytes);
   });
 
-describe("import parsers under fuzzing (K-502)", () => {
+describe("import parsers under fuzzing (K-502, K-503)", () => {
   it.each(PARSERS)("%s answers random text without throwing", (_, parse) => {
     fc.assert(
       fc.property(fc.oneof(fc.string({ unit: "grapheme-composite" }), markupText), (text) =>

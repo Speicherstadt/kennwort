@@ -5,6 +5,8 @@ import { flush } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import bitwardenJson from "../../../../packages/core/src/import/fixtures/bitwarden.json?raw";
 import chromeCsv from "../../../../packages/core/src/import/fixtures/chrome.csv?raw";
+import google from "../../../../packages/core/src/import/fixtures/google-authenticator.txt?raw";
+import twofas from "../../../../packages/core/src/import/fixtures/twofas.2fas?raw";
 import type { Navigation } from "../navigation.ts";
 import { type ImportDeps, ImportPage } from "./import-page.tsx";
 import type { Comparable } from "./preview.ts";
@@ -85,7 +87,7 @@ const rows = (root: ParentNode) =>
 describe("ImportPage up to the file", () => {
   it("offers every vendor and shows how to export from the chosen one", async () => {
     const root = await show(deps().deps);
-    expect(root.querySelectorAll("li button").length).toBe(20);
+    expect(root.querySelectorAll("li button").length).toBe(23);
     await choose(root, "Bitwarden (JSON)");
     expect(root.textContent).toContain("Werkzeuge");
     expect(root.querySelector<HTMLInputElement>('input[type="file"]')?.accept).toBe(
@@ -183,6 +185,63 @@ describe("ImportPage preview and import", () => {
     await click(button(root, /importieren$/));
     const link = root.querySelector<HTMLAnchorElement>('a[href="/to-change"]');
     expect(link?.textContent).toBe("Schwache Passwörter unter „Zum Ändern“ ansehen");
+  });
+});
+
+describe("ImportPage with an authenticator (K-503)", () => {
+  const paste = async (root: ParentNode, text: string) => {
+    const area = root.querySelector("textarea");
+    if (!area) throw new Error("no textarea");
+    area.value = text;
+    area.dispatchEvent(new Event("input", { bubbles: true }));
+    flush();
+    await click(button(root, "Weiter"));
+  };
+  const [first = ""] = google.trim().split("\n");
+
+  it("takes Google Authenticator's pasted export links and says which codes stay out", async () => {
+    const { deps: d, written } = deps();
+    const root = await show(d);
+    await choose(root, "Google Authenticator (QR-Code)");
+    expect(root.querySelector('input[type="file"]')).toBeNull();
+    expect(root.querySelector('[role="status"]')?.textContent).toBe("Noch kein QR-Code gelesen.");
+    expect(button(root, "QR-Code scannen")).toBeDefined();
+    await paste(root, google);
+    expect(root.querySelector("h2")?.textContent).toBe("Vorschau");
+    expect(rows(root).map((r) => r.slice(0, 9))).toEqual(["DATEVLogi", "Microsoft", "Sparkasse"]);
+    expect(root.textContent).toContain("1 Code übernimmt Kennwort nicht");
+    // The keys never show
+    expect(root.textContent).not.toContain("JBSWY3DPEHPK3PXP");
+    await click(button(root, /importieren$/));
+    const datev = written.flatMap((w) => w.batch).find((c) => c.title === "DATEV");
+    expect(datev?.fields.find((f) => f.kind === "totp")?.value).toContain(
+      "secret=JBSWY3DPEHPK3PXP",
+    );
+  });
+
+  it("asks for the missing QR codes, a link first, and an export link", async () => {
+    const root = await show(deps().deps);
+    await choose(root, "Google Authenticator (QR-Code)");
+    await click(button(root, "Weiter"));
+    expect(root.querySelector('[role="alert"]')?.textContent).toBe(
+      "Scanne zuerst einen QR-Code oder füge einen Export-Link ein.",
+    );
+    await paste(root, first);
+    expect(root.querySelector('[role="alert"]')?.textContent).toBe(
+      "Es fehlen QR-Codes dieses Exports. Scanne jeden QR-Code, den Google Authenticator zeigt.",
+    );
+    await paste(root, "otpauth://totp/DATEV:jonas?secret=JBSWY3DPEHPK3PXP");
+    expect(root.querySelector('[role="alert"]')?.textContent).toBe(
+      "Das ist kein Export-Link von Google Authenticator.",
+    );
+  });
+
+  it("reads a 2FAS backup and counts its HOTP and Steam codes as left out", async () => {
+    const root = await show(deps().deps);
+    await choose(root, "2FAS (.2fas)");
+    await pick(root, twofas, "backup.2fas");
+    expect(rows(root)).toHaveLength(3);
+    expect(root.textContent).toContain("2 Codes übernimmt Kennwort nicht");
   });
 });
 

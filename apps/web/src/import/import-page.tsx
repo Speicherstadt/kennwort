@@ -1,6 +1,7 @@
 /**
- * „Importieren“ (K-501): choose the vendor, read where its export is, pick the file, map a table's
- * columns, check the preview, import into a vault, then delete the file. The file is read and
+ * „Importieren“ (K-501): choose the vendor, read where its export is, pick the file (or scan
+ * Google Authenticator's QR codes, K-503), map a table's columns, check the preview, import into a
+ * vault, then delete the file. The file is read and
  * parsed on the device only (docs/plan.md, Import und Export). The plaintext lives in this page's
  * state while the mapping or the preview needs it and no longer: the import's end keeps only
  * counts, and leaving the page drops the rest. The file's bytes are zeroed once parsed; strings
@@ -14,14 +15,15 @@ import {
   type ImportResult,
 } from "@kennwort/core";
 import { m } from "@kennwort/ui";
-import { createSignal, Match, onCleanup, Switch } from "solid-js";
+import { createSignal, Match, onCleanup, Show, Switch } from "solid-js";
 import type { Navigation } from "../navigation.ts";
 import { DoneStep, PreviewStep, ProgressStep, type TargetVault } from "./import-preview.tsx";
+import { QrStep } from "./import-qr.tsx";
 import { FileStep, MapStep, VendorStep } from "./import-steps.tsx";
 import type { Comparable } from "./preview.ts";
 import { errorText, guessColumns, parseChoice } from "./read-file.ts";
 import { type ImportOutcome, runImport, type SaveBatch } from "./run.ts";
-import { type VendorChoice, vendorChoices } from "./vendors.ts";
+import { isQr, type VendorChoice, vendorChoices } from "./vendors.ts";
 
 export type ImportDeps = {
   /** The vaults this account may write in now: no reader's, none with a rotation due (P-11) */
@@ -43,7 +45,7 @@ type Step =
       mapping: Columns;
       error?: string | undefined;
     }
-  | { step: "preview"; entries: ImportedEntry[] }
+  | { step: "preview"; entries: ImportedEntry[]; unsupported: number }
   | { step: "importing"; done: number; total: number }
   | { step: "done"; outcome: ImportOutcome; weak: number };
 
@@ -65,7 +67,7 @@ const createImportFlow = (save: ImportDeps["save"]) => {
   const parsed = (choice: VendorChoice, result: ImportResult) =>
     setStep(
       result.ok
-        ? { step: "preview", entries: result.value }
+        ? { step: "preview", entries: result.value, unsupported: result.skipped ?? 0 }
         : { step: "file", choice, error: errorText(result.error) },
     );
 
@@ -90,6 +92,15 @@ const createImportFlow = (save: ImportDeps["save"]) => {
       columns: columns.value,
       mapping: guessColumns(columns.value),
     });
+  };
+
+  /** Google Authenticator's export links, scanned or pasted: text, so nothing to zero */
+  const onLinks = async (choice: VendorChoice, text: string) => {
+    setStep({ step: "file", choice, busy: true });
+    const result = await parseChoice(choice, new TextEncoder().encode(text));
+    if (!result.ok && result.error === "wrong-format")
+      return setStep({ step: "file", choice, error: m.import_qr_wrong() });
+    parsed(choice, result);
   };
 
   const onMapped = async (map: Extract<Step, { step: "map" }>) => {
@@ -127,12 +138,12 @@ const createImportFlow = (save: ImportDeps["save"]) => {
     setStep({ step: "done", outcome, weak });
   };
 
-  return { step, setStep, onFile, onMapped, backToVendor, onImport };
+  return { step, setStep, onFile, onLinks, onMapped, backToVendor, onImport };
 };
 
 export const ImportPage = (props: { nav: Navigation; deps: ImportDeps }) => {
-  const { step, setStep, onFile, onMapped, backToVendor, onImport } = createImportFlow(() =>
-    props.deps.save(),
+  const { step, setStep, onFile, onLinks, onMapped, backToVendor, onImport } = createImportFlow(
+    () => props.deps.save(),
   );
   return (
     <section aria-labelledby="page-title" class="min-h-0 flex-1 overflow-auto p-4 md:p-6">
@@ -149,13 +160,26 @@ export const ImportPage = (props: { nav: Navigation; deps: ImportDeps }) => {
         </Match>
         <Match when={at(step(), "file")}>
           {(file) => (
-            <FileStep
-              choice={file().choice}
-              busy={file().busy ?? false}
-              error={file().error}
-              onFile={(picked) => void onFile(file().choice, picked)}
-              onBack={backToVendor}
-            />
+            <Show
+              when={isQr(file().choice)}
+              fallback={
+                <FileStep
+                  choice={file().choice}
+                  busy={file().busy ?? false}
+                  error={file().error}
+                  onFile={(picked) => void onFile(file().choice, picked)}
+                  onBack={backToVendor}
+                />
+              }
+            >
+              <QrStep
+                choice={file().choice}
+                busy={file().busy ?? false}
+                error={file().error}
+                onLinks={(text) => void onLinks(file().choice, text)}
+                onBack={backToVendor}
+              />
+            </Show>
           )}
         </Match>
         <Match when={at(step(), "map")}>
@@ -174,6 +198,7 @@ export const ImportPage = (props: { nav: Navigation; deps: ImportDeps }) => {
           {(preview) => (
             <PreviewStep
               entries={preview().entries}
+              unsupported={preview().unsupported}
               vaults={props.deps.vaults()}
               existing={props.deps.existing}
               canWrite={props.deps.save() !== undefined}

@@ -1,7 +1,7 @@
 import { IMPORT_FORMATS } from "@kennwort/core";
 import { setLocale } from "@kennwort/ui";
 import { afterEach, describe, expect, it } from "vitest";
-import { TABLE, vendorChoices } from "./vendors.ts";
+import { isQr, TABLE, vendorChoices } from "./vendors.ts";
 
 // K-501: the vendor step offers every format core reads, plus any table, in German and English
 afterEach(() => setLocale("de", { reload: false }));
@@ -38,6 +38,21 @@ describe("vendor choices", () => {
     setLocale("en", { reload: false });
     expect(label("safari-csv")).toBe("Safari / Apple Passwords (CSV)");
     expect(label(TABLE)).toBe("Other spreadsheet (CSV)");
+  });
+
+  it("names the authenticators' exports: QR codes and the .2fas file (K-503)", () => {
+    const choice = (id: string) => vendorChoices().find((c) => c.id === id);
+    expect(choice("google-authenticator")?.label()).toBe("Google Authenticator (QR-Code)");
+    expect(choice("2fas-json")?.label()).toBe("2FAS (.2fas)");
+    expect(choice("aegis-json")?.label()).toBe("Aegis (JSON)");
+    expect(choice("2fas-json")?.accept).toBe(".2fas,.json,application/json");
+    expect(
+      vendorChoices()
+        .filter(isQr)
+        .map((c) => c.id),
+    ).toEqual(["google-authenticator"]);
+    setLocale("en", { reload: false });
+    expect(choice("google-authenticator")?.label()).toBe("Google Authenticator (QR code)");
   });
 
   it("accepts the file type of each format in the file picker", () => {

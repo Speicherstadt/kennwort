@@ -45,7 +45,7 @@ deinem eigenen Server betreibst.
 | 👥 Team | Gruppen, Rollen, Zugriff anfragen, Zugriff auf Zeit, einzelnen Eintrag teilen, aus Tresor oder Firma entfernen mit Schlüsselwechsel, „Zum Ändern“ für alles, was die Person lesen konnte, und Austritts-Bericht |
 | 🧩 Browser-Extension | Chrome, Edge, Firefox (auch Android) und Safari; Popup zum Entsperren mit Treffern für die Seite (exakter Host), Suche, Favoriten, Kopieren und Generator; Inline-Menü unter Login-Feldern, das erst nach Klick oder Enter ausfüllt, nur auf dem exakten Host, nie in fremde iFrames und nicht, wenn eine Seite das Menü verdeckt; bietet nach dem Anmelden an, ein neues Login zu speichern oder ein geändertes Passwort zu aktualisieren (das alte bleibt unter „Frühere Passwörter“), mit „Nie für diese Seite“; Phishing-Warnung |
 | 📱 Handy | Web-App zum Installieren (PWA), die nur signierte und geprüfte Updates annimmt und ohne Verbindung entsperrt und liest, und App für Android und iOS mit systemweitem Ausfüllen |
-| 🔁 Umzug | Import aus Bitwarden, LastPass, 1Password, KeePass, Team Password Manager, Passbolt, den Browsern, jeder Tabelle und Authenticator-Apps: Anbieter wählen, Anleitung, Vorschau ohne Geheimnisse, Duplikate überspringen, schwache Passwörter gleich unter „Zum Ändern“ |
+| 🔁 Umzug | Import aus Bitwarden, LastPass, 1Password, KeePass, Team Password Manager, Passbolt, den Browsern, jeder Tabelle und Authenticator-Apps (Google Authenticator per QR-Code, Aegis, 2FAS): Anbieter wählen, Anleitung, Vorschau ohne Geheimnisse, Duplikate überspringen, schwache Passwörter gleich unter „Zum Ändern“ |
 | 🛡️ Sicherheit im Alltag | Sicherheits-Übersicht, Prüfung gegen Datenlecks, „Zum Ändern“-Liste, Einmal-Links für Externe |
 
 ## Sicherheit

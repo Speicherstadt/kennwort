@@ -420,6 +420,9 @@
   "import_howto_chrome_csv": "In Chrome or Edge open “Settings” → “Passwords” (Google Password Manager), then “Settings” → “Export passwords” and confirm. Brave and Opera export the same way.",
   "import_howto_firefox_csv": "In Firefox open “about:logins”, choose “Export logins” in the “…” menu and confirm with your device password.",
   "import_howto_safari_csv": "On the Mac open the Passwords app (or Safari → “Settings” → “Passwords”) and choose “File” → “Export All Passwords”.",
+  "import_howto_google_authenticator": "In Google Authenticator on your phone, choose “Transfer accounts” → “Export accounts” and pick the accounts. The app shows one or more QR codes; scan each of them here.",
+  "import_howto_aegis_json": "In Aegis, choose “Settings” → “Import & Export” → “Export”, take the format “Aegis (.JSON)” and turn off “Encrypt the vault”.",
+  "import_howto_twofas": "In 2FAS, choose “Settings” → “2FAS Backup” → “Export to file” and export without a password; 2FAS saves a .2fas file.",
   "import_howto_table": "Save the spreadsheet as CSV with commas between the columns and a header row that names every column. Then you map the columns.",
   "import_howto_other": "Export your logins from the app into an unencrypted file and choose it here.",
   "import_file": "Choose the export file",
@@ -427,6 +430,24 @@
   "import_back": "Back",
   "import_next": "Next",
   "import_reading": "Reading the file …",
+  "import_file_qr": "QR code",
+  "import_qr_intro": "Hold Google Authenticator's export QR code up to the camera, or choose a screenshot of it.",
+  "import_qr_not_migration": "This QR code is not a Google Authenticator export.",
+  "import_qr_none": "No QR code read yet.",
+  "import_qr_read": [
+    {
+      "declarations": ["input read", "input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "{read} of 1 QR code read",
+        "n=*": "{read} of {count} QR codes read"
+      }
+    }
+  ],
+  "import_qr_paste": "Or paste export links (otpauth-migration://…), one per line",
+  "import_qr_hint": "The QR codes stay on this device and are not uploaded.",
+  "import_qr_empty": "Scan a QR code or paste an export link first.",
+  "import_qr_wrong": "This is not a Google Authenticator export link.",
   "import_error_not_text": "This file is not text. Choose the export file itself, not a database; for a ZIP take the vendor with “ZIP” or “1PUX”.",
   "import_error_bad_csv": "The CSV file is damaged: a quote is never closed.",
   "import_error_bad_json": "This is not a valid JSON file. Did you choose the right format?",
@@ -436,6 +457,7 @@
   "import_error_bad_zip": "This is not a readable ZIP file, or it is damaged. Download the export again and choose it without unzipping it.",
   "import_error_unsupported_zip": "This ZIP is packed in a form Kennwort does not read. Take the export as the vendor delivers it, not repacked.",
   "import_error_too_large": "This file is larger than any export, or packed unusually tightly. Kennwort does not read it.",
+  "import_error_incomplete": "QR codes of this export are missing. Scan every QR code Google Authenticator shows.",
   "import_error_unreadable": "The file could not be opened.",
   "import_map_title": "Map the columns",
   "import_map_intro": "Tell Kennwort which column holds what. Columns without a mapping are left out.",
@@ -487,6 +509,16 @@
       "match": {
         "n=one": "1 weak password – you'll find it under “To change” afterwards.",
         "n=*": "{count} weak passwords – you'll find them under “To change” afterwards."
+      }
+    }
+  ],
+  "import_unsupported": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "Kennwort does not take 1 code because it is no time-based one-time code (TOTP), such as HOTP or Steam. Set it up again with the service.",
+        "n=*": "Kennwort does not take {count} codes because they are no time-based one-time codes (TOTP), such as HOTP or Steam. Set them up again with the services."
       }
     }
   ],

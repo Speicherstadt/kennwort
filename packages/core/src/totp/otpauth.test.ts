@@ -1,5 +1,7 @@
+import { OTP_ALGORITHMS } from "@kennwort/crypto";
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { base32Decode, parseTotp, totpCode } from "./otpauth.ts";
+import { base32Decode, base32Encode, parseTotp, totpCode, totpLink } from "./otpauth.ts";
 
 const text = (bytes: Uint8Array) => new TextDecoder().decode(bytes);
 const ok = <T>(result: { ok: true; value: T } | { ok: false; error: string }) => {
@@ -31,6 +33,84 @@ describe("base32Decode (RFC 4648, section 10)", () => {
     // Padding only at the end: "=" inside is no letter of the alphabet
     for (const bad of ["MZXW1", "MZXW6YTB0I", "M", "MZX", "MZXW6Y", "MY=a", "MZ-XW", "MZ=XW6YTB"])
       expect(base32Decode(bad)).toEqual({ ok: false, error: "bad-secret" });
+  });
+});
+
+describe("base32Encode (RFC 4648, section 10)", () => {
+  it("encodes the RFC's examples without padding", () => {
+    const bytes = (plain: string) => new TextEncoder().encode(plain);
+    const cases: [string, string][] = [
+      ["", ""],
+      ["f", "MY"],
+      ["fo", "MZXQ"],
+      ["foo", "MZXW6"],
+      ["foob", "MZXW6YQ"],
+      ["fooba", "MZXW6YTB"],
+      ["foobar", "MZXW6YTBOI"],
+    ];
+    for (const [plain, encoded] of cases) expect(base32Encode(bytes(plain))).toBe(encoded);
+    expect(base32Encode(new Uint8Array([0xff, 0xff, 0xff, 0xff, 0xff]))).toBe("77777777");
+    expect(base32Encode(new Uint8Array([0xff]))).toBe("74");
+  });
+
+  it("is undone by base32Decode, whatever the bytes", () => {
+    fc.assert(
+      fc.property(fc.uint8Array({ maxLength: 64 }), (bytes) => {
+        expect(base32Decode(base32Encode(bytes))).toEqual({ ok: true, value: bytes });
+      }),
+    );
+  });
+});
+
+describe("totpLink (K-503)", () => {
+  const key = {
+    secret: new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x21, 0xde, 0xad, 0xbe, 0xef]),
+    issuer: "Sparkasse",
+    account: "jonas@weber-haustechnik.example",
+    algorithm: "SHA256" as const,
+    digits: 8,
+    period: 60,
+  };
+
+  it("writes every setting into the link", () => {
+    expect(totpLink(key)).toBe(
+      "otpauth://totp/Sparkasse:jonas%40weber-haustechnik.example?secret=JBSWY3DPEHPK3PXP&issuer=Sparkasse&algorithm=SHA256&digits=8&period=60",
+    );
+  });
+
+  it("leaves the issuer parameter out without an issuer, and colons out of the label", () => {
+    expect(totpLink({ ...key, issuer: "" })).toBe(
+      "otpauth://totp/:jonas%40weber-haustechnik.example?secret=JBSWY3DPEHPK3PXP&algorithm=SHA256&digits=8&period=60",
+    );
+    expect(totpLink({ ...key, issuer: "A:B", account: "x:y" })).toBe(
+      "otpauth://totp/AB:x%3Ay?secret=JBSWY3DPEHPK3PXP&issuer=A%3AB&algorithm=SHA256&digits=8&period=60",
+    );
+  });
+
+  it("turns a lone surrogate into U+FFFD instead of throwing", () => {
+    const link = totpLink({ ...key, issuer: "a\uD800", account: "b\uDC00" });
+    expect(parseTotp(link)).toMatchObject({ value: { issuer: "a\uFFFD", account: "b\uFFFD" } });
+  });
+
+  it("is read back by parseTotp, whatever the issuer and account", () => {
+    const name = fc.string({
+      unit: fc.constantFrom("a", "ä", ":", " ", "%", "&", "=", "+", "/", "?", "#", "🔥"),
+    });
+    fc.assert(
+      fc.property(
+        fc.record({
+          secret: fc.uint8Array({ minLength: 1, maxLength: 40 }),
+          issuer: name.map((n) => n.trim()),
+          account: name.map((n) => n.trim()),
+          algorithm: fc.constantFrom(...OTP_ALGORITHMS),
+          digits: fc.integer({ min: 6, max: 8 }),
+          period: fc.integer({ min: 1, max: 86_400 }),
+        }),
+        (key) => {
+          expect(parseTotp(totpLink(key))).toEqual({ ok: true, value: key });
+        },
+      ),
+    );
   });
 });
 

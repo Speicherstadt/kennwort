@@ -3,7 +3,6 @@
  * with the folders or collections the other manager kept it in, so the import flow (K-501) can
  * offer them as vaults. A parser is a pure function: file in, entries out, errors as values.
  */
-import type { Result } from "@kennwort/crypto";
 import type { EntryContent } from "../sync/content.ts";
 
 export type ImportedEntry = {
@@ -28,9 +27,17 @@ export type ImportError =
   /** A ZIP in a form the reader leaves out: ZIP64, across disks, another compression method */
   | "unsupported-zip"
   /** More than an export ever holds: too many files or bytes, or packed too tightly */
-  | "too-large";
+  | "too-large"
+  /** Some of the QR codes an authenticator split its export into are missing (K-503) */
+  | "incomplete";
 
-export type ImportResult = Result<ImportedEntry[], ImportError>;
+/**
+ * The entries, or why not. An authenticator's export can hold codes Kennwort cannot work out
+ * (HOTP, Steam and the like); its parser leaves them out and says how many in `skipped`.
+ */
+export type ImportResult =
+  | { ok: true; value: ImportedEntry[]; skipped?: number }
+  | { ok: false; error: ImportError };
 export type Parser = (input: string | Uint8Array) => ImportResult;
 /** A parser of a ZIP container: unpacking is asynchronous (`DecompressionStream`) */
 export type ZipParser = (bytes: Uint8Array) => Promise<ImportResult>;

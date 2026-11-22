@@ -69,6 +69,7 @@ const ERROR_TEXT: Record<ImportError, () => string> = {
   "bad-zip": () => m.import_error_bad_zip(),
   "unsupported-zip": () => m.import_error_unsupported_zip(),
   "too-large": () => m.import_error_too_large(),
+  incomplete: () => m.import_error_incomplete(),
 };
 
 export const errorText = (error: ImportError) => ERROR_TEXT[error]();

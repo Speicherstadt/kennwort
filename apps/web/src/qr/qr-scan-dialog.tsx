@@ -1,6 +1,7 @@
 /**
  * Scanning the setup QR code of a one-time code (K-306 part 4b): with the camera, frame by frame,
- * or from a chosen or pasted screenshot; only an otpauth link for TOTP is taken
+ * or from a chosen or pasted screenshot; only an otpauth link for TOTP is taken, or what another
+ * kind of code accepts (Google Authenticator's export codes, K-503)
  */
 import { parseTotp } from "@kennwort/core";
 import { Button, buttonClass, Dialog, Icon, m } from "@kennwort/ui";
@@ -9,14 +10,31 @@ import { createSignal, onSettled, Show } from "solid-js";
 import { readQr } from "./qr.ts";
 import { hasCamera, openCamera, pixelsOfImage, pixelsOfVideo } from "./qr-source.ts";
 
-type Problem = "not-found" | "not-totp" | "no-camera";
-const problemText = (problem: Problem) =>
-  ({ "not-found": m.qr_not_found, "not-totp": m.qr_not_totp, "no-camera": m.qr_no_camera })[
-    problem
-  ]();
+/** The codes a scan takes: which texts, what the dialog says first and when a code is another */
+export type QrKind = {
+  accepts: (text: string) => boolean;
+  intro: () => string;
+  wrong: () => string;
+};
+
+const TOTP_SETUP: QrKind = {
+  accepts: (text) => /^otpauth:/i.test(text.trim()) && parseTotp(text).ok,
+  intro: () => m.qr_scan_intro(),
+  wrong: () => m.qr_not_totp(),
+};
+
+type Problem = "not-found" | "wrong" | "no-camera";
 const SCAN_EVERY_MS = 250;
 
-export const QrScanDialog = (props: { onFound: (link: string) => void; onClose: () => void }) => {
+export const QrScanDialog = (props: {
+  onFound: (link: string) => void;
+  onClose: () => void;
+  /** The setup code of a one-time code unless said otherwise */
+  kind?: QrKind;
+}) => {
+  const kind = () => props.kind ?? TOTP_SETUP;
+  const problemText = (problem: Problem) =>
+    ({ "not-found": m.qr_not_found, wrong: kind().wrong, "no-camera": m.qr_no_camera })[problem]();
   const [problem, setProblem] = createSignal<Problem>();
   const [stream, setStream] = createSignal<MediaStream>();
   // What stop() turns off: the signal gives the old value until the next flush (Solid 2 batching)
@@ -33,11 +51,11 @@ export const QrScanDialog = (props: { onFound: (link: string) => void; onClose: 
     clearTimeout(timer);
     stopTracks(media);
   };
-  /** True when the text is a TOTP link and was handed on; anything else says why not */
+  /** True when the text is a code of the kind and was handed on; anything else says why not */
   const take = (text: string | undefined) => {
     if (disposed || text === undefined) return false;
-    if (!/^otpauth:/i.test(text.trim()) || !parseTotp(text).ok) {
-      setProblem("not-totp");
+    if (!kind().accepts(text)) {
+      setProblem("wrong");
       return false;
     }
     stop();
@@ -97,7 +115,7 @@ export const QrScanDialog = (props: { onFound: (link: string) => void; onClose: 
   return (
     <Dialog open onClose={props.onClose} title={m.qr_scan()}>
       <div class="grid gap-3 p-4 pt-2">
-        <p class="text-[13px] text-muted-foreground">{m.qr_scan_intro()}</p>
+        <p class="text-[13px] text-muted-foreground">{kind().intro()}</p>
         <video
           ref={(el) => {
             video = el;

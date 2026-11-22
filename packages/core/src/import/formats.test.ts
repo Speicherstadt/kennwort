@@ -23,9 +23,12 @@ const FIXTURES: Record<string, string> = {
   "chrome-csv": "chrome.csv",
   "firefox-csv": "firefox.csv",
   "safari-csv": "safari.csv",
+  "google-authenticator": "google-authenticator.txt",
+  "aegis-json": "aegis.json",
+  "2fas-json": "twofas.2fas",
 };
 
-describe("import formats (K-502)", () => {
+describe("import formats (K-502, K-503)", () => {
   it("lists every format of the plan by vendor and file", () => {
     expect(IMPORT_FORMATS.map((f) => [f.id, f.vendor, f.file])).toEqual([
       ["bitwarden-json", "Bitwarden", "JSON"],
@@ -47,6 +50,9 @@ describe("import formats (K-502)", () => {
       ["chrome-csv", "Chrome / Edge", "CSV"],
       ["firefox-csv", "Firefox", "CSV"],
       ["safari-csv", "Safari", "CSV"],
+      ["google-authenticator", "Google Authenticator", "QR"],
+      ["aegis-json", "Aegis", "JSON"],
+      ["2fas-json", "2FAS", "2FAS"],
     ]);
   });
 
