@@ -17,6 +17,7 @@
     "format": "biome check --write .",
     "test": "vitest run && bun run --cwd apps/server test",
     "build": "bun scripts/build-all.ts",
+    "reproducible": "bun scripts/reproducible.ts",
     "e2e": "playwright test",
     "e2e:engines": "playwright test -c playwright.engines.config.ts",
     "check": "bun run typecheck && bun run lint && bun run test && bun run build",
