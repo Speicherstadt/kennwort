@@ -5,15 +5,19 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { parseCsv } from "./csv.ts";
-import { IMPORT_FORMATS } from "./formats.ts";
+import { IMPORT_FORMATS, type ImportFormat } from "./formats.ts";
 import { parseKeePassXml } from "./keepass-xml.ts";
 import { parseTableCsv } from "./table.ts";
 import { fixture } from "./test/helpers.ts";
 import type { Parser } from "./types.ts";
 import { parseXml } from "./xml.ts";
 
+/** The text formats; the ZIP containers have their own fuzzing (zip.property.test.ts) */
+const isText = (format: ImportFormat): format is ImportFormat & { parse: Parser } =>
+  format.file !== "ZIP" && format.file !== "1PUX";
+
 const PARSERS: [string, Parser][] = [
-  ...IMPORT_FORMATS.map((f): [string, Parser] => [f.id, f.parse]),
+  ...IMPORT_FORMATS.filter(isText).map((f): [string, Parser] => [f.id, f.parse]),
   ["table-csv", parseTableCsv({ title: "a", password: "b", url: "c", tags: "d" })],
 ];
 const FIXTURES = [

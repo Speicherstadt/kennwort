@@ -319,7 +319,7 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
     leere Felder, Unicode) bestehen, Fuzzing mit fast-check (Zufallstext, Zufallsbytes, kaputte
     Fixtures, tiefe Verschachtelung) ohne Absturz und Hänger läuft und die Mutation-Tests der
     neuen Dateien bei 100 % stehen.
-  - [ ] Teil 2: ZIP-Container – 1Password 1PUX, Dashlane- und Proton-Pass-ZIP, entpackt mit
+  - [x] Teil 2: ZIP-Container – 1Password 1PUX, Dashlane- und Proton-Pass-ZIP, entpackt mit
     `DecompressionStream` (asynchron) und eigenem ZIP-Verzeichnis. Fertig, wenn: je Anbieter ein
     ZIP-Fixture besteht, auch mit gespeicherten und komprimierten Dateien, und kaputte ZIPs
     (falsche Längen, Zip-Bomben über eine Größengrenze) als Fehler enden.
