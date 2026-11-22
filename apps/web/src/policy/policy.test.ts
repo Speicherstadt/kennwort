@@ -158,3 +158,50 @@ describe("saveLockTime", () => {
     expect(s.saved).toHaveLength(0);
   });
 });
+
+// Review of #82: a load that left before the owner saved a new lock time answers with the old one
+describe("applyPolicy that loaded before a newer policy was applied", () => {
+  it("keeps the newer lock time instead of the one the slower load brought back", async () => {
+    const j = await jonas();
+    const s = companyServer(j, signed(j.root, 4, 10));
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const slow: PolicyDeps = {
+      ...s.api,
+      company: async (token) => {
+        const answer = await s.api.company(token);
+        await gate;
+        return answer;
+      },
+    };
+    const late = applyPolicy(slow, j.session);
+    expect(await saveLockTime(s.api, j.session, 2)).toBe(true);
+    flush();
+    expect(j.session.opened()?.state.policy).toBe(5);
+    release();
+    await late;
+    expect(j.scheduled.at(-1)).toBe(2 * 60_000);
+  });
+
+  it("falls back to the newer lock time when the slower load finds no server", async () => {
+    const j = await jonas();
+    const s = companyServer(j, signed(j.root, 4, 10));
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const away: PolicyDeps = {
+      ...s.api,
+      company: async () => {
+        await gate;
+        return undefined;
+      },
+    };
+    await applyPolicy(s.api, j.session);
+    flush();
+    const late = applyPolicy(away, j.session);
+    expect(await saveLockTime(s.api, j.session, 2)).toBe(true);
+    flush();
+    release();
+    expect(await late).toEqual({ ok: false, error: "unreachable" });
+    expect(j.scheduled.at(-1)).toBe(2 * 60_000);
+  });
+});
