@@ -202,7 +202,7 @@ und die Schritte für Menschen am Ende erledigt sind.
     (je Feld die zehn neuesten), die Suche nie geheime Werte durchsucht, schwache und doppelte
     Passwörter nur auf dem Gerät erkannt werden und Ändern, Favorit, Tag, Suche und „Zum Ändern“
     als Playwright-Test desktop und `@phone` laufen.
-- [ ] **K-307 Austritt und Recovery** – Schlüsselwechsel, Änderungs-Markierung, Austritts-Bericht,
+- [x] **K-307 Austritt und Recovery** – Schlüsselwechsel, Änderungs-Markierung, Austritts-Bericht,
   Firmen-Recovery, Notfallzugriff mit Wartezeit, Wechsel des Account Key (AK), wenn ein
   Recovery-Kit in fremde Hände geraten ist (P-12).
   In Teilen, je ein Pull Request; abgehakt wird K-307, wenn alle stehen:
@@ -236,7 +236,7 @@ und die Schritte für Menschen am Ende erledigt sind.
     (P-12). Fertig, wenn: der alte Recovery Key und alte Geheimtexte nichts mehr öffnen, was danach
     geschrieben wird, das neue Bündel erst mit neuem Zertifikat gilt und der Ablauf als
     Playwright-Test desktop und `@phone` läuft.
-  - [ ] Teil f: neuer Firmen-Wurzelschlüssel, wenn ein Inhaber oder Admin geht (P-07). Fertig,
+  - [x] Teil f: neuer Firmen-Wurzelschlüssel, wenn ein Inhaber oder Admin geht (P-07). Fertig,
     wenn: ein Client den Wechsel nur nach Bestätigung nimmt, keinen zweiten vom alten Schlüssel
     annimmt und Zertifikate des alten Schlüssels danach nicht mehr gelten.
 - [x] **K-308 PWA** – installierbar, offline lesbar, signiertes Release-Manifest, Service Worker

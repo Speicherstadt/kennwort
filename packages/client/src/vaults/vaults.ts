@@ -9,6 +9,7 @@ import {
   type AccountState,
   bytes,
   type Certificate,
+  certificateOf,
   checkMembers,
   createVault,
   derivedPersonalVault,
@@ -77,16 +78,19 @@ export const trustOf = async (api: VaultDeps, opened: Opened): Promise<Checked |
   if (!company || !members) return undefined;
   const root = trustedRoot(opened.state.rootFingerprint, company.rootPublicKey);
   if (!root) return undefined;
-  const people = checkMembers(root, members, opened.state.certificates);
+  const retired = opened.state.retiredRoots;
+  const people = checkMembers(root, members, opened.state.certificates, retired);
   const certificates = new Map<string, Certificate>();
   // Earlier certificates of accounts that renewed their keys: what their old keys signed (P-12)
   const history = new Map<string, Certificate[]>();
   for (const view of people) {
-    if (view.status === "certified" && view.certificate)
+    // A replaced root's certificate of someone who left before the change: for the logs it signed
+    if ((view.status === "certified" || view.status === "former") && view.certificate)
       certificates.set(idKey(view.accountId), view.certificate);
     if (view.previous?.length) history.set(idKey(view.accountId), view.previous);
   }
-  return { trust: { rootPublicKey: root, certificates, history, now: seconds() }, people };
+  const trust = { rootPublicKey: root, certificates, history, retired, now: seconds() };
+  return { trust, people };
 };
 
 const openOne = async (
@@ -195,7 +199,7 @@ export const newVault = async (
   const opened = session.opened();
   if (!opened) return { ok: false, error: "unreachable" };
   const checked = await trustOf(api, opened);
-  const me = checked?.trust.certificates.get(idKey(opened.accountId));
+  const me = checked && certificateOf(checked.trust, opened.accountId);
   if (!me) return { ok: false, error: "uncertified" };
   const signer = { accountId: opened.accountId, edSecretKey: opened.keyBlock.ed.secretKey };
   const pick = personal ? () => personalVaultId(opened) : undefined;

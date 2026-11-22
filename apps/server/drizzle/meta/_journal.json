@@ -162,6 +162,13 @@
       "when": 1795362801422,
       "tag": "0022_account_rekey",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1795373353913,
+      "tag": "0023_root_changes",
+      "breakpoints": true
     }
   ]
 }

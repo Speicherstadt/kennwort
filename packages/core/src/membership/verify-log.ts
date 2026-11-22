@@ -64,6 +64,11 @@ export type Trust = {
    * and records their old keys signed must still verify. Each is checked here too.
    */
   history?: Map<string, Certificate[]>;
+  /**
+   * Roots the account replaced after confirming the change (K-307 part f, P-07), with the change's
+   * time: their certificates count only for what was signed before it
+   */
+  retired?: readonly { publicKey: Uint8Array; until: number }[];
   now: number;
 };
 
@@ -89,22 +94,54 @@ export const certificateOf = (trust: Trust, accountId: Uint8Array) => {
 const sameBundle = (certificate: Certificate, fingerprint: Uint8Array) =>
   constantTimeEqual(certificateFingerprint(certificate), fingerprint);
 
-/** The earlier certificates the root confirms for exactly this account, oldest first */
+/**
+ * Until when a certificate counts: without end under the pinned root; under a root the account
+ * replaced, for what was signed before its change, and only if it was issued before it: whoever
+ * left kept the old root and could certify anything afterwards (P-07); undefined under any other key
+ */
+const countsUntil = (trust: Trust, certificate: Certificate) =>
+  isCertified(trust.rootPublicKey, certificate)
+    ? Number.POSITIVE_INFINITY
+    : trust.retired?.find(
+        (root) =>
+          certificate.issuedAt < root.until + CLOCK_SKEW_SECONDS &&
+          isCertified(root.publicKey, certificate),
+      )?.until;
+
+/**
+ * The account's listed certificate under the pinned root or a replaced one: an account that left
+ * before the root changed keeps the old root's, and the logs it signed must still verify
+ */
+const listedOf = (trust: Trust, accountId: Uint8Array) => {
+  const certificate = trust.certificates.get(idKey(accountId));
+  return certificate &&
+    constantTimeEqual(certificate.accountId, accountId) &&
+    countsUntil(trust, certificate) !== undefined
+    ? certificate
+    : undefined;
+};
+
+/** The earlier certificates a trusted root confirms for exactly this account, oldest first */
 const earlierOf = (trust: Trust, accountId: Uint8Array, current: Certificate | undefined) =>
   (trust.history?.get(idKey(accountId)) ?? [])
     .filter(
       (c) =>
         constantTimeEqual(c.accountId, accountId) &&
         (current === undefined || c.issuedAt < current.issuedAt) &&
-        isCertified(trust.rootPublicKey, c),
+        countsUntil(trust, c) !== undefined,
     )
     .sort((a, b) => a.issuedAt - b.issuedAt);
+
+/** Whether a certificate counts for something signed at this time (P-07, P-12) */
+const liveAt = (trust: Trust, certificate: Certificate, time: number) =>
+  time < (countsUntil(trust, certificate) as number) + CLOCK_SKEW_SECONDS;
 
 /**
  * The account's certificate for exactly this bundle (P-12). One that a later certificate for
  * another bundle superseded counts only for what was signed before that one was issued, give or
  * take the clock skew; without a signed time (an entry's record, P-09) by the bundle alone, which
- * the checked log names.
+ * the checked log names. One by a root the account replaced counts only for what was signed before
+ * the root's change, give or take the clock skew (P-07, K-307 part f).
  */
 export const certificateFor = (
   trust: Trust,
@@ -112,10 +149,10 @@ export const certificateFor = (
   fingerprint: Uint8Array,
   time = Number.NEGATIVE_INFINITY,
 ) => {
-  const current = certificateOf(trust, accountId);
+  const current = listedOf(trust, accountId);
   const all = [...earlierOf(trust, accountId, current), ...(current ? [current] : [])];
-  // No certificate of this bundle: index -1, and all[-1] is none
-  const index = all.findIndex((c) => sameBundle(c, fingerprint));
+  // No certificate of this bundle at this time: index -1, and all[-1] is none
+  const index = all.findIndex((c) => sameBundle(c, fingerprint) && liveAt(trust, c, time));
   const next = all.slice(index + 1).find((c) => !sameBundle(c, fingerprint));
   const retired = next && time >= next.issuedAt + CLOCK_SKEW_SECONDS;
   return retired ? undefined : all[index];
@@ -126,7 +163,7 @@ export const certificateFor = (
  * or it has none yet and an earlier one names this
  */
 export const isSuperseded = (trust: Trust, accountId: Uint8Array, fingerprint: Uint8Array) => {
-  const current = certificateOf(trust, accountId);
+  const current = listedOf(trust, accountId);
   return current
     ? !sameBundle(current, fingerprint)
     : earlierOf(trust, accountId, undefined).some((c) => sameBundle(c, fingerprint));

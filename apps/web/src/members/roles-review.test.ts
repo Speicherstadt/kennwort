@@ -36,6 +36,8 @@ describe("a demotion the server undoes", () => {
       ownerRow(jonas),
       { ...row, role: "admin", certificate: admin, invitation: null },
     ]);
+    // ...under the root Jonas's client made when Anna lost the root with her role (K-307 part f)
+    Object.assign(replayed.company, s.company);
     const opened = jonas.session.opened();
     if (!opened) throw new Error("locked");
     const loaded = await loadMembers(replayed.api, opened);

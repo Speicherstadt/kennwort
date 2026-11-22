@@ -233,6 +233,7 @@ const cases: Record<string, () => Promise<void>> = {
       rootPublicKey: null,
       policy: null,
       recoveryPublicKey: null,
+      rootChanges: [],
     });
   },
   "GET /api/accounts": async () => {
@@ -352,6 +353,35 @@ const cases: Record<string, () => Promise<void>> = {
     await jonasSends("PUT", "/api/company/recovery-key", {});
     const mueller = app.db.select().from(companies).where(eq(companies.id, "mueller")).get();
     expect(mueller?.recoveryPublicKey).toBeNull();
+  },
+  // K-307 part f: a new root changes only the own company, and only the own key block
+  "PUT /api/company/root": async () => {
+    await jonasSends("PUT", "/api/company/root", {});
+    const mueller = app.db.select().from(companies).where(eq(companies.id, "mueller")).get();
+    expect(mueller?.rootPublicKey).toBeNull();
+  },
+  "PUT /api/account/key-block": async () => {
+    app.db
+      .insert(accountKeys)
+      .values({
+        accountId: "max",
+        xwingPublicKey: Buffer.alloc(1216),
+        edPublicKey: Buffer.alloc(32),
+        keyBlock: Buffer.alloc(149, 7),
+        unlockPassphrase: Buffer.alloc(73),
+        unlockRecovery: Buffer.alloc(73),
+        state: Buffer.alloc(8),
+        stateCounter: 0,
+        updatedAt: 1,
+      })
+      .onConflictDoNothing()
+      .run();
+    const maxKeys = () =>
+      app.db.select().from(accountKeys).where(eq(accountKeys.accountId, "max")).get()?.keyBlock;
+    const before = maxKeys();
+    const block = Buffer.alloc(149, 9).toString("base64url");
+    await jonasSends("PUT", "/api/account/key-block", { keyBlock: block });
+    expect(maxKeys()).toEqual(before);
   },
   "GET /api/account/recovery-grant": async () => {
     app.db

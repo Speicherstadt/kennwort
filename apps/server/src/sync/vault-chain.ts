@@ -13,12 +13,13 @@ import {
   type LogEntry,
   LogEntryWire,
   type LogError,
+  RootChangeWire,
   verifyLog,
 } from "@kennwort/core";
 import { asc, eq } from "drizzle-orm";
 import { supersededOf } from "../account/rekey.ts";
 import type { Db } from "../db/database.ts";
-import { accountKeys, accounts, companies, vaultLog } from "../db/schema.ts";
+import { accountKeys, accounts, companies, rootChanges, vaultLog } from "../db/schema.ts";
 
 type Member = { role: string; validUntil: number };
 
@@ -72,6 +73,24 @@ const historyOf = (db: Db, companyId: string) => {
   return history;
 };
 
+/**
+ * The roots the company replaced, each with the time of its change (K-307 part f, P-07): an account
+ * that left before the change keeps the old root's certificate, and the logs it signed or is named
+ * in must still take entries, as every client that confirmed the change checks them
+ */
+const retiredOf = (db: Db, companyId: string) =>
+  db
+    .select({ change: rootChanges.change })
+    .from(rootChanges)
+    .where(eq(rootChanges.companyId, companyId))
+    .all()
+    .flatMap((row) => {
+      const change = RootChangeWire.safeParse(JSON.parse(row.change));
+      return change.success
+        ? [{ publicKey: change.data.oldRootPublicKey, until: change.data.time }]
+        : [];
+    });
+
 const rootOf = (db: Db, companyId: string) => {
   const company = db.select().from(companies).where(eq(companies.id, companyId)).get();
   const root = bytes(32).safeParse(company?.rootPublicKey ?? "");
@@ -94,6 +113,7 @@ export const chainRefusal = (
     rootPublicKey,
     certificates: certificatesOf(db, companyId),
     history: historyOf(db, companyId),
+    retired: retiredOf(db, companyId),
     // verifyLog allows the same clock skew (CLOCK_SKEW_SECONDS) as every client
     now,
   };
