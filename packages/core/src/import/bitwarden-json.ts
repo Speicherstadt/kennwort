@@ -179,7 +179,9 @@ export const parseBitwardenJson: Parser = (input) => {
   const file = json.value;
   if (file.passwordProtected) return err("encrypted");
   if (file.encrypted) return err("account-encrypted");
-  // Without it the file is no Bitwarden export, or one whose flags were changed: never "empty"
+  // Without it the file is no Bitwarden export, or one whose flags were changed: never "empty".
+  // Bitwarden refuses it too (bitwarden/clients, libs/importer/src/importers/bitwarden/
+  // bitwarden-json-importer.ts, parse: `results.items == null` fails the import)
   if (!file.items) return err("wrong-format");
   return ok(file.items.map(entryOf(byId(file.folders), byId(file.collections))));
 };
