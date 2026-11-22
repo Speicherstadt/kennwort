@@ -200,6 +200,30 @@ describe("CXF passkeys as passkey entries (K-502)", () => {
     for (const credential of broken) expect(passkeyEntry(credential, item)).toBeUndefined();
     const longest = { ...passkey, userHandle: Buffer.alloc(64).toString("base64url") };
     expect(passkeyEntry(longest, item)).toBeDefined();
-    expect(passkeyEntry({ ...passkey, userHandle: "" }, item)).toBeDefined();
+  });
+
+  it("leaves out a passkey whose user handle is missing or empty, as WebAuthn never makes one", () => {
+    // WebAuthn Level 3 §5.1.3: user.id is 1 to 64 bytes; K-406 refuses an empty one the same way
+    const { userHandle: _, ...withoutHandle } = passkey;
+    expect(passkeyEntry(withoutHandle, item)).toBeUndefined();
+    expect(passkeyEntry({ ...passkey, userHandle: null }, item)).toBeUndefined();
+    expect(passkeyEntry({ ...passkey, userHandle: "" }, item)).toBeUndefined();
+    expect(passkeyEntry({ ...passkey, userHandle: "==" }, item)).toBeUndefined();
+  });
+
+  it("keeps the rpId as the lower-case host the extension compares, or leaves the passkey out", () => {
+    // The extension signs only for a passkey whose rpId equals the page's, a lower-case host
+    // (apps/extension/src/passkey/rp-id.ts): any other form could never be used
+    const rpIdOf = (rpId: string) => passkeyEntry({ ...passkey, rpId }, item)?.content.fields[0];
+    expect(rpIdOf("Portal.Example")?.value).toBe("portal.example");
+    for (const rpId of [
+      "https://portal.example",
+      "portal.example:443",
+      "portal.example/login",
+      "portal.example?x",
+      "max@portal.example",
+      "portal example",
+    ])
+      expect(rpIdOf(rpId)).toBeUndefined();
   });
 });
