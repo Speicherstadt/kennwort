@@ -2,7 +2,7 @@
 title: Konto und Entsperren
 description: >-
   Wie man in Kennwort eine Firma anlegt, eine Einladung annimmt, das Recovery-Kit sichert, auf
-  einem neuen Gerät entsperrt, Notfallzugriff gibt, wann Kennwort sich selbst sperrt, wie man es als
+  einem neuen Gerät entsperrt, Schlüssel erneuert, Notfallzugriff gibt, wann Kennwort sich selbst sperrt, wie man es als
   App installiert und was ohne Verbindung geht.
 ---
 
@@ -153,12 +153,43 @@ sicher auf.
 !!! warning "Wenn das Kit in fremde Hände geraten ist"
     Der neue Recovery Key sperrt die Anmeldung mit dem alten. Wer aber früher eine Kopie der
     verschlüsselten Daten deines Kontos bekommen hat, kann sie mit dem alten Recovery Key weiter
-    öffnen. Davor schützt erst ein Wechsel deines Account Key und deiner Schlüssel, den ein späterer
-    Teil von K-307 bringt.
+    öffnen. Davor schützt erst, [alle Schlüssel zu erneuern](#schlussel-erneuern).
 
 Auf deinem bekannten Gerät bleibt der Secret Key gleich, deine anderen Geräte entsperren also mit
 der neuen Passphrase weiter. Auf einem fremden Gerät bekommst du einen neuen Secret Key; deine
 anderen Geräte brauchen ihn dann zusammen mit der neuen Passphrase.
+
+## Schlüssel erneuern
+
+Ist dein Recovery-Kit in fremde Hände geraten, erneuerst du unter **Einstellungen → Schlüssel
+erneuern** alle Schlüssel deines Kontos. Danach öffnen das alte Kit, dein alter Recovery Key und
+alles, was jemand mit ihnen kopiert hat, nichts mehr, was ab jetzt geschrieben wird.
+
+1. Gib deine Passphrase noch einmal ein und wähle **Schlüssel jetzt erneuern**. Die Passphrase
+   bleibt; du bekommst einen neuen Secret Key, einen neuen Recovery Key und neue Schlüssel.
+2. Kennwort zeigt dein neues Recovery-Kit. Speichere es als PDF und bewahre es sicher auf; das alte
+   kannst du vernichten.
+3. Darüber steht ein **Vergleichscode** aus 60 Ziffern. Zeig ihn einem Inhaber oder Admin, am besten
+   persönlich oder am Telefon. Er findet dich unter **Mitglieder** mit **Neue Schlüssel prüfen**,
+   vergleicht den Code und wählt nur dann **Code stimmt**, wenn jede Ziffer gleich ist. Bist du
+   selbst Inhaber oder Admin, bestätigt Kennwort deine neuen Schlüssel gleich selbst.
+4. Bis dahin liest du deine Tresore weiter, aber niemand ändert dort etwas: Ein Hinweis oben sagt,
+   dass jemand neue Schlüssel hat. Danach bekommt jeder Tresor, in dem du bist, von selbst einen
+   neuen Schlüssel, und alles ist wieder wie vorher.
+
+Was sonst passiert:
+
+- Deine anderen Geräte werden abgemeldet. Verbinde sie neu über **Mit einem anderen Gerät
+  verbinden** oder mit dem neuen Recovery-Kit; der alte Secret Key passt nicht mehr.
+- Freigaben einzelner Einträge und Notfallzugriffe, die du gegeben hast, gelten nicht mehr; gib sie
+  neu. Wer mit dem alten Kit deine alten Schlüssel hat, könnte sonst in deinem Namen welche fälschen.
+  Ebenso enden Freigaben und Notfallzugriffe an dich; die anderen geben sie dir neu.
+- Ist die Firmen-Recovery an, hinterlegt dein Gerät deinen neuen Zugang gleich wieder.
+- Bist du Inhaber oder Admin, hatte das alte Kit auch Zugang zum Firmen-Wurzelschlüssel und, als
+  Inhaber, zum Recovery-Schlüssel der Firma. Lege unter **Mitglieder** einen neuen
+  Recovery-Schlüssel an.
+
+Wie das geschützt ist, steht im [Sicherheitsdesign](sicherheitsdesign.md#p-12-recovery-kit).
 
 ## Firmen-Recovery
 

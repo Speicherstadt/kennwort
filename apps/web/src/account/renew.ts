@@ -75,12 +75,12 @@ export const confirmRenewed = async (
 };
 
 /** An owner or admin with the root key certifies its own renewed bundle: it is the same person */
-const certifyOwn = async (api: MembersDeps, session: Session, wasAdmin: boolean) => {
+const certifyOwn = async (api: MembersDeps, session: Session) => {
   const opened = session.opened();
-  if (!wasAdmin || !opened?.state.rootSecretKey) return false;
+  if (!opened?.state.rootSecretKey) return false;
   const loaded = await loadMembers(api, opened);
-  if (!loaded.ok || loaded.value.me?.status !== "renewed") return false;
-  const { me } = loaded.value;
+  const me = loaded.ok ? loaded.value.me : undefined;
+  if (me?.status !== "renewed" || (me.role !== "owner" && me.role !== "admin")) return false;
   return confirmRenewed(api, session, me, me.previous?.at(-1)?.companyId);
 };
 
@@ -107,8 +107,7 @@ export const renewAccount = async (
   await session.renewed(renewed.value);
   const next = renewed.value.opened;
   await keepDeposit(api, next);
-  const wasAdmin = me?.role === "owner" || me?.role === "admin";
-  const certified = await certifyOwn(api, session, wasAdmin);
+  const certified = await certifyOwn(api, session);
   return {
     ok: true,
     value: {

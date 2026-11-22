@@ -232,7 +232,7 @@ und die Schritte für Menschen am Ende erledigt sind.
     Wartezeit herauskommen, ein Widerspruch sie sperrt, ein Schlüssel ohne passende Bindung im Log
     abgelehnt wird und Anlegen, Anfragen und Widersprechen als Playwright-Test desktop und `@phone`
     laufen.
-  - [ ] Teil e: Wechsel von AK und Benutzer-Schlüsseln nach einem Recovery-Kit in fremden Händen
+  - [x] Teil e: Wechsel von AK und Benutzer-Schlüsseln nach einem Recovery-Kit in fremden Händen
     (P-12). Fertig, wenn: der alte Recovery Key und alte Geheimtexte nichts mehr öffnen, was danach
     geschrieben wird, das neue Bündel erst mit neuem Zertifikat gilt und der Ablauf als
     Playwright-Test desktop und `@phone` läuft.

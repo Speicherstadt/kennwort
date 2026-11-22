@@ -41,8 +41,9 @@ export const renewalEntries = (signer: Signer, block: KeyBlock, vault: Vault, tr
   const made: LogEntry[] = [];
   for (const certificate of due) {
     const entry = rekeyMember(signer, state, vaultId, certificate, time);
-    const checked = entry.ok && verifyLog(vaultId, [...log, entry.value], now);
-    if (!entry.ok || !checked || !checked.ok) break;
+    if (!entry.ok) break;
+    const checked = verifyLog(vaultId, [...log, entry.value], now);
+    if (!checked.ok) break;
     log = [...log, entry.value];
     state = checked.value;
     made.push(entry.value);

@@ -130,6 +130,23 @@ const emergencyPage =
     <EmergencyPage api={props.api} session={props.session} vaults={vaults} toasts={toasts} />
   );
 
+/** Konto → Schlüssel erneuern (K-307 part e) with the vaults as last loaded, loading them after */
+const renewPage =
+  (
+    props: { nav: Navigation; api: AppApi; session: Session },
+    store: VaultStore,
+    reload: () => Promise<void>,
+  ) =>
+  () => (
+    <RenewPage
+      nav={props.nav}
+      session={props.session}
+      api={props.api}
+      loaded={() => loadedOf(store)}
+      onRenewed={reload}
+    />
+  );
+
 /**
  * The stores of an open account: the vaults, their entries, the shares and the exits. Every load
  * of the vaults loads their entries and shares; then a manager's client catches up on what its
@@ -239,15 +256,7 @@ const OpenedFrame = (props: {
         )}
         importPage={importPage(props.nav, store, allEntries, () => online(entries.saveNew))}
         emergencyPage={emergencyPage(props, shownVaults)}
-        renewPage={() => (
-          <RenewPage
-            nav={props.nav}
-            session={props.session}
-            api={props.api}
-            loaded={() => loadedOf(store)}
-            onRenewed={reload}
-          />
-        )}
+        renewPage={renewPage(props, store, reload)}
         devices={() => (
           <Show when={props.session.opened()?.token}>
             {(token) => (

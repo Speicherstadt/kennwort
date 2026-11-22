@@ -10,7 +10,6 @@ import { Badge, Button, Icon, m } from "@kennwort/ui";
 import { ShieldCheck } from "@kennwort/ui/icons";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, For, Loading, Match, onSettled, resolve, Show, Switch } from "solid-js";
-import { confirmRenewed } from "../account/renew.ts";
 import { PolicySection } from "../policy/policy-section.tsx";
 import { RecoverySection } from "../policy/recovery-section.tsx";
 import { queryKeys } from "../queries.ts";
@@ -33,7 +32,7 @@ import {
   needsRoot,
   setRole,
 } from "./members.ts";
-import { RenewedDialog } from "./renewed-dialog.tsx";
+import { createRenewedCheck, RenewedCheck } from "./renewed-dialog.tsx";
 
 const roleText = (role: MemberView["role"]) =>
   ({ owner: m.role_owner(), admin: m.role_admin(), member: m.role_member() })[role];
@@ -179,6 +178,13 @@ const MemberRow = (props: {
 
 type Load = Awaited<ReturnType<typeof loadMembers>> | null | undefined;
 
+/** An invitation link from the open account, none while it is locked */
+const inviting =
+  (props: { session: Session; api: MembersDeps; origin: string }) => (label: string) => {
+    const current = props.session.opened();
+    return current ? invite(props.api, current, label, props.origin) : Promise.resolve(undefined);
+  };
+
 /** After the first load, an owner or admin without the root key takes one an owner wrapped to it */
 const adoptAfter = async (
   firstLoad: Promise<Load>,
@@ -205,8 +211,6 @@ export const MembersPage = (props: {
   const client = useQueryClient();
   const [busy, setBusy] = createSignal(false);
   const [problem, setProblem] = createSignal<string>();
-  /** Whose renewed keys the owner or admin compares now (P-12) */
-  const [checking, setChecking] = createSignal<MemberView>();
   const opened = () => props.session.opened();
   /** A right that needs the open account, such as confirming or giving roles */
   const may = (right: (o: Opened, me: MemberView | undefined) => boolean, me?: MemberView) => {
@@ -257,23 +261,11 @@ export const MembersPage = (props: {
       const done = await confirm(props.api, props.session, view, me);
       return done.ok ? undefined : confirmText(done.error);
     });
-  const doCheck = (view: MemberView, me: MemberView | undefined) =>
-    act(async () => {
-      const done = await confirmRenewed(props.api, props.session, view, me?.certificate?.companyId);
-      setChecking(undefined);
-      if (!done) return m.members_renewed_failed();
-      // The vaults load anew: this client signs the rekey and rotation of those it manages
-      await props.exits?.onLeft();
-      return undefined;
-    });
+  const renewal = createRenewedCheck(props, act);
   const doRole = (view: MemberView, role: MemberView["role"]) =>
     act(async () =>
       (await setRole(props.api, props.session, view, role)) ? undefined : m.members_role_failed(),
     );
-  const doInvite = (label: string) => {
-    const current = opened();
-    return current ? invite(props.api, current, label, props.origin) : Promise.resolve(undefined);
-  };
   return (
     <section aria-labelledby="page-title" class="min-h-0 flex-1 overflow-auto p-4 md:p-6">
       <h1 id="page-title" class="mb-4 text-[28px] font-semibold md:text-lg">
@@ -292,7 +284,7 @@ export const MembersPage = (props: {
             {(list) => (
               <>
                 <Show when={mayInvite(list().me)}>
-                  <InviteForm onInvite={doInvite} />
+                  <InviteForm onInvite={inviting(props)} />
                 </Show>
                 <Show when={problem()}>
                   <p role="alert" class={alertClass}>
@@ -317,7 +309,7 @@ export const MembersPage = (props: {
                         reportable={props.exits !== undefined}
                         busy={busy()}
                         onConfirm={() => doConfirm(view, list().me)}
-                        onCheck={() => setChecking(view)}
+                        onCheck={() => renewal.ask(view)}
                         onRole={(role) => doRole(view, role)}
                         onRemove={() => leaving.ask(view)}
                         onReport={() => leaving.show(view)}
@@ -326,17 +318,7 @@ export const MembersPage = (props: {
                   </For>
                 </ul>
                 <ExitDialogs leaving={leaving} />
-                <Show when={checking()}>
-                  {(view) => (
-                    <RenewedDialog
-                      view={view()}
-                      name={view().name ?? m.members_unnamed()}
-                      busy={busy()}
-                      onConfirm={() => void doCheck(view(), list().me)}
-                      onClose={() => setChecking(undefined)}
-                    />
-                  )}
-                </Show>
+                <RenewedCheck check={renewal} me={list().me} />
                 <PolicySection
                   session={props.session}
                   api={props.api}

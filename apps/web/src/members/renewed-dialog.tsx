@@ -5,7 +5,11 @@
  */
 import type { MemberView } from "@kennwort/core";
 import { Button, Dialog, m } from "@kennwort/ui";
-import { renewedCode } from "../account/renew.ts";
+import { createSignal, Show } from "solid-js";
+import { confirmRenewed, renewedCode } from "../account/renew.ts";
+import type { Session } from "../session/session.ts";
+import type { MemberExits } from "./member-exit.tsx";
+import type { MembersDeps } from "./members.ts";
 
 export const RenewedDialog = (props: {
   view: MemberView;
@@ -33,4 +37,45 @@ export const RenewedDialog = (props: {
       </Button>
     </div>
   </Dialog>
+);
+
+/**
+ * Whose renewed keys the owner or admin compares now, and the confirmation: a change to the list
+ * like any other (`act`), then the vaults load anew, so this client signs the rekey and rotation of
+ * the vaults it manages
+ */
+export const createRenewedCheck = (
+  deps: { api: MembersDeps; session: Session; exits?: MemberExits | undefined },
+  act: (work: () => Promise<string | undefined>) => Promise<void>,
+) => {
+  const [checking, ask] = createSignal<MemberView>();
+  const [busy, setBusy] = createSignal(false);
+  const confirm = (view: MemberView, me: MemberView | undefined) =>
+    act(async () => {
+      setBusy(true);
+      const done = await confirmRenewed(deps.api, deps.session, view, me?.certificate?.companyId);
+      setBusy(false);
+      ask(undefined);
+      if (!done) return m.members_renewed_failed();
+      await deps.exits?.onLeft();
+      return undefined;
+    });
+  return { checking, ask, busy, confirm };
+};
+
+export const RenewedCheck = (props: {
+  check: ReturnType<typeof createRenewedCheck>;
+  me: MemberView | undefined;
+}) => (
+  <Show when={props.check.checking()}>
+    {(view) => (
+      <RenewedDialog
+        view={view()}
+        name={view().name ?? m.members_unnamed()}
+        busy={props.check.busy()}
+        onConfirm={() => void props.check.confirm(view(), props.me)}
+        onClose={() => props.check.ask(undefined)}
+      />
+    )}
+  </Show>
 );
