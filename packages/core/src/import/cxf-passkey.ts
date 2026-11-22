@@ -22,7 +22,6 @@ const OCTET_STRING = 0x04;
 const PUBLIC_KEY = 0xa1;
 /** 1.2.840.10045.2.1 id-ecPublicKey, then 1.2.840.10045.3.1.7 secp256r1, each as a DER OID */
 const P256_ALGORITHM = "06072a8648ce3d020106082a8648ce3d030107";
-const SCALAR_LENGTH = 32;
 const F12_VERSION = 0x01;
 
 const hex = (data: Uint8Array) => Array.from(data, (b) => b.toString(16).padStart(2, "0")).join("");
@@ -34,8 +33,9 @@ const hex = (data: Uint8Array) => Array.from(data, (b) => b.toString(16).padStar
 const element = (data: Uint8Array, at: number): Element | undefined => {
   const long = data[at + 1] === 0x81;
   const start = at + (long ? 3 : 2);
-  const length = data[start - 1];
-  if (length === undefined || (!long && length >= 0x80)) return undefined;
+  // Past the end there is no length; `end` then lies past the end as well
+  const length = data[start - 1] ?? 0;
+  if (!long && length >= 0x80) return undefined;
   const end = start + length;
   if (end > data.length) return undefined;
   return { tag: data[at] as number, body: data.subarray(start, end), end };
@@ -68,12 +68,13 @@ const namedPublicKey = (tail: Element[]): string | undefined => {
 
 /** The F-12 key (0x01 ‖ d) of a PKCS#8 P-256 key, or undefined for any other key */
 export const es256Key = (pkcs8: Uint8Array): Uint8Array | undefined => {
-  const all = elements(pkcs8) ?? [];
-  if (all.length !== 1) return undefined;
+  const all = elements(pkcs8);
+  if (all?.length !== 1) return undefined;
   const [, algorithm, privateKey] = inside(all[0], SEQUENCE);
   if (algorithm?.tag !== SEQUENCE || hex(algorithm.body) !== P256_ALGORITHM) return undefined;
   const [, scalar, ...tail] = inside(inside(privateKey, OCTET_STRING)[0], SEQUENCE);
-  if (scalar?.tag !== OCTET_STRING || scalar.body.length !== SCALAR_LENGTH) return undefined;
+  // passkeyPublicKey refuses a scalar of any length but 32 bytes, or out of range
+  if (scalar?.tag !== OCTET_STRING) return undefined;
   const key = Uint8Array.of(F12_VERSION, ...scalar.body);
   const publicKey = passkeyPublicKey(key);
   if (!publicKey.ok) return undefined;
@@ -133,6 +134,9 @@ export const passkeyEntry = (credential: unknown, item: ItemContext): ImportedEn
 export const pemOf = (base64url: string): string => {
   const der = fromBase64Url(base64url);
   if (!der?.length) return base64url;
-  const lines = btoa(String.fromCharCode(...der)).match(/.{1,64}/g) ?? [];
+  const base64 = btoa(String.fromCharCode(...der));
+  const lines = Array.from({ length: Math.ceil(base64.length / 64) }, (_, i) =>
+    base64.slice(i * 64, (i + 1) * 64),
+  );
   return ["-----BEGIN PRIVATE KEY-----", ...lines, "-----END PRIVATE KEY-----"].join("\n");
 };

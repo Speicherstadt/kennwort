@@ -11,20 +11,19 @@ import { z } from "zod";
 import type { EntryContent, Field } from "../sync/content.ts";
 import { pemOf } from "./cxf-passkey.ts";
 import { custom, type DraftField, joinFilled, joinLines, known, type TemplateId } from "./entry.ts";
-import { text } from "./schema.ts";
+import { list, text } from "./schema.ts";
 
 type EntryType = EntryContent["type"];
 /** A credential as the file has it: its members by name */
 export type Credential = Record<string, unknown>;
 
 const EditableField = z.object({ fieldType: text, value: text, label: text });
+const CustomFields = z.object({ fields: list(z.unknown()).catch([]) });
 type EditableField = z.infer<typeof EditableField>;
 
 /** A member as an editable field; a plain string is a field without type and label */
 const fieldOf = (value: unknown): EditableField | undefined =>
-  typeof value === "string"
-    ? { fieldType: "", value, label: "" }
-    : EditableField.safeParse(value).data;
+  EditableField.safeParse(typeof value === "string" ? { value } : value).data;
 
 /** The value of a member, empty when it is missing or no field */
 export const memberValue = (credential: Credential, member: string): string =>
@@ -136,7 +135,7 @@ const MAPPERS = new Map<string, Mapper>(
   } satisfies Record<string, Mapper>),
 );
 
-/** Kinds read elsewhere or left out, and members that are no values */
+/** Kinds read elsewhere or left out */
 const ELSEWHERE = new Set(["passkey", "totp", "note", "file", "item-reference"]);
 /** The entry types of kinds without a mapper: documents of no known kind are identities */
 const TYPES = new Map<string, EntryType>([
@@ -145,7 +144,8 @@ const TYPES = new Map<string, EntryType>([
   ["passport", "identity"],
   ["identity-document", "identity"],
 ]);
-const NOT_VALUES = new Set(["type", "id", "extensions"]);
+/** Members that are no values; `extensions` is a list, which is never a field */
+const NOT_VALUES = new Set(["type", "id"]);
 
 /** Every value of a kind Kennwort has no type for, as own fields */
 const anyFields = (credential: Credential): DraftField[] =>
@@ -154,14 +154,12 @@ const anyFields = (credential: Credential): DraftField[] =>
     return field ? [ownField(field, member)] : [];
   });
 
-/** A `custom-fields` credential: each field under its own label */
-const customFields = (credential: Credential): DraftField[] => {
-  const fields = Array.isArray(credential.fields) ? credential.fields : [];
-  return fields.flatMap((value) => {
-    const field = EditableField.safeParse(value).data;
+/** A `custom-fields` credential: each field under its own label, a plain string as a field */
+const customFields = (credential: Credential): DraftField[] =>
+  CustomFields.parse(credential).fields.flatMap((value) => {
+    const field = fieldOf(value);
     return field ? [ownField(field, "Field")] : [];
   });
-};
 
 /** The fields of one credential */
 export const credentialFields = (credential: Credential): DraftField[] => {

@@ -86,6 +86,9 @@ describe("Team Password Manager CSV (K-502)", () => {
   });
 
   it("keeps an expiry date it cannot read as written", () => {
+    expect(parse(row({ 1: "A", 19: " 12-31-2027 " }))).toEqual([
+      { type: "login", title: "A", fields: [["field-1", "Expiry date", "2027-12-31", "text"]] },
+    ]);
     for (const date of ["31.12.2027", "x12-31-2027", "12-31-2027x"])
       expect(parse(row({ 1: "A", 19: date }))).toEqual([
         { type: "login", title: "A", fields: [["field-1", "Expiry date", date, "text"]] },
@@ -108,6 +111,28 @@ describe("Team Password Manager CSV (K-502)", () => {
           ["field-1", "Email", "a@b.example", "email"],
         ],
       },
+    ]);
+  });
+
+  it("reads ten custom fields only, whatever follows the expiry date", () => {
+    expect(parse(`${row({ 1: "A", 8: "a", 9: "1", 19: "01-02-2027" })},"mehr"`)).toEqual([
+      {
+        type: "login",
+        title: "A",
+        fields: [
+          ["field-1", "a", "1", "secret"],
+          ["field-2", "Expiry date", "2027-01-02", "text"],
+        ],
+      },
+    ]);
+  });
+
+  it("keeps a row without a name when it has fields", () => {
+    expect(parse(row({ 3: "anna" }))).toEqual([
+      { type: "login", title: "anna", fields: [["username", "Username", "anna", "text"]] },
+    ]);
+    expect(parse(row({ 9: "x" }))).toEqual([
+      { type: "login", title: "", fields: [["field-1", "Custom 1", "x", "secret"]] },
     ]);
   });
 

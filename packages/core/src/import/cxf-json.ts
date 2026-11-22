@@ -46,7 +46,7 @@ const LinkedItem = z.object({ item: text, account: z.string().optional() });
 /** A collection without its sub-collections, which the walk reads one level at a time */
 const Collection = z.object({
   title: text,
-  items: list(LinkedItem.catch({ item: "" })),
+  items: list(LinkedItem.nullable().catch(null)),
   subCollections: list(z.unknown()),
 });
 const Account = z.object({ id: text, items: list(Item), collections: list(z.unknown()) });
@@ -73,6 +73,7 @@ const foldersOf = (account: Account): Map<string, string[]> => {
     if (!collection) continue;
     const path = [next.parent, collection.title.trim()].filter((part) => part !== "").join("/");
     for (const linked of collection.items) {
+      if (!linked) continue;
       const key = itemKey(linked.account ?? account.id, linked.item);
       folders.set(key, [...(folders.get(key) ?? []), path]);
     }

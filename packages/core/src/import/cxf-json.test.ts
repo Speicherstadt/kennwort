@@ -1,6 +1,7 @@
 import { createPrivateKey } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { parseCxfJson } from "./cxf-json.ts";
+import { field, file, item, parse } from "./test/cxf.ts";
 import { compact, fixture, fixtureText } from "./test/helpers.ts";
 
 const b64url = (text: string) => Buffer.from(text).toString("base64url");
@@ -17,24 +18,6 @@ const portalKey = () => {
   });
   return Buffer.concat([Buffer.of(1), Buffer.from(d ?? "", "base64url")]).toString("base64url");
 };
-
-/** A CXF file of one account with these items and collections */
-const file = (items: object[], collections: object[] = [], major = 1) =>
-  JSON.stringify({
-    version: { major, minor: 0 },
-    exporterRpId: "manager.example",
-    exporterDisplayName: "Beispiel",
-    timestamp: 0,
-    accounts: [{ id: "YQ", username: "a", email: "a@b.example", collections, items }],
-  });
-const item = (credentials: unknown[], more: object = {}) => ({
-  id: "aXRlbQ",
-  title: "Eintrag",
-  credentials,
-  ...more,
-});
-const field = (fieldType: string, value: string, label?: string) => ({ fieldType, value, label });
-const parse = (...items: object[]) => compact(parseCxfJson(file(items)));
 
 describe("FIDO Credential Exchange Format (K-502)", () => {
   it("reads every kind of credential, collections as folders and the ES256 passkey", () => {
@@ -171,189 +154,6 @@ describe("FIDO Credential Exchange Format (K-502)", () => {
     ]);
   });
 
-  it("puts the private key of an SSH key into PEM lines of 64 characters", () => {
-    const der = new Uint8Array(60).fill(0xfb);
-    const pem = parse(
-      item([{ type: "ssh-key", privateKey: Buffer.from(der).toString("base64url") }]),
-    );
-    const body = Buffer.from(der).toString("base64");
-    expect(pem).toEqual([
-      {
-        type: "ssh-key",
-        title: "Eintrag",
-        fields: [
-          [
-            "private-key",
-            "Private key",
-            `-----BEGIN PRIVATE KEY-----\n${body.slice(0, 64)}\n${body.slice(64)}\n-----END PRIVATE KEY-----`,
-            "secret",
-          ],
-        ],
-      },
-    ]);
-    expect(parse(item([{ type: "ssh-key", privateKey: "nicht base64!" }]))).toEqual([
-      {
-        type: "ssh-key",
-        title: "Eintrag",
-        fields: [["private-key", "Private key", "nicht base64!", "secret"]],
-      },
-    ]);
-  });
-
-  it("reads every field of a card, an SSH key, an API key and a name", () => {
-    const all = (type: string, members: string[]) =>
-      item([{ type, ...Object.fromEntries(members.map((m) => [m, field("string", `${m}!`)])) }]);
-    const fields = (entries: ReturnType<typeof parse>) =>
-      typeof entries === "string" ? entries : entries.flatMap((e) => e.fields.map((f) => f[2]));
-    expect(fields(parse(all("credit-card", ["validFrom"])))).toEqual(["validFrom!"]);
-    expect(
-      fields(parse(item([{ type: "credit-card", validFrom: field("year-month", "2025-01") }]))),
-    ).toEqual(["01/2025"]);
-    expect(
-      fields(parse(all("ssh-key", ["creationDate", "expiryDate", "keyGenerationSource"]))),
-    ).toEqual(["creationDate!", "expiryDate!", "keyGenerationSource!"]);
-    expect(fields(parse(all("api-key", ["validFrom"])))).toEqual(["validFrom!"]);
-    expect(
-      fields(
-        parse(
-          all("person-name", [
-            "title",
-            "given",
-            "givenInformal",
-            "given2",
-            "surnamePrefix",
-            "surname",
-            "surname2",
-            "credentials",
-            "generation",
-          ]),
-        ),
-      ),
-    ).toEqual([
-      "title! given! given2! surnamePrefix! surname! surname2! generation!",
-      "givenInformal!",
-      "credentials!",
-    ]);
-    expect(compact(parseCxfJson(file([all("address", ["territory"])])))).toEqual([
-      {
-        type: "identity",
-        title: "Eintrag",
-        fields: [["address", "Address", "territory!", "note"]],
-      },
-    ]);
-  });
-
-  it("keeps a generated password secret and a passport's fields as own fields", () => {
-    expect(
-      parse(
-        item([
-          { type: "generated-password", password: "Rohr-1" },
-          {
-            type: "passport",
-            id: "eA",
-            passportNumber: field("string", "C01X00T47"),
-            extensions: [],
-          },
-          { type: "identity-document", documentNumber: "T22000129", number: 7, list: [1] },
-        ]),
-      ),
-    ).toEqual([
-      {
-        type: "login",
-        title: "Eintrag",
-        fields: [
-          ["field-1", "Generated password", "Rohr-1", "secret"],
-          ["field-2", "passportNumber", "C01X00T47", "text"],
-          ["field-3", "documentNumber", "T22000129", "text"],
-        ],
-      },
-    ]);
-    expect(parse(item([{ type: "passport", passportNumber: "C01X00T47" }]))[0]).toMatchObject({
-      type: "identity",
-    });
-    expect(parse(item([{ type: "identity-document", documentNumber: "1" }]))[0]).toMatchObject({
-      type: "identity",
-    });
-  });
-
-  it("names a custom field without a label and leaves out what is no field", () => {
-    expect(
-      parse(item([{ type: "custom-fields", fields: [field("number", "3"), "x", { value: 1 }] }])),
-    ).toEqual([{ type: "note", title: "Eintrag", fields: [["field-1", "Field", "3", "text"]] }]);
-    expect(parse(item([{ type: "custom-fields" }]))).toEqual([
-      { type: "note", title: "Eintrag", fields: [] },
-    ]);
-  });
-
-  it("takes a code's account as the username only where no login names one", () => {
-    const totp = {
-      type: "totp",
-      secret: "JBSWY3DPEHPK3PXP",
-      period: 30,
-      digits: 6,
-      algorithm: "sha256",
-    };
-    const link = "otpauth://totp/:anna?secret=JBSWY3DPEHPK3PXP&algorithm=SHA256&digits=6&period=30";
-    expect(parse(item([{ ...totp, username: " anna " }]))).toEqual([
-      {
-        type: "login",
-        title: "Eintrag",
-        fields: [
-          ["username", "Username", "anna", "text"],
-          ["totp", "One-time code", link, "totp"],
-        ],
-      },
-    ]);
-    expect(
-      parse(
-        item([
-          { type: "basic-auth", username: field("string", "jonas") },
-          { ...totp, username: "anna" },
-        ]),
-      ),
-    ).toEqual([
-      {
-        type: "login",
-        title: "Eintrag",
-        fields: [
-          ["username", "Username", "jonas", "text"],
-          ["totp", "One-time code", link, "totp"],
-        ],
-      },
-    ]);
-  });
-
-  it("counts codes it cannot work out and broken ones", () => {
-    const result = parseCxfJson(
-      file([
-        item([
-          { type: "totp", secret: "JBSWY3DPEHPK3PXP", period: 30, digits: 6, algorithm: "md5" },
-          { type: "totp", secret: "JBSWY3DPEHPK3PXP", digits: 6, algorithm: "sha1" },
-        ]),
-      ]),
-    );
-    expect(result).toEqual({
-      ok: true,
-      value: [expect.objectContaining({ content: expect.objectContaining({ type: "login" }) })],
-      skipped: 2,
-      skippedPasskeys: 0,
-    });
-  });
-
-  it("joins several notes and leaves files and item references out", () => {
-    expect(
-      parse(
-        item([
-          { type: "note", content: field("string", "eins") },
-          { type: "item-reference", reference: { item: "eA" } },
-          { type: "note", content: field("string", "zwei") },
-        ]),
-      ),
-    ).toEqual([
-      { type: "note", title: "Eintrag", fields: [["note", "Notes", "eins\n\nzwei", "note"]] },
-    ]);
-  });
-
   it("files an item in every collection that names it, nested ones by their path", () => {
     const collections = [
       {
@@ -432,6 +232,16 @@ describe("FIDO Credential Exchange Format (K-502)", () => {
         }),
       ),
     ).toEqual([{ type: "login", title: "Eintrag", fields: [] }]);
+  });
+
+  it("trims the item's addresses", () => {
+    expect(parse(item([], { scope: { urls: [" https://a.example "] } }))).toEqual([
+      {
+        type: "note",
+        title: "Eintrag",
+        fields: [["website", "Website", "https://a.example", "url"]],
+      },
+    ]);
   });
 
   it("sums what it leaves out over every account", () => {

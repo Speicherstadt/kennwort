@@ -49,6 +49,13 @@ describe("ES256 keys from PKCS#8 (CXF passkeys, K-502)", () => {
     expect(es256Key(pkcs8({ tail: [tlv(0xa0, ALGORITHM.subarray(9))] }))).toEqual(f12(D));
   });
 
+  it("finds the public key among other parts of the ECPrivateKey", () => {
+    const other = publicKeyOf(new Uint8Array(32).fill(7));
+    const params = tlv(0xa0, ALGORITHM.subarray(9));
+    expect(es256Key(pkcs8({ tail: [params, ...withPublicKey(other)] }))).toBeUndefined();
+    expect(es256Key(pkcs8({ tail: [params, ...withPublicKey(publicKeyOf(D))] }))).toEqual(f12(D));
+  });
+
   it("refuses a key whose public key is another", () => {
     const other = publicKeyOf(new Uint8Array(32).fill(7));
     expect(es256Key(pkcs8({ tail: withPublicKey(other) }))).toBeUndefined();
@@ -101,6 +108,29 @@ describe("ES256 keys from PKCS#8 (CXF passkeys, K-502)", () => {
     expect(es256Key(Uint8Array.of(0x30, 0x81, ...good.subarray(1)))).toEqual(f12(D));
     const brokenInner = tlv(0x30, tlv(0x02, Uint8Array.of(0)), tlv(0x30, Uint8Array.of(0x06)));
     expect(es256Key(brokenInner)).toBeUndefined();
+    // Cut inside a part the reader does not need: the outer length no longer fits
+    const padded = pkcs8({ tail: [tlv(0xa2, Uint8Array.of(1, 2, 3))] });
+    expect(es256Key(padded)).toEqual(f12(D));
+    expect(es256Key(padded.subarray(0, padded.length - 1))).toBeUndefined();
+  });
+
+  it("takes 0x80 as a length only after 0x81, never as the indefinite form", () => {
+    // A tail of 63 bytes makes the key's body exactly 128 bytes long
+    const body = pkcs8({ tail: [tlv(0xa2, new Uint8Array(61))] }).subarray(3);
+    expect(body.length).toBe(0x80);
+    expect(es256Key(Uint8Array.of(0x30, 0x81, 0x80, ...body))).toEqual(f12(D));
+    expect(es256Key(Uint8Array.of(0x30, 0x80, ...body))).toBeUndefined();
+  });
+
+  it("refuses a key without algorithm or scalar", () => {
+    expect(es256Key(tlv(0x30, tlv(0x02, Uint8Array.of(0))))).toBeUndefined();
+    const noScalar = tlv(
+      0x30,
+      tlv(0x02, Uint8Array.of(0)),
+      tlv(0x30, ALGORITHM),
+      tlv(0x04, tlv(0x30, tlv(0x02, Uint8Array.of(1)))),
+    );
+    expect(es256Key(noScalar)).toBeUndefined();
   });
 });
 
@@ -159,6 +189,7 @@ describe("CXF passkeys as passkey entries (K-502)", () => {
       { ...passkey, rpId: " " },
       { ...passkey, credentialId: "" },
       { ...passkey, credentialId: "!" },
+      { ...passkey, credentialId: "Y3Jl=ZA" },
       { ...passkey, userHandle: "?" },
       { ...passkey, userHandle: Buffer.alloc(65).toString("base64url") },
       { ...passkey, key: "" },

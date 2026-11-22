@@ -57,7 +57,7 @@ const hasContent = (entry: ImportedEntry) =>
 export const parseTpmCsv: Parser = (input) => {
   const rows = readRows(input);
   if (!rows.ok) return rows;
-  const [header = [], ...records] = rows.value;
-  if (header.length < COLUMNS) return err("wrong-format");
+  const [header, ...records] = rows.value;
+  if ((header?.length ?? 0) < COLUMNS) return err("wrong-format");
   return ok(records.map(entryOf).filter(hasContent));
 };
