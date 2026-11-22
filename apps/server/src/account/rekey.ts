@@ -2,15 +2,15 @@
  * New account keys after a recovery kit got into other hands (K-307 part e, P-12): the device sends
  * a new bundle, key block, account state, both boxes of AK, both sign-in keys and every vault key
  * it held wrapped anew, signed by the account's previous Ed25519 key (F-11). The server replaces
- * all of it in one transaction and keeps nothing the old keys open: the old boxes and wrapped vault
- * keys, the recovery deposit, the root and recovery keys wrapped to the old bundle, shares and
- * emergency grants to it, and every other session (Bitwarden and 1Password sign the other devices
+ * all of it in one transaction and keeps nothing the old keys open or signed: the old boxes and
+ * wrapped vault keys, the recovery deposit, the root and recovery keys wrapped to the old bundle,
+ * shares and emergency grants to and by it, and every other session (Bitwarden and 1Password sign the other devices
  * out as well). The old certificate goes to the history, for the logs it signed; the new bundle
  * counts once an owner or admin certifies it after comparing its code with the person.
  */
 import { bytes, encodeBytes } from "@kennwort/core";
 import { isSignedRekey } from "@kennwort/crypto";
-import { and, asc, eq, inArray, ne } from "drizzle-orm";
+import { and, asc, eq, inArray, ne, or } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import type { Db } from "../db/database.ts";
@@ -85,15 +85,23 @@ const proven = (keys: KeysRow, accountId: string, rekey: Rekey) => {
   );
 };
 
-/** What only the old keys could open, or what was made for them, goes */
+/**
+ * What only the old keys could open or what they signed goes: shares and emergency grants to the
+ * account are wrapped to the old bundle, and those by it carry the old key's signature, which
+ * whoever has the kit can forge with any date (P-12); the person gives them anew
+ */
 const dropOld = (tx: Pick<Db, "delete">, accountId: string, sessionId: string | undefined) => {
   tx.delete(vaultKeys).where(eq(vaultKeys.accountId, accountId)).run();
   tx.delete(recoveryDeposits).where(eq(recoveryDeposits.accountId, accountId)).run();
   tx.delete(rootGrants).where(eq(rootGrants.accountId, accountId)).run();
   tx.delete(recoveryGrants).where(eq(recoveryGrants.accountId, accountId)).run();
-  tx.delete(entryShares).where(eq(entryShares.recipient, accountId)).run();
+  tx.delete(entryShares)
+    .where(or(eq(entryShares.recipient, accountId), eq(entryShares.sharer, accountId)))
+    .run();
   for (const table of [emergencyGrants, emergencyRevocations])
-    tx.delete(table).where(eq(table.grantee, accountId)).run();
+    tx.delete(table)
+      .where(or(eq(table.grantee, accountId), eq(table.grantor, accountId)))
+      .run();
   tx.delete(authSession)
     .where(and(eq(authSession.userId, accountId), ne(authSession.id, sessionId ?? "")))
     .run();

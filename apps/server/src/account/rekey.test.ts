@@ -22,6 +22,7 @@ import { eq } from "drizzle-orm";
 import {
   accountKeys,
   authSession,
+  emergencyGrants,
   entryShares,
   recoveryDeposits,
   vaultKeys,
@@ -143,7 +144,7 @@ describe("PUT /api/account/rekey", () => {
     expect(sessions).toHaveLength(1);
   });
 
-  it("drops her recovery deposit and the shares to her: they open with the old keys", async () => {
+  it("drops her recovery deposit and the shares to and by her: old keys open or signed them", async () => {
     const { s, w, rekeyed, send } = await renewal();
     const { policy, key } = await makeRecoveryKey(w);
     await annaDeposits(w, policy, key.publicKey);
@@ -163,14 +164,36 @@ describe("PUT /api/account/rekey", () => {
         storedAt: 1,
       })
       .run();
+    // ... and one she gave Jonas, signed with her old key
+    w.o.setup.db
+      .insert(entryShares)
+      .values({
+        vaultId: s.vaultId,
+        entryId: "e2",
+        recipient: encodeBytes(w.o.owner.accountId),
+        role: "read",
+        validUntil: 0,
+        commitment: Buffer.alloc(32),
+        wrappedKey: Buffer.alloc(8),
+        sharer: w.annaIdText,
+        time: 1,
+        signature: Buffer.alloc(65),
+        storedAt: 1,
+      })
+      .run();
     await send(rekeyed());
     const db = w.o.setup.db;
     expect(
       db.select().from(recoveryDeposits).where(eq(recoveryDeposits.accountId, w.annaIdText)).all(),
     ).toEqual([]);
-    expect(
-      db.select().from(entryShares).where(eq(entryShares.recipient, w.annaIdText)).all(),
-    ).toEqual([]);
+    expect(db.select().from(entryShares).all()).toEqual([]);
+  });
+
+  it("drops the emergency grant to her: it is wrapped to her old bundle", async () => {
+    const { s, w, rekeyed, send } = await renewal();
+    expect((await s.grant()).status).toBe(200);
+    await send(rekeyed());
+    expect(w.o.setup.db.select().from(emergencyGrants).all()).toEqual([]);
   });
 
   it("takes nothing without the previous key's signature: a stolen session replaces nothing", async () => {

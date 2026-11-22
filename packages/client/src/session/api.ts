@@ -10,6 +10,8 @@ import {
   type Derive,
   encodeBytes,
   type Post,
+  type RekeyUpload,
+  rekeyToWire,
   SessionWire,
   type Stored,
   StoredWire,
@@ -186,14 +188,27 @@ export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity)
           token,
         )
       ).status === 200,
+    /**
+     * New account keys after a recovery kit got into other hands (P-12): "stale" when another
+     * device wrote the account state meanwhile
+     */
+    rekey: async (token: string, upload: RekeyUpload): Promise<RekeyAnswer> => {
+      const { status } = await call("PUT", "/api/account/rekey", rekeyToWire(upload), token);
+      if (status === 200) return "ok";
+      if (status === 409) return "stale";
+      return status === 0 ? "unreachable" : "refused";
+    },
   };
 };
 
+export type RekeyAnswer = "ok" | "stale" | "unreachable" | "refused";
+
 export type Api = ReturnType<typeof createApi>;
-/** What the session needs: everything but the pairing calls (P-04), which pairing/ uses */
+/** What the session needs: all but the pairing calls (P-04) and the renewal (account/renewal.ts) */
 export type AccountApi = Omit<
   Api,
   | "syncFetch"
+  | "rekey"
   | keyof ReturnType<typeof pairingCalls>
   | keyof ReturnType<typeof deviceCalls>
   | keyof ReturnType<typeof memberCalls>
