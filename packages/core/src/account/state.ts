@@ -49,6 +49,11 @@ export const AccountState = z.object({
    * seen, whether it was revoked, and the newest request objected to
    */
   emergency: z.record(z.string(), EmergencySeen).default({}),
+  /**
+   * The personal vault's ID (K-307 part e): derived from AK when the vault was made; once AK is
+   * renewed (P-12) the derivation gives another one, so the state keeps the first
+   */
+  personalVault: z.string().optional(),
 });
 export type AccountState = z.infer<typeof AccountState>;
 
@@ -128,16 +133,32 @@ const newerPolicy = (mine: AccountState, theirs: AccountState) => {
 
 export type MergeError = "other-root" | "other-bundle" | "other-log" | "other-invitation";
 
+/**
+ * Each account's bundle from either side. Another bundle for a known account counts only from the
+ * side that saw a newer certificate for it: the account renewed its keys (P-12); with none newer
+ * it is an attack (P-07)
+ */
+const mergeBundles = (mine: AccountState, theirs: AccountState) => {
+  const merged = { ...theirs.bundles, ...mine.bundles };
+  for (const [id, fingerprint] of Object.entries(theirs.bundles)) {
+    const known = mine.bundles[id];
+    if (!known || constantTimeEqual(known, fingerprint)) continue;
+    const mineAt = mine.certificates[id] ?? 0;
+    const theirsAt = theirs.certificates[id] ?? 0;
+    if (mineAt === theirsAt) return undefined;
+    if (theirsAt > mineAt) merged[id] = fingerprint;
+  }
+  return merged;
+};
+
 /** Both devices' knowledge, the higher of each; a different root or bundle for one account is refused */
 export const mergeStates = (
   mine: AccountState,
   theirs: AccountState,
 ): Result<AccountState, MergeError> => {
   if (!constantTimeEqual(mine.rootFingerprint, theirs.rootFingerprint)) return err("other-root");
-  for (const [id, fingerprint] of Object.entries(theirs.bundles)) {
-    const known = mine.bundles[id];
-    if (known && !constantTimeEqual(known, fingerprint)) return err("other-bundle");
-  }
+  const bundles = mergeBundles(mine, theirs);
+  if (!bundles) return err("other-bundle");
   const logs = newerLogs(mine.logs, theirs.logs);
   if (!logs) return err("other-log");
   for (const [id, account] of Object.entries(theirs.invitations)) {
@@ -148,7 +169,7 @@ export const mergeStates = (
   return ok({
     rootFingerprint: mine.rootFingerprint,
     ...(rootSecretKey ? { rootSecretKey } : {}),
-    bundles: { ...theirs.bundles, ...mine.bundles },
+    bundles,
     logs,
     versions: Object.fromEntries(
       [...new Set([...Object.keys(mine.versions), ...Object.keys(theirs.versions)])].map((id) => [
@@ -161,7 +182,13 @@ export const mergeStates = (
     ...newerPolicy(mine, theirs),
     neverSave: [...new Set([...mine.neverSave, ...theirs.neverSave])].sort(),
     emergency: mergeEmergency(mine.emergency, theirs.emergency),
+    ...personalOf(mine, theirs),
   });
+};
+
+const personalOf = (mine: AccountState, theirs: AccountState) => {
+  const personalVault = mine.personalVault ?? theirs.personalVault;
+  return personalVault ? { personalVault } : {};
 };
 
 export const emptyState = (

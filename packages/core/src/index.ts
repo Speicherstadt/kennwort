@@ -29,6 +29,14 @@ export {
   unlockWithDevicePackage,
 } from "./account/pairing.ts";
 export {
+  type Current,
+  derivedPersonalVault,
+  type RekeyDeps,
+  type Rekeyed,
+  type RekeyUpload,
+  rekeyAccount,
+} from "./account/rekey.ts";
+export {
   ACCOUNT_RENEWAL_PURPOSE,
   RENEWAL_PURPOSE,
   type RenewDeps,
@@ -204,11 +212,13 @@ export {
 } from "./membership/log-entry.ts";
 export {
   CompanyWire,
+  certifyRenewed,
   checkMembers,
   type MemberStatus,
   MembersWire,
   type MemberView,
   newerCertificates,
+  type RenewedBundle,
   trustedRoot,
 } from "./membership/members.ts";
 export {
@@ -253,6 +263,7 @@ export {
   RecoveryKeyUpload,
   recoveryKeyToWire,
 } from "./membership/recovery-wire.ts";
+export { dueRekeys, rekeyMember } from "./membership/renewal.ts";
 export {
   changeRole,
   grantRoot,
@@ -287,9 +298,12 @@ export {
 } from "./membership/vault-ops.ts";
 export {
   CLOCK_SKEW_SECONDS,
+  certificateFor,
   certificateOf,
+  fromIdKey,
   idKey,
   isMember,
+  isSuperseded,
   type LogError,
   type LogState,
   type Member,

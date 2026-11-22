@@ -59,7 +59,12 @@ export {
   wrapEmergencyVaultKey,
 } from "./emergency.ts";
 export { decode, encode, type Part } from "./encoding.ts";
-export { bundleFingerprint, recoveryFingerprint, rootFingerprint } from "./fingerprint.ts";
+export {
+  bundleFingerprint,
+  comparisonCode,
+  recoveryFingerprint,
+  rootFingerprint,
+} from "./fingerprint.ts";
 export {
   INVITE_MAC_LENGTH,
   INVITE_SECRET_LENGTH,
@@ -109,6 +114,14 @@ export {
   PASSWORD_ALERT_V1,
 } from "./password-alert.ts";
 export { randomBytes } from "./random.ts";
+export {
+  isSignedRekey,
+  REKEY_PURPOSE,
+  type RekeyStatement,
+  type RekeyVaultKey,
+  rekeyMessage,
+  signRekey,
+} from "./rekey.ts";
 export type { Result } from "./result.ts";
 export {
   formatRecoveryKey,

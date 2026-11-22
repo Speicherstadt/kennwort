@@ -8,7 +8,7 @@ import { constantTimeEqual, rootFingerprint } from "@kennwort/crypto";
 import { z } from "zod";
 import { bytes, encodeBytes } from "../sync/bytes.ts";
 import { CertificateWire } from "../sync/wire.ts";
-import { type Certificate, type CompanyRole, isCertified } from "./certificate.ts";
+import { type Certificate, type CompanyRole, certify, isCertified } from "./certificate.ts";
 import type { PendingMember } from "./invitation.ts";
 import { PolicyWire } from "./policy.ts";
 
@@ -35,6 +35,11 @@ export const MembersWire = z.object({
       invitation: z.object({ id: bytes(16), sealedSecret: bytes(), mac: bytes(64) }).nullable(),
       /** When the account left the company (K-307), ms; its vaults owe a removal and a rotation */
       leftAt: z.number().int().nonnegative().nullable().optional(),
+      /**
+       * Certificates of bundles the account has replaced (K-307 part e, P-12): the logs and records
+       * its old keys signed must still verify
+       */
+      previous: z.array(CertificateWire).optional(),
     }),
   ),
 });
@@ -44,9 +49,18 @@ type MemberWire = z.infer<typeof MembersWire>["members"][number];
  * - certified: a certificate by the pinned root for this account, its keys and its role
  * - pending: no certificate yet, and this client made the invitation, so it can confirm it
  * - waiting: no certificate yet, another admin has to confirm (or the keys are not there yet)
+ * - renewed: the account renewed its keys after its recovery kit got into other hands (P-12); an
+ *   owner or admin compares the new bundle's code with the person and certifies it
  * - invalid: a certificate that does not check out, or an invitation shown for two accounts
  */
-export type MemberStatus = "certified" | "pending" | "waiting" | "invalid";
+export type MemberStatus = "certified" | "pending" | "waiting" | "renewed" | "invalid";
+
+/** A bundle an account made to replace its certified one (P-12), waiting for its certificate */
+export type RenewedBundle = {
+  accountId: Uint8Array;
+  xwingPublicKey: Uint8Array;
+  edPublicKey: Uint8Array;
+};
 
 export type MemberView = {
   accountId: Uint8Array;
@@ -55,6 +69,10 @@ export type MemberView = {
   status: MemberStatus;
   certificate?: Certificate;
   pending?: PendingMember;
+  /** The new bundle, while the status is renewed */
+  renewed?: RenewedBundle;
+  /** Earlier certificates the pinned root signed for this account, older than the current one */
+  previous?: Certificate[];
   /**
    * When the account left the company (ms), by the server's word only: a manager's client then
    * removes it from its vaults and rotates their keys (K-307, P-11); null while it is in
@@ -89,20 +107,45 @@ const pendingOf = (member: MemberWire): PendingMember | undefined =>
       }
     : undefined;
 
+/** The new keys of an account that has an earlier certificate but no current one (P-12) */
+const renewedOf = (member: MemberWire, previous: Certificate[]): RenewedBundle | undefined =>
+  previous.length > 0 && member.xwingPublicKey && member.edPublicKey && !member.invitation
+    ? {
+        accountId: member.id,
+        xwingPublicKey: member.xwingPublicKey,
+        edPublicKey: member.edPublicKey,
+      }
+    : undefined;
+
 const statusOf = (
   root: Uint8Array,
   member: MemberWire,
   shared: boolean,
   seen: number,
-): Pick<MemberView, "status" | "certificate" | "pending"> => {
+  previous: Certificate[],
+): Pick<MemberView, "status" | "certificate" | "pending" | "renewed"> => {
   if (member.certificate)
     return certifiedFor(root, member.certificate, member, seen)
       ? { status: "certified", certificate: member.certificate }
       : { status: "invalid" };
   if (shared) return { status: "invalid" };
   const pending = pendingOf(member);
-  return pending ? { status: "pending", pending } : { status: "waiting" };
+  if (pending) return { status: "pending", pending };
+  const renewed = renewedOf(member, previous);
+  return renewed ? { status: "renewed", renewed } : { status: "waiting" };
 };
+
+/**
+ * The account's earlier certificates the pinned root signed for exactly this account, each older
+ * than the current one: the server may list them, but cannot make one up
+ */
+const previousOf = (root: Uint8Array, member: MemberWire) =>
+  (member.previous ?? []).filter(
+    (c) =>
+      constantTimeEqual(c.accountId, member.id) &&
+      isCertified(root, c) &&
+      (member.certificate === null || c.issuedAt < member.certificate.issuedAt),
+  );
 
 /**
  * Every member with what this client can say about it, under the root from trustedRoot; `seen`
@@ -121,13 +164,17 @@ export const checkMembers = (
     }
   const shared = (m: MemberWire) =>
     m.invitation !== null && counts.get(encodeBytes(m.invitation.id)) !== 1;
-  return members.map((member) => ({
-    accountId: member.id,
-    name: member.name,
-    role: member.role,
-    leftAt: member.leftAt ?? null,
-    ...statusOf(root, member, shared(member), seen[encodeBytes(member.id)] ?? 0),
-  }));
+  return members.map((member) => {
+    const previous = previousOf(root, member);
+    return {
+      accountId: member.id,
+      name: member.name,
+      role: member.role,
+      leftAt: member.leftAt ?? null,
+      previous,
+      ...statusOf(root, member, shared(member), seen[encodeBytes(member.id)] ?? 0, previous),
+    };
+  });
 };
 
 /** The issue times to remember after a check, or undefined when nothing is newer than known */
@@ -142,4 +189,26 @@ export const newerCertificates = (
       : [];
   });
   return newer.length > 0 ? { ...seen, ...Object.fromEntries(newer) } : undefined;
+};
+
+/**
+ * The certificate for a renewed bundle (P-12), once an owner or admin compared its code with the
+ * person: the account's role as the server lists it, issued later than every certificate this
+ * client has seen for the account, so clients take it over the earlier one (P-07)
+ */
+export const certifyRenewed = (
+  rootSecretKey: Uint8Array,
+  view: MemberView,
+  companyId: Uint8Array,
+  now: number,
+  seen: number,
+): Certificate | undefined => {
+  if (view.status !== "renewed" || !view.renewed) return undefined;
+  const latest = Math.max(seen, ...(view.previous ?? []).map((c) => c.issuedAt));
+  return certify(rootSecretKey, {
+    ...view.renewed,
+    companyId,
+    role: view.role,
+    issuedAt: Math.max(now, latest + 1),
+  });
 };

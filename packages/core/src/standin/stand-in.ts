@@ -20,6 +20,8 @@ export type StandInSession = { accountId: string; companyId: string };
 export type StandInCompany = {
   rootPublicKey: Uint8Array;
   certificates: ReadonlyMap<string, Certificate>;
+  /** Earlier certificates of accounts that renewed their keys (P-12) */
+  history?: ReadonlyMap<string, Certificate[]>;
   now: () => number;
 };
 type Change = { entryId: string; version: number };
@@ -136,13 +138,17 @@ const appendLog = (
   if (entry.seq !== vault.log.length || encodeBytes(entry.prevHash) !== prev)
     return json({ error: "stale", seq: vault.log.length }, 409);
   const now = company.now();
+  const role = roleOf(vault, session.accountId, now);
+  // A current member renews her own keys in the log with the new ones (P-12), whatever her role
+  const ownRekey = entry.action === "rekey" && idKey(entry.accountId) === idKey(entry.signerId);
   const allowed = last
-    ? roleOf(vault, session.accountId, now) === "manage"
+    ? role === "manage" || (ownRekey && role !== undefined)
     : vault.createdBy === session.accountId;
   if (!allowed) return json({ error: "forbidden" }, 403);
   const trust = {
     ...company,
     certificates: new Map(company.certificates),
+    history: new Map(company.history),
     now: Math.floor(now / 1000),
   };
   const checked = verifyLog(entry.vaultId, [...vault.log, entry], trust);

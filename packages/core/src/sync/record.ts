@@ -5,7 +5,6 @@
  * never an older version than it has seen (E-13).
  */
 import {
-  constantTimeEqual,
   digest,
   encode,
   newEntryKey,
@@ -17,8 +16,14 @@ import {
   verify,
 } from "@kennwort/crypto";
 import { z } from "zod";
-import { type Certificate, certificateFingerprint } from "../membership/certificate.ts";
-import { certificateOf, idKey, type LogState, type Trust } from "../membership/verify-log.ts";
+import type { Certificate } from "../membership/certificate.ts";
+import {
+  certificateFor,
+  certificateOf,
+  idKey,
+  type LogState,
+  type Trust,
+} from "../membership/verify-log.ts";
 import { err, ok, type Result } from "../result.ts";
 import { bytes } from "./bytes.ts";
 import { EntryContent } from "./content.ts";
@@ -137,14 +142,13 @@ export const openRecordWithKey = (
     return err("wrong-vault");
   if (record.version <= knownVersion) return err("stale");
   // Signed by the company root for this author, and the very certificate the signed log names for
-  // the member: a server cannot file another key under an editor (E-05, found by K-206)
-  const certificate = certificateOf(trust, record.author);
+  // the member: a server cannot file another key under an editor (E-05, found by K-206). After the
+  // author renewed her keys (P-12) that is her old bundle until a rekey entry names the new one
   const member = log.members.get(idKey(record.author));
-  if (
-    !certificate ||
-    (member && !constantTimeEqual(member.fingerprint, certificateFingerprint(certificate)))
-  )
-    return err("uncertified-author");
+  const certificate = member
+    ? certificateFor(trust, record.author, member.fingerprint)
+    : certificateOf(trust, record.author);
+  if (!certificate) return err("uncertified-author");
   if (!isSignedBy(certificate, record)) return err("bad-signature");
   if (member?.role !== "edit" && member?.role !== "manage") return err("not-editor");
   const at = { vaultId: record.vaultId, entryId: record.entryId, epoch: record.epoch };

@@ -2,6 +2,14 @@
 import { describe, expect, it } from "vitest";
 import { certificateFingerprint } from "../membership/certificate.ts";
 import { entryHash, type LogEntry, type LogFields, signEntry } from "../membership/log-entry.ts";
+import { rekeyMember } from "../membership/renewal.ts";
+import {
+  annaNew,
+  RENEWED_AT,
+  renewedCertificate,
+  renewedTrust,
+} from "../membership/test/renewed.ts";
+import { type LogState, verifyLog } from "../membership/verify-log.ts";
 import { encodeBytes } from "../sync/bytes.ts";
 import {
   anna,
@@ -270,5 +278,58 @@ describe("rights in the stand-in's log, as the server judges them", () => {
       wrappedKey: key,
     });
     expect([answer.status, await answer.json()]).toEqual([403, { error: "forbidden" }]);
+  });
+});
+
+describe("the stand-in's log after a member renewed her keys (P-12)", () => {
+  const renewedSetup = async () => {
+    const trust = renewedTrust();
+    const server = standIn(sessions, {
+      rootPublicKey: trust.rootPublicKey,
+      certificates: trust.certificates,
+      history: trust.history ?? new Map(),
+      now: () => trust.now * 1000,
+    });
+    const call = async (token: string, body: unknown, path = `/api/vaults/${vault}/log`) => {
+      const answer = await server.fetch(`https://demo.kennwort.test${path}`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      return [answer.status, await answer.json()];
+    };
+    await call("t-jonas", { id: vault }, "/api/vaults");
+    await call("t-jonas", { entry: toWire(genesis), wrappedKey: key });
+    await call("t-jonas", { entry: toWire(addAnna), wrappedKey: key });
+    const state = verifyLog(vaultId, [genesis, addAnna], trust);
+    if (!state.ok) throw new Error(state.error);
+    return { call, state: state.value };
+  };
+  const rekey = (state: LogState, signer: Person) => {
+    const made = rekeyMember(
+      { accountId: signer.id, edSecretKey: signer.ed.secretKey },
+      state,
+      vaultId,
+      renewedCertificate,
+      RENEWED_AT + 100,
+    );
+    if (!made.ok) throw new Error(made.error);
+    return made.value;
+  };
+
+  it("takes her own rekey from an editor, signed with her new keys", async () => {
+    const { call, state } = await renewedSetup();
+    expect(await call("t-anna", { entry: toWire(rekey(state, annaNew)) })).toEqual([
+      201,
+      { seq: 2 },
+    ]);
+  });
+
+  it("takes no rekey from an editor for someone else, nor one signed with the old keys", async () => {
+    const { call, state } = await renewedSetup();
+    const byOld = { ...rekey(state, annaNew), signature: rekey(state, anna).signature };
+    expect(await call("t-anna", { entry: toWire(byOld) })).toEqual([400, { error: "invalid" }]);
+    const forAnna = { ...rekey(state, max), signerId: max.id };
+    expect(await call("t-max", { entry: toWire(forAnna) })).toEqual([403, { error: "forbidden" }]);
   });
 });

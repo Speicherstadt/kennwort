@@ -37,7 +37,7 @@ export const entryRotation = ({ current, states, pullNow, syncDevice }: Deps) =>
    */
   rotate: async (
     vaultIdText: string,
-    exposure: Exposure,
+    exposure?: Exposure,
   ): Promise<{ ok: true; value: Rotated } | { ok: false; error: SaveError }> => {
     const state = current(vaultIdText);
     if (!state) return { ok: false, error: "locked" };
