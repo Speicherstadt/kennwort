@@ -5,6 +5,7 @@ import { describe, expect, it } from "bun:test";
 import { encodeBytes, LinkCreated, LinkFetched, LinkList } from "@kennwort/core";
 import { eq } from "drizzle-orm";
 import { auditEvents, oneTimeLinks } from "../db/schema.ts";
+import { createLog } from "../log.ts";
 import { signInSetup } from "../testing/sign-in-setup.ts";
 import { MAX_ACTIVE_LINKS } from "./routes.ts";
 
@@ -234,6 +235,24 @@ describe("fetching a link", () => {
     expect((await open(made.fetchId, "198.51.100.9")).status).toBe(429);
     const elsewhere = LinkFetched.parse(await (await open(made.fetchId, "198.51.100.10")).json());
     expect(elsewhere.remaining).toBe(9);
+  });
+
+  it("keeps the fetch ID out of the request log, as it keeps it out of the database", async () => {
+    // Review of K-601: the server stores only a hash of the fetch ID, so a copy of its data cannot
+    // fetch or burn a link; its log of every request must not hold the ID in the path either
+    const lines: string[] = [];
+    const server = await signInSetup({ log: createLog("debug", (line) => lines.push(line)) });
+    const jonas = await server.member("weber", "owner");
+    const made = LinkCreated.parse(
+      await (await server.request("/api/links", { token: jonas.token, body: body() })).json(),
+    );
+    const opened = await server.request(`/auth/links/${made.fetchId}/open`, { method: "POST" });
+    expect(opened.status).toBe(200);
+    const gone = encodeBytes(new Uint8Array(16).fill(9));
+    await server.request(`/auth/links/${gone}/open`, { method: "POST" });
+    expect(lines.some((line) => line.includes("/auth/links/"))).toBe(true);
+    expect(lines.join("\n")).not.toContain(made.fetchId);
+    expect(lines.join("\n")).not.toContain(gone);
   });
 });
 

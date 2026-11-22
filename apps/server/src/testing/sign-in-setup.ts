@@ -6,7 +6,7 @@ import { clientAddress } from "../auth/client-address.ts";
 import { rateLimiter } from "../auth/limits.ts";
 import { migrate, openDatabase } from "../db/database.ts";
 import { accounts, companies } from "../db/schema.ts";
-import { createLog } from "../log.ts";
+import { createLog, type Log } from "../log.ts";
 
 export const SECRET = "test-secret-of-at-least-thirty-two-chars";
 
@@ -25,6 +25,8 @@ export const signInSetup = async (
     empty?: boolean;
     /** The API runs on the test's clock too, not only sign-in (emergency access, K-307 part d) */
     apiClock?: boolean;
+    /** Where the server's log lines go; none are kept by default */
+    log?: Log;
   } = {},
 ) => {
   const db = openDatabase(":memory:");
@@ -44,7 +46,7 @@ export const signInSetup = async (
   };
   const app = createApp({
     db,
-    log: createLog("error", () => {}),
+    log: options.log ?? createLog("error", () => {}),
     authenticate: authenticateWith(auth),
     signIn,
     ...(options.apiClock ? { now: clock.now } : {}),
