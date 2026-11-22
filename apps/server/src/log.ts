@@ -19,6 +19,13 @@ export const redact = (fields: Fields): Fields =>
     ]),
   );
 
+/**
+ * A request's path as the log writes it: the fetch ID of a one-time link (K-601, P-18) fetches the
+ * link's ciphertext and uses up its count, so like the database the log keeps none (review of K-601)
+ */
+export const pathForLog = (path: string) =>
+  path.replace(/^\/auth\/links\/[^/]*/, "/auth/links/:fetchId");
+
 export const createLog =
   (minimum: Level, write: (line: string) => void, now: () => Date = () => new Date()): Log =>
   (level, message, fields = {}) => {

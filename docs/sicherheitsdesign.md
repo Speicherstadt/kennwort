@@ -2218,7 +2218,8 @@ Ein Mitglied schickt einen Eintrag oder einen freien Text an jemanden ohne Konto
    höchstens 50 gültige Links und mit Ratenbegrenzung je Konto, und antwortet mit zwei zufälligen
    IDs zu 128 Bit: die öffentliche ID, unter der der Ersteller den Link sieht und widerruft, und
    die Abruf-ID für die Adresse. Von der Abruf-ID speichert er nur SHA-256, so verrät weder die
-   Datenbank noch das Timing der Suche eine Adresse. Der Client setzt die Adresse
+   Datenbank noch das Timing der Suche eine Adresse; das Log der Anfragen schreibt statt ihrer
+   `/auth/links/:fetchId`. Der Client setzt die Adresse
    `/s/<abruf-ID>#<geheimnis>` zusammen und zeigt sie einmal. Ein Link aus einem Eintrag geht nur
    für Einträge eines Tresors, in dem das Konto bearbeiten oder verwalten darf, wie beim Teilen
    ([P-10](#p-10-einzelnen-eintrag-teilen)).
