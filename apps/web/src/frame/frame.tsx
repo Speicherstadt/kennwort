@@ -49,6 +49,8 @@ export const Frame = (props: {
   onLinkEntry?: ((entry: ShownEntry) => void) | undefined;
   /** Einstellungen → „Einmal-Links“ (K-601): a link for a free text and the account's links */
   linksPage?: (() => JSX.Element) | undefined;
+  /** „Sicherheit“ (K-603): weak, reused and leaked passwords and the monthly report */
+  securityPage?: (() => JSX.Element) | undefined;
   onFavoriteEntry?: ((entry: ShownEntry) => Promise<Saved>) | undefined;
   /** A vault link this account cannot open: what shows instead of its entries (K-305) */
   noAccess?: ((vaultId: string) => JSX.Element | undefined) | undefined;
@@ -73,7 +75,12 @@ export const Frame = (props: {
               })()}
               fallback={
                 <>
-                  <Sidebar nav={props.nav} vaults={props.vaults?.()} entries={props.entries?.()} />
+                  <Sidebar
+                    nav={props.nav}
+                    vaults={props.vaults?.()}
+                    entries={props.entries?.()}
+                    security={Boolean(props.securityPage)}
+                  />
                   <main class="flex min-h-0 flex-1">
                     <EntryList
                       entries={props.entries?.()}
@@ -132,6 +139,7 @@ export const Frame = (props: {
               }
               onEmergency={props.emergencyPage ? () => props.nav.go("/emergency") : undefined}
               onLinks={props.linksPage ? () => props.nav.go("/links") : undefined}
+              onSecurity={props.securityPage ? () => props.nav.go("/security") : undefined}
               onRenew={props.renewPage ? () => props.nav.go("/renew") : undefined}
               devices={props.devices}
             />
@@ -154,6 +162,9 @@ export const Frame = (props: {
         </Match>
         <Match when={route().page === "links" && props.linksPage}>
           <main class="flex min-h-0 flex-1">{props.linksPage?.()}</main>
+        </Match>
+        <Match when={route().page === "security" && props.securityPage}>
+          <main class="flex min-h-0 flex-1">{props.securityPage?.()}</main>
         </Match>
         <Match when={route().page === "renew" && props.renewPage}>
           <main class="flex min-h-0 flex-1">{props.renewPage?.()}</main>

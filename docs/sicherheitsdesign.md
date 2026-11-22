@@ -102,6 +102,7 @@ gleich.
 | Malware auf dem Gerät | [P-03](#p-03-entsperren) (Sperren, Schlüssel nur im Speicher) | – |
 | Passwort bleibt am Handy in der Zwischenablage | [P-17](#p-17-ausfullen) | – |
 | Anmeldung durchprobieren | [P-02](#p-02-anmelden) | E-24 |
+| Datenleck-Prüfung verrät Passwörter | [P-23](#p-23-sicherheits-ubersicht-und-datenleck-prufung) | E-14 |
 | AAD | [F-01](#f-01-geheimtext-v1), [P-09](#p-09-eintrage-speichern-und-lesen) | E-11, E-12, E-13 |
 | Signiertes Mitgliedschafts-Log | [P-06](#p-06-mitgliedschafts-log) | E-06, E-07, E-08 |
 | Firmen-Wurzelschlüssel | [P-07](#p-07-firmen-wurzelschlussel-und-zertifikate) | E-02, E-05, E-10 |
@@ -168,6 +169,7 @@ Nur standardisierte Verfahren aus `@noble/*`, nichts selbst gebaut:
 | Ableitung | HKDF-SHA-512 | RFC 5869 | `@noble/hashes` |
 | Passphrase, Phishing-Warnung, Export, Einmal-Links | Argon2id | RFC 9106 | `@noble/hashes` |
 | Hash | SHA-512, SHA-512/256; SHA-256 nur für Release-Manifeste (wie Subresource Integrity) | FIPS 180-4 | `@noble/hashes` |
+| Datenleck-Prüfung | SHA-1, nur als Name, unter dem Pwned Passwords ein Passwort führt, nie zum Schutz ([P-23](#p-23-sicherheits-ubersicht-und-datenleck-prufung)) | FIPS 180-4, Have I Been Pwned API v3 | `@noble/hashes/legacy` |
 | Zufall | `crypto.getRandomValues` | Web Crypto | über `@noble/hashes/utils` |
 
 ## Formate
@@ -1759,6 +1761,7 @@ Restrisiken:
 | Eintrags-IDs, Versionen, Größen, Zeitpunkte, Autor | Titel, URLs, Benutzernamen, Passwörter, TOTP, Notizen, Tags, Favoriten, Anhänge |
 | öffentliche Schlüssel, Zertifikate, Fingerabdrücke | Recovery Key, Einladungsgeheimnis, Schlüssel von Einmal-Links |
 | Audit-Ereignisse (wer, was, wann) | Inhalte der Ereignisse, die Einträge betreffen |
+| nur bei eingeschalteter Datenleck-Prüfung: die ersten 5 Hex-Zeichen von SHA-1 je Passwort, von welchem Konto ([P-23](#p-23-sicherheits-ubersicht-und-datenleck-prufung)) | Passwörter, ihre vollen Hashes, Treffer; die Wahl selbst steht versiegelt im Kontozustand (er sieht nur, ob Anfragen kommen) |
 
 Ein Server kann viele Firmen tragen (Projektplan, Entscheidungen). Sie sind dort strikt getrennt:
 Jede Route unter `/api` liest nur über den Bereich der Firma, zu der die Sitzung gehört
@@ -2540,3 +2543,77 @@ erneuter Versuch), `apps/web/src/session/offline-unlock.ts`, `packages/client/sr
 und `packages/core/src/auth/sign-in.ts` (`signInWithLoginKey`, „unreachable“ für keine Antwort).
 
 **Wehrt ab:** E-07, E-13, E-15.
+
+### P-23 Sicherheits-Übersicht und Datenleck-Prüfung
+
+Die Seite „Sicherheit“ (K-603) zeigt schwache, mehrfach verwendete und geleakte Passwörter und die
+Einträge mit Änderungs-Markierung (P-11), dazu für Inhaber und Admins einen Monatsbericht.
+Schwach und mehrfach rechnet das Gerät wie unter „Zum Ändern“ aus den entschlüsselten Einträgen im
+Speicher aus (`apps/web/src/entries/to-change.ts`); dafür geht nichts hinaus. Geprüft werden die
+Passwörter der eigenen Tresore, nicht die mit dem Konto geteilten Einträge.
+
+**Datenleck-Prüfung** nach dem k-Anonymitäts-Verfahren von Pwned Passwords
+(haveibeenpwned.com/API/v3, „Searching by range“):
+
+```text
+h       = SHA-1(UTF-8(passwort, wie gespeichert))       40 Hex-Zeichen, groß
+präfix  = h[0..5)                                       geht hinaus
+suffix  = h[5..40)                                      bleibt auf dem Gerät
+anfrage = GET /api/pwned/<präfix>                       an den eigenen Kennwort-Server
+server  = GET <KENNWORT_PWNED_URL><präfix>, Add-Padding: true
+antwort = { range: "SUFFIX:ANZAHL\r\n…" }               Polsterzeilen mit ANZAHL 0
+treffer = Zeile mit suffix und ANZAHL > 0
+```
+
+1. **Aus, bis die Person sie einschaltet.** Die Wahl steht als `leakCheck: { on, at }` im
+   Kontozustand, versiegelt unter AK (Schlüsselhierarchie); zwischen Geräten gilt die spätere Wahl,
+   bei gleicher Zeit „aus“. Je Person statt je Firma, weil eine Firmen-Einstellung in der signierten
+   Richtlinie (F-07) ein neues Format bräuchte, und eine unsignierte der Server einschalten könnte,
+   um Präfixe zu sammeln, die er nie sehen sollte. Solange sie aus ist, geht keine Anfrage hinaus
+   (`createLeakCheck` gibt `off` zurück, ohne zu fragen; Test in `packages/core` und Playwright).
+2. **Nur fünf Hex-Zeichen.** Das Gerät schickt je verschiedenem Präfix eine Anfrage, sortiert und
+   höchstens vier zugleich: Die Reihenfolge verrät nicht, zu welchem Eintrag ein Präfix gehört. Der
+   Server nimmt nur genau fünf große Hex-Zeichen (`isRangePrefix`), alles andere beantwortet er mit
+   400, ohne den Dienst zu fragen.
+3. **Über den eigenen Server.** Der Browser spricht nur mit seinem Kennwort-Server; die CSP der
+   Web-App braucht für `connect-src` keinen fremden Host, und Have I Been Pwned sieht die Adresse
+   des Servers statt der Person (Entscheidungen im Projektplan). Der Server fragt mit
+   `Add-Padding: true`, damit jede Antwort etwa gleich groß ist, und reicht die Antwort samt
+   Polsterung unverändert weiter, wenn sie sich als Bereich lesen lässt (`parseRange`), sonst 502.
+   Er hält sie eine Stunde im Speicher (höchstens 10 000), nie auf der Platte, und schreibt den
+   Pfad als `/api/pwned/:prefix` ins Log. Je Konto nimmt er 1200 Anfragen in zehn Minuten.
+   Mit `KENNWORT_PWNED_URL` trägt der Betreiber einen Spiegel ein, mit `off` schaltet er die
+   Prüfung für alle ab (404).
+4. **Vergleich auf dem Gerät.** Das Gerät liest den Bereich selbst noch einmal, lässt Zeilen mit
+   Anzahl 0 weg und vergleicht die Suffixe; die Bereiche behält es je Präfix im Speicher, bis das
+   Konto sperrt.
+
+**Monatsbericht**: Inhaber und Admins (nach ihrem Zertifikat, wie beim Export) sehen ihn, solange
+der Monat in `reportSeen` (Kontozustand, `YYYY-MM` in UTC) älter ist als der jetzige. Er zählt je
+Tresor Einträge, schwache, mehrfache, geleakte und markierte, ohne Titel: Titel können selbst
+vertraulich sein und stehen in den Listen darunter für den, der handelt. „Gelesen“ schreibt den
+Monat in den Kontozustand. Zugestellt per Push oder Mail wird er mit K-602.
+
+Was der Präfix verrät: Fünf Hex-Zeichen teilen alle SHA-1-Hashes in 16⁵ = 2²⁰ ≈ 1 Million
+Bereiche; zu jedem gehören rund 800 bis 1000 geleakte Passwörter und unzählige unbekannte. Ein Präfix allein nennt kein Passwort. Wer aber ein Passwort schon vermutet, kann mit
+dem Präfix prüfen, ob die Vermutung passen könnte (eine von einer Million fällt durch).
+
+Restrisiko:
+
+- Der Kennwort-Server und der Dienst sehen, welche Präfixe abgefragt werden, der Server auch von
+  welchem Konto und wann. Fragt ein Konto direkt nach dem Speichern eines Eintrags einen neuen
+  Präfix ab, kann der Server Präfix und Eintrags-ID zeitlich verbinden; ein Präfix bleibt dennoch
+  einer von einer Million Bereichen.
+- Ein bösartiger Server kann Treffer verschweigen oder erfinden. Verschwiegen fehlt die Warnung,
+  wie ohne Prüfung; erfunden ändert jemand ein Passwort, das nicht geleakt war. Er erfährt dabei
+  nichts über die Passwörter. Gegen den Dienst selbst schützt nur ein eigener Spiegel.
+- Wie bei jedem Passwort im Speicher (P-03): Malware auf dem entsperrten Gerät ist außerhalb des
+  Modells.
+
+Umgesetzt in `packages/crypto/src/pwned.ts` (SHA-1, Präfix und Suffix; Testvektoren aus FIPS 180-4
+und `node:crypto`), `packages/core/src/leaks/` (Bereich lesen, Prüfung mit Speicher, Mutation-Tests
+bei 100 %), `packages/core/src/account/security-prefs.ts` (Wahl und Monat im Kontozustand),
+`apps/server/src/pwned/` (Weiterleitung, Grenze, Speicher) und `apps/web/src/security/` (Seite,
+Listen, Bericht, „Jetzt ändern“ über `packages/client/src/entries/change-password.ts`).
+
+**Wehrt ab:** E-14.

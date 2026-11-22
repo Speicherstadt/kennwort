@@ -48,6 +48,12 @@ export {
   type UnlockUpload,
 } from "./account/renew.ts";
 export {
+  LeakCheckChoice,
+  leakCheckOn,
+  monthOf,
+  reportDue,
+} from "./account/security-prefs.ts";
+export {
   AccountState,
   emptyState,
   type MergeError,
@@ -138,6 +144,15 @@ export type {
   Parser,
   ZipParser,
 } from "./import/types.ts";
+export {
+  createLeakCheck,
+  type FetchRange,
+  LEAK_CONCURRENCY,
+  type LeakCheck,
+  type LeakCounts,
+  type LeakError,
+} from "./leaks/leak-check.ts";
+export { isRangePrefix, parseRange } from "./leaks/range.ts";
 export * from "./links/index.ts";
 export * from "./membership/index.ts";
 export { bytes, encodeBytes } from "./sync/bytes.ts";

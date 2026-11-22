@@ -21,10 +21,14 @@ export const redact = (fields: Fields): Fields =>
 
 /**
  * A request's path as the log writes it: the fetch ID of a one-time link (K-601, P-18) fetches the
- * link's ciphertext and uses up its count, so like the database the log keeps none (review of K-601)
+ * link's ciphertext and uses up its count, so like the database the log keeps none (review of
+ * K-601); the SHA-1 prefix of the leak check (K-603, P-23) tells something of a password, so the
+ * log keeps none of it either
  */
 export const pathForLog = (path: string) =>
-  path.replace(/^\/auth\/links\/[^/]*/, "/auth/links/:fetchId");
+  path
+    .replace(/^\/auth\/links\/[^/]*/, "/auth/links/:fetchId")
+    .replace(/^\/api\/pwned\/.*/, "/api/pwned/:prefix");
 
 export const createLog =
   (minimum: Level, write: (line: string) => void, now: () => Date = () => new Date()): Log =>
