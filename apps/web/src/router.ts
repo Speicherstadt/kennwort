@@ -25,6 +25,7 @@ const simplePages = [
   "members",
   "vaults",
   "import",
+  "export",
   "emergency",
   "renew",
   "setup",

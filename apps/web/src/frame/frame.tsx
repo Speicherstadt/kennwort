@@ -30,6 +30,9 @@ export const Frame = (props: {
   vaultsPage?: (() => JSX.Element) | undefined;
   /** The import (K-501); the app passes it with the vaults and the entry store */
   importPage?: (() => JSX.Element) | undefined;
+  /** The export (K-504); the settings offer it only to owners and admins (`canExport`) */
+  exportPage?: (() => JSX.Element) | undefined;
+  canExport?: boolean | undefined;
   /** Konto → Notfallzugriff (K-307 part d); the app passes it with session, API and vaults */
   emergencyPage?: ((toasts: Toasts) => JSX.Element) | undefined;
   /** Konto → Schlüssel erneuern (K-307 part e); the app passes it with session, API and vaults */
@@ -119,6 +122,9 @@ export const Frame = (props: {
               onMembers={props.members ? () => props.nav.go("/members") : undefined}
               onVaults={props.vaultsPage ? () => props.nav.go("/vaults") : undefined}
               onImport={props.importPage ? () => props.nav.go("/import") : undefined}
+              onExport={
+                props.exportPage && props.canExport ? () => props.nav.go("/export") : undefined
+              }
               onEmergency={props.emergencyPage ? () => props.nav.go("/emergency") : undefined}
               onRenew={props.renewPage ? () => props.nav.go("/renew") : undefined}
               devices={props.devices}
@@ -133,6 +139,9 @@ export const Frame = (props: {
         </Match>
         <Match when={route().page === "import" && props.importPage}>
           <main class="flex min-h-0 flex-1">{props.importPage?.()}</main>
+        </Match>
+        <Match when={route().page === "export" && props.exportPage}>
+          <main class="flex min-h-0 flex-1">{props.exportPage?.()}</main>
         </Match>
         <Match when={route().page === "emergency" && props.emergencyPage}>
           <main class="flex min-h-0 flex-1">{props.emergencyPage?.(toasts)}</main>

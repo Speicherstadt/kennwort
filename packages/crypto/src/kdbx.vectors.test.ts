@@ -6,6 +6,7 @@ import {
   kdbxBlockMac,
   kdbxCompositeKey,
   kdbxDecrypt,
+  kdbxEncrypt,
   kdbxInnerKeystream,
   kdbxKeys,
   kdbxPasswordPart,
@@ -103,6 +104,15 @@ describe("KDBX 4 payload", () => {
   it("decrypts ChaCha20", () => {
     const result = kdbxDecrypt("chacha20", key, fromHex(chacha20.iv), fromHex(chacha20.ciphertext));
     expect(result.ok && hex(result.value)).toBe(vectors.payload.plaintext);
+  });
+
+  // K-504: the export writes what the reader above reads, to the same bytes as pycryptodome
+  it("encrypts AES-256-CBC with padding and ChaCha20 to the vectors' ciphertexts", () => {
+    const plain = fromHex(vectors.payload.plaintext);
+    expect(hex(kdbxEncrypt("aes256", key, fromHex(aes256.iv), plain))).toBe(aes256.ciphertext);
+    expect(hex(kdbxEncrypt("chacha20", key, fromHex(chacha20.iv), plain))).toBe(
+      chacha20.ciphertext,
+    );
   });
 
   it("answers broken padding with an error, not an exception", () => {

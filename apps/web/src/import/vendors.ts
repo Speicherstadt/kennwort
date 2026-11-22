@@ -21,6 +21,7 @@ export type VendorChoice = {
 };
 
 const HOW_TO: Record<string, () => string> = {
+  "kennwort-json": () => m.import_howto_kennwort_json(),
   "bitwarden-json": () => m.import_howto_bitwarden_json(),
   "bitwarden-csv": () => m.import_howto_bitwarden_csv(),
   "lastpass-csv": () => m.import_howto_lastpass_csv(),

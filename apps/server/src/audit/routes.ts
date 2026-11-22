@@ -1,12 +1,17 @@
 /**
  * The audit log under /api (K-205, P-20): the export for owners, admins and auditors, and the
  * client actions a client signs itself. The server checks who may read and that a signed action
- * names the session as actor; the signature is checked by whoever verifies the chain.
+ * names the session as actor, and takes an export only from owners and admins (K-504); the
+ * signature is checked by whoever verifies the chain.
  */
 import { AuditText, bytes, CLIENT_ACTIONS, toWire } from "@kennwort/core";
 import { Hono } from "hono";
 import { z } from "zod";
+import type { Db } from "../db/database.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
+import { exportRefusal } from "./export-access.ts";
+
+const REFUSAL_STATUS = { invalid: 400, forbidden: 403, "not-found": 404 } as const;
 
 const ClientEventRequest = z.object({
   action: z.enum(CLIENT_ACTIONS),
@@ -14,7 +19,7 @@ const ClientEventRequest = z.object({
   signature: bytes(65),
 });
 
-export const auditRoutes = ({ now }: { now: () => number }) =>
+export const auditRoutes = ({ db, now }: { db: Db; now: () => number }) =>
   new Hono<TenantEnv>()
     .get("/audit", (c) => {
       const me = c.var.scope.account(c.var.session.accountId);
@@ -29,6 +34,19 @@ export const auditRoutes = ({ now }: { now: () => number }) =>
       const parsed = ClientEventRequest.safeParse(await c.req.json().catch(() => undefined));
       if (!parsed.success) return c.json({ error: "invalid" }, 400);
       const { action, subject, signature } = parsed.data;
+      // Only owners and admins export, and the subject says what (K-504, P-19)
+      const refused =
+        action === "export"
+          ? exportRefusal(
+              db,
+              {
+                companyId: c.var.session.companyId,
+                role: c.var.scope.account(c.var.session.accountId)?.role,
+              },
+              subject,
+            )
+          : undefined;
+      if (refused) return c.json({ error: refused }, REFUSAL_STATUS[refused]);
       // A signed action happens once; the same subject again would read as a replay (P-20)
       const seen = c.var.scope
         .auditLog()

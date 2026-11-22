@@ -718,5 +718,73 @@
   "members_renewed_text": "{name} hat die Schlüssel erneuert. Vergleiche diesen Code mit dem, den {name} auf dem eigenen Gerät sieht, am besten persönlich oder am Telefon. Bestätige nur, wenn jede Ziffer stimmt.",
   "members_renewed_confirm": "Code stimmt",
   "members_renewed_failed": "Die neuen Schlüssel ließen sich nicht bestätigen.",
-  "rotation_due_renewed": "Im Tresor {name} hat jemand neue Schlüssel, weil ein Recovery-Kit in fremde Hände geraten ist. Bis sie bestätigt sind und der Tresor einen neuen Schlüssel hat, kann dort niemand etwas ändern."
+  "rotation_due_renewed": "Im Tresor {name} hat jemand neue Schlüssel, weil ein Recovery-Kit in fremde Hände geraten ist. Bis sie bestätigt sind und der Tresor einen neuen Schlüssel hat, kann dort niemand etwas ändern.",
+  "settings_export": "Exportieren",
+  "export_title": "Exportieren",
+  "export_intro": "Nimm einen Tresor oder alle, die dieses Gerät öffnet, aus Kennwort mit: als verschlüsselte Datei für Kennwort, als KeePass-Datenbank oder als Tabelle für andere Passwortmanager. Die Datei entsteht nur auf diesem Gerät.",
+  "export_not_allowed": "Exportieren dürfen nur Inhaber und Admins der Firma. Frag sie, wenn du einen Export brauchst.",
+  "export_scope": "Was exportieren",
+  "export_scope_all": "Alle Tresore",
+  "export_format": "Format",
+  "export_format_json": "Verschlüsseltes JSON (empfohlen)",
+  "export_format_json_hint": "Für Kennwort, mit allem: Felder, Verlauf, Tags, Favoriten, Einmalcodes und Passkeys. Geschützt mit einer Passphrase.",
+  "export_format_kdbx": "KeePass (KDBX 4)",
+  "export_format_kdbx_hint": "Für KeePass, KeePassXC und alle, die KDBX lesen. Geschützt mit einem Passwort; Favoriten und Passkeys bleiben draußen.",
+  "export_format_csv": "CSV im Bitwarden-Format (unverschlüsselt)",
+  "export_format_csv_hint": "Für andere Passwortmanager. Nicht geschützt: Jeder Wert steht im Klartext in der Datei.",
+  "export_passphrase": "Passphrase für die Datei",
+  "export_passphrase_hint": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "Mindestens 1 Zeichen. Ohne sie lässt sich die Datei nicht öffnen – auch nicht von Kennwort.",
+        "n=*": "Mindestens {count} Zeichen. Ohne sie lässt sich die Datei nicht öffnen – auch nicht von Kennwort."
+      }
+    }
+  ],
+  "export_passphrase_repeat": "Passphrase wiederholen",
+  "export_passphrase_short": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "Die Passphrase braucht mindestens 1 Zeichen.",
+        "n=*": "Die Passphrase braucht mindestens {count} Zeichen."
+      }
+    }
+  ],
+  "export_passphrase_mismatch": "Die beiden Passphrasen stimmen nicht überein.",
+  "export_csv_warning": "Achtung: Die CSV-Datei ist nicht verschlüsselt. Jeder, der sie öffnet, sieht alle Passwörter, Einmalcodes und Notizen. Lade sie gleich in den anderen Passwortmanager und lösche sie danach, auch aus Downloads und Papierkorb. Öffne sie nicht in einer Tabellenkalkulation.",
+  "export_csv_confirm": "Ich habe verstanden, dass die Datei unverschlüsselt ist.",
+  "export_csv_confirm_missing": "Bestätige zuerst, dass du eine unverschlüsselte Datei willst.",
+  "export_audit_hint": "Jeder Export kommt mit deinem Namen, dem Umfang und dem Format ins Audit-Log, bevor die Datei entsteht.",
+  "export_start": "Exportieren",
+  "export_busy": "Export wird ins Audit-Log eingetragen und die Datei erstellt – das kann einige Sekunden dauern …",
+  "export_error_empty": "In diesem Umfang gibt es keinen Tresor, den dieses Gerät öffnen kann.",
+  "export_error_refused": "Der Server hat den Export nicht ins Audit-Log eingetragen. Ohne Eintrag gibt es keinen Export – prüfe die Verbindung und versuche es noch einmal.",
+  "export_done_title": "Export fertig",
+  "export_done": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "1 Eintrag steht in {name}.",
+        "n=*": "{count} Einträge stehen in {name}."
+      }
+    }
+  ],
+  "export_done_keep": "Bewahre die Datei und ihre Passphrase getrennt und sicher auf.",
+  "export_done_csv": "Lösche die CSV-Datei, sobald der andere Passwortmanager sie gelesen hat – auch aus Downloads und Papierkorb.",
+  "export_again": "Noch einen Export",
+  "import_howto_kennwort_json": "Wähle die Datei, die Kennwort unter „Einstellungen“ → „Exportieren“ als verschlüsseltes JSON geschrieben hat, und gib ihre Passphrase ein.",
+  "import_kennwort_file": "Exportdatei (.json) wählen",
+  "import_kennwort_passphrase": "Passphrase des Exports",
+  "import_kennwort_open": "Export öffnen",
+  "import_kennwort_opening": "Export wird entschlüsselt …",
+  "import_kennwort_hint": "Datei und Passphrase bleiben auf diesem Gerät; Kennwort speichert die Passphrase nicht.",
+  "import_kennwort_no_file": "Wähle zuerst die Exportdatei.",
+  "import_error_kennwort_wrong_key": "Die Passphrase passt nicht zu diesem Export.",
+  "import_error_kennwort_unsupported": "Dieser Export stammt aus einer neueren Version von Kennwort. Aktualisiere Kennwort und versuche es noch einmal.",
+  "export_error_failed": "Die Datei ließ sich nicht schreiben. Der Export steht schon im Audit-Log; versuche es noch einmal."
 }

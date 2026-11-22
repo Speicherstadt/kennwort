@@ -107,6 +107,7 @@ export {
   signInWithPassphrase,
   signInWithRecoveryKey,
 } from "./auth/sign-in.ts";
+export * from "./export/index.ts";
 export {
   DIGITS,
   LOWER,

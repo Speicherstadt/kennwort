@@ -30,6 +30,8 @@ import { EmergencyNotice } from "./emergency/emergency-notice.tsx";
 import { EmergencyPage } from "./emergency/emergency-page.tsx";
 import { createEntries, writableVaults } from "./entries/entries-wiring.tsx";
 import { markToChange } from "./entries/to-change.ts";
+import { ExportPage } from "./export/export-page.tsx";
+import { exportDeps } from "./export/export-wiring.ts";
 import { DevicesSection } from "./frame/devices-section.tsx";
 import { Frame } from "./frame/frame.tsx";
 import { GroupsPage } from "./groups/groups-page.tsx";
@@ -123,9 +125,9 @@ const emergencyPage =
   );
 
 /**
- * The stores of an open account: the vaults, their entries, the shares and the exits. Every load
- * of the vaults loads their entries and shares; then a manager's client catches up on what its
- * vaults owe since someone left (K-307, P-11), without holding up the load.
+ * The stores of an open account: the vaults, their entries, the shares, the exits and the export.
+ * Every load of the vaults loads their entries and shares; then a manager's client catches up on
+ * what its vaults owe since someone left (K-307, P-11), without holding up the load.
  */
 const createStores = (props: { session: Session; api: AppApi; copy: LocalCopy | undefined }) => {
   const entries = createEntries(httpServerFor(props.api.syncFetch), props.session, props.copy);
@@ -141,7 +143,9 @@ const createStores = (props: { session: Session; api: AppApi; copy: LocalCopy | 
     // Emergency grants behind a key rotation are made anew with the current keys (P-14)
     void renewEmergency(props.api, props.session, loaded);
   });
-  return { entries, sharing, exits, store };
+  // The export (K-504) reads the vaults and their entries' content as loaded
+  const exporting = exportDeps(props.api, props.session, store, entries.stored);
+  return { entries, sharing, exits, store, exporting };
 };
 
 /**
@@ -159,7 +163,7 @@ const OpenedFrame = (props: {
   onLocale: (next: Locale) => void;
 }) => {
   const queries = createAccountQueries();
-  const { entries, sharing, exits, store } = createStores(props);
+  const { entries, sharing, exits, store, exporting } = createStores(props);
   // Loaded once the frame is on screen: an effect's compute would load anew on every change of the
   // account state, and the frame lives only as long as the account is open
   onSettled(() => void store.reload());
@@ -230,6 +234,8 @@ const OpenedFrame = (props: {
           />
         )}
         importPage={importPage(props.nav, store, allEntries, () => online(entries.saveNew))}
+        exportPage={() => <ExportPage deps={exporting} />}
+        canExport={exporting.allowed()}
         emergencyPage={emergencyPage(props, shownVaults)}
         renewPage={renewPage(props, store, reload)}
         devices={() => (

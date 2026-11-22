@@ -4,6 +4,7 @@ import { fixture } from "./test/helpers.ts";
 
 /** One fixture per format, the vendor's real export structure */
 const FIXTURES: Record<string, string> = {
+  "kennwort-json": "kennwort-export.json",
   "bitwarden-json": "bitwarden.json",
   "bitwarden-csv": "bitwarden.csv",
   "lastpass-csv": "lastpass.csv",
@@ -29,9 +30,10 @@ const FIXTURES: Record<string, string> = {
   "2fas-json": "twofas.2fas",
 };
 
-describe("import formats (K-502, K-503)", () => {
+describe("import formats (K-502, K-503, K-504)", () => {
   it("lists every format of the plan by vendor and file", () => {
     expect(IMPORT_FORMATS.map((f) => [f.id, f.vendor, f.file])).toEqual([
+      ["kennwort-json", "Kennwort", "JSON"],
       ["bitwarden-json", "Bitwarden", "JSON"],
       ["bitwarden-csv", "Bitwarden", "CSV"],
       ["lastpass-csv", "LastPass", "CSV"],
@@ -68,10 +70,14 @@ describe("import formats (K-502, K-503)", () => {
     }
   });
 
-  it("asks for the password only for KeePass's database", async () => {
+  it("asks for the password only for Kennwort's own export and KeePass's database", async () => {
     const locked = IMPORT_FORMATS.filter((format) => format.unlock);
-    expect(locked.map((format) => format.id)).toEqual(["keepass-kdbx"]);
-    expect(await locked[0]?.parse(fixture("kdbx-argon2d-aes.kdbx"))).toEqual({
+    expect(locked.map((format) => format.id)).toEqual(["kennwort-json", "keepass-kdbx"]);
+    expect(await locked[0]?.parse(fixture("kennwort-export.json"))).toEqual({
+      ok: false,
+      error: "encrypted",
+    });
+    expect(await locked[1]?.parse(fixture("kdbx-argon2d-aes.kdbx"))).toEqual({
       ok: false,
       error: "encrypted",
     });

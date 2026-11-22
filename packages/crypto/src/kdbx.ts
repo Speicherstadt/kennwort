@@ -1,6 +1,7 @@
 /**
- * The cryptographic building blocks of KeePass's KDBX 4 (K-502 Teil 3), for reading a database in
- * the import only; Kennwort never writes this format with them. Every primitive is noble's:
+ * The cryptographic building blocks of KeePass's KDBX 4: for reading a database in the import
+ * (K-502 Teil 3) and for writing one in the export (K-504, with Argon2id and ChaCha20 only;
+ * KeePassXC's src/format/Kdbx4Writer.cpp). Every primitive is noble's:
  * SHA-256/512, HMAC-SHA-256 and Argon2d/id from @noble/hashes, AES-256 (CBC and the raw block for
  * AES-KDF), ChaCha20 and Salsa20 from @noble/ciphers. Only KDBX's composition lives here, after
  * KeePassXC (keepassxreboot/keepassxc): src/keys/CompositeKey.cpp and PasswordKey.cpp (the
@@ -131,6 +132,18 @@ export const kdbxDecrypt = (
     return err("bad-payload");
   }
 };
+
+/**
+ * The payload encrypted, the writer's side of kdbxDecrypt (Kdbx4Writer::writeDatabase): ChaCha20
+ * of RFC 8439 with counter 0 and a 12-byte IV, or AES-256-CBC with PKCS#7 padding and a 16-byte
+ * IV. The caller picks a fresh IV per file.
+ */
+export const kdbxEncrypt = (
+  cipher: KdbxCipher,
+  key: Uint8Array,
+  iv: Uint8Array,
+  data: Uint8Array,
+): Uint8Array => (cipher === "chacha20" ? chacha20(key, iv, data) : cbc(key, iv).encrypt(data));
 
 /** Salsa20's fixed nonce for the inner stream (KeePass2::INNER_STREAM_SALSA20_IV) */
 const SALSA20_NONCE = Uint8Array.of(0xe8, 0x30, 0x09, 0x4b, 0x97, 0x20, 0x5d, 0x2a);

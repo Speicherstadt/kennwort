@@ -1,7 +1,7 @@
 /**
  * „Importieren“ (K-501): choose the vendor, read where its export is, pick the file (or scan
  * Google Authenticator's QR codes, K-503, or open a KeePass database with its password, K-502),
- * map a table's columns, check the preview, import into a vault, then delete the file. The file is read and
+ * map a table's columns (or open Kennwort's own encrypted export, K-504), check the preview, import into a vault, then delete the file. The file is read and
  * parsed on the device only (docs/plan.md, Import und Export). The plaintext lives in this page's
  * state while the mapping or the preview needs it and no longer: the import's end keeps only
  * counts, and leaving the page drops the rest. The file's bytes are zeroed once parsed; strings
@@ -69,7 +69,7 @@ const createImportFlow = (save: ImportDeps["save"]) => {
     setStep(
       result.ok
         ? { step: "preview", entries: result.value, unsupported: result.skipped ?? 0 }
-        : { step: "file", choice, error: errorText(result.error) },
+        : { step: "file", choice, error: errorText(result.error, choice.id) },
     );
 
   const onFile = async (choice: VendorChoice, file: File) => {

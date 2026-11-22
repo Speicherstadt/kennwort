@@ -9,6 +9,6 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: [process.env.STRYKER_TESTS ?? "src/**/*.test.ts"],
-    exclude: ["src/import/**/*.property.test.ts"],
+    exclude: ["src/import/**/*.property.test.ts", "src/export/**/*.property.test.ts"],
   },
 });
