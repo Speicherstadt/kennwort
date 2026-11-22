@@ -11,6 +11,8 @@ import { CertificateWire } from "../sync/wire.ts";
 import { type Certificate, type CompanyRole, certify, isCertified } from "./certificate.ts";
 import type { PendingMember } from "./invitation.ts";
 import { PolicyWire } from "./policy.ts";
+import { RootChangeWire } from "./root-change.ts";
+import { CLOCK_SKEW_SECONDS } from "./verify-log.ts";
 
 const Role = z.enum(["owner", "admin", "member"]);
 
@@ -21,6 +23,8 @@ export const CompanyWire = z.object({
   policy: PolicyWire.nullable().default(null),
   /** The company recovery key's public half (K-307 part c); clients take it only by the policy */
   recoveryPublicKey: bytes(1216).nullable().default(null),
+  /** The changes of the root key, oldest first (K-307 part f, F-14); clients take them only confirmed */
+  rootChanges: z.array(RootChangeWire).optional(),
 });
 
 export const MembersWire = z.object({
@@ -51,9 +55,21 @@ type MemberWire = z.infer<typeof MembersWire>["members"][number];
  * - waiting: no certificate yet, another admin has to confirm (or the keys are not there yet)
  * - renewed: the account renewed its keys after its recovery kit got into other hands (P-12); an
  *   owner or admin compares the new bundle's code with the person and certifies it
+ * - former: a certificate by a root the company replaced (K-307 part f, P-07): the account left
+ *   before the change, so nobody certified it anew; it counts only for what was signed before
  * - invalid: a certificate that does not check out, or an invitation shown for two accounts
  */
-export type MemberStatus = "certified" | "pending" | "waiting" | "renewed" | "invalid";
+export type MemberStatus = "certified" | "pending" | "waiting" | "renewed" | "former" | "invalid";
+
+/** A root the account replaced, with the time of its change (P-07) */
+type Retired = { publicKey: Uint8Array; until: number };
+
+/**
+ * A certificate of a replaced root counts only if issued before the change: whoever left kept the
+ * old root and could certify anything afterwards
+ */
+const issuedBefore = (root: Retired, certificate: Certificate) =>
+  certificate.issuedAt < root.until + CLOCK_SKEW_SECONDS;
 
 /** A bundle an account made to replace its certified one (P-12), waiting for its certificate */
 export type RenewedBundle = {
@@ -119,15 +135,21 @@ const renewedOf = (member: MemberWire, previous: Certificate[]): RenewedBundle |
 
 const statusOf = (
   root: Uint8Array,
+  retired: readonly Retired[] | undefined,
   member: MemberWire,
   shared: boolean,
   seen: number,
   previous: Certificate[],
 ): Pick<MemberView, "status" | "certificate" | "pending" | "renewed"> => {
-  if (member.certificate)
-    return certifiedFor(root, member.certificate, member, seen)
-      ? { status: "certified", certificate: member.certificate }
+  const certificate = member.certificate;
+  if (certificate) {
+    if (certifiedFor(root, certificate, member, seen)) return { status: "certified", certificate };
+    return retired?.some(
+      (r) => issuedBefore(r, certificate) && certifiedFor(r.publicKey, certificate, member, seen),
+    )
+      ? { status: "former", certificate }
       : { status: "invalid" };
+  }
   if (shared) return { status: "invalid" };
   const pending = pendingOf(member);
   if (pending) return { status: "pending", pending };
@@ -136,25 +158,33 @@ const statusOf = (
 };
 
 /**
- * The account's earlier certificates the pinned root signed for exactly this account, each older
- * than the current one: the server may list them, but cannot make one up
+ * The account's earlier certificates the pinned root, or one the account replaced, signed for
+ * exactly this account, each older than the current one: the server may list them, but cannot make
+ * one up
  */
-const previousOf = (root: Uint8Array, member: MemberWire) =>
+const previousOf = (
+  root: Uint8Array,
+  retired: readonly Retired[] | undefined,
+  member: MemberWire,
+) =>
   (member.previous ?? []).filter(
     (c) =>
       constantTimeEqual(c.accountId, member.id) &&
-      isCertified(root, c) &&
+      (isCertified(root, c) ||
+        retired?.some((r) => issuedBefore(r, c) && isCertified(r.publicKey, c))) &&
       (member.certificate === null || c.issuedAt < member.certificate.issuedAt),
   );
 
 /**
- * Every member with what this client can say about it, under the root from trustedRoot; `seen`
- * holds the newest certificate per account this account has seen, so an older one does not count
+ * Every member with what this client can say about it, under the root from trustedRoot and the
+ * roots the account replaced (K-307 part f); `seen` holds the newest certificate per account this
+ * account has seen, so an older one does not count
  */
 export const checkMembers = (
   root: Uint8Array,
   members: MemberWire[],
   seen: Readonly<Record<string, number>> = {},
+  retired?: readonly Retired[],
 ): MemberView[] => {
   const counts = new Map<string, number>();
   for (const m of members)
@@ -166,8 +196,8 @@ export const checkMembers = (
     m.invitation !== null && counts.get(encodeBytes(m.invitation.id)) !== 1;
   return members.map((member) => {
     const known = seen[encodeBytes(member.id)] ?? 0;
-    const previous = previousOf(root, member);
-    const status = statusOf(root, member, shared(member), known, previous);
+    const previous = previousOf(root, retired, member);
+    const status = statusOf(root, retired, member, shared(member), known, previous);
     const trusted = trustedHistory(status, previous, known);
     return {
       accountId: member.id,

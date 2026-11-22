@@ -41,6 +41,7 @@ describe("database", () => {
       "pairings",
       "recovery_deposits",
       "recovery_grants",
+      "root_changes",
       "root_grants",
       "sqlite_sequence",
       "superseded_certificates",

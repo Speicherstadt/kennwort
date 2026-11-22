@@ -136,6 +136,15 @@ export {
 } from "./rekey.ts";
 export type { Result } from "./result.ts";
 export {
+  isSignedRootChange,
+  ROOT_CHANGE_ACCEPT_PURPOSE,
+  ROOT_CHANGE_PURPOSE,
+  type RootChange,
+  type RootChangeStatement,
+  rootChangeMessage,
+  signRootChange,
+} from "./root-change.ts";
+export {
   formatRecoveryKey,
   formatSecretKey,
   type KeyTextError,

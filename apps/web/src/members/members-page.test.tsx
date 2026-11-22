@@ -1,4 +1,4 @@
-import { certify } from "@kennwort/core";
+import { certify, encodeBytes } from "@kennwort/core";
 import { ed25519KeyPair } from "@kennwort/crypto";
 import { setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
@@ -99,7 +99,7 @@ describe("MembersPage", () => {
     const lying = {
       ...s.api,
       company: async () => ({
-        id: "weber",
+        id: encodeBytes(c.certificate.companyId),
         rootPublicKey: ed25519KeyPair().publicKey,
         policy: null,
         recoveryPublicKey: null,

@@ -9,8 +9,10 @@ import {
   invitationMac,
   type MembersWire,
   newInvitation,
+  type Policy,
+  type RootRotation,
 } from "@kennwort/core";
-import { ed25519KeyPair } from "@kennwort/crypto";
+import { ed25519KeyPair, type RootChange } from "@kennwort/crypto";
 import { derive, fakeApi, memory, PASSPHRASE } from "../session/session.test-kit.ts";
 import { createSession } from "../session/session.ts";
 import { stateServer } from "../session/state-server.test-kit.ts";
@@ -97,6 +99,14 @@ export const server = (c: Awaited<ReturnType<typeof jonasCompany>>, rows: Row[])
   const left: Uint8Array[] = [];
   const certified: Certificate[] = [];
   const roles: { certificate: Certificate; rootGrant: Uint8Array | undefined }[] = [];
+  // As the real server: a new root comes with its change, its policy and its certificates (K-307 f)
+  const company = {
+    rootPublicKey: c.rootPublicKey as Uint8Array,
+    rootChanges: [] as RootChange[],
+    policy: null as Policy | null,
+  };
+  const rotations: Omit<RootRotation, "rootSecretKey">[] = [];
+  const keyBlocks: Uint8Array[] = [];
   const api: MembersDeps = {
     ...state.deps,
     writeState: async (...args) => {
@@ -104,10 +114,11 @@ export const server = (c: Awaited<ReturnType<typeof jonasCompany>>, rows: Row[])
       return state.deps.writeState(...args);
     },
     company: async () => ({
-      id: "weber",
-      rootPublicKey: c.rootPublicKey,
-      policy: null,
+      id: encodeBytes(c.certificate.companyId),
+      rootPublicKey: company.rootPublicKey,
+      policy: company.policy,
       recoveryPublicKey: null,
+      rootChanges: company.rootChanges,
     }),
     members: async () => rows,
     invite: async () => ({ token: "einmal", expiresAt: 1 }),
@@ -118,6 +129,27 @@ export const server = (c: Awaited<ReturnType<typeof jonasCompany>>, rows: Row[])
     },
     rootGrant: async () => undefined,
     savePolicy: async () => true,
+    replaceRoot: async (_token, rotation) => {
+      calls.push("root");
+      rotations.push(rotation);
+      company.rootPublicKey = rotation.change.newRootPublicKey;
+      company.rootChanges.push(rotation.change);
+      company.policy = rotation.policy;
+      for (const certificate of rotation.certificates) {
+        const index = rows.findIndex(
+          (r) => encodeBytes(r.id) === encodeBytes(certificate.accountId),
+        );
+        const row = rows[index];
+        if (row)
+          rows[index] = { ...row, certificate, previous: row.certificate ? [row.certificate] : [] };
+      }
+      return true;
+    },
+    writeKeyBlock: async (_token, sealed) => {
+      calls.push("key-block");
+      keyBlocks.push(sealed);
+      return true;
+    },
     ...noRecovery,
     changeRole: async (_token, certificate, rootGrant) => {
       calls.push("role");
@@ -134,5 +166,5 @@ export const server = (c: Awaited<ReturnType<typeof jonasCompany>>, rows: Row[])
       return row !== undefined;
     },
   };
-  return { api, calls, certified, roles, state, left };
+  return { api, calls, certified, roles, state, left, company, rotations, keyBlocks };
 };

@@ -3,7 +3,7 @@
  * account ID and the session token. Shared logic (vaults, entries, policy) asks only for this.
  */
 import type { AccountState, Unlocked } from "@kennwort/core";
-import { encodeBytes } from "@kennwort/core";
+import { encodeBytes, followRoot } from "@kennwort/core";
 import { type KeptState, type SaveError, type StateDeps, saveState } from "./state-sync.ts";
 
 /**
@@ -42,7 +42,13 @@ export const stateUpdater =
     if (!current) return { ok: false as const, error: "unreachable" as const };
     const saved = await saveState(api, current, change);
     if (!saved.ok) return saved;
-    if (opened() === current) setOpened({ ...current, state: saved.value });
+    // A confirmed root change moves the key block's root along (P-07)
+    if (opened() === current)
+      setOpened({
+        ...current,
+        state: saved.value,
+        keyBlock: followRoot(current.keyBlock, saved.value),
+      });
     await keeper?.keepState(encodeBytes(current.accountId), saved.kept);
     return { ok: true as const, value: saved.value };
   };

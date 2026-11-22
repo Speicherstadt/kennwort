@@ -21,6 +21,7 @@ export const companyRoutes = () =>
             rootPublicKey: company.rootPublicKey,
             policy: company.policy ? JSON.parse(company.policy) : null,
             recoveryPublicKey: company.recoveryPublicKey,
+            rootChanges: c.var.scope.rootChanges(),
           })
         : c.json({ error: "not-found" }, 404);
     })

@@ -5,12 +5,18 @@
  */
 import { constantTimeEqual, open, seal } from "@kennwort/crypto";
 import { z } from "zod";
+import { type RetiredRoot, successorOf } from "../membership/root-change.ts";
 import { err, ok, type Result } from "../result.ts";
 import { bytes, encodeBytes } from "../sync/bytes.ts";
 import { parseJson } from "../sync/record.ts";
 import { EmergencySeen, mergeEmergency } from "./emergency-seen.ts";
 
 const Remembered = z.object({ seq: z.number().int().nonnegative(), hash: bytes(32) });
+const Retired = z.object({
+  publicKey: bytes(32),
+  next: bytes(32),
+  until: z.number().int().nonnegative(),
+});
 
 export const AccountState = z.object({
   rootFingerprint: bytes(32),
@@ -54,6 +60,12 @@ export const AccountState = z.object({
    * renewed (P-12) the derivation gives another one, so the state keeps the first
    */
   personalVault: z.string().optional(),
+  /**
+   * Roots this account replaced after a person confirmed the change (K-307 part f, P-07): each
+   * with its successor's fingerprint and the change's time. A second change from one of them is
+   * a fork, and their certificates count only for what was signed before the change
+   */
+  retiredRoots: z.array(Retired).default([]),
 });
 export type AccountState = z.infer<typeof AccountState>;
 
@@ -76,6 +88,11 @@ const toJson = (state: AccountState) =>
         { seq: log.seq, hash: encodeBytes(log.hash) },
       ]),
     ),
+    retiredRoots: state.retiredRoots.map((r) => ({
+      publicKey: encodeBytes(r.publicKey),
+      next: encodeBytes(r.next),
+      until: r.until,
+    })),
   });
 
 export const sealState = (
@@ -151,12 +168,49 @@ const mergeBundles = (mine: AccountState, theirs: AccountState) => {
   return merged;
 };
 
+/**
+ * The confirmed root changes of both sides; the same old root with another successor or time is a
+ * fork, never merged (P-07)
+ */
+const mergeRetired = (mine: RetiredRoot[], theirs: RetiredRoot[]) => {
+  const merged = [...mine];
+  for (const root of theirs) {
+    const known = merged.find((r) => constantTimeEqual(r.publicKey, root.publicKey));
+    if (!known) merged.push(root);
+    else if (!constantTimeEqual(known.next, root.next) || known.until !== root.until)
+      return undefined;
+  }
+  return merged;
+};
+
+/**
+ * The pinned root of the side that confirmed more changes: both sides' roots must lead to it by
+ * the confirmed changes, otherwise one side pinned a root the other never confirmed (P-07)
+ */
+const newerRoot = (mine: AccountState, theirs: AccountState, retired: RetiredRoot[]) => {
+  const latest = successorOf(retired, mine.rootFingerprint);
+  const agree = constantTimeEqual(latest, successorOf(retired, theirs.rootFingerprint));
+  const pinned = [mine.rootFingerprint, theirs.rootFingerprint].some((fp) =>
+    constantTimeEqual(fp, latest),
+  );
+  return agree && pinned ? latest : undefined;
+};
+
+/**
+ * A side's private root key, only if that side pinned the merged root: a side that has not seen a
+ * confirmed change still holds the old root's key, which counts no more (P-07)
+ */
+const rootSecretOf = (state: AccountState, root: Uint8Array) =>
+  constantTimeEqual(state.rootFingerprint, root) ? state.rootSecretKey : undefined;
+
 /** Both devices' knowledge, the higher of each; a different root or bundle for one account is refused */
 export const mergeStates = (
   mine: AccountState,
   theirs: AccountState,
 ): Result<AccountState, MergeError> => {
-  if (!constantTimeEqual(mine.rootFingerprint, theirs.rootFingerprint)) return err("other-root");
+  const retiredRoots = mergeRetired(mine.retiredRoots, theirs.retiredRoots);
+  const root = retiredRoots && newerRoot(mine, theirs, retiredRoots);
+  if (!retiredRoots || !root) return err("other-root");
   const bundles = mergeBundles(mine, theirs);
   if (!bundles) return err("other-bundle");
   const logs = newerLogs(mine.logs, theirs.logs);
@@ -165,9 +219,9 @@ export const mergeStates = (
     const known = mine.invitations[id];
     if (known !== undefined && known !== account) return err("other-invitation");
   }
-  const rootSecretKey = mine.rootSecretKey ?? theirs.rootSecretKey;
+  const rootSecretKey = rootSecretOf(mine, root) ?? rootSecretOf(theirs, root);
   return ok({
-    rootFingerprint: mine.rootFingerprint,
+    rootFingerprint: root,
     ...(rootSecretKey ? { rootSecretKey } : {}),
     bundles,
     logs,
@@ -183,6 +237,7 @@ export const mergeStates = (
     neverSave: [...new Set([...mine.neverSave, ...theirs.neverSave])].sort(),
     emergency: mergeEmergency(mine.emergency, theirs.emergency),
     ...personalOf(mine, theirs),
+    retiredRoots,
   });
 };
 
@@ -206,4 +261,5 @@ export const emptyState = (
   policyLock: 10,
   neverSave: [],
   emergency: {},
+  retiredRoots: [],
 });

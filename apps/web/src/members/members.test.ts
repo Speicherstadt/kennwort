@@ -33,7 +33,7 @@ describe("loadMembers", () => {
     const lying = {
       ...api,
       company: async () => ({
-        id: "weber",
+        id: encodeBytes(c.certificate.companyId),
         rootPublicKey: ed25519KeyPair().publicKey,
         policy: null,
         recoveryPublicKey: null,

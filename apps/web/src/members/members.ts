@@ -7,12 +7,14 @@
 
 import { loadPolicy } from "@kennwort/client/policy/policy.ts";
 import { makeRecoveryKey, ownRecoveryKey } from "@kennwort/client/policy/recovery.ts";
+import { replaceRoot } from "@kennwort/client/root/root-change.ts";
 import type { MembersApi } from "@kennwort/client/session/members-api.ts";
 import type { PolicyApi } from "@kennwort/client/session/policy-api.ts";
 import type { RecoveryApi } from "@kennwort/client/session/recovery-api.ts";
 import type { StateDeps } from "@kennwort/client/session/state-sync.ts";
 import {
   type AccountState,
+  bytes,
   type Certificate,
   type CompanyRole,
   certifyInvited,
@@ -25,30 +27,54 @@ import {
   newInvitation,
   openRootGrant,
   type PendingMember,
-  trustedRoot,
+  rootOf,
 } from "@kennwort/core";
-import { bundleFingerprint, constantTimeEqual } from "@kennwort/crypto";
+import {
+  bundleFingerprint,
+  comparisonCode,
+  constantTimeEqual,
+  type RootChange,
+} from "@kennwort/crypto";
 import type { Opened, Session } from "../session/session.ts";
 
 export type MembersDeps = MembersApi & PolicyApi & StateDeps & RecoveryApi;
 
 export type Loaded = { views: MemberView[]; me: MemberView | undefined };
-export type LoadError = "unreachable" | "root-mismatch";
+export type LoadError = "unreachable" | "root-mismatch" | "root-fork" | "root-retired";
+/** A new company root waits for this person to compare its code with an owner (P-07) */
+export type PendingRoot = { changes: RootChange[]; code: string };
+export type LoadFailure =
+  | { ok: false; error: LoadError }
+  | { ok: false; error: "root-change"; pending: PendingRoot };
 
 const same = (a: Uint8Array, b: Uint8Array) => encodeBytes(a) === encodeBytes(b);
 
+const seconds = () => Math.floor(Date.now() / 1000);
+
+/**
+ * The list under the pinned root and the roots this account replaced; a new root the server serves
+ * comes back as waiting for the person, never as trusted (P-07, K-307 part f)
+ */
 export const loadMembers = async (
   api: MembersDeps,
   opened: Opened,
-): Promise<{ ok: true; value: Loaded } | { ok: false; error: LoadError }> => {
+): Promise<{ ok: true; value: Loaded } | LoadFailure> => {
   const [company, members] = await Promise.all([
     api.company(opened.token),
     api.members(opened.token),
   ]);
-  if (!company || !members) return { ok: false, error: "unreachable" };
-  const root = trustedRoot(opened.state.rootFingerprint, company.rootPublicKey);
-  if (!root) return { ok: false, error: "root-mismatch" };
-  const views = checkMembers(root, members, opened.state.certificates);
+  const companyId = bytes(16).safeParse(company?.id);
+  if (!company || !members || !companyId.success) return { ok: false, error: "unreachable" };
+  const root = rootOf(opened.state, { ...company, companyId: companyId.data }, seconds());
+  if (root.kind === "change")
+    return {
+      ok: false,
+      error: "root-change",
+      pending: { changes: root.changes, code: comparisonCode(root.fingerprint) },
+    };
+  if (root.kind === "refused") return { ok: false, error: root.error };
+  const { certificates, retiredRoots } = opened.state;
+  const views = checkMembers(root.root, members, certificates, retiredRoots);
   return { ok: true, value: { views, me: views.find((v) => same(v.accountId, opened.accountId)) } };
 };
 
@@ -123,7 +149,17 @@ export const afterOwnerLeft = async (api: MembersDeps, session: Session) => {
   return makeRecoveryKey(api, session);
 };
 
-/** The account leaves the company; an owner who left held the recovery key: a new one (P-13) */
+/**
+ * An owner or admin left or became a member (K-307 part f): they kept a copy of the root, so this
+ * owner's client replaces it (P-07); the members take the new one once they compared its code
+ */
+const afterManagerLeft = async (api: MembersDeps, session: Session) =>
+  (await replaceRoot(api, session)).ok;
+
+/**
+ * The account leaves the company; an owner or admin who left held the root: a new one, and an owner
+ * held the recovery key as well: a new one too (P-07, P-13)
+ */
 export const leaveCompany = async (
   api: MembersDeps,
   session: Session,
@@ -133,8 +169,10 @@ export const leaveCompany = async (
   const opened = session.opened();
   if (!opened || !(await api.leave(opened.token, accountId))) return false;
   const id = encodeBytes(accountId);
-  if (views.some((v) => encodeBytes(v.accountId) === id && v.role === "owner"))
-    await afterOwnerLeft(api, session);
+  const role = views.find((v) => encodeBytes(v.accountId) === id)?.role;
+  if (role !== "member" && role !== undefined && !(await afterManagerLeft(api, session)))
+    return false;
+  if (role === "owner") await afterOwnerLeft(api, session);
   return true;
 };
 
@@ -170,7 +208,11 @@ export const setRole = async (
   }));
   const saved =
     remembered.ok && (await api.changeRole(opened.token, certificate, rootGrant, recovery.grant));
-  if (!saved || view.role !== "owner" || role === "owner") return saved;
+  if (!saved) return false;
+  // Whoever loses the root with the new role still has a copy of it (P-07)
+  if (view.role !== "member" && role === "member" && !(await afterManagerLeft(api, session)))
+    return false;
+  if (view.role !== "owner" || role === "owner") return true;
   return afterOwnerLeft(api, session);
 };
 

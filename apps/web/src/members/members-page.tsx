@@ -10,8 +10,6 @@ import { Badge, Button, Icon, m } from "@kennwort/ui";
 import { ShieldCheck } from "@kennwort/ui/icons";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, For, Loading, Match, onSettled, resolve, Show, Switch } from "solid-js";
-import { PolicySection } from "../policy/policy-section.tsx";
-import { RecoverySection } from "../policy/recovery-section.tsx";
 import { queryKeys } from "../queries.ts";
 import type { Opened, Session } from "../session/session.ts";
 import { InviteForm } from "./invite-form.tsx";
@@ -21,7 +19,6 @@ import {
   type ConfirmError,
   confirm,
   invite,
-  type LoadError,
   leaveCompany,
   loadMembers,
   type MembersDeps,
@@ -32,6 +29,7 @@ import {
   needsRoot,
   setRole,
 } from "./members.ts";
+import { CompanySections, type Load, LoadProblem, refreshAfterRoot } from "./members-load.tsx";
 import { createRenewedCheck, RenewedCheck } from "./renewed-dialog.tsx";
 
 const roleText = (role: MemberView["role"]) =>
@@ -73,6 +71,9 @@ const Status = (props: {
     </Match>
     <Match when={props.view.status === "renewed"}>
       <Badge>{m.members_renewed()}</Badge>
+    </Match>
+    <Match when={props.view.status === "former"}>
+      <Badge>{m.members_former()}</Badge>
     </Match>
     <Match when={props.view.status === "invalid"}>
       <Badge tone="danger">{m.members_invalid()}</Badge>
@@ -176,8 +177,6 @@ const MemberRow = (props: {
   );
 };
 
-type Load = Awaited<ReturnType<typeof loadMembers>> | null | undefined;
-
 /** An invitation link from the open account, none while it is locked */
 const inviting =
   (props: { session: Session; api: MembersDeps; origin: string }) => (label: string) => {
@@ -243,10 +242,7 @@ export const MembersPage = (props: {
     const loaded = members.data;
     return loaded?.ok ? loaded.value : undefined;
   };
-  const loadError = (): LoadError | undefined => {
-    const loaded = members.data;
-    return loaded && !loaded.ok ? loaded.error : undefined;
-  };
+  const afterRoot = refreshAfterRoot(client);
   /** A change to the list: busy while it runs, its problem shown, then the list anew */
   const act = async (work: () => Promise<string | undefined>) => {
     setBusy(true);
@@ -273,13 +269,12 @@ export const MembersPage = (props: {
       </h1>
       <div class="grid max-w-xl gap-6">
         <Loading>
-          <Show when={loadError()}>
-            {(error) => (
-              <p role="alert" class={alertClass}>
-                {error() === "root-mismatch" ? m.members_root_mismatch() : m.members_load_failed()}
-              </p>
-            )}
-          </Show>
+          <LoadProblem
+            loaded={members.data}
+            session={props.session}
+            api={props.api}
+            onRoot={afterRoot}
+          />
           <Show when={ready()}>
             {(list) => (
               <>
@@ -319,15 +314,11 @@ export const MembersPage = (props: {
                 </ul>
                 <ExitDialogs leaving={leaving} />
                 <RenewedCheck check={renewal} me={list().me} />
-                <PolicySection
+                <CompanySections
                   session={props.session}
                   api={props.api}
                   canEdit={may(mayChangeRoles, list().me)}
-                />
-                <RecoverySection
-                  session={props.session}
-                  api={props.api}
-                  canEdit={may(mayChangeRoles, list().me)}
+                  onRoot={afterRoot}
                 />
               </>
             )}
