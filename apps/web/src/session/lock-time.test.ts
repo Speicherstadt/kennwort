@@ -74,4 +74,19 @@ describe("a new lock time", () => {
     flush();
     expect(session.opened()).toBeUndefined();
   });
+
+  // Date.now follows the wall clock, which can be set back (NTP, a changed time zone setting, a
+  // user): a last use "in the future" must not stretch the lock time beyond its length
+  it("never waits longer than the lock time when the clock went back", async () => {
+    const { clock, session } = await openSession();
+    clock.advance(MINUTE);
+    session.touch();
+    clock.advance(-60 * MINUTE);
+    session.setLockAfter(5 * MINUTE);
+    flush();
+    expect(session.opened()).toBeDefined();
+    clock.advance(5 * MINUTE);
+    flush();
+    expect(session.opened()).toBeUndefined();
+  });
 });
