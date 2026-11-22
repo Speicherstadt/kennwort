@@ -12,9 +12,12 @@ import { fixture } from "./test/helpers.ts";
 import type { Parser } from "./types.ts";
 import { parseXml } from "./xml.ts";
 
-/** The text formats; the ZIP containers have their own fuzzing (zip.property.test.ts) */
+/**
+ * The text formats; the ZIP containers and KeePass's KDBX have their own fuzzing
+ * (zip.property.test.ts, kdbx.property.test.ts)
+ */
 const isText = (format: ImportFormat): format is ImportFormat & { parse: Parser } =>
-  format.file !== "ZIP" && format.file !== "1PUX";
+  format.file !== "ZIP" && format.file !== "1PUX" && format.file !== "KDBX";
 
 const PARSERS: [string, Parser][] = [
   ...IMPORT_FORMATS.filter(isText).map((f): [string, Parser] => [f.id, f.parse]),

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import type { EntryContent } from "@kennwort/core";
 import { setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
@@ -87,7 +88,7 @@ const rows = (root: ParentNode) =>
 describe("ImportPage up to the file", () => {
   it("offers every vendor and shows how to export from the chosen one", async () => {
     const root = await show(deps().deps);
-    expect(root.querySelectorAll("li button").length).toBe(23);
+    expect(root.querySelectorAll("li button").length).toBe(24);
     await choose(root, "Bitwarden (JSON)");
     expect(root.textContent).toContain("Werkzeuge");
     expect(root.querySelector<HTMLInputElement>('input[type="file"]')?.accept).toBe(
@@ -315,5 +316,81 @@ describe("ImportPage when the person leaves", () => {
     dispose();
     dispose = () => {};
     expect(new Uint8Array(buffer).every((b) => b === 0)).toBe(true);
+  });
+});
+
+describe("ImportPage with a KeePass database (K-502 Teil 3)", () => {
+  const fixtures = "../../../../packages/core/src/import/fixtures/";
+  const bytesOf = (name: string) => readFileSync(new URL(fixtures + name, import.meta.url));
+  /** Picks the database (and key file), types the password and opens it */
+  const unlock = async (root: ParentNode, password: string, keyFile?: string) => {
+    const set = (name: string, file: string) => {
+      const input = root.querySelector<HTMLInputElement>(`input[name="${name}"]`);
+      if (!input) throw new Error(`no ${name}`);
+      Object.defineProperty(input, "files", {
+        value: [new File([bytesOf(file)], file)],
+        configurable: true,
+      });
+    };
+    set("database", "kdbx-keyfile-v1.kdbx");
+    if (keyFile) set("key-file", keyFile);
+    const field = root.querySelector<HTMLInputElement>('input[type="password"]');
+    if (!field) throw new Error("no password field");
+    field.value = password;
+    await click(button(root, "Datenbank öffnen"));
+    return field;
+  };
+
+  it("asks for the master password and a key file, then previews the entries", async () => {
+    const root = await show(deps().deps);
+    await choose(root, "KeePass / KeePassXC (KDBX)");
+    expect(root.textContent).toContain("Master-Passwort");
+    expect(root.querySelector<HTMLInputElement>('input[name="database"]')?.accept).toBe(".kdbx");
+    const field = await unlock(root, "Weber-Haustechnik-2026", "kdbx-key-v1.key");
+    // The field lets go of the password as soon as the reader has it
+    expect(field.value).toBe("");
+    expect(root.querySelector("h2")?.textContent).toBe("Vorschau");
+    expect(rows(root).some((r) => r.includes("Lohnbüro Sandra"))).toBe(true);
+    expect(root.textContent).not.toContain("Bilanz#2026-Anna");
+  });
+
+  it("says when the password or key file does not fit, and stays on the step", async () => {
+    const root = await show(deps().deps);
+    await choose(root, "KeePass / KeePassXC (KDBX)");
+    await unlock(root, "Weber-Haustechnik-2026");
+    expect(root.querySelector('[role="alert"]')?.textContent).toBe(
+      "Passwort oder Schlüsseldatei passen nicht zu dieser Datenbank.",
+    );
+    expect(root.querySelector('input[type="password"]')).not.toBeNull();
+  });
+
+  it("zeroes the key file's bytes when the database cannot be read", async () => {
+    const root = await show(deps().deps);
+    await choose(root, "KeePass / KeePassXC (KDBX)");
+    const keyBuffer = bytesOf("kdbx-key-v1.key").buffer.slice(0);
+    const database = new File([], "weber.kdbx");
+    Object.defineProperty(database, "arrayBuffer", { value: () => Promise.reject(new Error()) });
+    const keyFile = new File([], "weber.key");
+    // The very buffer the page reads, to see what is left in it afterwards
+    Object.defineProperty(keyFile, "arrayBuffer", { value: async () => keyBuffer });
+    for (const [name, file] of [
+      ["database", database],
+      ["key-file", keyFile],
+    ] as const) {
+      const input = root.querySelector<HTMLInputElement>(`input[name="${name}"]`);
+      Object.defineProperty(input, "files", { value: [file], configurable: true });
+    }
+    await click(button(root, "Datenbank öffnen"));
+    expect(root.querySelector('[role="alert"]')?.textContent).toBe(
+      "Die Datei ließ sich nicht öffnen.",
+    );
+    expect(new Uint8Array(keyBuffer).every((b) => b === 0)).toBe(true);
+  });
+
+  it("asks for the database first", async () => {
+    const root = await show(deps().deps);
+    await choose(root, "KeePass / KeePassXC (KDBX)");
+    await click(button(root, "Datenbank öffnen"));
+    expect(root.querySelector('[role="alert"]')?.textContent).toBe("Wähle zuerst die Datenbank.");
   });
 });

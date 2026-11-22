@@ -26,6 +26,7 @@ const HOW_TO: Record<string, () => string> = {
   "lastpass-csv": () => m.import_howto_lastpass_csv(),
   "1password-1pux": () => m.import_howto_onepassword_1pux(),
   "1password-csv": () => m.import_howto_onepassword_csv(),
+  "keepass-kdbx": () => m.import_howto_keepass_kdbx(),
   "keepass-xml": () => m.import_howto_keepass_xml(),
   "keepassxc-csv": () => m.import_howto_keepassxc_csv(),
   "keepass-csv": () => m.import_howto_keepass_csv(),
@@ -58,6 +59,7 @@ const ACCEPT: Record<string, string> = {
   ZIP: ".zip,application/zip",
   "1PUX": ".1pux",
   "2FAS": ".2fas,.json,application/json",
+  KDBX: ".kdbx",
 };
 
 /** Files the app names with more than core does; a QR code is no file at all */
@@ -68,6 +70,9 @@ const FILE_NAMED: Record<string, () => string> = {
 
 /** Google Authenticator exports QR codes: the import scans them or takes the pasted links */
 export const isQr = (choice: VendorChoice) => choice.format?.file === "QR";
+
+/** An encrypted file such as KeePass's database: the import asks for its password */
+export const isLocked = (choice: VendorChoice) => choice.format?.unlock !== undefined;
 
 const choiceOf = (format: ImportFormat): VendorChoice => ({
   id: format.id,

@@ -1738,7 +1738,12 @@ Die Parser (`packages/core/src/import/`, K-502) sind reine Funktionen ohne Netz,
 Logs: Datei rein, Einträge raus, Fehler als Werte. Kaputte oder böswillige Dateien lassen sie weder
 abstürzen noch hängen (ein Durchgang ohne Rekursion, kein XML mit Dokumenttyp, also keine
 Entitäten, die wachsen); Fuzzing mit fast-check prüft das. Verschlüsselte Fremdexporte erkennen sie
-und lesen sie nicht.
+und lesen sie nicht, außer KeePass' KDBX 4 mit dem Master-Passwort: Die Bausteine (Argon2d/id,
+AES-KDF, AES-256-CBC, ChaCha20, Salsa20, HMAC-SHA-256) stehen in `packages/crypto/src/kdbx.ts` auf
+`@noble` mit Testvektoren, die Rahmung in `packages/core`. Kopf-Prüfsumme, Kopf-HMAC und jeder
+HMAC-Block werden vor dem Entschlüsseln geprüft; die Kosten der Schlüsselableitung (Argon2 bis
+1 GiB, 100 Durchläufe, 8 GiB Arbeit, 256 Lanes; AES-KDF bis 100 Millionen Runden) und die entpackte Größe
+(64 MiB) haben Grenzen, damit eine böswillige Datei das Gerät nicht lahmlegt.
 
 **Wehrt ab:** E-21.
 

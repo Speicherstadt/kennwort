@@ -88,6 +88,37 @@ describe("KeePass XML (K-502)", () => {
     ]);
   });
 
+  it("reads KDBX 4's times: Base64 of the seconds since 0001-01-01", () => {
+    const since1 = (unix: number, length = 8) => {
+      const bytes = Buffer.alloc(Math.max(8, length));
+      bytes.writeBigUInt64LE(BigInt(unix + 62_135_596_800));
+      return bytes.subarray(0, length).toString("base64");
+    };
+    const times = [
+      since1(1_762_157_700),
+      since1(1_762_157_701, 12),
+      since1(-1),
+      since1(1_700_000_000, 6),
+      "AQ==",
+    ];
+    const xml = `<KeePassFile><Root><Group><Entry>
+      <String><Key>Password</Key><Value>neu</Value></String><History>${times
+        .map(
+          (time, i) =>
+            `<Entry><Times><LastModificationTime>${time}</LastModificationTime></Times><String><Key>Password</Key><Value>alt${i}</Value></String></Entry>`,
+        )
+        .join("")}</History>
+    </Entry></Group></Root></KeePassFile>`;
+    const result = parseKeePassXml(xml);
+    expect(result.ok && result.value[0]?.content.history.map((h) => h.replacedAt)).toEqual([
+      1_762_157_700_000,
+      1_762_157_701_000,
+      0,
+      (Number(BigInt(1_700_000_000 + 62_135_596_800) & 0xffffffffffffn) - 62_135_596_800) * 1000,
+      0,
+    ]);
+  });
+
   it("refuses XML that is not a KeePass file and text that is no XML", () => {
     expect(parseKeePassXml("<KeePassFile><Root/></KeePassFile>")).toEqual({
       ok: false,

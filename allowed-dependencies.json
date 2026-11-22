@@ -18,7 +18,7 @@
       "workspaces": ["apps/web"]
     },
     "@noble/ciphers": {
-      "reason": "XChaCha20-Poly1305 (and later ChaCha20/AES for KDBX): audited, pure TypeScript, no dependencies of its own; the only cipher library packages/crypto may use (docs/plan.md, Kryptografie)",
+      "reason": "XChaCha20-Poly1305, and AES-256, ChaCha20 and Salsa20 to read KeePass databases (KDBX 4, import only): audited, pure TypeScript, no dependencies of its own; the only cipher library packages/crypto may use (docs/plan.md, Kryptografie)",
       "workspaces": ["packages/crypto"]
     },
     "@noble/post-quantum": {
@@ -26,7 +26,7 @@
       "workspaces": ["packages/crypto"]
     },
     "@noble/hashes": {
-      "reason": "SHA-2, HKDF-SHA-512 and Argon2id; audited, pure TypeScript, a dependency of the other @noble packages anyway",
+      "reason": "SHA-2, HMAC, HKDF-SHA-512, Argon2id, and Argon2d to read KeePass databases (KDBX 4); audited, pure TypeScript, a dependency of the other @noble packages anyway",
       "workspaces": ["packages/crypto"]
     },
     "@noble/curves": {

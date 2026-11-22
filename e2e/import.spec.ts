@@ -6,7 +6,7 @@ import { addEntry } from "./entries.ts";
 import { QR, qrPng } from "./qr.ts";
 
 // K-501: Jonas brings the company's logins from Bitwarden, Chrome and a spreadsheet into Kennwort;
-// K-503: and the one-time codes from Google Authenticator and 2FAS
+// K-502: and KeePassXC's database; K-503: and the one-time codes from Google Authenticator and 2FAS
 test.use({ locale: "de-DE" });
 
 const fixture = (name: string) => join(import.meta.dirname, "fixtures", name);
@@ -139,6 +139,51 @@ test.describe("import", { tag: "@phone" }, () => {
     await visibleLink(page, "Einträge").click();
     await option(page, "Werkstatt-WLAN").click();
     await expect(page.getByRole("heading", { level: 1, name: "Werkstatt-WLAN" })).toBeVisible();
+  });
+
+  // A copy of the KeePassXC database with a cheap KDF (Argon2id, 1 MiB): KeePassXC's own AES-KDF
+  // of a second per attempt takes several in a browser on CI; the Vitest tests open that one
+  test("Jonas opens the company's KeePass database with password and key file", async ({
+    page,
+  }) => {
+    await setUpCompany(page);
+    const sent = recordRequests(page);
+    await visibleLink(page, "Einstellungen").click();
+    await page.getByRole("button", { name: "Importieren" }).click();
+    await page.getByRole("button", { name: "KeePass / KeePassXC (KDBX)", exact: true }).click();
+    await page
+      .getByLabel("Datenbank (.kdbx) wählen")
+      .setInputFiles(coreFixture("kdbx-keyfile-v1.kdbx"));
+    const password = page.getByLabel("Master-Passwort");
+    await password.fill("Weber-Haustechnik-2026");
+    await axe(page);
+    // Without the key file the database does not open
+    await page.getByRole("button", { name: "Datenbank öffnen" }).click();
+    await expect(page.getByRole("alert")).toHaveText(
+      "Passwort oder Schlüsseldatei passen nicht zu dieser Datenbank.",
+    );
+    await expect(password).toHaveValue("");
+
+    await page
+      .getByLabel("Datenbank (.kdbx) wählen")
+      .setInputFiles(coreFixture("kdbx-keyfile-v1.kdbx"));
+    await page
+      .getByLabel("Schlüsseldatei (nur wenn die Datenbank eine hat)")
+      .setInputFiles(coreFixture("kdbx-key-v1.key"));
+    await password.fill("Weber-Haustechnik-2026");
+    await page.getByRole("button", { name: "Datenbank öffnen" }).click();
+    await expect(page.getByText("4 Einträge in der Datei")).toBeVisible();
+    await expect(rows(page)).toContainText("Wärmepumpen-Portal");
+    await expect(rows(page)).not.toContainText("Gelöschter Zugang");
+    await expect(rows(page)).not.toContainText("Bilanz#2026-Anna");
+    await finish(page, "4 Einträge importieren");
+    // Neither the master password nor a secret of the database went to the server
+    expect(sent.join("\n")).not.toContain("Weber-Haustechnik-2026");
+    expect(sent.join("\n")).not.toContain("Bilanz#2026-Anna");
+
+    await visibleLink(page, "Einträge").click();
+    await option(page, "Lohnbüro Sandra").click();
+    await expect(page.getByRole("heading", { level: 1, name: "Lohnbüro Sandra" })).toBeVisible();
   });
 
   test("Jonas brings the team's one-time codes from Google Authenticator's two export QR codes", async ({

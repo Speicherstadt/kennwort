@@ -336,7 +336,7 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
     `DecompressionStream` (asynchron) und eigenem ZIP-Verzeichnis. Fertig, wenn: je Anbieter ein
     ZIP-Fixture besteht, auch mit gespeicherten und komprimierten Dateien, und kaputte ZIPs
     (falsche Längen, Zip-Bomben über eine Größengrenze) als Fehler enden.
-  - [ ] Teil 3: KDBX 4 – Header, HMAC-Blöcke, Argon2d/id, AES-256 und ChaCha20 aus `@noble` in
+  - [x] Teil 3: KDBX 4 – Header, HMAC-Blöcke, Argon2d/id, AES-256 und ChaCha20 aus `@noble` in
     `packages/crypto`, Rahmung und Gzip (`DecompressionStream`) in `packages/core`, innerer Strom
     (ChaCha20) für geschützte Werte, dann der KeePass-XML-Parser; auch Passbolts KDBX. Fertig,
     wenn: Fixtures aus KeePassXC und KeePass 2 (Passwort, Schlüsseldatei) bestehen, falsches
