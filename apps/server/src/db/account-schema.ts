@@ -34,3 +34,16 @@ export const rootGrants = sqliteTable("root_grants", {
   wrapped: bytes("wrapped"),
   createdAt: integer("created_at").notNull(),
 });
+
+/**
+ * Certificates of bundles an account has replaced (K-307 part e, P-12): kept so the logs and
+ * records its old keys signed still verify; each client checks them under the root itself
+ */
+export const supersededCertificates = sqliteTable("superseded_certificates", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  accountId: text("account_id")
+    .notNull()
+    .references(() => accounts.id),
+  certificate: text("certificate").notNull(),
+  supersededAt: integer("superseded_at").notNull(),
+});

@@ -1,4 +1,5 @@
-import { encodeBytes } from "@kennwort/core";
+import { bytes, encodeBytes, rekeyToWire } from "@kennwort/core";
+import { ed25519KeyPair, signRekey } from "@kennwort/crypto";
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../app.ts";
@@ -414,6 +415,47 @@ const cases: Record<string, () => Promise<void>> = {
     });
     const max = app.db.select().from(loginKeys).where(eq(loginKeys.accountId, "max")).get();
     expect(max?.publicKey).toBe("max-key");
+  },
+  "PUT /api/account/rekey": async () => {
+    // Jonas renews his keys (P-12): Max's keys, session and vault keys at Müller Elektro stay
+    maxKeys();
+    maxSession();
+    const ed = ed25519KeyPair(new Uint8Array(32).fill(0x10));
+    app.db
+      .insert(accountKeys)
+      .values({
+        accountId: "jonas",
+        xwingPublicKey: Buffer.alloc(1216),
+        edPublicKey: Buffer.from(ed.publicKey),
+        keyBlock: Buffer.alloc(8),
+        unlockPassphrase: Buffer.alloc(8),
+        unlockRecovery: Buffer.alloc(8),
+        state: Buffer.alloc(8),
+        stateCounter: 0,
+        updatedAt: 1,
+      })
+      .onConflictDoNothing()
+      .run();
+    const statement = {
+      accountSalt: new Uint8Array(16),
+      loginPublicKey: new Uint8Array(32),
+      recoveryLoginPublicKey: new Uint8Array(32),
+      xwingPublicKey: new Uint8Array(1216).fill(1),
+      edPublicKey: new Uint8Array(32).fill(1),
+      keyBlock: new Uint8Array(8).fill(1),
+      state: new Uint8Array(8).fill(1),
+      stateCounter: 1,
+      unlock: { passphrase: new Uint8Array(73), recovery: new Uint8Array(73) },
+      vaultKeys: [],
+    };
+    const accountId = bytes(16).parse(encodeBytes(new Uint8Array(16)));
+    const proof = signRekey(ed.secretKey, { ...statement, accountId });
+    await jonasSends("PUT", "/api/account/rekey", rekeyToWire({ ...statement, accountId, proof }));
+    const max = app.db.select().from(accountKeys).where(eq(accountKeys.accountId, "max")).get();
+    expect(max?.keyBlock).toEqual(Buffer.alloc(8));
+    expect(
+      app.db.select().from(authSession).where(eq(authSession.id, "max-session")).get(),
+    ).toBeDefined();
   },
   "PUT /api/account/state": async () => {
     // Writes only Jonas's own state; Max's stays at counter 0

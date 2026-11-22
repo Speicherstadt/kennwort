@@ -35,6 +35,7 @@ export {
   type Rekeyed,
   type RekeyUpload,
   rekeyAccount,
+  rekeyToWire,
 } from "./account/rekey.ts";
 export {
   ACCOUNT_RENEWAL_PURPOSE,

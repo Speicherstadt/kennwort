@@ -29,6 +29,7 @@ import {
 } from "@kennwort/crypto";
 import type { Keyring } from "../membership/vault-ops.ts";
 import { encodeBytes } from "../sync/bytes.ts";
+import { toWire } from "../sync/wire.ts";
 import { type AccountState, sealState } from "./state.ts";
 
 export type RekeyUpload = RekeyStatement & {
@@ -120,3 +121,10 @@ export const rekeyAccount = (
   const proof = signRekey(current.keyBlock.ed.secretKey, statement);
   return { accountKey, secretKey, recoveryKey, keyBlock, state, upload: { ...statement, proof } };
 };
+
+/** PUT /api/account/rekey's body; the account is the session's, so its ID stays out */
+export const rekeyToWire = ({ accountId: _, unlock, vaultKeys, ...upload }: RekeyUpload) => ({
+  ...toWire(upload),
+  unlock: toWire(unlock),
+  vaultKeys: vaultKeys.map((key) => toWire(key)),
+});

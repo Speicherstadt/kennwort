@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
 import { loginKeyPair, recoveryLoginKeyPair } from "../auth/sign-in.ts";
 import { encodeBytes } from "../sync/bytes.ts";
 import { createAccount } from "./create.ts";
-import { derivedPersonalVault, rekeyAccount } from "./rekey.ts";
+import { derivedPersonalVault, rekeyAccount, rekeyToWire } from "./rekey.ts";
 import { emptyState, openState } from "./state.ts";
 import { type Stored, unlockWithPassphrase, unlockWithRecoveryKey } from "./unlock.ts";
 
@@ -150,5 +150,22 @@ describe("rekeyAccount", () => {
 
   it("leaves nothing the old AK opens", () => {
     expect(openKeyBlock(anna.accountKey, anna.accountId, upload.keyBlock).ok).toBe(false);
+  });
+
+  it("goes on the wire as base64url, without the account the session names", () => {
+    const wire: Record<string, unknown> = rekeyToWire(upload);
+    expect(wire).not.toHaveProperty("accountId");
+    expect(wire.accountSalt).toBe(encodeBytes(upload.accountSalt));
+    expect(wire.stateCounter).toBe(5);
+    expect(wire.proof).toBe(encodeBytes(upload.proof));
+    expect(wire.unlock).toEqual({
+      passphrase: encodeBytes(upload.unlock.passphrase),
+      recovery: encodeBytes(upload.unlock.recovery),
+    });
+    expect((wire.vaultKeys as unknown[])[1]).toEqual({
+      vaultId: encodeBytes(vaultId),
+      epoch: 1,
+      wrapped: encodeBytes(upload.vaultKeys[1]?.wrapped as Uint8Array),
+    });
   });
 });

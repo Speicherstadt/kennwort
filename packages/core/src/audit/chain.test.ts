@@ -144,6 +144,21 @@ describe("verifyAudit", () => {
     });
   });
 
+  it("checks a client action against each key of an actor who renewed her keys (P-12)", () => {
+    const events = build(steps);
+    const renewed = { ...check, publicKeyOf: () => [anna.ed.publicKey, jonas.ed.publicKey] };
+    expect(verifyAudit(events, renewed).ok).toBe(true);
+    const others = { ...check, publicKeyOf: () => [anna.ed.publicKey] };
+    expect(verifyAudit(events, others)).toEqual({
+      ok: false,
+      error: { problem: "bad-signature", seq: 4 },
+    });
+    expect(verifyAudit(events, { ...check, publicKeyOf: () => [] })).toEqual({
+      ok: false,
+      error: { problem: "bad-signature", seq: 4 },
+    });
+  });
+
   it("finds a signed client action that the server repeats", () => {
     const replayed = build([...steps, steps[4] as Step]);
     expect(verifyAudit(replayed, check)).toEqual({

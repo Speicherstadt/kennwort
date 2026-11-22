@@ -91,7 +91,10 @@ const refusal = (
   const entries = s.entriesOf(rows);
   if (rows.length > 0) {
     const signer = membersOf(entries).get(accountId);
-    if (signer?.role !== "manage" || !isCurrent(signer, s.seconds())) return "forbidden";
+    // A current member renews her own keys in the log with the new ones (P-12), whatever her role
+    const ownRekey = entry.action === "rekey" && encodeBytes(entry.accountId) === accountId;
+    const rights = signer?.role === "manage" || (ownRekey && signer !== undefined);
+    if (!rights || !isCurrent(signer, s.seconds())) return "forbidden";
   } else if (s.vaultOf(companyId, encodeBytes(entry.vaultId))?.createdBy !== accountId) {
     // Only who created the vault writes its genesis: no colleague takes a new vault over
     return "forbidden";
