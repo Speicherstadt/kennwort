@@ -1,6 +1,6 @@
 /**
  * „Einmal-Link“ on an entry (K-601, P-18): the entry's fields with a value (no TOTP seed), sealed
- * on this device, the address shown once. What goes out is listed before anything is made.
+ * on this device, the address shown once (nothing of a passkey). What goes out is listed first.
  */
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { linkContentOfEntry } from "@kennwort/core";

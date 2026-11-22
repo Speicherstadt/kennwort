@@ -481,7 +481,8 @@ Link, kein Server kann sie senken (E-18). Version, Art und Länge werden vor jed
 geprüft; ein falsches Geheimnis, eine falsche Passphrase und jedes geänderte Byte scheitern am
 Tag von XChaCha20-Poly1305, eine unbekannte Version oder Art ist ein Fehler (E-17). Eine
 Passphrase in NFKC, leer oder nicht wohlgeformt schreibt Kennwort nicht. Der Inhalt trägt nichts
-vom Tresor (keine IDs, kein Verlauf, keine Tags) und nie den Schlüssel eines Einmalcodes; der
+vom Tresor (keine IDs, kein Verlauf, keine Tags), nie den Schlüssel eines Einmalcodes und nichts
+aus einem Passkey (sein privater Schlüssel meldete Fremde für immer an); der
 Empfänger liest ihn erst nach der Prüfung des Schemas. Umgesetzt in
 `packages/crypto/src/one-time-link.ts`, der Inhalt und die Adresse in `packages/core/src/links/`;
 die Testvektoren in `packages/crypto/vectors/one-time-link-v1.json` entstehen ohne den Code, den
@@ -2211,7 +2212,7 @@ durch etwas Gleichwertiges ersetzt; wo nicht, steht das Restrisiko hier.
 Ein Mitglied schickt einen Eintrag oder einen freien Text an jemanden ohne Konto (K-601):
 
 1. **Erstellen.** Der Client baut den Inhalt (beim Eintrag jedes Feld mit Wert außer dem Schlüssel
-   eines Einmalcodes), zieht ein neues Geheimnis und verschlüsselt nach
+   eines Einmalcodes; aus einem Passkey nichts), zieht ein neues Geheimnis und verschlüsselt nach
    [F-15](#f-15-einmal-link-v1), auf Wunsch zusätzlich unter einer Passphrase. Er schickt nur den
    Geheimtext mit Ablauf (5 Minuten bis 7 Tage) und Zahl der Abrufe (1 bis 10) an
    `POST /api/links`. Der Server nimmt das nur mit Sitzung, höchstens 64 KiB, je Konto

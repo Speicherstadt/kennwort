@@ -45,6 +45,21 @@ describe("linkContentOfEntry", () => {
     });
   });
 
+  // Review of K-601: a passkey's private key would let an outsider sign in as the account for good,
+  // like a TOTP seed; only the encrypted JSON export carries passkeys (K-504)
+  it("takes nothing of a passkey, its private key above all", () => {
+    const passkey = {
+      type: "passkey",
+      title: "Großhandel",
+      fields: [
+        { label: "Website", value: "grosshandel.example", kind: "text" },
+        { label: "Benutzername", value: "jonas@weber.example", kind: "text" },
+        { label: "Privater Schlüssel", value: "AQkJCQkJ", kind: "secret" },
+      ],
+    } as const;
+    expect(linkContentOfEntry(passkey).fields).toEqual([]);
+  });
+
   it("carries nothing of the vault: no tags, favorite, history or IDs", () => {
     const text = new TextDecoder().decode(encodeLinkContent(linkContentOfEntry(wlan)));
     for (const absent of ['Baustelle"]', "favorite", "history", "alt", "ssid", "JBSWY3DP"])
@@ -89,6 +104,10 @@ describe("encodeLinkContent and decodeLinkContent", () => {
       expect(decodeLinkContent(utf8(JSON.stringify(value)))).toEqual(damaged);
     expect(decodeLinkContent(utf8("{"))).toEqual(damaged);
     expect(decodeLinkContent(Uint8Array.of(0xff, 0xfe))).toEqual(damaged);
+    // Invalid UTF-8 inside an otherwise valid string is damaged too, not quietly replaced by U+FFFD
+    const valid = encodeLinkContent(linkContentOfText("X", "Nachricht", "4711"));
+    expect(decodeLinkContent(valid).ok).toBe(true);
+    expect(decodeLinkContent(valid.map((byte) => (byte === 0x58 ? 0xff : byte)))).toEqual(damaged);
     expect(decodeLinkContent(new Uint8Array())).toEqual(damaged);
   });
 

@@ -19,6 +19,8 @@ Klartext in einer Mail oder einem Chat liegen bleibt. Der Link läuft ab und lä
 **Aus einem Eintrag:** Öffne den Eintrag und tippe auf **Einmal-Link**. Der Dialog nennt die
 Felder, die in den Link kommen: jedes Feld mit einem Wert, außer dem Schlüssel eines Einmalcodes
 (TOTP). Den gibt Kennwort nie nach außen, sonst hätte die Person den zweiten Faktor für immer.
+Aus einem Passkey kommt nichts in den Link: Mit seinem privaten Schlüssel könnte sich die Person
+für immer als du anmelden.
 Einen Link aus einem Eintrag erstellen kann, wer im Tresor bearbeiten oder verwalten darf, wie beim
 Teilen; für einen Eintrag, der mit dir geteilt wurde, gibt es keinen.
 

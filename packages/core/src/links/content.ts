@@ -29,18 +29,21 @@ export type LinkContent = z.infer<typeof LinkContent>;
 
 /** An entry as the app shows it: its fields with the labels in the app's language */
 export type LinkSource = {
+  type?: string;
   title: string;
   fields: readonly { label: string; value: string; kind: z.infer<typeof FieldKind> }[];
 };
 
 /**
  * The fields of an entry that go into a link: every one with a value, except a TOTP seed, which
- * would give an outsider the second factor for good
+ * would give an outsider the second factor for good. Of a passkey nothing goes: its private key
+ * would let them sign in as the account for good (only the encrypted export carries passkeys)
  */
 export const linkContentOfEntry = (entry: LinkSource): LinkContent => ({
   version: 1,
   title: entry.title,
   fields: entry.fields
+    .filter(() => entry.type !== "passkey")
     .filter((field) => field.value !== "" && field.kind !== "totp")
     .map((field) => ({ label: field.label, value: field.value, secret: field.kind === "secret" })),
 });
