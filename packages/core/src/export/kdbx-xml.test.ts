@@ -162,6 +162,37 @@ describe("kdbxXml", () => {
       "Password",
     ]);
   });
+
+  // Review of K-504: KeePassXC refuses the whole database on a key twice ("Duplicate custom
+  // attribute found"), so a key must be unique as written, after what XML 1.0 forbids is dropped
+  it("keeps keys unique as written, also when a name holds characters XML drops", () => {
+    const entry = {
+      ...banking,
+      fields: [
+        { name: "Password\u0001", value: "1", secret: false },
+        { name: "PIN", value: "2", secret: false },
+        { name: "PIN\u0002", value: "3", secret: false },
+        { name: "\u0003", value: "4", secret: false },
+      ],
+    };
+    const text = textOf(kdbxXml([{ name: "x", entries: [entry] }], counter(), 0));
+    const keys = [...text.matchAll(/<Key>([^<]*)<\/Key>/g)].map((m) => m[1]);
+    // The entry's own keys, before its two history entries
+    const own = keys.slice(0, 11);
+    expect(own).toEqual([
+      "Title",
+      "UserName",
+      "Password",
+      "URL",
+      "Notes",
+      "otp",
+      "KP2A_URL",
+      "Password (2)",
+      "PIN",
+      "PIN (2)",
+      "Field",
+    ]);
+  });
 });
 
 describe("protectXml", () => {

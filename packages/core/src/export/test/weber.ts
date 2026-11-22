@@ -89,3 +89,26 @@ export const TECHNIK: ExportVault = {
 };
 
 export const WEBER: ExportVault[] = [BUERO, TECHNIK];
+
+/** Jonas's passkey for the wholesaler's shop (K-406), as the extension stores it */
+export const PASSKEY_ENTRY: ExportVault["entries"][number] = {
+  type: "passkey",
+  title: "Großhandel Shop",
+  fields: [
+    { id: "rp-id", name: "rp-id", value: "shop.grosshandel.example", kind: "text" },
+    { id: "username", name: "username", value: "jonas.weber", kind: "text" },
+    { id: "display-name", name: "display-name", value: "Jonas Weber", kind: "text" },
+    { id: "user-handle", name: "user-handle", value: "dXNlci1qb25hcw", kind: "text" },
+    { id: "credential-id", name: "credential-id", value: "AAECAwQFBgcICQoLDA0ODw", kind: "text" },
+    {
+      id: "private-key",
+      name: "private-key",
+      value: "AVBhc3NrZXktUHJpdmF0ZS1LZXktV2ViZXI",
+      kind: "secret",
+    },
+    { id: "counter", name: "counter", value: "0", kind: "text" },
+  ],
+  tags: [],
+  favorite: false,
+  history: [],
+};

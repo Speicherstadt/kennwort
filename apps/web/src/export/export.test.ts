@@ -191,4 +191,26 @@ describe("runExport", () => {
     ).toEqual({ ok: false, error: "failed" });
     expect(broken.saved).toEqual([]);
   });
+
+  // Review of K-504: CSV and KDBX carry no passkeys, so the count says what is in the file
+  it("counts only what the format carries: passkeys in the encrypted JSON alone", async () => {
+    const passkey: EntryContent = {
+      type: "passkey",
+      title: "Großhandel Shop",
+      fields: [{ id: "private-key", name: "private-key", value: "AVBr", kind: "secret" }],
+      tags: [],
+      favorite: false,
+      history: [],
+    };
+    const run = deps(async () => true);
+    run.deps.vaults = () => [{ ...VAULTS[0], entries: [login("DATEV", "x"), passkey] }] as never;
+    const scope = { kind: "all" } as const;
+    expect(await runExport(run.deps, { format: "csv", scope, passphrase: "" })).toMatchObject({
+      ok: true,
+      count: 1,
+    });
+    expect(
+      await runExport(run.deps, { format: "kennwort-json", scope, passphrase: KEY }),
+    ).toMatchObject({ ok: true, count: 2 });
+  }, 30_000);
 });

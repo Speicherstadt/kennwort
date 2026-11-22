@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseBitwardenCsv } from "../import/bitwarden-csv.ts";
 import { parseCsv } from "../import/csv.ts";
 import { BITWARDEN_COLUMNS, csvCell, writeBitwardenCsv } from "./csv.ts";
-import { BUERO, TECHNIK, WEBER } from "./test/weber.ts";
+import { BUERO, PASSKEY_ENTRY, TECHNIK, WEBER } from "./test/weber.ts";
 
 const rowsOf = (csv: string) => {
   const rows = parseCsv(csv);
@@ -155,5 +155,16 @@ describe("CSV round trip", () => {
     expect(ssh?.folders).toEqual(["Technik"]);
     expect(values(ssh?.content.fields).at(-1)?.[1]).toContain("Wärme: Pumpe");
     expect(TECHNIK.entries).toHaveLength(2);
+  });
+});
+
+// Review of K-504: "Passkeys trägt nur das verschlüsselte JSON" (docs/import-export.md); a
+// passkey's key is Kennwort's own (F-12) and no use to another manager, so plain text gets none
+describe("writeBitwardenCsv and passkeys", () => {
+  it("leaves a passkey out, its private key above all", () => {
+    const csv = writeBitwardenCsv([{ name: "Büro", entries: [PASSKEY_ENTRY, ...BUERO.entries] }]);
+    expect(csv).not.toContain("AVBhc3NrZXktUHJpdmF0ZS1LZXktV2ViZXI");
+    expect(csv).not.toContain("Großhandel Shop");
+    expect(rowsOf(csv)).toHaveLength(1 + BUERO.entries.length);
   });
 });

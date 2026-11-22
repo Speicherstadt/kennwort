@@ -7,7 +7,7 @@ import { openKdbx } from "../import/kdbx.ts";
 import { readKdbxHeader } from "../import/kdbx-header.ts";
 import { readHmacBlocks } from "../import/kdbx-payload.ts";
 import { hmacBlocks, KDBX_EXPORT_ARGON2, writeKdbx } from "./kdbx.ts";
-import { BUERO, TECHNIK, WEBER } from "./test/weber.ts";
+import { BUERO, PASSKEY_ENTRY, TECHNIK, WEBER } from "./test/weber.ts";
 
 const cheap = { memoryKiB: 8, iterations: 1, parallelism: 1 };
 let seed = 0;
@@ -127,6 +127,20 @@ describe("KDBX round trip", () => {
     ]);
     expect(result.value[1]?.content.type).toBe("note");
     expect(BUERO.entries).toHaveLength(2);
+  });
+});
+
+// Review of K-504: only the encrypted JSON carries passkeys (docs/import-export.md)
+describe("KDBX and passkeys", () => {
+  it("leaves a passkey out", async () => {
+    const vaults = [{ name: "Büro", entries: [PASSKEY_ENTRY, ...BUERO.entries] }];
+    const result = await openKdbx(await writeKdbx(vaults, "Kessel Rohr", NOW, options), {
+      password: "Kessel Rohr",
+    });
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.map((e) => e.content.title)).toEqual(
+      BUERO.entries.map((e) => e.title),
+    );
   });
 });
 
