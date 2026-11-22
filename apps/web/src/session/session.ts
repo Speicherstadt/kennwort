@@ -47,6 +47,8 @@ export type SessionDeps = {
   storage: Pick<Storage, "getItem" | "setItem" | "removeItem"> | undefined;
   lockAfterMs?: number;
   schedule?: (run: () => void, ms: number) => unknown;
+  /** The clock the lock time counts on; only tests pass their own */
+  now?: () => number;
   /** Argon2id as F-05 fixes it; only tests pass a lighter one */
   derive?: Derive;
   /** Random bytes for a new Secret Key; only tests pass fixed ones */
@@ -129,7 +131,9 @@ const createLock = (deps: SessionDeps) => {
   const [opened, setOpenedSignal] = createSignal<Opened>();
   const schedule = deps.schedule ?? ((run, ms) => setTimeout(run, ms));
   const cancel = deps.cancel ?? ((timer) => clearTimeout(timer as number));
+  const now = deps.now ?? Date.now;
   let timer: unknown;
+  let lastUse = 0;
   let current: Opened | undefined;
   let lockAfter = deps.lockAfterMs ?? LOCK_AFTER_MS;
   const setOpened = (value: Opened | undefined) => {
@@ -142,16 +146,26 @@ const createLock = (deps: SessionDeps) => {
     current?.loginKey?.fill(0);
     setOpened(undefined);
   };
+  // Clamped to the lock time: Date.now follows the wall clock, and one set back would otherwise
+  // put the last use in the future and keep the account open longer
+  const scheduleLock = () => {
+    cancel(timer);
+    timer = schedule(lock, Math.min(lockAfter, Math.max(0, lastUse + lockAfter - now())));
+  };
   /** Any use of the app pushes the automatic lock back */
   const touch = () => {
     if (!current) return;
-    cancel(timer);
-    timer = schedule(lock, lockAfter);
+    lastUse = now();
+    scheduleLock();
   };
-  /** The company policy's lock time (K-304); it counts from now on */
+  /**
+   * The company policy's lock time (K-304). It counts from the last use: the policy arrives a
+   * moment after unlocking, and its arrival is no use of the app (a slow server would otherwise
+   * keep an idle account open longer); an account idle for longer than the new time locks at once
+   */
   const setLockAfter = (ms: number) => {
     lockAfter = ms;
-    touch();
+    if (current) scheduleLock();
   };
   // Another account opened while one is unlocked (setup or invitation) drops the first one properly
   const open = (value: Opened) => {

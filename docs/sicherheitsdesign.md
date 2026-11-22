@@ -805,7 +805,9 @@ durchgelassen hat.
   gültigen Signatur des Wurzelschlüssels aus der Einrichtung und mit höherer Version, und gibt sie
   mit `GET /api/company` heraus. Jeder Client prüft sie unter dem gemerkten Wurzelschlüssel, merkt
   sich die höchste Version im Kontozustand und nimmt keine ältere mehr, auch nicht „keine
-  Richtlinie“, nachdem er eine gesehen hat. Dann gilt ihre Sperrzeit. Eine Richtlinie, die nicht
+  Richtlinie“, nachdem er eine gesehen hat. Dann gilt ihre Sperrzeit, gezählt ab der letzten
+  Benutzung: Kommt die Richtlinie erst nach dem Entsperren an, verschiebt ihr Eintreffen das
+  automatische Sperren nicht, und ein Konto, das schon länger unbenutzt ist, sperrt sofort. Eine Richtlinie, die nicht
   besteht, ändert nichts: Der Client bleibt bei der letzten gültigen und zeigt eine Warnung. Ihre
   Sperrzeit steht dafür mit der Version im Kontozustand; auch nach einem Neuladen oder auf einem
   anderen Gerät kann der Server sie nicht verlängern, indem er die Richtlinie weglässt.
