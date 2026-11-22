@@ -368,7 +368,7 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
     (ChaCha20) für geschützte Werte, dann der KeePass-XML-Parser; auch Passbolts KDBX. Fertig,
     wenn: Fixtures aus KeePassXC und KeePass 2 (Passwort, Schlüsseldatei) bestehen, falsches
     Passwort und geänderte Bytes als Fehler enden, Testvektoren für die Bausteine bestehen.
-  - [ ] Teil 4: Verschlüsselte Fremdexporte – Bitwardens verschlüsseltes und passwortgeschütztes
+  - [x] Teil 4: Verschlüsselte Fremdexporte – Bitwardens verschlüsseltes und passwortgeschütztes
     JSON (PBKDF2/Argon2id, AES-CBC mit HMAC). Fertig, wenn: Fixtures mit Testvektoren aus
     Bitwardens Exporten bestehen und ein falsches Passwort als Fehler endet.
   - [ ] Teil 5: Team Password Manager CSV (Projekte als Tresore) nach dessen Export-Doku und

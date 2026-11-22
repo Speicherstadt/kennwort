@@ -112,6 +112,9 @@ describe("error texts", () => {
       "unsupported-zip",
       "too-large",
       "incomplete",
+      "account-encrypted",
+      "wrong-password",
+      "damaged",
     ] as const;
     const texts = errors.map((error) => errorText(error));
     expect(new Set(texts).size).toBe(errors.length);
@@ -131,5 +134,15 @@ describe("error texts", () => {
     expect(errorText("unsupported", "kennwort-json")).toContain("neueren Version von Kennwort");
     expect(errorText("wrong-key", "keepass-kdbx")).toBe(errorText("wrong-key"));
     expect(errorText("bad-json", "kennwort-json")).toBe(errorText("bad-json"));
+  });
+
+  // K-502 Teil 4: Bitwarden's encrypted JSON has its own refusal, KDFs and limits
+  it("speak of Bitwarden's export types, KDFs and limits for Bitwarden's JSON", () => {
+    expect(errorText("account-encrypted", "bitwarden-json")).toContain("kontobeschränkt");
+    expect(errorText("wrong-password", "bitwarden-json")).toBe(errorText("wrong-password"));
+    expect(errorText("damaged")).toContain("beschädigt oder wurde verändert");
+    expect(errorText("unsupported", "bitwarden-json")).toContain("Bitwarden");
+    expect(errorText("too-costly", "bitwarden-json")).toContain("2 Millionen Iterationen");
+    expect(errorText("too-costly", "keepass-kdbx")).toBe(errorText("too-costly"));
   });
 });

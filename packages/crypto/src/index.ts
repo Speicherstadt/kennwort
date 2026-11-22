@@ -16,6 +16,15 @@ export {
   sealKeyBlock,
   type UnlockPath,
 } from "./account.ts";
+export {
+  type BitwardenCipherText,
+  type BitwardenKdf,
+  type BitwardenKey,
+  bitwardenDecrypt,
+  bitwardenExportKey,
+  bitwardenKdf,
+  bitwardenStretch,
+} from "./bitwarden.ts";
 export { BOX_V1, type BoxContext, KEY_LENGTH, type OpenError, open, seal } from "./box.ts";
 export { constantTimeEqual, keyCommitment } from "./commitment.ts";
 export {

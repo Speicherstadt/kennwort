@@ -6,7 +6,8 @@ import { addEntry } from "./entries.ts";
 import { QR, qrPng } from "./qr.ts";
 
 // K-501: Jonas brings the company's logins from Bitwarden, Chrome and a spreadsheet into Kennwort;
-// K-502: and KeePassXC's database; K-503: and the one-time codes from Google Authenticator and 2FAS
+// K-502: and KeePassXC's database and a password-protected Bitwarden export; K-503: and the
+// one-time codes from Google Authenticator and 2FAS
 test.use({ locale: "de-DE" });
 
 const fixture = (name: string) => join(import.meta.dirname, "fixtures", name);
@@ -184,6 +185,35 @@ test.describe("import", { tag: "@phone" }, () => {
     await visibleLink(page, "Einträge").click();
     await option(page, "Lohnbüro Sandra").click();
     await expect(page.getByRole("heading", { level: 1, name: "Lohnbüro Sandra" })).toBeVisible();
+  });
+
+  // K-502 Teil 4: a password-protected Bitwarden export, with the cheapest PBKDF2 Bitwarden
+  // imports (5 000 iterations) so the browser stays quick; the Vitest tests take the costlier ones
+  test("Jonas opens a password-protected Bitwarden export, after a wrong password", async ({
+    page,
+  }) => {
+    await setUpCompany(page);
+    const sent = recordRequests(page);
+    await importFile(page, "Bitwarden (JSON)", fixture("import-bitwarden-protected.json"));
+    await expect(page.getByText("Gewählte Datei: import-bitwarden-protected.json")).toBeVisible();
+    const password = page.getByLabel("Export-Passwort");
+    await password.fill("Weber-Haustechnik");
+    await axe(page);
+    await page.getByRole("button", { name: "Export öffnen" }).click();
+    await expect(page.getByRole("alert")).toHaveText(
+      "Das Passwort passt nicht zu dieser Datei. Prüfe es und versuche es noch einmal.",
+    );
+    await expect(password).toHaveValue("");
+
+    await password.fill("Weber-Haustechnik-2026");
+    await page.getByRole("button", { name: "Export öffnen" }).click();
+    await expect(page.getByText("3 Einträge in der Datei")).toBeVisible();
+    await expect(rows(page)).toContainText("DATEV Unternehmen online");
+    await expect(rows(page)).not.toContainText("Steuer-Kessel-Rohr-2026!");
+    await finish(page, "3 Einträge importieren");
+    // Neither the export password nor a secret of the export went to the server
+    expect(sent.join("\n")).not.toContain("Weber-Haustechnik-2026");
+    expect(sent.join("\n")).not.toContain("Steuer-Kessel-Rohr-2026!");
   });
 
   test("Jonas brings the team's one-time codes from Google Authenticator's two export QR codes", async ({

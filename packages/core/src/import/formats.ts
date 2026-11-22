@@ -5,7 +5,7 @@
 import { checkKennwortExport, unlockKennwortExport } from "../export/kennwort-json.ts";
 import { parseAegisJson } from "./aegis-json.ts";
 import { parseBitwardenCsv } from "./bitwarden-csv.ts";
-import { parseBitwardenJson } from "./bitwarden-json.ts";
+import { checkBitwardenJson, unlockBitwardenJson } from "./bitwarden-protected.ts";
 import { parseChromeCsv } from "./chrome-csv.ts";
 import { parseDashlaneCsv } from "./dashlane-csv.ts";
 import { parseDashlaneZip } from "./dashlane-zip.ts";
@@ -40,6 +40,12 @@ export type ImportFormat = {
   file: string;
   parse: FileParser;
   unlock?: LockedParser;
+  /**
+   * The file may come plain or password-protected (Bitwarden's JSON): `parse` reads a plain one
+   * itself and answers `encrypted` for a protected one, and only then does the import flow ask for
+   * the password and call `unlock`. Without it, a format with `unlock` always needs the password.
+   */
+  sometimesEncrypted?: true;
 };
 
 export const IMPORT_FORMATS: readonly ImportFormat[] = [
@@ -51,7 +57,15 @@ export const IMPORT_FORMATS: readonly ImportFormat[] = [
     parse: checkKennwortExport,
     unlock: unlockKennwortExport,
   },
-  { id: "bitwarden-json", vendor: "Bitwarden", file: "JSON", parse: parseBitwardenJson },
+  // Plain, or password-protected and then opened with the export password (K-502 Teil 4)
+  {
+    id: "bitwarden-json",
+    vendor: "Bitwarden",
+    file: "JSON",
+    parse: checkBitwardenJson,
+    unlock: unlockBitwardenJson,
+    sometimesEncrypted: true,
+  },
   { id: "bitwarden-csv", vendor: "Bitwarden", file: "CSV", parse: parseBitwardenCsv },
   { id: "lastpass-csv", vendor: "LastPass", file: "CSV", parse: parseLastPassCsv },
   { id: "1password-1pux", vendor: "1Password", file: "1PUX", parse: parseOnePassword1pux },

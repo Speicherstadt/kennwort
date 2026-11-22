@@ -1,6 +1,7 @@
 /**
  * „Importieren“ (K-501): choose the vendor, read where its export is, pick the file (or scan
- * Google Authenticator's QR codes, K-503, or open a KeePass database with its password, K-502),
+ * Google Authenticator's QR codes, K-503, or open a KeePass database or a password-protected
+ * Bitwarden export with its password, K-502),
  * map a table's columns (or open Kennwort's own encrypted export, K-504), check the preview, import into a vault, then delete the file. The file is read and
  * parsed on the device only (docs/plan.md, Import und Export). The plaintext lives in this page's
  * state while the mapping or the preview needs it and no longer: the import's end keeps only
@@ -24,7 +25,7 @@ import { type UnlockRequest, UnlockStep } from "./import-unlock.tsx";
 import type { Comparable } from "./preview.ts";
 import { errorText, guessColumns, parseChoice } from "./read-file.ts";
 import { type ImportOutcome, runImport, type SaveBatch } from "./run.ts";
-import { isLocked, isQr, type VendorChoice, vendorChoices } from "./vendors.ts";
+import { isLocked, isQr, opensWhenEncrypted, type VendorChoice, vendorChoices } from "./vendors.ts";
 
 export type ImportDeps = {
   /** The vaults this account may write in now: no reader's, none with a rotation due (P-11) */
@@ -37,7 +38,14 @@ export type ImportDeps = {
 
 type Step =
   | { step: "vendor" }
-  | { step: "file"; choice: VendorChoice; busy?: boolean; error?: string }
+  | {
+      step: "file";
+      choice: VendorChoice;
+      busy?: boolean;
+      error?: string;
+      /** A file the file step found password-protected: the unlock step asks for its password */
+      locked?: File | undefined;
+    }
   | {
       step: "map";
       choice: VendorChoice;
@@ -64,12 +72,12 @@ const readBytes = (file: File) =>
 const createImportFlow = (save: ImportDeps["save"]) => {
   const [step, setStep] = createSignal<Step>({ step: "vendor" });
 
-  /** The parsed entries to the preview, or the error back to the file step */
-  const parsed = (choice: VendorChoice, result: ImportResult) =>
+  /** The parsed entries to the preview, or the error back to the file step (or unlock step) */
+  const parsed = (choice: VendorChoice, result: ImportResult, locked?: File) =>
     setStep(
       result.ok
         ? { step: "preview", entries: result.value, unsupported: result.skipped ?? 0 }
-        : { step: "file", choice, error: errorText(result.error, choice.id) },
+        : { step: "file", choice, error: errorText(result.error, choice.id), locked },
     );
 
   const onFile = async (choice: VendorChoice, file: File) => {
@@ -79,6 +87,9 @@ const createImportFlow = (save: ImportDeps["save"]) => {
     if (choice.format) {
       const result = await parseChoice(choice, bytes);
       bytes.fill(0);
+      // A Bitwarden export that turns out password-protected: the same file, with its password
+      if (!result.ok && result.error === "encrypted" && opensWhenEncrypted(choice))
+        return setStep({ step: "file", choice, locked: file });
       return parsed(choice, result);
     }
     const columns = csvColumns(bytes);
@@ -105,24 +116,25 @@ const createImportFlow = (save: ImportDeps["save"]) => {
   };
 
   /**
-   * A KeePass database with its password and key file: the bytes of both are zeroed once the
-   * reader is done; the password string only lives in this call
+   * An encrypted file with its password (and a KeePass key file): the bytes of both are zeroed
+   * once the reader is done; the password string only lives in this call. A file the file step
+   * already chose (`locked`) stays chosen if the password does not fit.
    */
-  const onUnlock = async (choice: VendorChoice, request: UnlockRequest) => {
+  const onUnlock = async (choice: VendorChoice, request: UnlockRequest, locked?: File) => {
     const unlock = choice.format?.unlock;
     if (!unlock) return;
-    setStep({ step: "file", choice, busy: true });
+    setStep({ step: "file", choice, busy: true, locked });
     const bytes = await readBytes(request.file);
     const keyFile = request.keyFile && (await readBytes(request.keyFile));
     if (!bytes || (keyFile === undefined && request.keyFile)) {
       bytes?.fill(0);
       keyFile?.fill(0);
-      return setStep({ step: "file", choice, error: m.import_error_unreadable() });
+      return setStep({ step: "file", choice, error: m.import_error_unreadable(), locked });
     }
     const result = await unlock(bytes, { password: request.password, keyFile });
     bytes.fill(0);
     keyFile?.fill(0);
-    parsed(choice, result);
+    parsed(choice, result, locked);
   };
 
   const onMapped = async (map: Extract<Step, { step: "map" }>) => {
@@ -201,12 +213,13 @@ export const ImportPage = (props: { nav: Navigation; deps: ImportDeps }) => {
                   onBack={backToVendor}
                 />
               </Match>
-              <Match when={isLocked(file().choice)}>
+              <Match when={isLocked(file().choice) || file().locked}>
                 <UnlockStep
                   choice={file().choice}
+                  file={file().locked}
                   busy={file().busy ?? false}
                   error={file().error}
-                  onUnlock={(request) => void onUnlock(file().choice, request)}
+                  onUnlock={(request) => void onUnlock(file().choice, request, file().locked)}
                   onBack={backToVendor}
                 />
               </Match>

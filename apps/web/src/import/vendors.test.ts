@@ -1,7 +1,7 @@
 import { IMPORT_FORMATS } from "@kennwort/core";
 import { setLocale } from "@kennwort/ui";
 import { afterEach, describe, expect, it } from "vitest";
-import { isQr, TABLE, vendorChoices } from "./vendors.ts";
+import { isLocked, isQr, opensWhenEncrypted, TABLE, vendorChoices } from "./vendors.ts";
 
 // K-501: the vendor step offers every format core reads, plus any table, in German and English
 afterEach(() => setLocale("de", { reload: false }));
@@ -53,6 +53,15 @@ describe("vendor choices", () => {
     ).toEqual(["google-authenticator"]);
     setLocale("en", { reload: false });
     expect(choice("google-authenticator")?.label()).toBe("Google Authenticator (QR code)");
+  });
+
+  it("asks for a password with the file, or for Bitwarden's JSON once it says so (K-502)", () => {
+    const ids = (keep: (choice: ReturnType<typeof vendorChoices>[number]) => boolean) =>
+      vendorChoices()
+        .filter(keep)
+        .map((c) => c.id);
+    expect(ids(isLocked)).toEqual(["kennwort-json", "keepass-kdbx"]);
+    expect(ids(opensWhenEncrypted)).toEqual(["bitwarden-json"]);
   });
 
   it("accepts the file type of each format in the file picker", () => {

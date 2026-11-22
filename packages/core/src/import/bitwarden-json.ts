@@ -2,8 +2,9 @@
  * Bitwarden's and Vaultwarden's JSON export, of a personal vault (`folders`, `folderId`) or of an
  * organisation (`collections`, `collectionIds`). Item types: 1 login, 2 secure note, 3 card,
  * 4 identity, 5 SSH key; own fields: 0 text, 1 hidden, 2 boolean, 3 linked (a pointer to another
- * field, left out). Earlier passwords go into the history. An encrypted or password-protected
- * export needs the password first and is reported as such. Source: bitwarden/clients,
+ * field, left out). Earlier passwords go into the history. A password-protected export needs the
+ * password first (`encrypted`, opened by bitwarden-protected.ts); an account-restricted one,
+ * encrypted with the Bitwarden account's own key, is `account-encrypted`. Source: bitwarden/clients,
  * libs/importer/src/importers/bitwarden/bitwarden-json-importer.ts and its test data.
  */
 import { z } from "zod";
@@ -175,6 +176,7 @@ export const parseBitwardenJson: Parser = (input) => {
   const json = readJson(input, Export);
   if (!json.ok) return json;
   const file = json.value;
-  if (file.encrypted || file.passwordProtected) return err("encrypted");
+  if (file.passwordProtected) return err("encrypted");
+  if (file.encrypted) return err("account-encrypted");
   return ok(file.items.map(entryOf(byId(file.folders), byId(file.collections))));
 };

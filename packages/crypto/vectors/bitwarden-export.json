@@ -1,0 +1,100 @@
+{
+  "bitwarden": {
+    "kdf": [
+      {
+        "password": "67t9b5g67$%Dh89n",
+        "salt": "test_key",
+        "kdf": {
+          "kind": "pbkdf2",
+          "iterations": 10000
+        },
+        "material": "1f4f68e29647b15ac250acd1118184518aa745a7fe95021b27c5402a16c3564b"
+      },
+      {
+        "password": "67t9b5g67$%Dh89n",
+        "salt": "test_key",
+        "kdf": {
+          "kind": "argon2id",
+          "iterations": 4,
+          "memoryMiB": 32,
+          "parallelism": 2
+        },
+        "material": "cff0e1b1a213a34c626ab3afe00911f01493ed2ff6968db83ee183f23335e1f2"
+      }
+    ],
+    "stretch": {
+      "material": "1f4f68e29647b15ac250acd1118184518aa745a7fe95021b27c5402a16c3564b",
+      "encKey": "6f1fb22dee9825728fd77c5387adc3178e8678f93d84a3b671c5bdccbc15ed60",
+      "macKey": "dd7fceea651bca265634221c4e1cb910303d7fa6d1f7c257e81a3055c1f9b39b"
+    }
+  },
+  "derive": [
+    {
+      "password": "Weber-Haustechnik-2026 – Größe",
+      "salt": "MDEyMzQ1Njc4OTo7PD0+Pw==",
+      "kdf": {
+        "kind": "pbkdf2",
+        "iterations": 5000
+      },
+      "material": "ed696112a2fc6fde6be51387c58e4ada261fd96b5f55b0f6fd0c19d8d5eba61b",
+      "encKey": "b7b7b13100687fb4bc6dadb390b30e7fe8dcc72ad4d225964472e494873a6057",
+      "macKey": "613049299423e3603d5a512c9e75097e4350eb7e87e7ae11ebcab9052d7a6cb2"
+    },
+    {
+      "password": "Weber-Haustechnik-2026 – Größe",
+      "salt": "MDEyMzQ1Njc4OTo7PD0+Pw==",
+      "kdf": {
+        "kind": "argon2id",
+        "iterations": 2,
+        "memoryMiB": 16,
+        "parallelism": 1
+      },
+      "material": "837806d8f626c4c07c556bfbb1c7349807d5e54ea1f2b0022f0ce4a2e886db7e",
+      "encKey": "b78a17a0d1d875fc1287f2d0fdfc735efca8a02a52315a9e4cfe93e5c0cb998c",
+      "macKey": "63f413cd9ec33416ec3032861017f5e19b11f3bb035d9ba12f3daab17d49b498"
+    },
+    {
+      "password": "Weber-Haustechnik-2026 – Größe",
+      "salt": "MDEyMzQ1Njc4OTo7PD0+Pw==",
+      "kdf": {
+        "kind": "argon2id",
+        "iterations": 3,
+        "memoryMiB": 16,
+        "parallelism": 4
+      },
+      "material": "40f7478174bc09abd0ca0d21c855a5f218167dc7e754a67369df6289dda7c3e4",
+      "encKey": "75dbac5ba9fd59c5f3e832a6a9420b2b504d113794869db2b3be3da0c59c6108",
+      "macKey": "1206bab5cfb535b5f621345553546849a1cf741af3757f5e93046c38d0ecdbee"
+    }
+  ],
+  "encString": {
+    "encKey": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+    "macKey": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+    "cases": [
+      {
+        "plain": "",
+        "encString": "2.G7YTGP2LDKsz/mZYXQCXpQ==|aFYUCBG3YNF1/0gSRMOnMw==|GMUZBVEtl920kFHaqypfZ50r1Uy4xE2ls7hTLHyzR8Q="
+      },
+      {
+        "plain": "a0",
+        "encString": "2.k3wZ8UlAdl3/PORwuof6pg==|og4GfqIr0SnTKtfapKQTWA==|5Gye6GIq/LPNPxbaTu5c+mKAV4zB87Wud78ckGdsCfE="
+      },
+      {
+        "plain": "a0a1a2a3a4a5a6a7a8a9aaabacadae",
+        "encString": "2.1Fsd+bXJLjxuiW6VV8wtaQ==|/DFcRTE2e3V2WGy1nTBB0A==|tpZiI64SOC2h/iU2yP/yLbZlggW2H+aArn5BlxHI4dA="
+      },
+      {
+        "plain": "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+        "encString": "2.3pv/uyasMX96SsH196KbWg==|UTu4ay28KgEEACYkwIOUhfxlgTcJuI2gfDwlo0goqjQ=|3QJ7NePQYo3f0xQttTLsCoQAzw5wrfPgADF+74iNhdw="
+      },
+      {
+        "plain": "a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0",
+        "encString": "2.3PDzX7c4+szhEOvd1KZyOg==|qskAZF54ay8jf3ui1iYtfmdnf8RpQWuc/BHDF2arDi4=|suD9XGKMXJO7obIQxVjJM/gr5eFc2ZkMXV2sJaxrNCg="
+      },
+      {
+        "plain": "a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff00010203",
+        "encString": "2.SF7TLWwQRIWceJLLPmSMew==|av1Ej6zgJRbIKOaRDDwO54Z1/0J7FUzQjqJi9jXfLrWqWlLRNqcVxJY9+PHtthsk24UGO5Z0pS4X7QJhVwOxCPUWGMuV+VCPG7MECo2+aSI0c7buvGsbpOiAHSdyfK7fDSBSF3mPKsT0m8j03JcBLA==|WzKuTA8fihtiAnQc957L3z68cqX+fIWO6HvRWvQZz3A="
+      }
+    ]
+  }
+}
