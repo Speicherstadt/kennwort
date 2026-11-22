@@ -76,6 +76,14 @@ export {
   passphraseKeysWith,
   SECRET_KEY_LENGTH,
 } from "./passphrase.ts";
+export {
+  ALERT_HOST_TAG_LENGTH,
+  ALERT_SALT_LENGTH,
+  ALERT_TAG_LENGTH,
+  alertHostTag,
+  alertTag,
+  PASSWORD_ALERT_V1,
+} from "./password-alert.ts";
 export { randomBytes } from "./random.ts";
 export type { Result } from "./result.ts";
 export {
