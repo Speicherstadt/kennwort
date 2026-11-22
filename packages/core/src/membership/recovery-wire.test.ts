@@ -46,7 +46,9 @@ describe("the deposit on the wire", () => {
     expect(RecoveryGrantWire.parse({ recoveryGrant: encodeBytes(k(1194)) }).recoveryGrant).toEqual(
       k(1194),
     );
-    expect(RecoveryGrantWire.safeParse({ recoveryGrant: encodeBytes(k(1195)) }).success).toBe(false);
+    expect(RecoveryGrantWire.safeParse({ recoveryGrant: encodeBytes(k(1195)) }).success).toBe(
+      false,
+    );
   });
 });
 

@@ -77,6 +77,15 @@ describe("the company recovery key", () => {
       ok: false,
       error: "not-authentic",
     });
+    // The label is fixed: a grant wrapped by hand under company-recovery-key opens
+    const byHand = wrap(to, key.secretKey, {
+      purpose: "company-recovery-key",
+      context: [weber, sandraId],
+    });
+    expect(openRecoveryGrant(sandraBlock, sandraId, weber, byHand, fp)).toEqual({
+      ok: true,
+      value: key,
+    });
     const short = wrap(to, new Uint8Array(31), {
       purpose: "company-recovery-key",
       context: [weber, sandraId],
@@ -103,7 +112,10 @@ describe("recoveryPolicy", () => {
   });
 
   it("signs the next version with company recovery off", () => {
-    const on = { ...current, companyRecovery: { enabled: true as const, fingerprint: key.fingerprint } };
+    const on = {
+      ...current,
+      companyRecovery: { enabled: true as const, fingerprint: key.fingerprint },
+    };
     const policy = recoveryPolicy(root.secretKey, on, undefined);
     expect(policy).toMatchObject({ version: 4, companyRecovery: { enabled: false } });
     expect(isSignedPolicy(root.publicKey, policy)).toBe(true);

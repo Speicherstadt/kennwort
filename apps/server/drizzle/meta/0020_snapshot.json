@@ -47,9 +47,7 @@
       "indexes": {
         "accounts_company": {
           "name": "accounts_company",
-          "columns": [
-            "company_id"
-          ],
+          "columns": ["company_id"],
           "isUnique": false
         }
       },
@@ -58,12 +56,8 @@
           "name": "accounts_company_id_companies_id_fk",
           "tableFrom": "accounts",
           "tableTo": "companies",
-          "columnsFrom": [
-            "company_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["company_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -228,12 +222,8 @@
           "name": "account_keys_account_id_accounts_id_fk",
           "tableFrom": "account_keys",
           "tableTo": "accounts",
-          "columnsFrom": [
-            "account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["account_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -273,12 +263,8 @@
           "name": "root_grants_account_id_accounts_id_fk",
           "tableFrom": "root_grants",
           "tableTo": "accounts",
-          "columnsFrom": [
-            "account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["account_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -360,22 +346,15 @@
           "name": "audit_events_company_id_companies_id_fk",
           "tableFrom": "audit_events",
           "tableTo": "companies",
-          "columnsFrom": [
-            "company_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["company_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "audit_events_company_id_seq_pk": {
-          "columns": [
-            "company_id",
-            "seq"
-          ],
+          "columns": ["company_id", "seq"],
           "name": "audit_events_company_id_seq_pk"
         }
       },
@@ -483,12 +462,8 @@
           "name": "auth_account_user_id_auth_user_id_fk",
           "tableFrom": "auth_account",
           "tableTo": "auth_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -581,16 +556,12 @@
       "indexes": {
         "auth_passkey_user": {
           "name": "auth_passkey_user",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         },
         "auth_passkey_credential": {
           "name": "auth_passkey_credential",
-          "columns": [
-            "credential_id"
-          ],
+          "columns": ["credential_id"],
           "isUnique": false
         }
       },
@@ -599,12 +570,8 @@
           "name": "auth_passkey_user_id_auth_user_id_fk",
           "tableFrom": "auth_passkey",
           "tableTo": "auth_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -676,16 +643,12 @@
       "indexes": {
         "auth_session_token_unique": {
           "name": "auth_session_token_unique",
-          "columns": [
-            "token"
-          ],
+          "columns": ["token"],
           "isUnique": true
         },
         "auth_session_user": {
           "name": "auth_session_user",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -694,12 +657,8 @@
           "name": "auth_session_user_id_auth_user_id_fk",
           "tableFrom": "auth_session",
           "tableTo": "auth_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -772,9 +731,7 @@
       "indexes": {
         "auth_user_email_unique": {
           "name": "auth_user_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         }
       },
@@ -884,10 +841,7 @@
       "indexes": {
         "device_sessions_device": {
           "name": "device_sessions_device",
-          "columns": [
-            "account_id",
-            "device_id"
-          ],
+          "columns": ["account_id", "device_id"],
           "isUnique": false
         }
       },
@@ -896,12 +850,8 @@
           "name": "device_sessions_session_id_auth_session_id_fk",
           "tableFrom": "device_sessions",
           "tableTo": "auth_session",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["session_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1057,10 +1007,7 @@
       "indexes": {
         "login_failures_account": {
           "name": "login_failures_account",
-          "columns": [
-            "account_id",
-            "at"
-          ],
+          "columns": ["account_id", "at"],
           "isUnique": false
         }
       },
@@ -1226,12 +1173,8 @@
           "name": "recovery_deposits_account_id_accounts_id_fk",
           "tableFrom": "recovery_deposits",
           "tableTo": "accounts",
-          "columnsFrom": [
-            "account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["account_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1271,12 +1214,8 @@
           "name": "recovery_grants_account_id_accounts_id_fk",
           "tableFrom": "recovery_grants",
           "tableTo": "accounts",
-          "columnsFrom": [
-            "account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["account_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1365,23 +1304,15 @@
           "name": "entry_records_vault_id_vaults_id_fk",
           "tableFrom": "entry_records",
           "tableTo": "vaults",
-          "columnsFrom": [
-            "vault_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["vault_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "entry_records_vault_id_entry_id_version_pk": {
-          "columns": [
-            "vault_id",
-            "entry_id",
-            "version"
-          ],
+          "columns": ["vault_id", "entry_id", "version"],
           "name": "entry_records_vault_id_entry_id_version_pk"
         }
       },
@@ -1472,9 +1403,7 @@
       "indexes": {
         "entry_shares_recipient": {
           "name": "entry_shares_recipient",
-          "columns": [
-            "recipient"
-          ],
+          "columns": ["recipient"],
           "isUnique": false
         }
       },
@@ -1483,23 +1412,15 @@
           "name": "entry_shares_vault_id_vaults_id_fk",
           "tableFrom": "entry_shares",
           "tableTo": "vaults",
-          "columnsFrom": [
-            "vault_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["vault_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "entry_shares_vault_id_entry_id_recipient_pk": {
-          "columns": [
-            "vault_id",
-            "entry_id",
-            "recipient"
-          ],
+          "columns": ["vault_id", "entry_id", "recipient"],
           "name": "entry_shares_vault_id_entry_id_recipient_pk"
         }
       },
@@ -1530,22 +1451,15 @@
           "name": "group_members_group_id_groups_id_fk",
           "tableFrom": "group_members",
           "tableTo": "groups",
-          "columnsFrom": [
-            "group_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["group_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "group_members_group_id_account_id_pk": {
-          "columns": [
-            "group_id",
-            "account_id"
-          ],
+          "columns": ["group_id", "account_id"],
           "name": "group_members_group_id_account_id_pk"
         }
       },
@@ -1587,9 +1501,7 @@
       "indexes": {
         "groups_company": {
           "name": "groups_company",
-          "columns": [
-            "company_id"
-          ],
+          "columns": ["company_id"],
           "isUnique": false
         }
       },
@@ -1598,12 +1510,8 @@
           "name": "groups_company_id_companies_id_fk",
           "tableFrom": "groups",
           "tableTo": "companies",
-          "columnsFrom": [
-            "company_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["company_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1643,12 +1551,8 @@
           "name": "vault_groups_vault_id_vaults_id_fk",
           "tableFrom": "vault_groups",
           "tableTo": "vaults",
-          "columnsFrom": [
-            "vault_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["vault_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1656,22 +1560,15 @@
           "name": "vault_groups_group_id_groups_id_fk",
           "tableFrom": "vault_groups",
           "tableTo": "groups",
-          "columnsFrom": [
-            "group_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["group_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "vault_groups_vault_id_group_id_pk": {
-          "columns": [
-            "vault_id",
-            "group_id"
-          ],
+          "columns": ["vault_id", "group_id"],
           "name": "vault_groups_vault_id_group_id_pk"
         }
       },
@@ -1716,23 +1613,15 @@
           "name": "vault_keys_vault_id_vaults_id_fk",
           "tableFrom": "vault_keys",
           "tableTo": "vaults",
-          "columnsFrom": [
-            "vault_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["vault_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "vault_keys_vault_id_account_id_epoch_pk": {
-          "columns": [
-            "vault_id",
-            "account_id",
-            "epoch"
-          ],
+          "columns": ["vault_id", "account_id", "epoch"],
           "name": "vault_keys_vault_id_account_id_epoch_pk"
         }
       },
@@ -1784,22 +1673,15 @@
           "name": "vault_log_vault_id_vaults_id_fk",
           "tableFrom": "vault_log",
           "tableTo": "vaults",
-          "columnsFrom": [
-            "vault_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["vault_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "vault_log_vault_id_seq_pk": {
-          "columns": [
-            "vault_id",
-            "seq"
-          ],
+          "columns": ["vault_id", "seq"],
           "name": "vault_log_vault_id_seq_pk"
         }
       },
@@ -1844,22 +1726,15 @@
           "name": "vault_requests_vault_id_vaults_id_fk",
           "tableFrom": "vault_requests",
           "tableTo": "vaults",
-          "columnsFrom": [
-            "vault_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["vault_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "vault_requests_vault_id_account_id_pk": {
-          "columns": [
-            "vault_id",
-            "account_id"
-          ],
+          "columns": ["vault_id", "account_id"],
           "name": "vault_requests_vault_id_account_id_pk"
         }
       },
@@ -1915,9 +1790,7 @@
       "indexes": {
         "vaults_company": {
           "name": "vaults_company",
-          "columns": [
-            "company_id"
-          ],
+          "columns": ["company_id"],
           "isUnique": false
         }
       },
@@ -1926,12 +1799,8 @@
           "name": "vaults_company_id_companies_id_fk",
           "tableFrom": "vaults",
           "tableTo": "companies",
-          "columnsFrom": [
-            "company_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["company_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }

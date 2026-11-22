@@ -48,7 +48,12 @@ describe("renewUnlockWithAccountKey", () => {
   });
 
   it("opens AK with the new passphrase and the new Secret Key, and with the new Recovery Key", () => {
-    const byPassphrase = unlockWithPassphrase(after, "Neue Passphrase nach Recovery", newSecret, quick);
+    const byPassphrase = unlockWithPassphrase(
+      after,
+      "Neue Passphrase nach Recovery",
+      newSecret,
+      quick,
+    );
     expect(byPassphrase.ok && byPassphrase.value.accountKey).toEqual(account.accountKey);
     const byRecovery = unlockWithRecoveryKey(after, renewed.recoveryKey);
     expect(byRecovery.ok && byRecovery.value.accountKey).toEqual(account.accountKey);

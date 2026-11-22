@@ -153,7 +153,6 @@ describe("company recovery (P-13)", () => {
   });
 });
 
-
 describe("depositing for company recovery", () => {
   it("wraps AK to the recovery key under purpose company and the account", () => {
     const opened = recoverAccountKey(input());
@@ -165,7 +164,7 @@ describe("depositing for company recovery", () => {
   it("signs company, account, recovery fingerprint, commitment and package", () => {
     expect(isSignedDeposit(block.ed.publicKey, deposit, place, companyFp)).toBe(true);
     expect(isSignedDeposit(block.ed.publicKey, deposit, place, new Uint8Array(32))).toBe(false);
-    const swapped = { ...deposit, pkg: deposit.pkg.with(-1, deposit.pkg.at(-1)! ^ 1) };
+    const swapped = { ...deposit, pkg: deposit.pkg.with(-1, (deposit.pkg.at(-1) ?? 0) ^ 1) };
     expect(isSignedDeposit(block.ed.publicKey, swapped, place, companyFp)).toBe(false);
     const recommitted = { ...deposit, commitment: new Uint8Array(32) };
     expect(isSignedDeposit(block.ed.publicKey, recommitted, place, companyFp)).toBe(false);

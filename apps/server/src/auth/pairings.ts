@@ -15,8 +15,8 @@ import { bytes, encodeBytes, RECOVERY_PACKAGE_LENGTH } from "@kennwort/core";
 import { and, eq, gt, isNotNull, isNull, lte } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
-import type { Db } from "../db/database.ts";
 import { hasDeposit } from "../account/company-recovery.ts";
+import type { Db } from "../db/database.ts";
 import { pairings } from "../db/schema.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 import type { Auth } from "./better-auth.ts";
@@ -130,7 +130,8 @@ const answerFor = (
   if (target === session.accountId)
     return length === DEVICE_PACKAGE_LENGTH ? target : { error: "invalid", status: 400 };
   if (length !== RECOVERY_PACKAGE_LENGTH) return { error: "invalid", status: 400 };
-  if (scope.account(session.accountId)?.role !== "owner") return { error: "forbidden", status: 403 };
+  if (scope.account(session.accountId)?.role !== "owner")
+    return { error: "forbidden", status: 403 };
   const member = scope.account(target);
   return member && member.leftAt === null && hasDeposit(db, member.id)
     ? member.id

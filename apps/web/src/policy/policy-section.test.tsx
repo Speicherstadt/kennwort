@@ -28,7 +28,12 @@ const show = async (canEdit: boolean, policy: (root: Uint8Array) => Policy | nul
   let served = policy(c.opened.state.rootSecretKey ?? new Uint8Array());
   const api = {
     ...s.api,
-    company: async () => ({ id: COMPANY, rootPublicKey: c.rootPublicKey, policy: served }),
+    company: async () => ({
+      id: COMPANY,
+      rootPublicKey: c.rootPublicKey,
+      policy: served,
+      recoveryPublicKey: null,
+    }),
     savePolicy: async (_t: string, next: Policy) => {
       saved.push(next);
       served = next;

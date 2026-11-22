@@ -95,7 +95,12 @@ export const approveRecovery = (input: ApproveInput): Result<Uint8Array, Approve
     rootFingerprint: input.rootFingerprint,
   });
   if (!accountKey.ok) return accountKey;
-  const state = openState(accountKey.value, certificate.accountId, bundle.stateCounter, bundle.state);
+  const state = openState(
+    accountKey.value,
+    certificate.accountId,
+    bundle.stateCounter,
+    bundle.state,
+  );
   if (!state.ok) return err("damaged-state");
   return ok(
     sealRecoveryPackage(input.device.publicKey, input.device.pairingSecret, {
@@ -119,7 +124,10 @@ export const checkRecovered = (
   rootPublicKey: Uint8Array | null,
   certificate: Certificate | null,
 ): Result<true, RecoveredError> => {
-  if (!rootPublicKey || !constantTimeEqual(rootFingerprint(rootPublicKey), keyBlock.rootFingerprint))
+  if (
+    !rootPublicKey ||
+    !constantTimeEqual(rootFingerprint(rootPublicKey), keyBlock.rootFingerprint)
+  )
     return err("root-mismatch");
   const matches =
     certificate !== null &&

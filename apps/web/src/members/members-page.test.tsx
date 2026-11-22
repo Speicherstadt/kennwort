@@ -102,6 +102,7 @@ describe("MembersPage", () => {
         id: "weber",
         rootPublicKey: ed25519KeyPair().publicKey,
         policy: null,
+        recoveryPublicKey: null,
       }),
     };
     const root = await show(c, lying);

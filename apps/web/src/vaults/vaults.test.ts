@@ -87,6 +87,7 @@ describe("newVault and loadVaults", () => {
         id: "weber",
         rootPublicKey: ed25519KeyPair().publicKey,
         policy: null,
+        recoveryPublicKey: null,
       }),
     };
     expect(await loadVaults(lying, c.session)).toEqual({ ok: false, error: "untrusted" });

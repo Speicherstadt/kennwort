@@ -102,7 +102,8 @@ const storeKey = (db: Db, at: number, company: Company, upload: Upload) =>
 /** PUT /api/company/recovery-key: a new recovery key with its grants and the policy naming it */
 const putRecoveryKey = (db: Db, now: () => number) => async (c: Context<TenantEnv>) => {
   const { scope, session } = c.var;
-  if (scope.account(session.accountId)?.role !== "owner") return c.json({ error: "forbidden" }, 403);
+  if (scope.account(session.accountId)?.role !== "owner")
+    return c.json({ error: "forbidden" }, 403);
   const parsed = RecoveryKeyUpload.safeParse(await c.req.json().catch(() => undefined));
   if (!parsed.success) return c.json({ error: "invalid" }, 400);
   const upload = parsed.data;
@@ -173,7 +174,8 @@ const depositJson = (row: typeof recoveryDeposits.$inferSelect) => ({
 /** GET /api/members/:id/recovery: an owner loads what it needs to recover a member */
 const memberRecovery = (db: Db) => (c: Context<TenantEnv>) => {
   const { scope, session } = c.var;
-  if (scope.account(session.accountId)?.role !== "owner") return c.json({ error: "forbidden" }, 403);
+  if (scope.account(session.accountId)?.role !== "owner")
+    return c.json({ error: "forbidden" }, 403);
   const member = scope.account(c.req.param("id") ?? "");
   const deposit = member && member.leftAt === null ? depositOf(db, member.id) : undefined;
   const keys = deposit

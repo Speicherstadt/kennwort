@@ -48,9 +48,13 @@ export const weberWithAnna = async () => {
     body: invitationBody("Anna"),
   });
   const { id, token } = (await made.json()) as { id: string; token: string };
-  const anna = createAccount("Anna Heizung Bad Fliese", emptyState(rootFingerprint(o.company.rootPublicKey)), {
-    derive: quick,
-  });
+  const anna = createAccount(
+    "Anna Heizung Bad Fliese",
+    emptyState(rootFingerprint(o.company.rootPublicKey)),
+    {
+      derive: quick,
+    },
+  );
   const accepted = await o.setup.request(`/auth/invitations/${id}/accept`, {
     body: {
       token,
@@ -82,7 +86,9 @@ export const weberWithAnna = async () => {
 export type WeberWithAnna = Awaited<ReturnType<typeof weberWithAnna>>;
 
 export const policyOf = async (w: WeberWithAnna): Promise<Policy | null> => {
-  const company = (await (await w.o.setup.request("/api/company", { token: w.o.token })).json()) as {
+  const company = (await (
+    await w.o.setup.request("/api/company", { token: w.o.token })
+  ).json()) as {
     policy: unknown;
   };
   return company.policy ? PolicyWire.parse(company.policy) : null;
@@ -97,7 +103,10 @@ export const makeRecoveryKey = async (
   const key = newCompanyRecoveryKey();
   const current = (await policyOf(w)) ?? standardPolicy(w.o.company.companyId);
   const policy = change(recoveryPolicy(w.root, current, key.fingerprint));
-  const grants = owners.map((c) => ({ accountId: c.accountId, grant: grantRecoveryKey(key.secretKey, c) }));
+  const grants = owners.map((c) => ({
+    accountId: c.accountId,
+    grant: grantRecoveryKey(key.secretKey, c),
+  }));
   const answer = await w.o.setup.request("/api/company/recovery-key", {
     method: "PUT",
     token: w.o.token,

@@ -71,4 +71,7 @@ const vectors = cases.map(({ name, company, account, start }) => {
     signature: `01${hex(signature)}`,
   };
 });
-writeFileSync(join(import.meta.dirname, "deposit-v1.json"), `${JSON.stringify(vectors, null, 2)}\n`);
+writeFileSync(
+  join(import.meta.dirname, "deposit-v1.json"),
+  `${JSON.stringify(vectors, null, 2)}\n`,
+);

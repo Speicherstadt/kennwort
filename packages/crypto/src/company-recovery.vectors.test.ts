@@ -23,10 +23,15 @@ describe.each(vectors)("F-08 deposit vector: $name", (vector) => {
   });
 
   it("wraps AK to the same package, which the recovery key opens", () => {
-    const pkg = wrapWithRandomness({ publicKey: recovery.publicKey, fingerprint }, accountKey, where, {
-      kem: fromHex(vector.kemRandomness),
-      nonce: fromHex(vector.nonce),
-    });
+    const pkg = wrapWithRandomness(
+      { publicKey: recovery.publicKey, fingerprint },
+      accountKey,
+      where,
+      {
+        kem: fromHex(vector.kemRandomness),
+        nonce: fromHex(vector.nonce),
+      },
+    );
     expect(hex(pkg)).toBe(vector.package);
     expect(unwrap(recovery.secretKey, fingerprint, pkg, where)).toEqual({
       ok: true,

@@ -5,7 +5,7 @@
 import type { Deposit } from "@kennwort/crypto";
 import { z } from "zod";
 import { bytes, encodeBytes } from "../sync/bytes.ts";
-import { PolicyWire, type Policy, policyToWire } from "./policy.ts";
+import { type Policy, PolicyWire, policyToWire } from "./policy.ts";
 import { RECOVERY_GRANT_LENGTH } from "./recovery-key.ts";
 
 /** A deposit's package: version, X-Wing ciphertext and the box around AK (F-02) */
@@ -41,9 +41,7 @@ export const RecoveryGrantWire = z.object({ recoveryGrant: bytes(RECOVERY_GRANT_
 export const RecoveryKeyUpload = z.object({
   policy: PolicyWire,
   publicKey: bytes(1216),
-  grants: z
-    .array(z.object({ accountId: bytes(16), grant: bytes(RECOVERY_GRANT_LENGTH) }))
-    .min(1),
+  grants: z.array(z.object({ accountId: bytes(16), grant: bytes(RECOVERY_GRANT_LENGTH) })).min(1),
 });
 
 export const recoveryKeyToWire = (

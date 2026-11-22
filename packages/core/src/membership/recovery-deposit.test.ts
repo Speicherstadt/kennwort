@@ -114,7 +114,12 @@ describe("approveRecovery", () => {
   });
 
   it("refuses a deposit the server wrapped itself or signed by someone else", () => {
-    const servers = depositAccountKey(key, new Uint8Array(32).fill(9), place, ed25519KeyPair().secretKey);
+    const servers = depositAccountKey(
+      key,
+      new Uint8Array(32).fill(9),
+      place,
+      ed25519KeyPair().secretKey,
+    );
     expect(approveRecovery(input({ bundle: { ...bundle, deposit: servers } }))).toEqual({
       ok: false,
       error: "not-signed",

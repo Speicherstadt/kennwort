@@ -1,8 +1,8 @@
 // K-307 part c (P-13): the company recovery key, the deposits and how the server keeps them
 import { describe, expect, it } from "bun:test";
 import {
-  changeRole,
   CompanyWire,
+  changeRole,
   depositToWire,
   encodeBytes,
   grantRecoveryKey,
@@ -42,29 +42,45 @@ describe("the company recovery key (P-13)", () => {
     expect(shown.policy).toEqual(policy);
     const grant = await w.o.setup.request("/api/account/recovery-grant", { token: w.o.token });
     expect(RecoveryGrantWire.parse(await grant.json()).recoveryGrant).toHaveLength(1194);
-    expect((await w.o.setup.request("/api/account/recovery-grant", { token: w.annaToken })).status).toBe(
-      404,
-    );
+    expect(
+      (await w.o.setup.request("/api/account/recovery-grant", { token: w.annaToken })).status,
+    ).toBe(404);
   });
 
   it("is taken only from an owner, for exactly the owners, with a root-signed policy naming it", async () => {
     const w = await weberWithAnna();
     const key = newCompanyRecoveryKey();
-    const policy = recoveryPolicy(w.root, signPolicy(w.root, {
-      companyId: w.o.company.companyId,
-      version: 0,
-      lockAfterMinutes: 10,
-      companyRecovery: { enabled: false },
-    }), key.fingerprint);
-    const jonasGrant = { accountId: w.o.owner.accountId, grant: grantRecoveryKey(key.secretKey, w.o.company.certificate) };
-    const annaGrant = { accountId: w.anna.accountId, grant: grantRecoveryKey(key.secretKey, w.annaCert) };
+    const policy = recoveryPolicy(
+      w.root,
+      signPolicy(w.root, {
+        companyId: w.o.company.companyId,
+        version: 0,
+        lockAfterMinutes: 10,
+        companyRecovery: { enabled: false },
+      }),
+      key.fingerprint,
+    );
+    const jonasGrant = {
+      accountId: w.o.owner.accountId,
+      grant: grantRecoveryKey(key.secretKey, w.o.company.certificate),
+    };
+    const annaGrant = {
+      accountId: w.anna.accountId,
+      grant: grantRecoveryKey(key.secretKey, w.annaCert),
+    };
     const put = (body: unknown, token = w.o.token) =>
       w.o.setup.request("/api/company/recovery-key", { method: "PUT", token, body });
-    expect((await put(recoveryKeyToWire(policy, key.publicKey, [jonasGrant]), w.annaToken)).status).toBe(403);
+    expect(
+      (await put(recoveryKeyToWire(policy, key.publicKey, [jonasGrant]), w.annaToken)).status,
+    ).toBe(403);
     // a grant for a member, or none for an owner
-    expect((await put(recoveryKeyToWire(policy, key.publicKey, [jonasGrant, annaGrant]))).status).toBe(400);
+    expect(
+      (await put(recoveryKeyToWire(policy, key.publicKey, [jonasGrant, annaGrant]))).status,
+    ).toBe(400);
     expect((await put(recoveryKeyToWire(policy, key.publicKey, [annaGrant]))).status).toBe(400);
-    expect((await put(recoveryKeyToWire(policy, key.publicKey, [jonasGrant, jonasGrant]))).status).toBe(400);
+    expect(
+      (await put(recoveryKeyToWire(policy, key.publicKey, [jonasGrant, jonasGrant]))).status,
+    ).toBe(400);
     // a policy naming another key, one with recovery off, one the root did not sign
     const other = newCompanyRecoveryKey();
     expect((await put(recoveryKeyToWire(policy, other.publicKey, [jonasGrant]))).status).toBe(400);
@@ -99,7 +115,11 @@ describe("the policy with company recovery", () => {
     await annaDeposits(w, policy, key.publicKey);
     const put = (body: unknown) =>
       w.o.setup.request("/api/company/policy", { method: "PUT", token: w.o.token, body });
-    const lock = signPolicy(w.root, { ...policy, version: policy.version + 1, lockAfterMinutes: 3 });
+    const lock = signPolicy(w.root, {
+      ...policy,
+      version: policy.version + 1,
+      lockAfterMinutes: 3,
+    });
     expect((await put(policyToWire(lock))).status).toBe(200);
     expect(deposits(w)).toHaveLength(1);
     const other = recoveryPolicy(w.root, lock, newCompanyRecoveryKey().fingerprint);
@@ -114,12 +134,16 @@ describe("the policy with company recovery", () => {
 
   it("refuses recovery on without a key the server holds", async () => {
     const w = await weberWithAnna();
-    const on = recoveryPolicy(w.root, signPolicy(w.root, {
-      companyId: w.o.company.companyId,
-      version: 0,
-      lockAfterMinutes: 10,
-      companyRecovery: { enabled: false },
-    }), newCompanyRecoveryKey().fingerprint);
+    const on = recoveryPolicy(
+      w.root,
+      signPolicy(w.root, {
+        companyId: w.o.company.companyId,
+        version: 0,
+        lockAfterMinutes: 10,
+        companyRecovery: { enabled: false },
+      }),
+      newCompanyRecoveryKey().fingerprint,
+    );
     const answer = await w.o.setup.request("/api/company/policy", {
       method: "PUT",
       token: w.o.token,
@@ -137,9 +161,9 @@ describe("deposits", () => {
     expect(status).toBe(200);
     const held = await w.o.setup.request("/api/account/recovery-deposit", { token: w.annaToken });
     expect(HeldDepositWire.parse(await held.json()).deposit).toEqual(deposit);
-    expect((await w.o.setup.request("/api/account/recovery-deposit", { token: w.o.token })).status).toBe(
-      404,
-    );
+    expect(
+      (await w.o.setup.request("/api/account/recovery-deposit", { token: w.o.token })).status,
+    ).toBe(404);
     // a second deposit replaces the first
     expect((await annaDeposits(w, policy, key.publicKey)).status).toBe(200);
     expect(deposits(w)).toHaveLength(1);
@@ -155,11 +179,19 @@ describe("deposits", () => {
         body: depositToWire(deposit),
       });
     const early = newCompanyRecoveryKey();
-    expect((await put(depositAccountKey(early, w.anna.accountKey, place, w.anna.keyBlock.ed.secretKey))).status).toBe(409);
+    expect(
+      (await put(depositAccountKey(early, w.anna.accountKey, place, w.anna.keyBlock.ed.secretKey)))
+        .status,
+    ).toBe(409);
     const { key } = await makeRecoveryKey(w);
     const stranger = depositAccountKey(key, w.anna.accountKey, place, ed25519KeyPair().secretKey);
     expect((await put(stranger)).status).toBe(400);
-    const otherKey = depositAccountKey(early, w.anna.accountKey, place, w.anna.keyBlock.ed.secretKey);
+    const otherKey = depositAccountKey(
+      early,
+      w.anna.accountKey,
+      place,
+      w.anna.keyBlock.ed.secretKey,
+    );
     expect((await put(otherKey)).status).toBe(400);
     const answer = await w.o.setup.request("/api/account/recovery-deposit", {
       method: "PUT",
@@ -196,15 +228,25 @@ describe("owners come and go", () => {
     const w = await weberWithAnna();
     const { key } = await makeRecoveryKey(w);
     const role = (body: unknown) =>
-      w.o.setup.request(`/api/members/${w.annaIdText}/role`, { method: "PUT", token: w.o.token, body });
+      w.o.setup.request(`/api/members/${w.annaIdText}/role`, {
+        method: "PUT",
+        token: w.o.token,
+        body,
+      });
     const owner = changeRole(w.root, w.annaCert, "owner");
-    const body = { certificate: toWire(owner.certificate), rootGrant: encodeBytes(owner.rootGrant ?? new Uint8Array()) };
+    const body = {
+      certificate: toWire(owner.certificate),
+      rootGrant: encodeBytes(owner.rootGrant ?? new Uint8Array()),
+    };
     expect((await role(body)).status).toBe(400);
     const recoveryGrant = encodeBytes(grantRecoveryKey(key.secretKey, owner.certificate));
     expect((await role({ ...body, recoveryGrant })).status).toBe(200);
     expect(grants(w)).toHaveLength(2);
     const admin = changeRole(w.root, owner.certificate, "admin");
-    const demote = { certificate: toWire(admin.certificate), rootGrant: encodeBytes(admin.rootGrant ?? new Uint8Array()) };
+    const demote = {
+      certificate: toWire(admin.certificate),
+      rootGrant: encodeBytes(admin.rootGrant ?? new Uint8Array()),
+    };
     expect((await role({ ...demote, recoveryGrant })).status).toBe(400);
     expect((await role(demote)).status).toBe(200);
     expect(grants(w).map((g) => g.accountId)).toEqual([encodeBytes(w.o.owner.accountId)]);
@@ -220,7 +262,11 @@ describe("owners come and go", () => {
       .run();
     await w.o.setup.request(`/api/members/${w.annaIdText}`, { method: "DELETE", token: w.o.token });
     const db = w.o.setup.db;
-    expect(db.select().from(recoveryDeposits).where(eq(recoveryDeposits.accountId, w.annaIdText)).all()).toEqual([]);
-    expect(db.select().from(recoveryGrants).where(eq(recoveryGrants.accountId, w.annaIdText)).all()).toEqual([]);
+    expect(
+      db.select().from(recoveryDeposits).where(eq(recoveryDeposits.accountId, w.annaIdText)).all(),
+    ).toEqual([]);
+    expect(
+      db.select().from(recoveryGrants).where(eq(recoveryGrants.accountId, w.annaIdText)).all(),
+    ).toEqual([]);
   });
 });

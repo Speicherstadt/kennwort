@@ -91,7 +91,12 @@ export const server = (c: Awaited<ReturnType<typeof jonasCompany>>, rows: Row[])
       calls.push("state");
       return state.deps.writeState(...args);
     },
-    company: async () => ({ id: "weber", rootPublicKey: c.rootPublicKey, policy: null }),
+    company: async () => ({
+      id: "weber",
+      rootPublicKey: c.rootPublicKey,
+      policy: null,
+      recoveryPublicKey: null,
+    }),
     members: async () => rows,
     invite: async () => ({ token: "einmal", expiresAt: 1 }),
     certify: async (_token, certificate) => {
