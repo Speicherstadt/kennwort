@@ -8,6 +8,7 @@ import aegisEncrypted from "../../../../packages/core/src/import/fixtures/aegis-
 import bitwardenJson from "../../../../packages/core/src/import/fixtures/bitwarden.json?raw";
 import bitwardenProtected from "../../../../packages/core/src/import/fixtures/bitwarden-protected-pbkdf2.json?raw";
 import chromeCsv from "../../../../packages/core/src/import/fixtures/chrome.csv?raw";
+import cxf from "../../../../packages/core/src/import/fixtures/cxf.json?raw";
 import google from "../../../../packages/core/src/import/fixtures/google-authenticator.txt?raw";
 import exportFile from "../../../../packages/core/src/import/fixtures/kennwort-export.json?raw";
 import twofas from "../../../../packages/core/src/import/fixtures/twofas.2fas?raw";
@@ -91,7 +92,7 @@ const rows = (root: ParentNode) =>
 describe("ImportPage up to the file", () => {
   it("offers every vendor and shows how to export from the chosen one", async () => {
     const root = await show(deps().deps);
-    expect(root.querySelectorAll("li button").length).toBe(25);
+    expect(root.querySelectorAll("li button").length).toBe(27);
     await choose(root, "Bitwarden (JSON)");
     expect(root.textContent).toContain("Werkzeuge");
     expect(root.querySelector<HTMLInputElement>('input[type="file"]')?.accept).toBe(
@@ -312,6 +313,16 @@ describe("ImportPage with an authenticator (K-503)", () => {
     await pick(root, twofas, "backup.2fas");
     expect(rows(root)).toHaveLength(3);
     expect(root.textContent).toContain("2 Codes übernimmt Kennwort nicht");
+  });
+
+  it("reads a CXF file and says which passkeys and codes stay out (K-502 Teil 5)", async () => {
+    const root = await show(deps().deps);
+    await choose(root, "FIDO Credential Exchange (JSON)");
+    await pick(root, cxf, "export.json");
+    expect(rows(root)).toHaveLength(11);
+    expect(root.textContent).toContain("2 Passkeys übernimmt Kennwort nicht");
+    expect(root.textContent).toContain("1 Code übernimmt Kennwort nicht");
+    expect(root.textContent).toContain("Passkey: 1");
   });
 });
 

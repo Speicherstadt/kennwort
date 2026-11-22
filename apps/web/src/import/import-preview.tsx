@@ -60,6 +60,8 @@ export const PreviewStep = (props: {
   entries: ImportedEntry[];
   /** Codes of an authenticator's export Kennwort leaves out (HOTP, Steam; K-503) */
   unsupported: number;
+  /** Passkeys of a CXF file whose keys Kennwort cannot keep (not ES256; K-502 Teil 5) */
+  passkeysLeftOut: number;
   vaults: TargetVault[];
   existing: (vaultIdText: string) => Comparable[];
   /** Missing while nothing may be written (offline) */
@@ -116,6 +118,11 @@ export const PreviewStep = (props: {
       </Show>
       <Show when={props.unsupported > 0}>
         <p class="text-[13px] text-warning">{m.import_unsupported({ count: props.unsupported })}</p>
+      </Show>
+      <Show when={props.passkeysLeftOut > 0}>
+        <p class="text-[13px] text-warning">
+          {m.import_passkeys_left_out({ count: props.passkeysLeftOut })}
+        </p>
       </Show>
       <Show when={skipped() > 0}>
         <p class="text-[13px]">{m.import_duplicates({ count: skipped() })}</p>

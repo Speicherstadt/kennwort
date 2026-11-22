@@ -399,6 +399,7 @@
   "import_vendor": "{vendor} ({file})",
   "import_vendor_safari": "Safari / Apple Passwörter",
   "import_vendor_chrome": "Chrome / Edge / Brave / Opera",
+  "import_vendor_cxf": "FIDO Credential Exchange",
   "import_vendor_table": "Andere Tabelle (CSV)",
   "import_howto_title": "So kommst du an die Exportdatei",
   "import_howto_bitwarden_json": "Im Web-Tresor von Bitwarden „Werkzeuge“ → „Tresor exportieren“ öffnen, als Format „.json“ wählen oder „.json (Verschlüsselt)“ mit dem Exporttyp „Passwortgeschützt“ und mit dem Master-Passwort bestätigen. Einen passwortgeschützten Export öffnet Kennwort mit seinem Export-Passwort.",
@@ -418,6 +419,8 @@
   "import_howto_keeper_csv": "Im Web-Tresor von Keeper „Einstellungen“ → „Exportieren“ wählen, „CSV“ nehmen und mit dem Master-Passwort bestätigen.",
   "import_howto_nordpass_csv": "In der App von NordPass „Einstellungen“ → „Elemente exportieren“ wählen und mit dem Master-Passwort bestätigen; NordPass speichert eine CSV-Datei.",
   "import_howto_enpass_json": "In Enpass am Computer „Datei“ → „Exportieren“ wählen, den Tresor aussuchen, „.json“ als Format nehmen und mit dem Master-Passwort bestätigen.",
+  "import_howto_tpm_csv": "In Team Password Manager als Admin oder IT-Nutzer „Passwörter“ → „Exportieren“ wählen (oder im Projekt „Exportieren“) und die CSV-Datei laden. Jedes Projekt wird ein Ordner.",
+  "import_howto_cxf_json": "Im anderen Passwortmanager den Export im „Credential Exchange Format“ (CXF) als unverschlüsselte JSON-Datei speichern. Passkeys kommen mit, wenn ihr Schlüssel ES256 ist.",
   "import_howto_chrome_csv": "In Chrome oder Edge „Einstellungen“ → „Passwörter“ (Google Passwortmanager) öffnen, dort „Einstellungen“ → „Passwörter exportieren“ wählen und bestätigen. Brave und Opera exportieren genauso.",
   "import_howto_firefox_csv": "In Firefox „about:logins“ öffnen, über das Menü „…“ „Zugangsdaten exportieren“ wählen und mit dem Passwort des Geräts bestätigen.",
   "import_howto_safari_csv": "Auf dem Mac die App „Passwörter“ öffnen (oder Safari → „Einstellungen“ → „Passwörter“) und „Ablage“ → „Alle Passwörter exportieren“ wählen.",
@@ -532,6 +535,16 @@
       "match": {
         "n=one": "1 Code übernimmt Kennwort nicht, weil er kein zeitbasierter Einmalcode (TOTP) ist, etwa HOTP oder Steam. Richte ihn beim Dienst neu ein.",
         "n=*": "{count} Codes übernimmt Kennwort nicht, weil sie keine zeitbasierten Einmalcodes (TOTP) sind, etwa HOTP oder Steam. Richte sie bei den Diensten neu ein."
+      }
+    }
+  ],
+  "import_passkeys_left_out": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "1 Passkey übernimmt Kennwort nicht, weil sein Schlüssel kein ES256 ist oder die Datei ihn nicht vollständig hat. Melde dich dort mit dem Passwort an und lege einen neuen Passkey an.",
+        "n=*": "{count} Passkeys übernimmt Kennwort nicht, weil ihr Schlüssel kein ES256 ist oder die Datei sie nicht vollständig hat. Melde dich dort mit dem Passwort an und lege neue Passkeys an."
       }
     }
   ],
@@ -795,6 +808,7 @@
   "import_error_damaged": "Die Datei ist beschädigt oder wurde verändert. Exportiere sie neu und wähle die frische Datei.",
   "import_error_account_encrypted": "Dieser Bitwarden-Export ist „kontobeschränkt“: Er ist mit deinem Bitwarden-Konto verschlüsselt und lässt sich nur dort öffnen. Exportiere noch einmal als „.json (Verschlüsselt)“ mit dem Exporttyp „Passwortgeschützt“ oder als „.json“.",
   "import_error_bitwarden_unsupported": "Diesen Export liest Kennwort nicht: Er nennt eine Schlüsselableitung oder Verschlüsselung, die Bitwarden so nicht schreibt. Exportiere ihn in Bitwarden neu.",
+  "import_error_cxf_unsupported": "Diese Datei hat eine neuere Version des Credential Exchange Format, als Kennwort liest (Version 1). Exportiere im anderen Manager, wenn möglich, in Version 1.",
   "import_error_bitwarden_too_costly": "Das Entschlüsseln dieses Exports ist aufwendiger, als Kennwort zulässt (PBKDF2 mit höchstens 2 Millionen Iterationen, Argon2id mit höchstens 1 GiB Speicher, 10 Durchläufen und 16 Threads).",
   "export_error_failed": "Die Datei ließ sich nicht schreiben. Der Export steht schon im Audit-Log; versuche es noch einmal.",
   "members_root_fork": "Der Server zeigt zwei Wechsel des Firmenschlüssels vom selben alten Schlüssel. Das ist ein Angriff: Kennwort nimmt keinen davon an und zeigt keine Mitglieder.",

@@ -82,13 +82,15 @@ const ERROR_TEXT: Record<ImportError, () => string> = {
 
 /**
  * Errors that read otherwise for a format: Kennwort's own export (K-504) has a passphrase, not a
- * key file; Bitwarden's protected JSON (K-502 Teil 4) has its own KDFs and limits
+ * key file; Bitwarden's protected JSON (K-502 Teil 4) has its own KDFs and limits; a CXF file
+ * of a later major version is no database
  */
 const FORMAT_ERROR_TEXT: Record<string, Partial<Record<ImportError, () => string>>> = {
   "kennwort-json": {
     "wrong-key": () => m.import_error_kennwort_wrong_key(),
     unsupported: () => m.import_error_kennwort_unsupported(),
   },
+  "cxf-json": { unsupported: () => m.import_error_cxf_unsupported() },
   "bitwarden-json": {
     unsupported: () => m.import_error_bitwarden_unsupported(),
     "too-costly": () => m.import_error_bitwarden_too_costly(),

@@ -399,6 +399,7 @@
   "import_vendor": "{vendor} ({file})",
   "import_vendor_safari": "Safari / Apple Passwords",
   "import_vendor_chrome": "Chrome / Edge / Brave / Opera",
+  "import_vendor_cxf": "FIDO Credential Exchange",
   "import_vendor_table": "Other spreadsheet (CSV)",
   "import_howto_title": "How to get the export file",
   "import_howto_bitwarden_json": "In Bitwarden's web vault open “Tools” → “Export vault”, choose the format “.json”, or “.json (Encrypted)” with the export type “Password protected”, and confirm with your master password. Kennwort opens a password-protected export with its export password.",
@@ -418,6 +419,8 @@
   "import_howto_keeper_csv": "In Keeper's web vault choose “Settings” → “Export”, take “CSV” and confirm with your master password.",
   "import_howto_nordpass_csv": "In the NordPass app choose “Settings” → “Export items” and confirm with your master password; NordPass saves a CSV file.",
   "import_howto_enpass_json": "In the Enpass desktop app choose “File” → “Export”, pick the vault, take “.json” as the format and confirm with your master password.",
+  "import_howto_tpm_csv": "In Team Password Manager, as an admin or IT user, choose “Passwords” → “Export” (or “Export” in a project) and download the CSV file. Each project becomes a folder.",
+  "import_howto_cxf_json": "In the other password manager, save the export in the “Credential Exchange Format” (CXF) as an unencrypted JSON file. Passkeys come along when their key is ES256.",
   "import_howto_chrome_csv": "In Chrome or Edge open “Settings” → “Passwords” (Google Password Manager), then “Settings” → “Export passwords” and confirm. Brave and Opera export the same way.",
   "import_howto_firefox_csv": "In Firefox open “about:logins”, choose “Export logins” in the “…” menu and confirm with your device password.",
   "import_howto_safari_csv": "On the Mac open the Passwords app (or Safari → “Settings” → “Passwords”) and choose “File” → “Export All Passwords”.",
@@ -532,6 +535,16 @@
       "match": {
         "n=one": "Kennwort does not take 1 code because it is no time-based one-time code (TOTP), such as HOTP or Steam. Set it up again with the service.",
         "n=*": "Kennwort does not take {count} codes because they are no time-based one-time codes (TOTP), such as HOTP or Steam. Set them up again with the services."
+      }
+    }
+  ],
+  "import_passkeys_left_out": [
+    {
+      "declarations": ["input count", "local n = count: plural"],
+      "selectors": ["n"],
+      "match": {
+        "n=one": "Kennwort does not take 1 passkey because its key is not ES256 or the file does not hold all of it. Sign in there with the password and create a new passkey.",
+        "n=*": "Kennwort does not take {count} passkeys because their key is not ES256 or the file does not hold all of them. Sign in there with the password and create new passkeys."
       }
     }
   ],
@@ -795,6 +808,7 @@
   "import_error_damaged": "The file is damaged or was changed. Export it again and choose the fresh file.",
   "import_error_account_encrypted": "This Bitwarden export is “account restricted”: it is encrypted with your Bitwarden account and only opens there. Export again as “.json (Encrypted)” with the export type “Password protected”, or as “.json”.",
   "import_error_bitwarden_unsupported": "Kennwort does not read this export: it names a key derivation or encryption that Bitwarden does not write this way. Export it again in Bitwarden.",
+  "import_error_cxf_unsupported": "This file has a newer version of the Credential Exchange Format than Kennwort reads (version 1). Export in version 1 from the other manager if you can.",
   "import_error_bitwarden_too_costly": "Decrypting this export takes more than Kennwort allows (PBKDF2 with at most 2 million iterations, Argon2id with at most 1 GiB of memory, 10 passes and 16 threads).",
   "export_error_failed": "The file could not be written. The export is already in the audit log; try again.",
   "members_root_fork": "The server shows two changes of the company key from the same old key. This is an attack: Kennwort takes neither and shows no members.",

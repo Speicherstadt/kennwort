@@ -58,6 +58,24 @@ describe("Bitwarden's password-protected JSON (K-502 Teil 4)", () => {
       expect(checkBitwardenJson(fixture(name))).toEqual(failure("encrypted"));
   });
 
+  it("ends with a protected export whose flags were renamed as wrong-format, not as empty", async () => {
+    // fast-check seeds -738442150, 1865286675, -1004477976 and -1922047663 of
+    // bitwarden-protected.property.test.ts, unshrunk and shrunk
+    const text = new TextDecoder().decode(withParts({}));
+    const renames: readonly (readonly [string, string])[] = [
+      ['"encr=ypted"', '"passwor+Protected"'],
+      ['"Ancrypted"', '"AasswordProtected"'],
+    ];
+    for (const [encrypted, passwordProtected] of renames) {
+      const renamed = text
+        .replace('"encrypted"', encrypted)
+        .replace('"passwordProtected"', passwordProtected);
+      const bytes = new TextEncoder().encode(renamed);
+      expect(checkBitwardenJson(bytes)).toEqual(failure("wrong-format"));
+      expect(await unlock(bytes)).toEqual(failure("wrong-format"));
+    }
+  });
+
   it("reads a plain export with or without a password", async () => {
     expect(compact(checkBitwardenJson(fixture("bitwarden.json")))).toEqual(PLAIN);
     expect(compact(await unlock(fixture("bitwarden.json"), ""))).toEqual(PLAIN);

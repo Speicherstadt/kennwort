@@ -142,6 +142,30 @@ test.describe("import", { tag: "@phone" }, () => {
     await expect(page.getByRole("heading", { level: 1, name: "Werkstatt-WLAN" })).toBeVisible();
   });
 
+  // K-502 Teil 5: Team Password Manager's CSV, its projects as folders and then as tags
+  test("Jonas imports the Team Password Manager export with its projects as tags", async ({
+    page,
+  }) => {
+    await setUpCompany(page);
+    const sent = recordRequests(page);
+    await importFile(page, "Team Password Manager (CSV)", coreFixture("teampasswordmanager.csv"));
+    await expect(page.getByText("5 Einträge in der Datei")).toBeVisible();
+    await expect(rows(page)).toContainText("DATEV Unternehmen online");
+    await expect(rows(page)).not.toContainText("Kessel-Rohr-Ventil-26");
+    await page.getByLabel("Ordner als Tags übernehmen").check();
+    await axe(page);
+    await finish(page, "5 Einträge importieren");
+    expect(sent.join("\n")).not.toContain("Kessel-Rohr-Ventil-26");
+
+    await visibleLink(page, "Einträge").click();
+    await option(page, "DATEV Unternehmen online").click();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "DATEV Unternehmen online" }),
+    ).toBeVisible();
+    await expect(page.getByRole("list", { name: "Tags" })).toContainText("Büro");
+    await expect(page.getByRole("list", { name: "Tags" })).toContainText("Steuern");
+  });
+
   // A copy of the KeePassXC database with a cheap KDF (Argon2id, 1 MiB): KeePassXC's own AES-KDF
   // of a second per attempt takes several in a browser on CI; the Vitest tests open that one
   test("Jonas opens the company's KeePass database with password and key file", async ({

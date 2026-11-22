@@ -79,9 +79,13 @@ const withIds = (fields: DraftField[]): Field[] => {
 };
 
 /** Trimmed, without empty ones and without repeats, in the order given */
-const cleanList = (items: readonly string[]) => [
+export const cleanList = (items: readonly string[]) => [
   ...new Set(items.map((item) => item.trim()).filter(filled)),
 ];
+
+/** Tags as an entry keeps them: trimmed, each once, in alphabetical order */
+export const cleanTags = (tags: readonly string[]) =>
+  cleanList(tags).sort((a, b) => a.localeCompare(b));
 
 const NOTE = { id: "note", name: "Notes", kind: "note" } as const;
 
@@ -92,7 +96,7 @@ export const imported = (draft: Draft): ImportedEntry => {
       type: draft.type,
       title: draft.title.trim(),
       fields: withIds([...draft.fields.filter((field) => field.value.trim() !== ""), ...notes]),
-      tags: cleanList(draft.tags ?? []).sort((a, b) => a.localeCompare(b)),
+      tags: cleanTags(draft.tags ?? []),
       favorite: draft.favorite ?? false,
       history: draft.history ?? [],
     },

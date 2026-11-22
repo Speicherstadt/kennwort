@@ -1,0 +1,451 @@
+{
+  "version": {
+    "major": 1,
+    "minor": 0
+  },
+  "exporterRpId": "manager.example",
+  "exporterDisplayName": "Beispiel-Manager",
+  "timestamp": 1767225600,
+  "accounts": [
+    {
+      "id": "am9uYXM",
+      "username": "jonas",
+      "email": "jonas@weber-haustechnik.example",
+      "fullName": "Jonas Weber",
+      "collections": [
+        {
+          "id": "YnVlcm8",
+          "title": "Büro",
+          "items": [
+            {
+              "item": "ZGF0ZXY"
+            },
+            {
+              "item": "YWJsYWdl"
+            }
+          ],
+          "subCollections": [
+            {
+              "id": "YmFua2Vu",
+              "title": "Banken",
+              "items": [
+                {
+                  "item": "a2FydGU",
+                  "account": "am9uYXM"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "dGVjaG5paw",
+          "title": "Technik",
+          "items": [
+            {
+              "item": "d2xhbg"
+            },
+            {
+              "item": "c2VydmVy"
+            }
+          ]
+        }
+      ],
+      "items": [
+        {
+          "id": "ZGF0ZXY",
+          "creationAt": 1767225600,
+          "modifiedAt": 1767225600,
+          "title": "DATEV Unternehmen online",
+          "credentials": [
+            {
+              "type": "basic-auth",
+              "username": {
+                "id": "Zi1hbm5hLndlYmVy",
+                "fieldType": "string",
+                "value": "anna.weber"
+              },
+              "password": {
+                "id": "Zi1LZXNzZWwtUm9oci1WZW50aWwtMjY",
+                "fieldType": "concealed-string",
+                "value": "Kessel-Rohr-Ventil-26"
+              }
+            },
+            {
+              "type": "totp",
+              "secret": "JBSWY3DPEHPK3PXP",
+              "period": 30,
+              "digits": 6,
+              "username": "anna.weber",
+              "algorithm": "sha1",
+              "issuer": "DATEV"
+            },
+            {
+              "type": "note",
+              "content": {
+                "id": "Zi1NYW5kYW50IDQ3MTEKQmVyYXRlcjogU3RldWVyYsO8cm8gS3Jhbno",
+                "fieldType": "string",
+                "value": "Mandant 4711\nBerater: Steuerbüro Kranz"
+              }
+            }
+          ],
+          "favorite": true,
+          "tags": ["Steuern"],
+          "scope": {
+            "urls": ["https://www.datev.de"],
+            "androidApps": [
+              {
+                "bundleId": "de.datev.uo"
+              }
+            ]
+          }
+        },
+        {
+          "id": "a2FydGU",
+          "creationAt": 1767225600,
+          "modifiedAt": 1767225600,
+          "title": "Sparkasse Firmenkarte",
+          "credentials": [
+            {
+              "type": "credit-card",
+              "number": {
+                "id": "Zi00MTExMTExMTExMTExMTEx",
+                "fieldType": "concealed-string",
+                "value": "4111111111111111"
+              },
+              "fullName": {
+                "id": "Zi1Kb25hcyBXZWJlcg",
+                "fieldType": "string",
+                "value": "Jonas Weber"
+              },
+              "cardType": {
+                "id": "Zi1WaXNh",
+                "fieldType": "string",
+                "value": "Visa"
+              },
+              "verificationNumber": {
+                "id": "Zi0xMjM",
+                "fieldType": "concealed-string",
+                "value": "123"
+              },
+              "pin": {
+                "id": "Zi00NzEx",
+                "fieldType": "concealed-string",
+                "value": "4711"
+              },
+              "expiryDate": {
+                "id": "Zi0yMDI4LTA5",
+                "fieldType": "year-month",
+                "value": "2028-09"
+              }
+            }
+          ]
+        },
+        {
+          "id": "d2xhbg",
+          "creationAt": 1767225600,
+          "modifiedAt": 1767225600,
+          "title": "Lager-WLAN",
+          "credentials": [
+            {
+              "type": "wifi",
+              "ssid": {
+                "id": "Zi1XZWJlci1MYWdlcg",
+                "fieldType": "string",
+                "value": "Weber-Lager"
+              },
+              "networkSecurityType": {
+                "id": "Zi13cGEyLXBlcnNvbmFs",
+                "fieldType": "wifi-network-security-type",
+                "value": "wpa2-personal"
+              },
+              "passphrase": {
+                "id": "Zi1Sb2hyLVphbmdlLUxhZ2VyLTIwMjY",
+                "fieldType": "concealed-string",
+                "value": "Rohr-Zange-Lager-2026"
+              },
+              "hidden": {
+                "id": "Zi1mYWxzZQ",
+                "fieldType": "boolean",
+                "value": "false"
+              }
+            }
+          ]
+        },
+        {
+          "id": "cG9ydGFs",
+          "creationAt": 1767225600,
+          "modifiedAt": 1767225600,
+          "title": "Großhandel-Portal",
+          "credentials": [
+            {
+              "type": "passkey",
+              "credentialId": "Y3JlZC1zaG9wLmdyb3NzaGFuZGVsLmV4YW1wbGU",
+              "rpId": "shop.grosshandel.example",
+              "username": "max@weber-haustechnik.example",
+              "userDisplayName": "max@weber-haustechnik.example",
+              "userHandle": "dXNlci1tYXhAd2ViZXItaGF1c3RlY2huaWsuZXhhbXBsZQ",
+              "key": "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg_c3N6yeDC811NS51MbgXdV45HwNLZyyVc4aR8PpwIfShRANCAAR_A1sq27KK72U-IGxklmsHcRVQeiC_g8-pwZlB4-a85GGbUPFdz5qr9_0KO_F2ixuTIcfZ6ki65BuPIFQ_PQlt"
+            }
+          ],
+          "scope": {
+            "urls": ["https://shop.grosshandel.example"],
+            "androidApps": []
+          }
+        },
+        {
+          "id": "c2VydmVy",
+          "creationAt": 1767225600,
+          "modifiedAt": 1767225600,
+          "title": "Server Lager",
+          "credentials": [
+            {
+              "type": "ssh-key",
+              "keyType": "ssh-ed25519",
+              "privateKey": "MC4CAQAwBQYDK2VwBCIEIEDKddpDogQREyF9KofORRWhkb4h57LTVfPB380lFvFh",
+              "keyComment": "sandra@lager"
+            }
+          ]
+        },
+        {
+          "id": "aGVyc3RlbGxlcg",
+          "creationAt": 1767225600,
+          "modifiedAt": 1767225600,
+          "title": "Heizungs-Hersteller",
+          "credentials": [
+            {
+              "type": "passkey",
+              "credentialId": "Y3JlZC1wYXJ0bmVyLmhlaXp1bmcuZXhhbXBsZQ",
+              "rpId": "partner.heizung.example",
+              "username": "sandra",
+              "userDisplayName": "sandra",
+              "userHandle": "dXNlci1zYW5kcmE",
+              "key": "MC4CAQAwBQYDK2VwBCIEIOVubKvYNon2-gck4q1lzBQVLRePOoiw3SraQjcpJktJ"
+            },
+            {
+              "type": "basic-auth",
+              "username": {
+                "id": "Zi1zYW5kcmE",
+                "fieldType": "string",
+                "value": "sandra"
+              },
+              "password": {
+                "id": "Zi1QdW1wZS1WZW50aWwtMjAyNg",
+                "fieldType": "concealed-string",
+                "value": "Pumpe-Ventil-2026"
+              }
+            }
+          ]
+        },
+        {
+          "id": "YmVyYXRlcg",
+          "creationAt": 1767225600,
+          "modifiedAt": 1767225600,
+          "title": "Steuerberater",
+          "credentials": [
+            {
+              "type": "passkey",
+              "credentialId": "Y3JlZC1rYW56bGVpLmV4YW1wbGU",
+              "rpId": "kanzlei.example",
+              "username": "jonas",
+              "userDisplayName": "jonas",
+              "userHandle": "dXNlci1qb25hcw",
+              "key": "MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDCx8nR3-hl11EO_j8Ni7M3-zOF9TW2drLQZYpYVq3e10dNyK3V4vqnAgsZvs8s-8vihZANiAARvPR_uqKZ11MAVl7QerEt0bEWNyJBJo40G5xBLtVY-rDxOv01RnSHRWCMc1pay9BthC0hN3kYgrvNssZLVQNU43JXG7_Git3IH4AWndACuamgW2kj90P62cLPJDkVvYwM"
+            }
+          ]
+        },
+        {
+          "id": "ZmlybWE",
+          "creationAt": 1767225600,
+          "modifiedAt": 1767225600,
+          "title": "Firmendaten",
+          "credentials": [
+            {
+              "type": "person-name",
+              "given": {
+                "id": "Zi1Kb25hcw",
+                "fieldType": "string",
+                "value": "Jonas"
+              },
+              "surname": {
+                "id": "Zi1XZWJlcg",
+                "fieldType": "string",
+                "value": "Weber"
+              }
+            },
+            {
+              "type": "address",
+              "streetAddress": {
+                "id": "Zi1IYWZlbnN0cmHDn2UgMTI",
+                "fieldType": "string",
+                "value": "Hafenstraße 12"
+              },
+              "postalCode": {
+                "id": "Zi0yMDQ1Nw",
+                "fieldType": "string",
+                "value": "20457"
+              },
+              "city": {
+                "id": "Zi1IYW1idXJn",
+                "fieldType": "string",
+                "value": "Hamburg"
+              },
+              "country": {
+                "id": "Zi1ERQ",
+                "fieldType": "country-code",
+                "value": "DE"
+              },
+              "tel": {
+                "id": "Zi0rNDkgNDAgMTIzNDU2",
+                "fieldType": "string",
+                "value": "+49 40 123456"
+              }
+            },
+            {
+              "type": "custom-fields",
+              "label": "Firma",
+              "fields": [
+                {
+                  "id": "Zi1ERTEyMzQ1Njc4OQ",
+                  "fieldType": "string",
+                  "value": "DE123456789",
+                  "label": "USt-IdNr."
+                },
+                {
+                  "id": "Zi05OTg4Nzc",
+                  "fieldType": "concealed-string",
+                  "value": "998877",
+                  "label": "Bank-PIN"
+                },
+                {
+                  "id": "Zi1idWVyb0B3ZWJlci1oYXVzdGVjaG5pay5leGFtcGxl",
+                  "fieldType": "email",
+                  "value": "buero@weber-haustechnik.example",
+                  "label": "Kontakt"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "d2V0dGVy",
+          "creationAt": 1767225600,
+          "modifiedAt": 1767225600,
+          "title": "Wetter-API",
+          "credentials": [
+            {
+              "type": "api-key",
+              "key": {
+                "id": "Zi13eF9saXZlXzQ3MTE",
+                "fieldType": "concealed-string",
+                "value": "wx_live_4711"
+              },
+              "username": {
+                "id": "Zi13ZWJlci1oYXVzdGVjaG5paw",
+                "fieldType": "string",
+                "value": "weber-haustechnik"
+              },
+              "keyType": {
+                "id": "Zi1CZWFyZXI",
+                "fieldType": "string",
+                "value": "Bearer"
+              },
+              "url": {
+                "id": "Zi1odHRwczovL2FwaS53ZXR0ZXIuZXhhbXBsZQ",
+                "fieldType": "string",
+                "value": "https://api.wetter.example"
+              },
+              "expiryDate": {
+                "id": "Zi0yMDI3LTA2LTMw",
+                "fieldType": "date",
+                "value": "2027-06-30"
+              }
+            }
+          ]
+        },
+        {
+          "id": "YWxhcm0",
+          "creationAt": 1767225600,
+          "modifiedAt": 1767225600,
+          "title": "Alarmanlage",
+          "credentials": [
+            {
+              "type": "basic-auth",
+              "username": {
+                "id": "Zi1sYWdlcg",
+                "fieldType": "string",
+                "value": "lager"
+              },
+              "password": {
+                "id": "Zi1BbGFybS1MYWdlci0yMDI2",
+                "fieldType": "concealed-string",
+                "value": "Alarm-Lager-2026"
+              }
+            },
+            {
+              "type": "totp",
+              "secret": "JBSWY3DPEHPK3PXP",
+              "period": 30,
+              "digits": 10,
+              "algorithm": "sha1"
+            }
+          ]
+        },
+        {
+          "id": "ZnVlaHJlcnNjaGVpbg",
+          "creationAt": 1767225600,
+          "modifiedAt": 1767225600,
+          "title": "Führerschein Max",
+          "credentials": [
+            {
+              "type": "drivers-license",
+              "fullName": {
+                "id": "Zi1NYXggV2ViZXI",
+                "fieldType": "string",
+                "value": "Max Weber"
+              },
+              "licenseNumber": {
+                "id": "Zi1CMDcyUlJFMkk1NQ",
+                "fieldType": "string",
+                "value": "B072RRE2I55",
+                "label": "Führerscheinnummer"
+              },
+              "licenseClass": {
+                "id": "Zi1CLCBCRQ",
+                "fieldType": "string",
+                "value": "B, BE"
+              },
+              "expiryDate": {
+                "id": "Zi0yMDM0LTA1LTMx",
+                "fieldType": "date",
+                "value": "2034-05-31"
+              }
+            }
+          ]
+        },
+        {
+          "id": "YWJsYWdl",
+          "creationAt": 1767225600,
+          "modifiedAt": 1767225600,
+          "title": "Ablage",
+          "credentials": [
+            {
+              "type": "note",
+              "content": {
+                "id": "Zi1WZXJ0csOkZ2UgbGllZ2VuIGltIFNjaHJhbmsu",
+                "fieldType": "string",
+                "value": "Verträge liegen im Schrank."
+              }
+            },
+            {
+              "type": "file",
+              "id": "ZGF0ZWk",
+              "name": "vertrag.pdf",
+              "decryptedSize": 1,
+              "integrityHash": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
