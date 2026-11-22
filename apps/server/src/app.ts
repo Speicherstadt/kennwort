@@ -6,6 +6,7 @@ import { emergencyRoutes } from "./account/emergency.ts";
 import { memberRoutes } from "./account/members.ts";
 import { policyRoutes } from "./account/policy.ts";
 import { rekeyRoutes } from "./account/rekey.ts";
+import { rootRoutes } from "./account/root.ts";
 import { accountRoutes } from "./account/routes.ts";
 import { auditRoutes } from "./audit/routes.ts";
 import { type Auth, CLIENT_HEADER } from "./auth/better-auth.ts";
@@ -117,6 +118,7 @@ export const createApp = ({
   api.route("/", rekeyRoutes({ db, now }));
   api.route("/", memberRoutes({ db, now }));
   api.route("/", policyRoutes({ db, now }));
+  api.route("/", rootRoutes({ db, now }));
   api.route("/", companyRecoveryRoutes({ db, now }));
   api.route("/", emergencyRoutes({ db, now }));
   api.route("/", deviceRoutes({ db, now }));

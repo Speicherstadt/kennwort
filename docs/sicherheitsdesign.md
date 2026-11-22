@@ -146,6 +146,7 @@ nennt seinen Angriff, und der Client muss ihn ablehnen und sagen, warum.
 | E-16 gefälschte Bindung, Schlüssel ohne Bindung im Log | `adversary/emergency.test.ts`, `membership/emergency-open.test.ts` | falsche Signatur, nicht im Log, Bindung passt nicht |
 | E-04 alte Freigabe nach einer Rücknahme zurückgespielt | `adversary/emergency.test.ts`, `packages/client/src/emergency/emergency.test.ts` | wiederholt |
 | E-08, E-26 Mitglied vom Wechsel ferngehalten, seine Versionen unter dem alten Schlüssel nach dem Wechsel ausgeliefert | `adversary/epoch-order.test.ts`, gegen die Offline-Kopie `apps/web/src/offline/local-copy.test.ts` | ältere Epoche, kein Bearbeiter |
+| E-10 Wurzelschlüssel gegabelt (zweiter Wechsel vom alten Schlüssel), Wechsel wiederholt oder in eine andere Firma getragen, alter Wurzelschlüssel weiter ausgeliefert, nach dem Wechsel ausgestelltes Zertifikat des alten | `apps/server/src/adversary/root-attacks.test.ts`, `membership/root-change.test.ts`, `membership/verify-log.root.test.ts`, `apps/server/src/account/root.test.ts` | Gabelung, ersetzter Wurzelschlüssel, passt nicht, ungültig, nicht zertifizierter Unterzeichner |
 | E-01, E-05 nach einem Kit in fremden Händen: altes Bündel weiter ausgeliefert, neues Zertifikat zurückgehalten, altes Kit nach dem Wechsel, Tresor ohne Erneuerung oder Wechsel | `adversary/rekey.test.ts`, `membership/verify-log.rekey.test.ts`, `apps/server/src/account/rekey.test.ts` | ungültig, nicht zertifiziert, Wechsel steht aus, falsche Signatur, Rückfall, neuere Epoche |
 
 Die übrigen folgen mit den Funktionen, die sie betreffen (Konto-Recovery, Teilen, Geräte, Austritt,
@@ -429,6 +430,27 @@ drumherum in `packages/core/src/export/kennwort-json.ts`; die Testvektoren in
 `packages/crypto/vectors/export-v1.json` entstehen ohne den Code, den sie prüfen (Argon2id und
 HKDF aus `node:crypto`, AEAD aus libsodium).
 
+### F-14 Neuer Wurzelschlüssel v1
+
+```text
+aussage = enc("kennwort/root-change/v1", firmen-ID, fp(alter wurzelschlüssel), neuer edPk, zeit)
+alt     = F-03(alter wurzelschlüssel, "root-change", aussage)
+neu     = F-03(neuer wurzelschlüssel, "root-change-accept", aussage)
+```
+
+Der Wechsel des Firmen-Wurzelschlüssels, wenn ein Inhaber oder Admin geht
+([P-07](#p-07-firmen-wurzelschlussel-und-zertifikate), K-307 Teil f). Der alte Schlüssel nennt
+genau einen Nachfolger; der neue signiert dieselbe Aussage zurück, damit niemand einen Schlüssel als
+Nachfolger nennt, dessen privaten Teil er nicht hat. Firma und Fingerabdruck des alten Schlüssels
+(F-04) binden die Aussage an ihren Ort: Sie gilt in keiner anderen Firma und als Schritt von keinem
+anderen Wurzelschlüssel. Die Zeit (Unix-Sekunden) begrenzt, wofür Zertifikate des alten Schlüssels
+danach noch gelten. Die Signaturen allein genügen keinem Client: Auch wer gegangen ist, hat den
+alten Schlüssel; ein Wechsel gilt erst, wenn eine Person den Vergleichscode des neuen Schlüssels
+mit einem Inhaber verglichen hat (P-07). Umgesetzt in
+`packages/crypto/src/root-change.ts`; die Testvektoren in `packages/crypto/vectors/root-change-v1.json`
+entstehen ohne den Code, den sie prüfen (Ed25519 aus libsodium, SHA-512/256 aus `node:crypto`,
+`generate-root-change.ts`).
+
 ## Schlüsselhierarchie
 
 ```text
@@ -458,11 +480,12 @@ Was ein Client sich merkt, um den Server zu prüfen, liegt im **Kontozustand**: 
 Firmen-Wurzelschlüssels, bekannte Schlüsselbündel, der letzte Stand jedes Mitgliedschafts-Logs,
 die höchste Version jedes Eintrags, die Einladungen, die das Konto zertifiziert hat, mit dem Konto
 dazu, je Konto das Ausstellungsdatum des neuesten Zertifikats, das es gesehen hat, und die
-höchste Version der Firmen-Richtlinie mit ihrer Sperrzeit; dazu, keine Prüfung, sondern eine
+höchste Version der Firmen-Richtlinie mit ihrer Sperrzeit und die bestätigten Wechsel des
+Wurzelschlüssels (`retiredRoots`, P-07); dazu, keine Prüfung, sondern eine
 Einstellung, die auf keinem Gerät auf die Festplatte soll: die Hosts, für die die Extension nie das
 Speichern anbietet (K-404, P-17). Er ist ein F-01-Geheimtext unter AK (Zweck `account-state`,
 Kontext Konto-ID und ein Zähler) auf dem Server; jedes Gerät lädt ihn beim Entsperren, führt ihn
-mit seinem eigenen Stand zusammen (der höhere Stand gewinnt; ein anderer Wurzelschlüssel, ein anderes
+mit seinem eigenen Stand zusammen (der höhere Stand gewinnt; ein Wurzelschlüssel, zu dem keine bestätigte Kette von Wechseln führt, ein anderes
 Bündel für ein bekanntes Konto oder ein anderer Hash an derselben Stelle eines Logs ist ein Angriff) und schreibt ihn mit höherem Zähler zurück. So kennt jedes Gerät eines Kontos, auch eines,
 das mit Passphrase oder Recovery-Kit entsperrt, was das erste Gerät geprüft hat. P-01 legt den
 ersten Kontozustand (Zähler 0) an, bevor das Konto benutzbar ist; fehlt er später, warnt der Client
@@ -740,7 +763,10 @@ Der Client prüft bei jedem Abruf die ganze Kette ab seinem letzten Stand:
   `anlegen` und bei der eigenen `schlüsselerneuerung` mit dem Bündel des Eintrags. Ein Zertifikat
   eines Bündels, das das Konto ersetzt hat ([P-12](#p-12-recovery-kit)), gilt nur für Einträge,
   deren signierte Zeit vor der Ausstellung des nächsten Zertifikats liegt (plus die fünf Minuten
-  Uhrenabweichung); so verifizieren alte Logs weiter, aber der alte Schlüssel hängt nichts mehr an. „Zu diesem Zeitpunkt“
+  Uhrenabweichung); so verifizieren alte Logs weiter, aber der alte Schlüssel hängt nichts mehr an.
+  Ebenso gilt ein Zertifikat eines Wurzelschlüssels, den das Konto nach einem bestätigten Wechsel
+  ersetzt hat ([P-07](#p-07-firmen-wurzelschlussel-und-zertifikate)), nur für Einträge vor dem
+  Wechsel und nur, wenn es vor ihm ausgestellt wurde. „Zu diesem Zeitpunkt“
   heißt zur signierten Zeit des Eintrags; diese Zeiten sinken nie und liegen höchstens fünf
   Minuten vor der Uhr des Prüfenden (`CLOCK_SKEW_SECONDS`), weil die Uhren der Geräte
   auseinandergehen.
@@ -811,8 +837,8 @@ durchgelassen hat.
   Bündel der Seite, die das neuere Zertifikat gesehen hat, sonst bleibt ein anderes Bündel ein
   Angriff. Ein Gerät, das die neuere Rolle nie gesehen hat, kann der Server so
   noch täuschen; den lückenlosen Nachweis bringt erst ein signiertes Log der Firmenrollen. Wer zum Mitarbeiter wird, verliert den
-  Wurzelschlüssel auf dem Server, nicht aber eine Kopie, die er schon hat; davor schützt erst ein
-  neuer Wurzelschlüssel (K-307 Teil f, Plan unten).
+  Wurzelschlüssel auf dem Server, nicht aber eine Kopie, die er schon hat; davor schützt der neue
+  Wurzelschlüssel (unten).
 - Der Wurzelschlüssel signiert die Schlüsselbündel der Mitarbeiter (F-06) und die
   Firmen-Richtlinien, darunter den Firmen-Recovery-Schlüssel und ob Firmen-Recovery an ist.
 - Clients merken sich den Fingerabdruck des Wurzelschlüssels beim ersten Kontakt (TOFU) und zeigen
@@ -842,18 +868,88 @@ durchgelassen hat.
   ([Schlüsselhierarchie](#schlusselhierarchie)), nicht nur auf einem Gerät: Jedes Gerät des Kontos
   prüft gegen ihn, auch eines, das mit Passphrase, Recovery-Kit oder Firmen-Recovery entsperrt.
 
-**Neuer Wurzelschlüssel (Plan, K-307 Teil f).** Geht ein Inhaber oder Admin, oder wird er zum
-Mitarbeiter, behält er eine Kopie des Wurzelschlüssels und könnte mit einem Server Bündel
-zertifizieren. Dann erzeugt der Client eines verbleibenden Inhabers einen neuen Wurzelschlüssel,
-signiert den Wechsel mit dem alten (F-03, Zweck `root-change`, alter und neuer Fingerabdruck,
-Zeit), stellt jedem aktuellen Mitglied ein neues Zertifikat aus, verpackt den neuen Schlüssel an
-Inhaber und Admins und signiert die Richtlinie neu. Weil auch der Gehende den alten Schlüssel hat,
-gilt ein solcher Wechsel nicht von selbst: Jeder Client zeigt ihn und nimmt den neuen Fingerabdruck
-erst, wenn die Person ihn bestätigt (Vergleich mit dem Inhaber); ein Client, der einen Wechsel
-gesehen hat, nimmt keinen zweiten vom alten Schlüssel. Zertifikate des alten Schlüssels gelten
-danach nur für Log-Einträge und Signaturen, die vor dem Wechsel liegen.
+**Neuer Wurzelschlüssel (K-307 Teil f).** Geht ein Inhaber oder Admin aus der Firma oder wird er
+zum Mitarbeiter, behält er eine Kopie des Wurzelschlüssels und könnte mit einem Server Bündel
+zertifizieren oder eine Richtlinie signieren. Darum ersetzt der Client des Inhabers, der ihn
+entfernt oder herabstuft, den Wurzelschlüssel sofort; von Hand geht das unter „Mitglieder“ →
+„Neuen Firmenschlüssel anlegen“ (`replaceRoot` in `packages/client/src/root/root-change.ts`,
+`rotateRoot` in `packages/core/src/membership/root-rotation.ts`). In einem Zug
 
-Restrisiko: der erste Kontakt (TOFU) für Konten, die ohne Einladungslink entstehen (OIDC),
+1. erzeugt er einen neuen Ed25519-Wurzelschlüssel und signiert den Wechsel mit dem alten und dem
+   neuen (F-14);
+2. stellt er jedem Mitglied, das der alte Schlüssel bestätigt und das noch in der Firma ist, ein
+   Zertifikat des neuen aus, für dasselbe Bündel und dieselbe Rolle und später als jedes, das er
+   für das Konto gesehen hat; wer gegangen ist, bekommt keins;
+3. verpackt er den neuen privaten Schlüssel an jeden Inhaber und Admin, der bleibt (F-02, Zweck
+   `root-key`), auch an sich selbst: Scheitert danach das Schreiben seines Kontozustands, holt er
+   ihn so zurück;
+4. signiert er die nächste Richtlinie (F-07) mit derselben Sperrzeit und demselben
+   Recovery-Schlüssel unter dem neuen Wurzelschlüssel.
+
+`PUT /api/company/root` nimmt das in einer Transaktion, nur von einem Inhaber, nur als Wechsel von
+dem Wurzelschlüssel, den der Server hält (sonst `409`: ein zweiter Wechsel vom alten Schlüssel kommt
+auf einem ehrlichen Server nicht an), mit einer Zeit innerhalb der fünf Minuten Uhrenabweichung, mit
+Zertifikaten für genau die Konten, die noch in der Firma sind und eines haben, mit Paketen für genau
+die Inhaber und Admins darunter und mit einer Richtlinie, die den Recovery-Schlüssel nennt, den er
+hält. Er führt jeden Wechsel in der Tabelle `root_changes` (Migration `0023_root_changes`) und gibt
+alle mit `GET /api/company` als `rootChanges` heraus, legt die alten Zertifikate in die Geschichte
+(`superseded_certificates`, in der Mitgliederliste `previous`) und ersetzt die verpackten
+Wurzelschlüssel. Ein ausgetretenes Konto behält das Zertifikat des alten Schlüssels.
+
+**Nur nach Bestätigung.** Den Wechsel kann auch signieren, wer gegangen ist. Darum nimmt kein Client
+einen Wechsel wegen seiner Signaturen (`rootOf` in `packages/core/src/membership/root-change.ts`):
+Führt eine Kette signierter Wechsel dieser Firma, deren Zeiten nie zurückgehen, vom gemerkten
+Wurzelschlüssel zu dem, den der Server liefert, zeigt die Seite „Mitglieder“ den Vergleichscode des
+neuen Schlüssels (60 Ziffern, F-04) und bittet, ihn mit einem Inhaber zu vergleichen, am besten
+persönlich oder am Telefon. Jeder sieht den Code des Schlüssels, den sein Konto gemerkt hat, unter
+„Firmenschlüssel“ auf derselben Seite. Bis die Person „Code stimmt, übernehmen“ wählt, vertraut
+der Client keinem Mitglied, prüft keine Richtlinie und öffnet keinen Tresor. Danach steht der neue
+Fingerabdruck im Kontozustand, der alte Schlüssel mit seinem Nachfolger und der Zeit des Wechsels
+in `retiredRoots`, und im Schlüsselblock unter AK, den der Client neu schreibt
+(`PUT /api/account/key-block`, nur in der Größe eines Schlüsselblocks). Jedes Gerät des Kontos folgt
+beim Zusammenführen des Kontozustands; ein Schlüsselblock, der noch den alten nennt, folgt beim
+Entsperren der bestätigten Kette (`followRoot`). Den alten privaten Schlüssel vergisst der
+Kontozustand; ein Inhaber oder Admin holt den neuen wie bei einer Rolle ab
+(`GET /api/account/root-grant`). Der Inhaber, der den Wechsel anlegt, bestätigt ihn mit dieser
+Handlung selbst.
+
+**Kein zweiter Wechsel.** Einen Wechsel von einem Schlüssel, den das Konto ersetzt hat, zu einem
+anderen als dem bestätigten Nachfolger, und zwei Wechsel von demselben Schlüssel nebeneinander lehnt
+der Client als Gabelung ab (`root-fork`); einen ersetzten Schlüssel, den der Server weiter als
+aktuellen liefert, ebenso (`root-retired`). Zwei Kontozustände mit verschiedenen Nachfolgern
+desselben Schlüssels führt er nicht zusammen.
+
+**Zertifikate des alten Schlüssels.** Nach dem Wechsel gilt ein Zertifikat des alten
+Wurzelschlüssels nur, wenn es vor dem Wechsel ausgestellt wurde, und nur für Log-Einträge, deren
+signierte Zeit vor dem Wechsel liegt, plus die fünf Minuten Uhrenabweichung (`verifyLog`, P-06). In
+der Mitgliederliste heißt ein Konto mit einem solchen Zertifikat „Alter Firmenschlüssel“ (`former`),
+nie „Bestätigt“, und kein Client verpackt etwas an sein Bündel. So verifizieren die Logs, die ein
+gegangener Admin signiert hat, weiter, aber er hängt mit dem alten Schlüssel nichts mehr an. Wer
+bleibt, ist im selben Zug unter dem neuen Schlüssel zertifiziert; sein altes Zertifikat zählt nur für
+das, was vorher signiert wurde. Das ist die Grenze, die K-307 Teil e für ersetzte Bündel zog: alte
+Zertifikate bis zur neuen Zertifizierung, danach nicht mehr. Datensätze ohne signierte Zeit (P-09)
+prüft der Client weiter mit dem Bündel, das das geprüfte Log nennt.
+
+Restrisiken des neuen Wurzelschlüssels:
+
+- Ein Gerät, dem der Server den Wechsel nie zeigt, bleibt beim alten Schlüssel; für dieses Gerät
+  kann der Gegangene mit dem Server weiter Bündel zertifizieren. Der Inhaber sagt den Mitgliedern,
+  dass es einen neuen Firmenschlüssel gibt, und jedes Gerät zeigt den Code des eigenen.
+- Wer „Code stimmt“ wählt, ohne zu vergleichen, nimmt auch einen Wechsel, den der Gegangene mit dem
+  Server unterschiebt; wie bei jedem Vergleichscode schützt nur der Vergleich.
+- Zurückdatierte Log-Einträge und Zertifikate des alten Schlüssels sind möglich, solange im Tresor
+  seit dem Wechsel niemand geschrieben hat und der Client für das Konto noch kein neueres Zertifikat
+  kennt, wie bei abgelaufenen Verwaltern (P-06) und ersetzten Bündeln (P-12).
+- Spielt der Server Schlüsselblock und Kontozustand eines Geräts auf den Stand vor der Bestätigung
+  zurück, vertraut es wieder dem alten Schlüssel, bis es den Wechsel erneut bestätigt; die
+  Offline-Kopie der Web-App hält den neueren Kontozustand und führt ihn wieder zusammen.
+- Firmen-Recovery (P-13) und Notfallzugriff (P-14) vergleichen den Wurzel-Fingerabdruck im
+  Schlüsselblock des anderen Kontos: Ein Konto, das den Wechsel noch nicht bestätigt hat, lässt sich
+  bis dahin nicht wiederherstellen, und ein Vollzugriff auf es öffnet nicht.
+- Ein Admin, der bleibt, hält auch den neuen Wurzelschlüssel (siehe P-13, „Wurzelschlüssel schlägt
+  Inhaber-Rolle“).
+
+Restrisiko des ersten Kontakts (TOFU): Konten, die ohne Einladungslink entstehen (OIDC),
 abgeschwächt durch den Vergleichscode. Wer per Link eingeladen wird, bekommt den Fingerabdruck im
 Link ([P-08](#p-08-einladung)) und braucht auf keinem seiner Geräte TOFU; der Inhaber erzeugt den
 Wurzelschlüssel selbst.
@@ -1382,8 +1478,8 @@ Restrisiken:
   Passphrase den alten Stand, nichts Neueres. „Dieses Gerät abmelden“ löscht sie.
 - **Inhaber und Admins** halten den privaten Wurzelschlüssel und als Inhaber den
   Firmen-Recovery-Schlüssel im Kontozustand bzw. an ihr Bündel verpackt; ist ihr Kit in fremden
-  Händen, sind auch diese verraten. Den Wurzelschlüssel wechselt erst K-307 Teil f (P-07), den
-  Recovery-Schlüssel „Neuen Recovery-Schlüssel anlegen“ (P-13).
+  Händen, sind auch diese verraten. Den Wurzelschlüssel ersetzt dann ein Inhaber mit „Neuen
+  Firmenschlüssel anlegen“ (P-07), den Recovery-Schlüssel „Neuen Recovery-Schlüssel anlegen“ (P-13).
 - **Wer erneuert, ehe der Dieb es tut:** Der Dieb kann mit dem alten Schlüssel selbst erneuern und
   die Person aussperren; ein neues Zertifikat bekommt er ohne den Vergleich mit einem Inhaber oder
   Admin aber nicht, und die Person meldet sich dort.
@@ -1470,8 +1566,8 @@ erzeugt sein Client sofort einen neuen Schlüssel und eine neue Richtlinie (auch
 Recovery-Schlüssel anlegen“); der Server löscht alle Pakete und Hinterlegungen des alten, und jedes
 Konto hinterlegt beim nächsten Öffnen neu. Wer die alten kopiert hat, öffnet mit ihnen nur die
 alten AK, die aber gültig bleiben: Für ein Konto, dessen AK der Gehende öffnen konnte, gilt dasselbe
-wie für ein Kit in fremden Händen (P-12, K-307 Teil e), wenn der Inhaber nicht ehrlich ging. Der
-Wurzelschlüssel selbst wechselt erst mit Teil f (P-07).
+wie für ein Kit in fremden Händen (P-12, K-307 Teil e), wenn der Inhaber nicht ehrlich ging. Den
+Wurzelschlüssel, den er ebenfalls hatte, ersetzt derselbe Client vorher (P-07, K-307 Teil f).
 
 Umgesetzt in `packages/crypto/src/company-recovery.ts` (F-08), `packages/core/src/membership/recovery-key.ts`,
 `recovery-deposit.ts` und `recovery-wire.ts`, `packages/core/src/account/pairing.ts` (Recovery-Paket),
@@ -1489,12 +1585,15 @@ Weitere Restrisiken (Review von K-307 Teil c):
 
 - **Wurzelschlüssel schlägt Inhaber-Rolle:** Den Wurzelschlüssel, der die Richtlinie signiert,
   halten auch Admins. Ein Admin kann zusammen mit einem bösartigen Server eine Richtlinie
-  signieren, die seinen eigenen Recovery-Schlüssel nennt, und so alle AK einsammeln. Die Grenze
-  zwischen Inhaber und Admin setzt bis zu einem neuen Wurzelschlüssel (K-307 Teil f) nur der
-  Server durch.
+  signieren, die seinen eigenen Recovery-Schlüssel nennt, und so alle AK einsammeln. Seit K-307
+  Teil f verliert er diese Macht, sobald er geht oder zum Mitarbeiter wird: Der Client des
+  Inhabers ersetzt dann den Wurzelschlüssel, und eine Richtlinie des alten nimmt kein Client mehr,
+  der den Wechsel bestätigt hat (P-07). Solange er Admin ist, setzt die Grenze zwischen Inhaber
+  und Admin nur der Server durch.
 - **Ältere Richtlinie für neue Mitglieder:** Ein Konto, das noch keine Richtlinie gesehen hat,
-  nimmt jede ältere, von der Wurzel signierte an. Das gibt niemandem mehr als den Wurzelschlüssel,
-  den ein ausgetretener Inhaber ohnehin noch hat, bis Teil f ihn wechselt.
+  nimmt jede ältere an, die der Wurzelschlüssel signiert hat, den es gemerkt hat. Nach einem
+  Wechsel des Wurzelschlüssels gilt das nur noch unter dem neuen; eine Richtlinie des alten, den
+  ein gegangener Inhaber oder Admin noch hat, nimmt kein Client, der den Wechsel bestätigt hat.
 - **Erneuerung wiederholbar:** Eine Erneuerung, die mit dem eigenen Ed25519-Schlüssel des Kontos
   signiert ist, ist nicht an den aktuellen Stand der Entsperrwege gebunden; wer eine Sitzung und
   die mitgeschnittene Anfrage hat, kann sie wiederholen.

@@ -4,10 +4,10 @@
  */
 
 import type { AuditFields } from "@kennwort/core";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { auditLog, recordAudit } from "../audit/store.ts";
 import type { Db } from "../db/database.ts";
-import { accounts, companies } from "../db/schema.ts";
+import { accounts, companies, rootChanges } from "../db/schema.ts";
 import { syncScope } from "../sync/scope.ts";
 import { shareScope } from "../sync/share-scope.ts";
 
@@ -19,6 +19,15 @@ export const companyScope = (db: Db, companyId: string) => ({
     recordAudit(db, { ...fields, companyId }),
   auditLog: () => auditLog(db, companyId),
   company: () => db.select().from(companies).where(eq(companies.id, companyId)).get(),
+  /** The changes of the company root, oldest first (K-307 part f, F-14), as stored JSON */
+  rootChanges: () =>
+    db
+      .select()
+      .from(rootChanges)
+      .where(eq(rootChanges.companyId, companyId))
+      .orderBy(asc(rootChanges.id))
+      .all()
+      .map((row) => JSON.parse(row.change) as unknown),
   accounts: () => db.select().from(accounts).where(eq(accounts.companyId, companyId)).all(),
   account: (accountId: string) =>
     db

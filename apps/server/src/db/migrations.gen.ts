@@ -139,5 +139,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795362801422,
     "breakpoints": true,
     "sql": "CREATE TABLE `superseded_certificates` (\n\t`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,\n\t`account_id` text NOT NULL,\n\t`certificate` text NOT NULL,\n\t`superseded_at` integer NOT NULL,\n\tFOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action\n);\n"
+  },
+  {
+    "tag": "0023_root_changes",
+    "when": 1795373353913,
+    "breakpoints": true,
+    "sql": "CREATE TABLE `root_changes` (\n\t`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,\n\t`company_id` text NOT NULL,\n\t`change` text NOT NULL,\n\t`created_at` integer NOT NULL,\n\tFOREIGN KEY (`company_id`) REFERENCES `companies`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE INDEX `root_changes_company` ON `root_changes` (`company_id`);"
   }
 ];

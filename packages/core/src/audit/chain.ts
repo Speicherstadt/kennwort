@@ -19,6 +19,8 @@ export const SERVER_ACTIONS = [
   "role-changed",
   "member-left",
   "policy-changed",
+  // A new company root (K-307 part f, P-07): the change is signed by both roots, not by the server
+  "root-changed",
   "signed-in",
   "vault-created",
   // Emergency access (K-307 part d, P-14): the server records each step it takes

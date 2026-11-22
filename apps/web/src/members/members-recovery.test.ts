@@ -58,10 +58,16 @@ const withRecovery = (c: Company, rows: Row[], on: boolean) => {
     ...s.api,
     company: async () => ({
       id: encodeBytes(c.certificate.companyId),
-      rootPublicKey: c.rootPublicKey,
+      rootPublicKey: s.company.rootPublicKey,
       policy,
       recoveryPublicKey: publicKey,
+      rootChanges: s.company.rootChanges,
     }),
+    // A new root re-signs the policy (K-307 part f)
+    replaceRoot: async (token: string, rotation: Parameters<typeof s.api.replaceRoot>[1]) => {
+      policy = rotation.policy;
+      return s.api.replaceRoot(token, rotation);
+    },
     saveRecoveryKey: async (
       _t: string,
       next: Policy,

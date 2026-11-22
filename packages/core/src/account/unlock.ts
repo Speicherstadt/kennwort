@@ -4,6 +4,7 @@
  * account or way does not open.
  */
 import { type KeyBlock, openAccountKey, openKeyBlock, passphraseKeys } from "@kennwort/crypto";
+import { followRoot } from "../membership/root-change.ts";
 import { err, ok, type Result } from "../result.ts";
 import { type AccountState, openState } from "./state.ts";
 
@@ -28,7 +29,8 @@ export const unlockWithAccountKey = (
   if (!keyBlock.ok) return err("damaged");
   const state = openState(accountKey, stored.accountId, stored.stateCounter, stored.state);
   if (!state.ok) return err("damaged");
-  return ok({ accountKey, keyBlock: keyBlock.value, state: state.value });
+  // The key block may still name a root that another device of the account saw replaced (P-07)
+  return ok({ accountKey, keyBlock: followRoot(keyBlock.value, state.value), state: state.value });
 };
 
 export const unlockWithPassphrase = (

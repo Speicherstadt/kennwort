@@ -267,12 +267,31 @@ export {
 } from "./membership/recovery-wire.ts";
 export { dueRekeys, rekeyMember } from "./membership/renewal.ts";
 export {
+  acceptRootChange,
+  followRoot,
+  type RetiredRoot,
+  RootChangeWire,
+  type RootError,
+  type RootView,
+  rootOf,
+  type ServedRoot,
+  successorOf,
+} from "./membership/root-change.ts";
+export {
   changeRole,
   grantRoot,
   openRootGrant,
   ROOT_GRANT_LENGTH,
   type RootGrantError,
 } from "./membership/root-grant.ts";
+export {
+  type RootGrantFor,
+  type RootRotation,
+  RootRotationWire,
+  type RotationInput,
+  rootRotationToWire,
+  rotateRoot,
+} from "./membership/root-rotation.ts";
 export {
   dueExits,
   type Exit,

@@ -47,3 +47,20 @@ export * from "./auth-schema.ts";
 export * from "./emergency-schema.ts";
 export * from "./recovery-schema.ts";
 export * from "./sync-schema.ts";
+
+/**
+ * The changes of a company's root key (K-307 part f, F-14), as JSON, in the order they came: each
+ * signed by its old and its new root; clients take one only after a person confirmed it
+ */
+export const rootChanges = sqliteTable(
+  "root_changes",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    companyId: text("company_id")
+      .notNull()
+      .references(() => companies.id),
+    change: text("change").notNull(),
+    createdAt: integer("created_at").notNull(),
+  },
+  (table) => [index("root_changes_company").on(table.companyId)],
+);

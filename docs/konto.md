@@ -53,8 +53,8 @@ Konto; sein Gerät nimmt ihn beim nächsten Öffnen der Mitglieder an, wenn er z
 
 !!! note "Admin wieder zum Mitarbeiter machen"
     Kennwort löscht dann den Firmenschlüssel auf dem Server für dieses Konto. Eine Kopie, die sein
-    Gerät schon hat, bleibt dort. Wer der Person nicht mehr traut, braucht einen neuen
-    Firmenschlüssel; das kommt mit einem späteren Teil des Austritts (K-307).
+    Gerät schon hat, bleibt dort; darum legt dein Gerät gleich einen neuen Firmenschlüssel an
+    (siehe [Neuer Firmenschlüssel](#neuer-firmenschlussel)).
 
 ## Austritt aus der Firma
 
@@ -82,6 +82,28 @@ Server sieht den Bericht nie.
     passt, hat der Server einen anderen Schlüssel geliefert als den, den dein Gerät beim Anlegen oder
     über den Einladungslink kennt. Kennwort vertraut dann keinem Mitglied. Sprich mit dem, der den
     Server betreibt.
+
+## Neuer Firmenschlüssel
+
+Wer als Inhaber oder Admin geht oder zum Mitarbeiter wird, hat den alten Firmenschlüssel noch. Darum
+legt das Gerät des Inhabers, der ihn entfernt oder herabstuft, sofort einen neuen an, bestätigt
+damit alle, die bleiben, neu und signiert die Firmen-Richtlinie neu. Von Hand geht das unter
+**Einstellungen → Mitglieder → Firmenschlüssel → Neuen Firmenschlüssel anlegen**, etwa wenn das
+Recovery-Kit eines Inhabers in fremde Hände geraten ist.
+
+Unter **Firmenschlüssel** sieht jedes Mitglied den Vergleichscode des Schlüssels, den sein Konto
+kennt: 60 Ziffern in zwölf Gruppen. Nach einem Wechsel zeigt Kennwort allen anderen auf der Seite
+**Mitglieder** den Hinweis **Neuer Firmenschlüssel** mit dem Code des neuen. Vergleicht ihn mit dem
+Code, den ein Inhaber auf seinem Gerät sieht, am besten persönlich oder am Telefon, und wählt erst
+dann **Code stimmt, übernehmen**. Bis dahin zeigt Kennwort keine Mitglieder und öffnet keinen
+Tresor. Das ist Absicht: Auch wer gegangen ist, kann einen Wechsel unterschreiben, nur der Code des
+Inhabers zeigt den echten. Danach kennen alle Geräte deines Kontos den neuen Schlüssel.
+
+Wer gegangen ist, steht danach mit **Alter Firmenschlüssel** in der Liste: Was er vor dem Wechsel in
+den Tresoren unterschrieben hat, bleibt prüfbar, mit dem alten Schlüssel kann er aber nichts Neues
+mehr bestätigen. Einen zweiten Wechsel vom alten Schlüssel nimmt Kennwort nie an; zeigt der Server
+einen, meldet die Seite einen Angriff. Die Einzelheiten stehen im
+[Sicherheitsdesign](sicherheitsdesign.md#p-07-firmen-wurzelschlussel-und-zertifikate).
 
 ## Einladung annehmen
 

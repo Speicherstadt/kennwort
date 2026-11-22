@@ -7,6 +7,8 @@ import {
   MembersWire,
   type NewInvitation,
   RootGrantWire,
+  type RootRotation,
+  rootRotationToWire,
   StaleWire,
   toWire,
 } from "@kennwort/core";
@@ -76,6 +78,16 @@ export const memberCalls = (call: Call) => ({
   leave: async (token: string, accountId: Uint8Array) =>
     (await call("DELETE", `/api/members/${encodeBytes(accountId)}`, undefined, token)).status ===
     200,
+  /**
+   * A new company root (K-307 part f, P-07): the change, the new certificates, the grants and the
+   * policy at once; the server takes it only as the one change from the root it holds
+   */
+  replaceRoot: async (token: string, rotation: Omit<RootRotation, "rootSecretKey">) =>
+    (await call("PUT", "/api/company/root", rootRotationToWire(rotation), token)).status === 200,
+  /** The key block under AK, written anew once it names a new root (P-07) */
+  writeKeyBlock: async (token: string, sealed: Uint8Array) =>
+    (await call("PUT", "/api/account/key-block", { keyBlock: encodeBytes(sealed) }, token))
+      .status === 200,
   /** The sealed account state under the next counter; stale when another device wrote first */
   writeState: async (token: string, sealed: Uint8Array, counter: number): Promise<StateWrite> => {
     const answer = await call(

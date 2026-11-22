@@ -1,4 +1,4 @@
-import { passphraseKeysWith, rootFingerprint, seal } from "@kennwort/crypto";
+import { ed25519KeyPair, passphraseKeysWith, rootFingerprint, seal } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
 import { isCertified } from "../membership/certificate.ts";
 import { createAccount, createCompany } from "./create.ts";
@@ -7,7 +7,8 @@ import { type Stored, unlockWithPassphrase, unlockWithRecoveryKey } from "./unlo
 
 const quick = (p: string, salt: Uint8Array, key: Uint8Array, account: Uint8Array) =>
   passphraseKeysWith({ m: 8, t: 1, p: 1 }, p, salt, key, account);
-const root = new Uint8Array(32).fill(1);
+const rootKey = ed25519KeyPair(new Uint8Array(32).fill(7));
+const root = rootFingerprint(rootKey.publicKey);
 const stored = (upload: ReturnType<typeof createAccount>["upload"]): Stored => upload;
 
 describe("account state", () => {
@@ -22,6 +23,7 @@ describe("account state", () => {
     policyLock: 4,
     neverSave: ["portal.weber-haustechnik.test"],
     emergency: { jonas: { grant: 5, revoked: false, objected: 0 } },
+    retiredRoots: [],
   };
   const key = new Uint8Array(32).fill(9);
   const account = new Uint8Array(16).fill(4);
@@ -38,7 +40,7 @@ describe("account state", () => {
       ok: false,
       error: "not-authentic",
     });
-    const owner = { ...state, rootSecretKey: new Uint8Array(32).fill(7) };
+    const owner = { ...state, rootSecretKey: rootKey.secretKey };
     expect(openState(key, account, 0, sealState(key, account, 0, owner))).toEqual({
       ok: true,
       value: owner,
@@ -57,7 +59,7 @@ describe("account state", () => {
   it("merges two devices' states: the higher of each, the known bundles kept", () => {
     const theirs: AccountState = {
       rootFingerprint: root,
-      rootSecretKey: new Uint8Array(32).fill(7),
+      rootSecretKey: rootKey.secretKey,
       bundles: { max: new Uint8Array(32).fill(5) },
       logs: {
         buero: { seq: 2, hash: new Uint8Array(32).fill(8) },
@@ -73,12 +75,13 @@ describe("account state", () => {
         jonas: { grant: 5, revoked: true, objected: 3 },
         sandra: { grant: 2, revoked: false, objected: 0 },
       },
+      retiredRoots: [],
     };
     expect(mergeStates(state, theirs)).toEqual({
       ok: true,
       value: {
         rootFingerprint: root,
-        rootSecretKey: new Uint8Array(32).fill(7),
+        rootSecretKey: rootKey.secretKey,
         bundles: { anna: new Uint8Array(32).fill(2), max: new Uint8Array(32).fill(5) },
         logs: {
           buero: { seq: 3, hash: new Uint8Array(32).fill(3) },
@@ -94,6 +97,7 @@ describe("account state", () => {
           jonas: { grant: 5, revoked: true, objected: 3 },
           sandra: { grant: 2, revoked: false, objected: 0 },
         },
+        retiredRoots: [],
       },
     });
     expect(mergeStates(state, emptyState(root))).toEqual({ ok: true, value: state });
@@ -215,12 +219,13 @@ describe("account state", () => {
       policy: ___,
       policyLock: ____,
       neverSave: _____,
+      retiredRoots: ______,
       ...older
     } = state;
     const place = { purpose: "account-state", context: [account, 2] };
     const json = JSON.stringify({
       ...older,
-      rootFingerprint: "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE",
+      rootFingerprint: Buffer.from(root).toString("base64url"),
       bundles: { anna: "AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI" },
       logs: { buero: { seq: 3, hash: "AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM" } },
     });
@@ -234,6 +239,7 @@ describe("account state", () => {
         policy: 0,
         policyLock: 10,
         neverSave: [],
+        retiredRoots: [],
       },
     });
   });
