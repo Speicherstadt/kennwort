@@ -1,6 +1,6 @@
 /**
  * The service worker's side of the phishing warning (K-405, P-17). A content script asks for the
- * salt of the alert list and hands over the F-09 tag of what the user typed into a password field;
+ * salt of the alert list and hands over the F-10 tag of what the user typed into a password field;
  * the worker never gets the typed value. It takes the tag only from a content script in a frame the
  * browser's frame tree shows as the top frame or a frame of the same origin as every frame above it
  * (fill/frames.ts), the same rule as for filling and saving, and reads the host from that frame tree,
@@ -32,7 +32,7 @@ export type AlertBrokerDeps = {
   frames: (tabId: number) => Promise<FrameInfo[] | undefined>;
   send: (tabId: number, message: AlertContentMessage, target: FillTarget) => Promise<unknown>;
   warnings: Captures<Warning>;
-  /** F-09's host tag; tests pass a stand-in */
+  /** F-10's host tag; tests pass a stand-in */
   hostTag?: (host: string, salt: Uint8Array) => Uint8Array;
 };
 

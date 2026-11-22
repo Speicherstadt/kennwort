@@ -7,7 +7,7 @@
  * for the phishing warning, which opens in the same prompt (alert-watch.ts). It reads no storage
  * area; the session area is closed to content scripts anyway (session-keys.ts).
  */
-// Only F-09 from packages/crypto: the content script stays small
+// Only F-10 from packages/crypto: the content script stays small
 import { alertTag } from "@kennwort/crypto/password-alert";
 import { m } from "../../paraglide/messages.js";
 import type { AlertAnswer, AlertRequest } from "../alert/messages.ts";

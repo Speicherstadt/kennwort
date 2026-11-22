@@ -6,7 +6,7 @@
  *
  * Only while unlocked: it writes nothing when the keys are gone and takes the list away again if
  * the lock came while it worked. The salt stays while unlocked, so a record whose entry did not
- * change is kept; each new tag costs some milliseconds of Argon2id (F-09), so it pauses between
+ * change is kept; each new tag costs some milliseconds of Argon2id (F-10), so it pauses between
  * tags and writes what it has every BATCH tags, for a popup that closes before it is done.
  */
 import type { StoredEntry } from "@kennwort/client/entries/entries.ts";

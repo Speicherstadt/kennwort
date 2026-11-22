@@ -1,5 +1,5 @@
 /**
- * Writes password-alert-v1.json (F-09), computed without the code under test: Argon2id from
+ * Writes password-alert-v1.json (F-10), computed without the code under test: Argon2id from
  * node:crypto (`argon2Sync`, as Bun implements it) and HKDF-SHA-512 from node:crypto, with the
  * F-04 encoding written out by hand. Dev only; run with
  * `bun packages/crypto/vectors/generate-password-alert.ts`.

@@ -14,7 +14,7 @@ const ID = "abcdefghijklmnopabcdefghijklmnop";
 const SALT = "07".repeat(16);
 const LOOK_ALIKE = "https://portal-weber-haustechnik.test/login";
 const PORTAL = "https://portal.weber-haustechnik.test/login";
-// A stand-in for the host tag of F-09, as the list was made with it
+// A stand-in for the host tag of F-10, as the list was made with it
 const hostTag = (host: string) => new TextEncoder().encode(host.padEnd(16, "-").slice(0, 16));
 const tagOf = (host: string) => hex(hostTag(host));
 

@@ -3,7 +3,7 @@ import type { AlertAnswer, AlertRequest } from "../alert/messages.ts";
 import { type AlertWatchDeps, createAlertWatch } from "./alert-watch.ts";
 
 // K-405: the content script checks what the user typed into a password field when the user leaves
-// the field or submits, never per key, and hands the worker only the F-09 tag, never the value
+// the field or submits, never per key, and hands the worker only the F-10 tag, never the value
 const SALT = "07".repeat(16);
 const PASSWORD = "Kupfer-Rohr-18!";
 

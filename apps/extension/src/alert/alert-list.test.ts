@@ -32,7 +32,7 @@ const login = (idText: string, password: string, ...urls: string[]): StoredEntry
   },
 });
 
-// Stand-ins for F-09, so these tests stay fast; packages/crypto tests the real ones
+// Stand-ins for F-10, so these tests stay fast; packages/crypto tests the real ones
 const hashers = {
   tag: (password: string, salt: Uint8Array) =>
     Uint8Array.from([password.length, salt[0] ?? 0, 0xab, password.charCodeAt(0)]),

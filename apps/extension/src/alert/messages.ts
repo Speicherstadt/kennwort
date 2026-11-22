@@ -2,7 +2,7 @@
  * The messages of the phishing warning (K-405, P-17), all through the service worker:
  *
  * - the content script asks for the salt of the open account's alert list (`alert-salt`) and hands
- *   over the F-09 tag of what the user typed into a password field (`alert-check`): four bytes in
+ *   over the F-10 tag of what the user typed into a password field (`alert-check`): four bytes in
  *   hex, never the value itself;
  * - the worker, if the tag matches a saved password of another host, asks the content script of the
  *   top frame to open the prompt frame (`kennwort-alert-open`), whose page then takes the warning
@@ -30,7 +30,7 @@ export type Warning = { host: string; url: string; entries: string[] };
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 const isString = (value: unknown): value is string => typeof value === "string";
-/** Exactly the F-09 tag: four bytes, lower-case hex */
+/** Exactly the F-10 tag: four bytes, lower-case hex */
 const TAG = /^[0-9a-f]{8}$/;
 
 /** A request of the content script's shape, or undefined */

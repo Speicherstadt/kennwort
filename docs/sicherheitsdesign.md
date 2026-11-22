@@ -335,7 +335,7 @@ Kontext jedes Pakets; ein Paket für ein anderes Paar öffnet sich nicht. Umgese
 entstehen ohne den Code, den sie prüfen (HKDF und SHA-512/256 aus `node:crypto`, AEAD und Ed25519 aus
 libsodium, X-Wing gegen die Vektoren des Entwurfs geprüft).
 
-### F-09 Phishing-Warnung v1
+### F-10 Phishing-Warnung v1
 
 ```text
 parameter = Argon2id, m = 1 MiB, t = 2, p = 1, 4 Byte Ausgabe                   (fest in v1)
@@ -1637,7 +1637,7 @@ ihren Sicherheits-Whitepapern über den Abgleich der Adresse beim Ausfüllen, wi
 Warnung deckt den Fall ab, in dem jemand das Passwort selbst eintippt oder einfügt.
 
 - Seiten der Extension, die die Einträge entschlüsselt haben (Popup, Inline-Menü, Leiste), legen
-  die Alarmliste an: je Eintrag mit Passwort und Website den F-09-Tag des Passworts und die
+  die Alarmliste an: je Eintrag mit Passwort und Website den F-10-Tag des Passworts und die
   Host-Tags seiner Websites, unter einem Salt, der bei jedem Entsperren neu ist. Sie liegt nur in
   `chrome.storage.session` (`kennwort-alert`) und nur, solange Schlüssel dort liegen: Wer sie
   schreibt, prüft das davor und danach; das Sperren, der Alarm der Sperrzeit und der Service Worker
@@ -1701,7 +1701,7 @@ einen Wert, den die Seite selbst einsetzt, und gesperrt warnt nichts; eine über
 durchsichtig gemachte Warnung kommt wieder nach oben, und „trotzdem fortfahren“ zählt verdeckt
 nicht; der Sitzungsbereich hält weder Passwort noch Host im Klartext und verliert die Alarmliste
 beim Sperren. Die Regeln selbst prüfen Vitest-Tests neben dem Code (`apps/extension/src/fill`,
-`save`, `alert`, `content`, `menu`, `prompt`, `page`) und die Testvektoren von F-09.
+`save`, `alert`, `content`, `menu`, `prompt`, `page`) und die Testvektoren von F-10.
 
 **Wehrt ab:** E-14.
 

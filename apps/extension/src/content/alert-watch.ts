@@ -1,7 +1,7 @@
 /**
  * The content script's part in the phishing warning (K-405, P-17): it notices that the user typed
  * into a password field and, when the user leaves the field, presses Enter in it or submits its
- * form, hands the service worker the F-09 tag of the value: four bytes of Argon2id under the salt
+ * form, hands the service worker the F-10 tag of the value: four bytes of Argon2id under the salt
  * of the open account's alert list. Never the value, never per key press (Google's Password Alert
  * sends every key press to its service worker; here nothing leaves before the user is done), and
  * it holds no saved password: whether the tag belongs to a saved password of another host only the
@@ -23,7 +23,7 @@ export type AlertWatchDeps = {
   mayCheck: () => boolean;
   /** A message to the service worker; undefined when nothing answered */
   send: (request: AlertRequest) => Promise<AlertAnswer | undefined>;
-  /** F-09's tag (packages/crypto) */
+  /** F-10's tag (packages/crypto) */
   tag: (value: string, salt: Uint8Array) => Uint8Array;
   shown?: (input: HTMLInputElement) => boolean;
 };

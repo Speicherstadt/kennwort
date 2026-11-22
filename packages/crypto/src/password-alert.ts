@@ -1,5 +1,5 @@
 /**
- * F-09 of docs/sicherheitsdesign.md: the short, salted, slow hashes of the phishing warning (K-405,
+ * F-10 of docs/sicherheitsdesign.md: the short, salted, slow hashes of the phishing warning (K-405,
  * P-17). The extension keeps them for the saved passwords while it is unlocked, and the content
  * script hashes what the user typed the same way, so neither a saved nor a typed password crosses
  * between the page's process and the extension in plain text.

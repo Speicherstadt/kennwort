@@ -11,8 +11,8 @@ import {
 } from "./password-alert.ts";
 import { fromHex, hex } from "./test-helpers.ts";
 
-// F-09: the short, salted, slow hashes of the phishing warning (K-405)
-describe.each(vectors)("F-09 vector: $name (node:crypto)", (vector) => {
+// F-10: the short, salted, slow hashes of the phishing warning (K-405)
+describe.each(vectors)("F-10 vector: $name (node:crypto)", (vector) => {
   it("derives the same tag and host tag", () => {
     const salt = fromHex(vector.salt);
     expect(hex(alertTag(vector.password, salt))).toBe(vector.tag);

@@ -296,7 +296,7 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   Passwort, nicht in einem versteckten Feld, nicht für einen Wert, den die Seite selbst einsetzt,
   und nicht gesperrt; eine verdeckte oder durchsichtig gemachte Warnung kommt wieder nach oben und
   „trotzdem fortfahren“ zählt verdeckt nicht. Das Content Script hält keine gespeicherten Passwörter
-  und schickt dem Service Worker nur einen kurzen, gesalzenen, langsamen Hash (F-09, Testvektoren)
+  und schickt dem Service Worker nur einen kurzen, gesalzenen, langsamen Hash (F-10, Testvektoren)
   des getippten Werts, nie den Wert selbst und nie etwas an den Server; die Hashes liegen nur
   entsperrt in `chrome.storage.session` und verschwinden beim Sperren und nach der Sperrzeit (Test);
   weder `chrome.storage.local` noch der Sitzungsbereich enthalten Passwort oder Host im Klartext.

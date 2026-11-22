@@ -1,12 +1,12 @@
 /**
  * The alert list of the phishing warning (K-405, P-17): for every saved password with a web address
- * its F-09 tag and the tags of its exact hosts (page/matches.ts), under a salt that is new with every
+ * its F-10 tag and the tags of its exact hosts (page/matches.ts), under a salt that is new with every
  * unlock. Pages of the extension that decrypted the entries build it (alert-refresh.ts) and keep it
  * in chrome.storage.session next to the unlocked keys, gone on lock; the service worker compares a
  * typed tag against it (alert-broker.ts). Neither a password nor a host is in it in plain text.
  *
  * As in Google's Password Alert (google/password-alert, service_worker.js: a salted, partial hash
- * of the password, 37 bits), only a short tag is kept, here four bytes of Argon2id (F-09).
+ * of the password, 37 bits), only a short tag is kept, here four bytes of Argon2id (F-10).
  */
 import { type StoredEntry, shown } from "@kennwort/client/entries/entries.ts";
 import { entryHosts } from "../page/matches.ts";
@@ -18,7 +18,7 @@ export type AlertSource = { id: string; version: number; password: string; hosts
 export type AlertRecord = { id: string; version: number; tag: string; hosts: string[] };
 export type AlertList = { salt: string; records: AlertRecord[] };
 
-/** F-09, passed in so tests can use fast stand-ins */
+/** F-10, passed in so tests can use fast stand-ins */
 export type Hashers = {
   tag: (password: string, salt: Uint8Array) => Uint8Array;
   hostTag: (host: string, salt: Uint8Array) => Uint8Array;
