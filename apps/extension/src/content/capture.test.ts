@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { inputsOf, submittedLogin } from "./capture.ts";
 import { geckoAutocomplete } from "../testing/gecko-autocomplete.ts";
+import { inputsOf, submittedLogin } from "./capture.ts";
 
 // K-404: what a sign-in or change-password submit carries, read only from fields the page shows
 beforeEach(() => {
@@ -93,9 +93,10 @@ describe("submittedLogin", () => {
     expect(
       submittedLogin(form("password|neu|new-password", "password|alt|current-password")),
     ).toEqual({ username: "", password: "neu", previous: "alt" });
-    expect(
-      submittedLogin(form("text|jonas|username", "text|Weber", "password|Rohr-17!")),
-    ).toEqual({ username: "jonas", password: "Rohr-17!" });
+    expect(submittedLogin(form("text|jonas|username", "text|Weber", "password|Rohr-17!"))).toEqual({
+      username: "jonas",
+      password: "Rohr-17!",
+    });
   });
 
   it("reads nothing when the confirmation differs from the new password", () => {

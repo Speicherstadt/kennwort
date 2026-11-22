@@ -5,6 +5,7 @@
  * decides for itself whether it may show a menu (same-origin.ts). Only fields the page shows count
  * (field-shown.ts): a hidden password field after a user name field is no part of its login.
  */
+import { saysAutocomplete } from "./autocomplete.ts";
 import { fieldShown } from "./field-shown.ts";
 
 /** The fields one fill writes into; at least one of them is there */
@@ -19,7 +20,7 @@ type Shown = (input: HTMLInputElement) => boolean;
 
 const usable = (input: HTMLInputElement) => !input.disabled && !input.readOnly;
 const saysUsername = (input: HTMLInputElement) =>
-  /\b(username|email)\b/.test(input.autocomplete) || input.type === "email";
+  saysAutocomplete(input, "username", "email") || input.type === "email";
 
 /** The inputs of the field's form, or of its document when it has none, in document order */
 const inputsAround = (field: HTMLInputElement): HTMLInputElement[] => {
@@ -53,5 +54,5 @@ export const loginOf = (field: unknown, shown: Shown = fieldShown): Login | unde
   const password = inputs.slice(at + 1).find(isPassword);
   if (password) return { username: field, password };
   // A first step that asks only for the user name, as many sign-ins do now
-  return /\busername\b/.test(field.autocomplete) ? { username: field } : undefined;
+  return saysAutocomplete(field, "username") ? { username: field } : undefined;
 };
