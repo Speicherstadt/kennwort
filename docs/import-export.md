@@ -191,7 +191,8 @@ Passwort leer.
   danach.
 - **Grenzen**: Die Schlüsselableitung bestimmt die Datei, nicht Kennwort. Damit keine Datei das
   Gerät minutenlang rechnen lässt oder seinen Speicher füllt, liest Kennwort nur Argon2 mit
-  höchstens 1 GiB Speicher, höchstens 100 Durchläufen und Speicher mal Durchläufe höchstens 8 GiB,
+  höchstens 1 GiB Speicher, höchstens 100 Durchläufen, Speicher mal Durchläufe höchstens 8 GiB
+  und höchstens 256 Lanes (Parallelität),
   AES-KDF mit höchstens 100 Millionen Runden und höchstens 64 MiB entpackte Daten. Die
   Voreinstellungen von KeePassXC und KeePass liegen weit darunter; das Entschlüsseln dauert dann
   wenige Sekunden. Eine Datenbank darüber endet mit einer Meldung, die die Grenzen nennt.

@@ -469,7 +469,7 @@
   "import_error_wrong_key": "Passwort oder Schlüsseldatei passen nicht zu dieser Datenbank.",
   "import_error_bad_kdbx": "Diese Datenbank ist beschädigt oder unvollständig. Nimm eine frische Kopie der .kdbx-Datei.",
   "import_error_unsupported": "Diese Datenbank hat ein älteres Format (KDBX 3.1 oder älter) oder eine Verschlüsselung, die Kennwort nicht liest (Twofish). Speichere sie in KeePassXC oder KeePass als KDBX 4 mit AES-256 oder ChaCha20, oder exportiere sie als XML.",
-  "import_error_too_costly": "Das Entschlüsseln dieser Datenbank ist aufwendiger, als Kennwort zulässt (Argon2 mit höchstens 1 GiB Speicher und 100 Durchläufen, AES-KDF mit höchstens 100 Millionen Runden). Senke die Werte in den Einstellungen der Datenbank oder exportiere sie als XML.",
+  "import_error_too_costly": "Das Entschlüsseln dieser Datenbank ist aufwendiger, als Kennwort zulässt (Argon2 mit höchstens 1 GiB Speicher, 100 Durchläufen und 256 Lanes, AES-KDF mit höchstens 100 Millionen Runden). Senke die Werte in den Einstellungen der Datenbank oder exportiere sie als XML.",
   "import_error_bad_key_file": "Die Schlüsseldatei ist beschädigt: Ihre Version oder Prüfsumme stimmt nicht.",
   "import_error_unreadable": "Die Datei ließ sich nicht öffnen.",
   "import_map_title": "Spalten zuordnen",

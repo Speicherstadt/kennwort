@@ -48,6 +48,12 @@ export type KdbxLimits = {
   iterations: number;
   /** Argon2's memory times its passes, in KiB: the work it takes */
   work: number;
+  /**
+   * Argon2's lanes. noble computes them one after another, and with many lanes each holds so few
+   * blocks that the overhead per segment dominates: 1 GiB in 131 072 lanes (KeePass allows up to
+   * 2^24 - 1) takes six times as long as in two. Up to 256 lanes it stays within a third.
+   */
+  parallelism: number;
   /** AES-KDF's rounds */
   aesRounds: number;
   /** The unpacked payload in bytes, as large as the ZIP reader allows */
@@ -57,6 +63,7 @@ export const KDBX_LIMITS: KdbxLimits = {
   memoryKiB: 1024 * 1024,
   iterations: 100,
   work: 8 * 1024 * 1024,
+  parallelism: 256,
   aesRounds: 100_000_000,
   bytes: 64 * 1024 * 1024,
 };
@@ -67,6 +74,7 @@ const affordable = (kdf: KdbxKdf, limits: KdbxLimits) =>
     ? kdf.rounds <= limits.aesRounds
     : kdf.memoryKiB <= limits.memoryKiB &&
       kdf.iterations <= limits.iterations &&
+      kdf.parallelism <= limits.parallelism &&
       kdf.memoryKiB * kdf.iterations <= limits.work;
 
 /** gzip unpacked with the platform, stopped as soon as it gives more than `max` bytes */

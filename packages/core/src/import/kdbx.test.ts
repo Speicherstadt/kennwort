@@ -192,6 +192,12 @@ describe("KDBX 4 (K-502 Teil 3)", () => {
       tooCostly,
     );
     expect(await costly(aesKdfParameters(100_000_001n))).toEqual(tooCostly);
+    // noble's Argon2 slows with many lanes: 1 GiB in 131 072 lanes takes a minute a pass, so
+    // 8 passes within the work limit would take eight
+    expect(
+      await costly(argon2Parameters({ memory: 1024n ** 3n, iterations: 8n, parallelism: 131_072 })),
+    ).toEqual(tooCostly);
+    expect(await costly(argon2Parameters({ parallelism: 257 }))).toEqual(tooCostly);
   });
 
   it("sets the limits as documented", () => {
@@ -199,6 +205,7 @@ describe("KDBX 4 (K-502 Teil 3)", () => {
       memoryKiB: 1024 * 1024,
       iterations: 100,
       work: 8 * 1024 * 1024,
+      parallelism: 256,
       aesRounds: 100_000_000,
       bytes: 64 * 1024 * 1024,
     });
@@ -215,13 +222,13 @@ describe("KDBX 4 (K-502 Teil 3)", () => {
         d.end,
       ],
     });
-    const limits = { ...KDBX_LIMITS, memoryKiB: 8, iterations: 2, work: 16 };
+    const limits = { ...KDBX_LIMITS, memoryKiB: 8, iterations: 2, work: 16, parallelism: 1 };
     // The password is wrong, so getting to the key's check means the limits let it through
     expect(await openKdbx(built.bytes, { password: "x" }, limits)).toEqual({
       ok: false,
       error: "wrong-key",
     });
-    for (const tighter of [{ memoryKiB: 7 }, { iterations: 1 }, { work: 15 }]) {
+    for (const tighter of [{ memoryKiB: 7 }, { iterations: 1 }, { work: 15 }, { parallelism: 0 }]) {
       expect(await openKdbx(built.bytes, { password: "x" }, { ...limits, ...tighter })).toEqual({
         ok: false,
         error: "too-costly",

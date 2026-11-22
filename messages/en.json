@@ -469,7 +469,7 @@
   "import_error_wrong_key": "The password or key file does not match this database.",
   "import_error_bad_kdbx": "This database is damaged or incomplete. Take a fresh copy of the .kdbx file.",
   "import_error_unsupported": "This database has an older format (KDBX 3.1 or older) or an encryption Kennwort does not read (Twofish). Save it as KDBX 4 with AES-256 or ChaCha20 in KeePassXC or KeePass, or export it as XML.",
-  "import_error_too_costly": "Decrypting this database takes more than Kennwort allows (Argon2 with at most 1 GiB of memory and 100 passes, AES-KDF with at most 100 million rounds). Lower the values in the database settings or export it as XML.",
+  "import_error_too_costly": "Decrypting this database takes more than Kennwort allows (Argon2 with at most 1 GiB of memory, 100 passes and 256 lanes, AES-KDF with at most 100 million rounds). Lower the values in the database settings or export it as XML.",
   "import_error_bad_key_file": "The key file is damaged: its version or checksum does not match.",
   "import_error_unreadable": "The file could not be opened.",
   "import_map_title": "Map the columns",

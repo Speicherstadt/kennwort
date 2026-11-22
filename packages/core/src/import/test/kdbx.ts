@@ -77,12 +77,18 @@ export const aesKdfParameters = (rounds = 1n, seed = SEED) =>
     variants.bytes("S", seed),
   );
 export const argon2Parameters = (
-  options: { uuid?: Uint8Array; memory?: bigint; iterations?: bigint; version?: number } = {},
+  options: {
+    uuid?: Uint8Array;
+    memory?: bigint;
+    iterations?: bigint;
+    version?: number;
+    parallelism?: number;
+  } = {},
 ) =>
   variantMap(
     variants.bytes("$UUID", options.uuid ?? UUID.argon2d),
     variants.bytes("S", new Uint8Array(32).fill(1)),
-    variants.u32("P", 1),
+    variants.u32("P", options.parallelism ?? 1),
     variants.u64("M", options.memory ?? 64n * 1024n),
     variants.u64("I", options.iterations ?? 1n),
     variants.u32("V", options.version ?? 0x13),
