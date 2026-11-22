@@ -8,6 +8,7 @@
  *   top frame to open the prompt frame (`kennwort-alert-open`), whose page then takes the warning
  *   from the worker as it takes a submitted login (save/messages.ts, `prompt-take`).
  */
+import type { FrameRefusal } from "../fill/frames.ts";
 
 /** From the content script to the service worker */
 export type AlertRequest = { type: "alert-salt" } | { type: "alert-check"; tag: string };
@@ -21,7 +22,7 @@ export type AlertRefusal =
   | "warned";
 export type AlertAnswer =
   | { ok: true; salt?: string }
-  | { ok: false; error: AlertRefusal | "unknown-frame" | "foreign-frame" };
+  | { ok: false; error: AlertRefusal | FrameRefusal };
 
 /** What the warning names: the page's exact host and address, and the entries whose password it is */
 export type Warning = { host: string; url: string; entries: string[] };

@@ -22,7 +22,7 @@ import { contentSender, said } from "../save/save-broker.ts";
 import { ALERT_ITEM, KEYS_ITEM, type SessionArea } from "../session-keys.ts";
 import { alertListOf, matchesOf, sameSite } from "./alert-list.ts";
 import { fromHex, hex } from "./hex.ts";
-import { type AlertAnswer, type AlertRefusal, alertRequest, type Warning } from "./messages.ts";
+import { type AlertAnswer, alertRequest, type Warning } from "./messages.ts";
 
 export type AlertContentMessage = { type: "kennwort-alert-open" };
 
@@ -37,7 +37,7 @@ export type AlertBrokerDeps = {
 };
 
 const TOP = 0;
-const refuse = (error: Exclude<AlertAnswer, { ok: true }>["error"]): AlertAnswer => ({
+const refuse = (error: Extract<AlertAnswer, { ok: false }>["error"]): AlertAnswer => ({
   ok: false,
   error,
 });
@@ -104,7 +104,7 @@ export const createAlertBroker = (deps: AlertBrokerDeps) => {
     if (request.type === "alert-check")
       return check(request.tag, sender, content.tabId, content.frameId);
     const list = await openList();
-    return list ? { ok: true, salt: list.salt } : refuse("locked" satisfies AlertRefusal);
+    return list ? { ok: true, salt: list.salt } : refuse("locked");
   };
 
   return Object.assign(broker, {
