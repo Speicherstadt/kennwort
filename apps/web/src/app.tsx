@@ -12,7 +12,7 @@ import type { EmergencyApi } from "@kennwort/client/session/emergency-api.ts";
 import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
 import type { ShareApi } from "@kennwort/client/session/shares-api.ts";
 import type { VaultApi } from "@kennwort/client/session/vaults-api.ts";
-import type { Loaded, Vault } from "@kennwort/client/vaults/vaults.ts";
+import type { Vault } from "@kennwort/client/vaults/vaults.ts";
 import { encodeBytes, exitReport, type MemberView } from "@kennwort/core";
 import { getLocale, type Locale, m, setLocale, type Toasts } from "@kennwort/ui";
 import { QueryClientProvider } from "@tanstack/solid-query";
@@ -22,7 +22,7 @@ import { InvitePage } from "./account/invite-page.tsx";
 import { type PairDeps, PairPage } from "./account/pair-page.tsx";
 import { RecoverCompanyPage } from "./account/recover-company-page.tsx";
 import { RecoverPage } from "./account/recover-page.tsx";
-import { RenewPage } from "./account/renew-page.tsx";
+import { renewPage } from "./account/renew-route.tsx";
 import { SetupPage } from "./account/setup-page.tsx";
 import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
 import { renewEmergency } from "./emergency/emergency.ts";
@@ -66,14 +66,6 @@ export type AppApi = PairDeps &
 const peopleOf = (store: VaultStore) => {
   const shown = store.shown();
   return shown.state === "ready" ? shown.people : [];
-};
-
-/** The vaults as last loaded, for the renewal of keys to wrap anew (P-12); none before a load */
-const loadedOf = (store: VaultStore): Loaded | undefined => {
-  const shown = store.shown();
-  if (shown.state !== "ready") return undefined;
-  const { state: _, ...loaded } = shown;
-  return loaded;
 };
 
 /** What the frame shows of the vaults: their names, and whether a new entry has a vault to go to */
@@ -128,23 +120,6 @@ const emergencyPage =
   (props: { api: AppApi; session: Session }, vaults: () => Vault[] | undefined) =>
   (toasts: Toasts) => (
     <EmergencyPage api={props.api} session={props.session} vaults={vaults} toasts={toasts} />
-  );
-
-/** Konto → Schlüssel erneuern (K-307 part e) with the vaults as last loaded, loading them after */
-const renewPage =
-  (
-    props: { nav: Navigation; api: AppApi; session: Session },
-    store: VaultStore,
-    reload: () => Promise<void>,
-  ) =>
-  () => (
-    <RenewPage
-      nav={props.nav}
-      session={props.session}
-      api={props.api}
-      loaded={() => loadedOf(store)}
-      onRenewed={reload}
-    />
   );
 
 /**
