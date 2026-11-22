@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { geckoAutocomplete } from "../testing/gecko-autocomplete.ts";
 import { loginOf } from "./login-fields.ts";
 
 /** happy-dom lays out nothing: every element gets the box of an ordinary field */
@@ -58,6 +59,18 @@ describe("loginOf", () => {
   it("opens on a first step that asks only for the user name", () => {
     document.body.innerHTML = `<form><input id="user" autocomplete="username"></form>`;
     expect(loginOf(byId("user"))).toEqual({ username: byId("user") });
+  });
+
+  // Firefox's `input.autocomplete` says only "on" or "off" while dom.forms.autocomplete.formautofill
+  // is off, its default (nsContentUtils::InternalSerializeAutocompleteAttribute, StaticPrefList.yaml
+  // in mozilla-firefox/firefox): the page's tokens are in the attribute only (K-407)
+  it("reads the page's autocomplete tokens as Firefox reports them", () => {
+    geckoAutocomplete();
+    document.body.innerHTML = `<form><input id="mail" type="text" autocomplete="username">
+      <input id="code" type="text"><input id="pass" type="password"></form>
+      <form><input id="first" autocomplete="Username webauthn"></form>`;
+    expect(loginOf(byId("pass"))?.username).toBe(byId("mail"));
+    expect(loginOf(byId("first"))).toEqual({ username: byId("first") });
   });
 
   it.each([
