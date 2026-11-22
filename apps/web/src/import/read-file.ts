@@ -66,6 +66,9 @@ const ERROR_TEXT: Record<ImportError, () => string> = {
   "bad-xml": () => m.import_error_bad_xml(),
   "wrong-format": () => m.import_error_wrong_format(),
   encrypted: () => m.import_error_encrypted(),
+  "account-encrypted": () => m.import_error_account_encrypted(),
+  "wrong-password": () => m.import_error_wrong_password(),
+  damaged: () => m.import_error_damaged(),
   "bad-zip": () => m.import_error_bad_zip(),
   "unsupported-zip": () => m.import_error_unsupported_zip(),
   "too-large": () => m.import_error_too_large(),
@@ -77,11 +80,20 @@ const ERROR_TEXT: Record<ImportError, () => string> = {
   "bad-key-file": () => m.import_error_bad_key_file(),
 };
 
-/** Errors that read otherwise for Kennwort's own export (K-504): a passphrase, not a key file */
-const OWN_ERROR_TEXT: Partial<Record<ImportError, () => string>> = {
-  "wrong-key": () => m.import_error_kennwort_wrong_key(),
-  unsupported: () => m.import_error_kennwort_unsupported(),
+/**
+ * Errors that read otherwise for a format: Kennwort's own export (K-504) has a passphrase, not a
+ * key file; Bitwarden's protected JSON (K-502 Teil 4) has its own KDFs and limits
+ */
+const FORMAT_ERROR_TEXT: Record<string, Partial<Record<ImportError, () => string>>> = {
+  "kennwort-json": {
+    "wrong-key": () => m.import_error_kennwort_wrong_key(),
+    unsupported: () => m.import_error_kennwort_unsupported(),
+  },
+  "bitwarden-json": {
+    unsupported: () => m.import_error_bitwarden_unsupported(),
+    "too-costly": () => m.import_error_bitwarden_too_costly(),
+  },
 };
 
-export const errorText = (error: ImportError, formatId?: string) =>
-  ((formatId === "kennwort-json" && OWN_ERROR_TEXT[error]) || ERROR_TEXT[error])();
+export const errorText = (error: ImportError, formatId = "") =>
+  (FORMAT_ERROR_TEXT[formatId]?.[error] ?? ERROR_TEXT[error])();

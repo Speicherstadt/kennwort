@@ -101,9 +101,12 @@ describe("Bitwarden JSON (K-502)", () => {
       },
     ]);
   });
-  it("reports encrypted and password-protected exports", () => {
+  it("reports password-protected and account-restricted exports", () => {
     const encrypted = { ok: false, error: "encrypted" };
-    expect(parseBitwardenJson('{"encrypted":true,"items":[]}')).toEqual(encrypted);
+    expect(parseBitwardenJson('{"encrypted":true,"items":[]}')).toEqual({
+      ok: false,
+      error: "account-encrypted",
+    });
     expect(parseBitwardenJson('{"encrypted":true,"passwordProtected":true}')).toEqual(encrypted);
     expect(parseBitwardenJson('{"passwordProtected":true}')).toEqual(encrypted);
   });

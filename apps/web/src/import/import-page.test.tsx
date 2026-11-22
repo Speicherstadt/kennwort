@@ -4,7 +4,9 @@ import { setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { flush } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import aegisEncrypted from "../../../../packages/core/src/import/fixtures/aegis-encrypted.json?raw";
 import bitwardenJson from "../../../../packages/core/src/import/fixtures/bitwarden.json?raw";
+import bitwardenProtected from "../../../../packages/core/src/import/fixtures/bitwarden-protected-pbkdf2.json?raw";
 import chromeCsv from "../../../../packages/core/src/import/fixtures/chrome.csv?raw";
 import google from "../../../../packages/core/src/import/fixtures/google-authenticator.txt?raw";
 import exportFile from "../../../../packages/core/src/import/fixtures/kennwort-export.json?raw";
@@ -121,11 +123,71 @@ describe("ImportPage up to the file", () => {
 
   it("says an encrypted export must be exported unencrypted", async () => {
     const root = await show(deps().deps);
-    await choose(root, "Bitwarden (JSON)");
-    await pick(root, JSON.stringify({ encrypted: true, encKeyValidation_DO_NOT_EDIT: "x" }));
+    await choose(root, "Aegis (JSON)");
+    await pick(root, aegisEncrypted);
     expect(root.querySelector('[role="alert"]')?.textContent).toBe(
       "Diese Datei ist verschlüsselt – exportiere unverschlüsselt.",
     );
+  });
+
+  // K-502 Teil 4: Bitwarden's account-restricted export only opens in that Bitwarden account
+  it("refuses Bitwarden's account-restricted export and says which export to take", async () => {
+    const root = await show(deps().deps);
+    await choose(root, "Bitwarden (JSON)");
+    await pick(root, JSON.stringify({ encrypted: true, encKeyValidation_DO_NOT_EDIT: "x" }));
+    const alert = root.querySelector('[role="alert"]')?.textContent;
+    expect(alert).toContain("„kontobeschränkt“");
+    expect(alert).toContain("„Passwortgeschützt“");
+    expect(root.querySelector('input[type="password"]')).toBeNull();
+  });
+});
+
+describe("ImportPage with Bitwarden's password-protected JSON (K-502 Teil 4)", () => {
+  const typeAndOpen = async (root: ParentNode, password: string) => {
+    const field = root.querySelector<HTMLInputElement>('input[type="password"]');
+    if (!field) throw new Error("no password field");
+    field.value = password;
+    await click(button(root, "Export öffnen"));
+    return field;
+  };
+
+  it("asks for the export password of the file already chosen, then previews it", async () => {
+    const root = await show(deps().deps);
+    await choose(root, "Bitwarden (JSON)");
+    await pick(root, bitwardenProtected, "bitwarden_export.json");
+    expect(root.textContent).toContain("Gewählte Datei: bitwarden_export.json");
+    expect(root.textContent).toContain("nicht dein Master-Passwort");
+    // The file is chosen already: no second picker, no key file
+    expect(root.querySelector('input[type="file"]')).toBeNull();
+    const field = await typeAndOpen(root, "Weber-Haustechnik-2026");
+    expect(field.value).toBe("");
+    expect(root.querySelector("h2")?.textContent).toBe("Vorschau");
+    expect(rows(root).some((r) => r.includes("Online-Banking Sparkasse"))).toBe(true);
+    expect(root.textContent).not.toContain("Sp@rkasse");
+  });
+
+  it("says when the password does not fit and keeps the file for the next try", async () => {
+    const root = await show(deps().deps);
+    await choose(root, "Bitwarden (JSON)");
+    await pick(root, bitwardenProtected, "bitwarden_export.json");
+    await typeAndOpen(root, "falsch");
+    expect(root.querySelector('[role="alert"]')?.textContent).toBe(
+      "Das Passwort passt nicht zu dieser Datei. Prüfe es und versuche es noch einmal.",
+    );
+    expect(root.textContent).toContain("Gewählte Datei: bitwarden_export.json");
+    await typeAndOpen(root, "Weber-Haustechnik-2026");
+    expect(root.querySelector("h2")?.textContent).toBe("Vorschau");
+  });
+
+  it("says when the export's KDF costs more than Kennwort allows, before asking", async () => {
+    const root = await show(deps().deps);
+    await choose(root, "Bitwarden (JSON)");
+    const costly = { ...JSON.parse(bitwardenProtected), kdfIterations: 3_000_000 };
+    await pick(root, JSON.stringify(costly));
+    expect(root.querySelector('[role="alert"]')?.textContent).toContain(
+      "höchstens 2 Millionen Iterationen",
+    );
+    expect(root.querySelector('input[type="password"]')).toBeNull();
   });
 });
 

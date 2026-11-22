@@ -72,8 +72,16 @@ const FILE_NAMED: Record<string, () => string> = {
 /** Google Authenticator exports QR codes: the import scans them or takes the pasted links */
 export const isQr = (choice: VendorChoice) => choice.format?.file === "QR";
 
-/** An encrypted file such as KeePass's database: the import asks for its password */
-export const isLocked = (choice: VendorChoice) => choice.format?.unlock !== undefined;
+/**
+ * An encrypted file such as KeePass's database: the import asks for its password with the file.
+ * Bitwarden's JSON may come plain; the import asks only once its file says it is protected.
+ */
+export const isLocked = (choice: VendorChoice) =>
+  choice.format?.unlock !== undefined && !choice.format.sometimesEncrypted;
+
+/** Whether a file that answered `encrypted` can be opened with its password after all */
+export const opensWhenEncrypted = (choice: VendorChoice) =>
+  choice.format?.sometimesEncrypted === true;
 
 const choiceOf = (format: ImportFormat): VendorChoice => ({
   id: format.id,

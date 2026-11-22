@@ -25,7 +25,9 @@ Unter **Einstellungen → Importieren**:
 2. **Datei wählen**: Kennwort liest sie auf dem Gerät; ein ZIP des Anbieters (1Passwords 1PUX,
    Dashlane, Proton Pass) wählst du, wie es ist, ohne es zu entpacken. Eine KeePass-Datenbank
    (`.kdbx`) öffnest du mit ihrem Master-Passwort und, falls sie eine hat, ihrer Schlüsseldatei
-   (siehe [KeePass-Datenbanken](#keepass-datenbanken-kdbx)). Passt die Datei nicht, sagt
+   (siehe [KeePass-Datenbanken](#keepass-datenbanken-kdbx)). Ist ein Bitwarden-Export
+   passwortgeschützt, fragt Kennwort danach nach seinem Export-Passwort (siehe
+   [Bitwardens verschlüsselter Export](#bitwardens-verschlusselter-export)). Passt die Datei nicht, sagt
    Kennwort, warum – etwa „Diese Datei ist verschlüsselt – exportiere unverschlüsselt“ oder dass
    sie zu einem anderen Anbieter gehört. Bei Google Authenticator gibt es keine Datei, sondern
    QR-Codes; wie das geht, steht unter [Authenticator-Apps](#authenticator-apps).
@@ -59,7 +61,7 @@ Kennwort mit Nullen.
 | Von | Datei | Was mitkommt |
 | --- | --- | --- |
 | Kennwort | verschlüsseltes JSON aus „Exportieren“, mit seiner Passphrase | alles, wie es war: alle Arten und Felder, Verlauf, Tags, Favoriten, Einmalcodes und Passkeys; der Name des Tresors wird der Ordner (siehe [Export](#export)) |
-| Bitwarden / Vaultwarden | JSON (Tresor oder Organisation) | alle Arten (Login, Notiz, Karte, Identität, SSH-Schlüssel), eigene Felder, Ordner bzw. Sammlungen, Favoriten, frühere Passwörter |
+| Bitwarden / Vaultwarden | JSON (Tresor oder Organisation), unverschlüsselt oder passwortgeschützt mit seinem Export-Passwort | alle Arten (Login, Notiz, Karte, Identität, SSH-Schlüssel), eigene Felder, Ordner bzw. Sammlungen, Favoriten, frühere Passwörter |
 | Bitwarden / Vaultwarden | CSV (Tresor oder Organisation) | Logins und Notizen, eigene Felder, mehrere Adressen, Ordner bzw. Sammlungen, Favoriten |
 | LastPass | CSV aus dem Web-Tresor | Logins, sichere Notizen, Kreditkarten, Adressen als Identität, andere Notiz-Arten mit ihren Feldern, Ordner und geteilte Ordner, Favoriten |
 | 1Password | 1PUX (1Password 8) | alle Kategorien: Logins, Passwörter, Server und Datenbanken als Login, Karten, Identitäten, WLAN-Router, API-Zugänge, SSH-Schlüssel, alles andere als Notiz mit seinen Feldern; Abschnitte als eigene Felder, Einmalcodes, mehrere Adressen, Tresore als Ordner, Tags, Favoriten, frühere Passwörter, archivierte Einträge; Anhänge und Häkchen aus Anmeldeformularen bleiben draußen |
@@ -86,8 +88,7 @@ Kennwort mit Nullen.
 
 Noch nicht dabei und als eigene Teile geplant:
 
-- **Verschlüsselte Exporte**: Bitwardens verschlüsseltes und passwortgeschütztes JSON, Proton
-  Pass' PGP-Export. Kennwort erkennt sie und sagt, dass sie verschlüsselt sind.
+- **Proton Pass' PGP-Export**: Kennwort erkennt ihn und sagt, dass er verschlüsselt ist.
 - **Team Password Manager** und **FIDO Credential Exchange (CXF)**, sobald das Format stabil ist.
 - **Einmalcodes dem passenden Login zuordnen**: Bis dahin wird jeder Code aus einer
   Authenticator-App ein eigener Login (siehe unten).
@@ -147,7 +148,8 @@ UTF-8), ein Anführungszeichen ohne Ende, kein gültiges JSON oder XML, andere S
 gewählten Anbieter, ein verschlüsselter Export, fehlende QR-Codes eines Exports, ein ZIP, das beschädigt ist, in einer Form
 gepackt, die Kennwort nicht liest, oder größer als jeder Export, oder eine KeePass-Datenbank, zu
 der Passwort oder Schlüsseldatei nicht passen, die beschädigt oder zu alt ist oder deren
-Schlüsselableitung die Grenzen sprengt. Absturz oder Hänger gibt es nicht: Die Leser
+Schlüsselableitung die Grenzen sprengt, oder ein Bitwarden-Export, der kontobeschränkt ist, zu dem
+das Export-Passwort nicht passt oder der verändert wurde. Absturz oder Hänger gibt es nicht: Die Leser
 arbeiten in einem Durchgang ohne Rekursion, lehnen XML mit Dokumenttyp ab, damit keine Entität
 wachsen kann, und werden mit zufälligen und zufällig beschädigten Dateien getestet.
 
@@ -209,6 +211,43 @@ Strom geschützter Felder – kommen aus den geprüften `@noble`-Bibliotheken, g
 KeePassXC. Getestet wird mit Datenbanken aus KeePassXC 2.7.6 und pykeepass für jede Kombination
 aus Verschlüsselung, Schlüsselableitung und Schlüsseldatei, mit falschen Passwörtern, geänderten
 Bytes und zufällig beschädigten Dateien.
+
+### Bitwardens verschlüsselter Export
+
+Bitwarden exportiert als „.json (Verschlüsselt)“ auf zwei Arten, und Kennwort erkennt beide an der
+Datei selbst; du wählst einfach „Bitwarden (JSON)“:
+
+- **Passwortgeschützt** liest Kennwort. Nach der Datei fragt es nach dem Export-Passwort, das du
+  beim Exportieren in Bitwarden festgelegt hast – nicht nach dem Master-Passwort. Danach geht es
+  weiter wie beim unverschlüsselten JSON, mit allem, was dort mitkommt; das gilt auch für den
+  Export einer Organisation.
+- **Kontobeschränkt** ist mit dem Schlüssel deines Bitwarden-Kontos verschlüsselt und lässt sich
+  nur in diesem Konto öffnen, auch von Kennwort nicht. Kennwort sagt das und bittet um einen neuen
+  Export als „.json (Verschlüsselt)“ mit dem Exporttyp „Passwortgeschützt“ oder als „.json“.
+
+So prüft Kennwort die Datei, nach Bitwardens eigenem Code (`bitwarden/clients` und
+`bitwarden/sdk-internal`):
+
+- **Schlüssel**: Aus Export-Passwort und Salz der Datei entsteht mit PBKDF2-SHA256 oder Argon2id
+  ein Schlüssel, aus dem HKDF einen Schlüssel für AES-256-CBC und einen für HMAC-SHA256 macht.
+- **Prüfungen**: Erst prüft Kennwort den HMAC des Prüfwerts `encKeyValidation_DO_NOT_EDIT` – passt
+  er nicht, ist das Passwort falsch –, dann den HMAC des Inhalts; entschlüsselt wird erst danach.
+  Ein Inhalt, dessen HMAC trotz richtigem Passwort nicht passt, wurde verändert. Verschlüsselte
+  Werte ohne HMAC (Bitwardens alter Typ 0) liest Kennwort nicht.
+- **Grenzen**: Die Schlüsselableitung bestimmt die Datei. Kennwort liest genau die Werte, die
+  Bitwarden selbst importiert: PBKDF2 mit 5 000 bis 2 000 000 Iterationen, Argon2id mit 2 bis
+  10 Durchläufen, 16 bis 1 024 MiB Speicher und 1 bis 16 Threads. Darunter schreibt kein Bitwarden
+  einen Export; darüber endet die Datei, bevor gerechnet wird, mit einer Meldung, die die Grenzen
+  nennt. Bitwardens Voreinstellungen (PBKDF2 mit 600 000 Iterationen, Argon2id mit 32 MiB, sechs
+  Durchläufen und vier Threads) dauern wenige Sekunden.
+- **Passwort**: Es steht nur im Feld, bis du „Export öffnen“ wählst, und wird nie gespeichert,
+  protokolliert oder hochgeladen; Schlüssel und entschlüsselte Bytes überschreibt Kennwort danach
+  mit Nullen.
+
+Die Bausteine kommen wie bei KDBX aus `@noble`, gekapselt in `packages/crypto`. Geprüft wird mit
+Bitwardens eigenen Testvektoren, mit Exporten, die ein unabhängiges Skript nach Bitwardens
+Verfahren schreibt (PBKDF2 und Argon2id), mit Bitwardens eigenen Beispieldateien beider Arten, mit
+falschen Passwörtern, geänderten Bytes und zufällig beschädigten Dateien.
 
 ## Export
 

@@ -25,6 +25,8 @@ const PARSERS: [string, Parser][] = [
 ];
 const FIXTURES = [
   "bitwarden.json",
+  "bitwarden-protected-argon2id.json",
+  "bitwarden-account-encrypted-v2.json",
   "bitwarden.csv",
   "lastpass.csv",
   "onepassword.csv",

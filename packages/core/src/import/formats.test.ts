@@ -5,7 +5,7 @@ import { fixture } from "./test/helpers.ts";
 /** One fixture per format, the vendor's real export structure */
 const FIXTURES: Record<string, string> = {
   "kennwort-json": "kennwort-export.json",
-  "bitwarden-json": "bitwarden.json",
+  "bitwarden-json": "bitwarden-protected-pbkdf2.json",
   "bitwarden-csv": "bitwarden.csv",
   "lastpass-csv": "lastpass.csv",
   "1password-1pux": "onepassword.1pux",
@@ -70,16 +70,22 @@ describe("import formats (K-502, K-503, K-504)", () => {
     }
   });
 
-  it("asks for the password only for Kennwort's own export and KeePass's database", async () => {
+  it("asks for the password for Kennwort's own export, KeePass's database and Bitwarden's protected JSON", async () => {
     const locked = IMPORT_FORMATS.filter((format) => format.unlock);
-    expect(locked.map((format) => format.id)).toEqual(["kennwort-json", "keepass-kdbx"]);
-    expect(await locked[0]?.parse(fixture("kennwort-export.json"))).toEqual({
-      ok: false,
-      error: "encrypted",
-    });
-    expect(await locked[1]?.parse(fixture("kdbx-argon2d-aes.kdbx"))).toEqual({
-      ok: false,
-      error: "encrypted",
-    });
+    expect(locked.map((format) => [format.id, format.sometimesEncrypted ?? false])).toEqual([
+      ["kennwort-json", false],
+      ["bitwarden-json", true],
+      ["keepass-kdbx", false],
+    ]);
+    const encrypted = { ok: false, error: "encrypted" };
+    expect(await locked[0]?.parse(fixture("kennwort-export.json"))).toEqual(encrypted);
+    expect(await locked[1]?.parse(fixture("bitwarden-protected-pbkdf2.json"))).toEqual(encrypted);
+    expect(await locked[2]?.parse(fixture("kdbx-argon2d-aes.kdbx"))).toEqual(encrypted);
+  });
+
+  it("reads a plain Bitwarden export without asking for a password", async () => {
+    const bitwarden = IMPORT_FORMATS.find((format) => format.id === "bitwarden-json");
+    const result = await bitwarden?.parse(fixture("bitwarden.json"));
+    expect(result?.ok && result.value.length).toBe(5);
   });
 });

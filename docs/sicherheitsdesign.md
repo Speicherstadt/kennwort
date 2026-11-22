@@ -2107,12 +2107,39 @@ Die Parser (`packages/core/src/import/`, K-502) sind reine Funktionen ohne Netz,
 Logs: Datei rein, Einträge raus, Fehler als Werte. Kaputte oder böswillige Dateien lassen sie weder
 abstürzen noch hängen (ein Durchgang ohne Rekursion, kein XML mit Dokumenttyp, also keine
 Entitäten, die wachsen); Fuzzing mit fast-check prüft das. Verschlüsselte Fremdexporte erkennen sie
-und lesen sie nicht, außer KeePass' KDBX 4 mit dem Master-Passwort: Die Bausteine (Argon2d/id,
+und lesen sie nicht, außer KeePass' KDBX 4 mit dem Master-Passwort und Bitwardens
+passwortgeschütztem JSON mit dem Export-Passwort (unten). Bei KDBX: Die Bausteine (Argon2d/id,
 AES-KDF, AES-256-CBC, ChaCha20, Salsa20, HMAC-SHA-256) stehen in `packages/crypto/src/kdbx.ts` auf
 `@noble` mit Testvektoren, die Rahmung in `packages/core`. Kopf-Prüfsumme, Kopf-HMAC und jeder
 HMAC-Block werden vor dem Entschlüsseln geprüft; die Kosten der Schlüsselableitung (Argon2 bis
 1 GiB, 100 Durchläufe, 8 GiB Arbeit, 256 Lanes; AES-KDF bis 100 Millionen Runden) und die entpackte Größe
 (64 MiB) haben Grenzen, damit eine böswillige Datei das Gerät nicht lahmlegt.
+
+Bitwardens passwortgeschütztes JSON (K-502 Teil 4) liest der Client nach Bitwardens eigenem Code
+(`bitwarden/clients`: `base-vault-export.service.ts`, `bitwarden-password-protected-importer.ts`;
+`bitwarden/sdk-internal`: `kdf.rs`, `utils.rs`, `encrypted_json.rs`):
+
+    material = PBKDF2-SHA256(passwort, salz, n, 32)                    (kdfType 0)
+             | Argon2id(passwort, SHA-256(salz), t, m · 1024 KiB, p, 32) (kdfType 1)
+    enc, mac = HKDF-Expand-SHA256(material, "enc", 32), HKDF-Expand-SHA256(material, "mac", 32)
+    EncString = "2." iv "|" ct "|" HMAC-SHA256(mac, iv ‖ ct)          (ct = AES-256-CBC, PKCS#7)
+
+Das Salz ist der Base64-Text der Datei als UTF-8, nicht seine Bytes. Die Bausteine stehen in
+`packages/crypto/src/bitwarden.ts` auf `@noble`, mit Bitwardens eigenen Testvektoren und solchen
+aus einem unabhängigen Generator; die Rahmung in `packages/core/src/import/bitwarden-protected.ts`.
+Die Reihenfolge: erst die KDF-Parameter gegen die Grenzen, dann der Schlüssel, dann der HMAC des
+Prüfwerts `encKeyValidation_DO_NOT_EDIT` (passt er nicht: `wrong-password`), dann der HMAC des
+Inhalts (passt er nicht: `damaged`), beide in konstanter Zeit, und erst danach AES; das PKCS#7 sieht
+also nur authentische Daten und taugt nicht als Orakel. Nur EncStrings vom Typ 2 zählen, Typ 0 ohne
+HMAC endet als `unsupported` (E-17). Die Grenzen sind die Bereiche, die Bitwarden selbst importiert
+(`password-protected-kdf-config.ts`, `kdf-config.ts`), `BITWARDEN_LIMITS`: PBKDF2 mit 5 000 bis
+2 000 000 Iterationen, Argon2id mit 2 bis 10 Durchläufen, 16 bis 1 024 MiB und 1 bis 16 Threads.
+Darunter schreibt kein Bitwarden eine Datei (`unsupported`), darüber endet sie, bevor gerechnet
+wird (`too-costly`); im schlimmsten Fall rechnet das Gerät etwa eine Minute, so viel wie bei KDBX.
+Den kontobeschränkten Export, verschlüsselt mit dem Schlüssel des Bitwarden-Kontos, kann nur
+dieses Konto öffnen: Er endet als `account-encrypted` mit der Bitte um einen passwortgeschützten
+Export. Ein Export ist so sicher wie sein Export-Passwort; Kennwort liest ihn, schützt ihn aber
+nicht.
 
 **Wehrt ab:** E-17, E-18, E-21, E-23.
 

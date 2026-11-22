@@ -1,6 +1,8 @@
 /**
  * The file step for an encrypted file: KeePass's database (KDBX, K-502 Teil 3) needs its master
- * password and, if it has one, its key file; Kennwort's own export (K-504) its passphrase. Both stay on the device: the password is read from
+ * password and, if it has one, its key file; Kennwort's own export (K-504) its passphrase;
+ * Bitwarden's password-protected JSON (K-502 Teil 4) its export password, for the file already
+ * chosen in the file step. All stay on the device: the password is read from
  * its field when the form is sent, handed to core's reader and never kept in the page's state;
  * the field is emptied right after, so the form holds it no longer than the reader needs it.
  */
@@ -36,8 +38,20 @@ const FilePicker = (props: {
   </div>
 );
 
+type Texts = {
+  password: () => string;
+  open: () => string;
+  opening: () => string;
+  hint: () => string;
+  /** The file picker and its hint when empty; a file already chosen needs neither */
+  file?: () => string;
+  noFile?: () => string;
+  /** Only KeePass knows key files */
+  keyFile?: true;
+};
+
 /** What the step says for each encrypted format; KeePass's database is the default */
-const TEXTS = {
+const TEXTS: Record<"kdbx" | "kennwort-json" | "bitwarden-json", Texts> = {
   kdbx: {
     file: () => m.import_kdbx_file(),
     password: () => m.import_kdbx_password(),
@@ -45,8 +59,9 @@ const TEXTS = {
     opening: () => m.import_kdbx_opening(),
     hint: () => m.import_kdbx_hint(),
     noFile: () => m.import_kdbx_no_file(),
+    keyFile: true,
   },
-  kennwort: {
+  "kennwort-json": {
     file: () => m.import_kennwort_file(),
     password: () => m.import_kennwort_passphrase(),
     open: () => m.import_kennwort_open(),
@@ -54,10 +69,21 @@ const TEXTS = {
     hint: () => m.import_kennwort_hint(),
     noFile: () => m.import_kennwort_no_file(),
   },
+  "bitwarden-json": {
+    password: () => m.import_bitwarden_password(),
+    open: () => m.import_bitwarden_open(),
+    opening: () => m.import_bitwarden_opening(),
+    hint: () => m.import_bitwarden_hint(),
+  },
 };
+
+const textsOf = (id: string): Texts =>
+  id === "kennwort-json" || id === "bitwarden-json" ? TEXTS[id] : TEXTS.kdbx;
 
 export const UnlockStep = (props: {
   choice: VendorChoice;
+  /** The file the file step already read and found protected (Bitwarden's JSON) */
+  file?: File | undefined;
   busy: boolean;
   error: string | undefined;
   onUnlock: (request: UnlockRequest) => void;
@@ -65,12 +91,10 @@ export const UnlockStep = (props: {
 }) => {
   const id = createUniqueId();
   const [missing, setMissing] = createSignal(false);
-  // Only KeePass knows key files; Kennwort's export has a passphrase alone
-  const own = () => props.choice.id === "kennwort-json";
-  const text = () => (own() ? TEXTS.kennwort : TEXTS.kdbx);
+  const text = () => textsOf(props.choice.id);
   const submit = (form: HTMLFormElement) => {
     const elements = form.elements;
-    const file = picked(elements.namedItem("database") as HTMLInputElement | null);
+    const file = props.file ?? picked(elements.namedItem("database") as HTMLInputElement | null);
     if (!file) return setMissing(true);
     const passwordField = elements.namedItem("password") as HTMLInputElement;
     const request = {
@@ -97,13 +121,20 @@ export const UnlockStep = (props: {
         </h3>
         <p class="text-[13px]">{props.choice.howTo()}</p>
       </section>
-      <FilePicker
-        id={`${id}-database`}
-        name="database"
-        label={text().file()}
-        accept={props.choice.accept}
-        disabled={props.busy}
-      />
+      <Show
+        when={props.file}
+        fallback={
+          <FilePicker
+            id={`${id}-database`}
+            name="database"
+            label={text().file?.() ?? ""}
+            accept={props.choice.accept}
+            disabled={props.busy}
+          />
+        }
+      >
+        {(file) => <p class="text-[13px]">{m.import_unlock_chosen({ name: file().name })}</p>}
+      </Show>
       <Input
         name="password"
         label={text().password()}
@@ -111,7 +142,7 @@ export const UnlockStep = (props: {
         autocomplete="off"
         disabled={props.busy}
       />
-      <Show when={!own()}>
+      <Show when={text().keyFile}>
         <FilePicker
           id={`${id}-key`}
           name="key-file"
@@ -122,7 +153,7 @@ export const UnlockStep = (props: {
       <p class="text-xs text-muted-foreground" role="status">
         {props.busy ? text().opening() : text().hint()}
       </p>
-      <Alert text={missing() ? text().noFile() : props.error} />
+      <Alert text={missing() ? text().noFile?.() : props.error} />
       <div class="flex gap-2">
         <Button type="button" onClick={() => props.onBack()}>
           {m.import_back()}

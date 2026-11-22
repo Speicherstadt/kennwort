@@ -22,6 +22,12 @@ export type ImportError =
   | "wrong-format"
   /** An encrypted export; it needs the export password first */
   | "encrypted"
+  /** Bitwarden's account-restricted export: only that Bitwarden account opens it (K-502 Teil 4) */
+  | "account-encrypted"
+  /** An export the password does not open (Bitwarden's password-protected JSON) */
+  | "wrong-password"
+  /** An encrypted export whose content was changed or cut, or whose parts are missing */
+  | "damaged"
   /** Not a ZIP, or one whose lengths and offsets do not fit together */
   | "bad-zip"
   /** A ZIP in a form the reader leaves out: ZIP64, across disks, another compression method */
@@ -34,9 +40,9 @@ export type ImportError =
   | "wrong-key"
   /** A KeePass database whose bytes were changed or cut, or that breaks the format */
   | "bad-kdbx"
-  /** A KeePass database in a form the reader leaves out: KDBX 3.1 and older, Twofish */
+  /** An encrypted file in a form the reader leaves out: KDBX 3.1, Twofish, another KDF or cipher */
   | "unsupported"
-  /** A KeePass database whose key derivation costs more than the limits allow (KDBX_LIMITS) */
+  /** An encrypted file whose KDF costs more than the limits allow (KDBX_LIMITS, BITWARDEN_LIMITS) */
   | "too-costly"
   /** A key file that says it is KeePass's XML key file but is broken */
   | "bad-key-file";
