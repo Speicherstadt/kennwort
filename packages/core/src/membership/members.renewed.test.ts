@@ -1,5 +1,6 @@
 import { ed25519KeyPair, xwingKeyPair } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
+import { encodeBytes } from "../sync/bytes.ts";
 import { type Certificate, certify, isCertified } from "./certificate.ts";
 import { certifyRenewed, checkMembers, MembersWire, type MemberView } from "./members.ts";
 
@@ -82,6 +83,30 @@ describe("a member who renewed her keys", () => {
     expect(view.status).toBe("certified");
     expect(view.previous).toEqual([cert(old, 100)]);
     expect(view.renewed).toBeUndefined();
+  });
+
+  it("keeps the earlier certificates beside a current one this client saw already", () => {
+    const seen = { [encodeBytes(annaId)]: 200 };
+    const view = viewOf({ certificate: cert(fresh, 200), previous: [cert(old, 100)] }, seen);
+    expect(view).toMatchObject({ status: "certified", previous: [cert(old, 100)] });
+  });
+
+  it("stays renewed while the newest earlier certificate is the newest this client saw", () => {
+    const seen = { [encodeBytes(annaId)]: 100 };
+    expect(viewOf({}, seen)).toMatchObject({ status: "renewed", previous: [cert(old, 100)] });
+    // Renewed a second time: her first and second bundle in the history, the second one seen
+    const twice = viewOf(
+      { previous: [cert(old, 100), cert(bundle(0x22), 200)] },
+      { [encodeBytes(annaId)]: 200 },
+    );
+    expect(twice.status).toBe("renewed");
+    expect(twice.previous).toHaveLength(2);
+  });
+
+  it("counts no earlier certificate once this client saw a newer one the server does not list", () => {
+    // Found in review: the old keys would sign again without a time limit
+    const seen = { [encodeBytes(annaId)]: 101 };
+    expect(viewOf({}, seen)).toMatchObject({ status: "invalid", previous: [] });
   });
 
   it("reads earlier certificates off the wire, and none when the server sends none", () => {

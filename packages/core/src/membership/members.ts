@@ -165,17 +165,34 @@ export const checkMembers = (
   const shared = (m: MemberWire) =>
     m.invitation !== null && counts.get(encodeBytes(m.invitation.id)) !== 1;
   return members.map((member) => {
+    const known = seen[encodeBytes(member.id)] ?? 0;
     const previous = previousOf(root, member);
+    const status = statusOf(root, member, shared(member), known, previous);
+    const trusted = trustedHistory(status, previous, known);
     return {
       accountId: member.id,
       name: member.name,
       role: member.role,
       leftAt: member.leftAt ?? null,
-      previous,
-      ...statusOf(root, member, shared(member), seen[encodeBytes(member.id)] ?? 0, previous),
+      ...(trusted ? { previous, ...status } : { previous: [], status: "invalid" as const }),
     };
   });
 };
+
+/**
+ * Earlier certificates count only beside a current one that checks out, or, while the renewed
+ * bundle waits for its certificate, when none of them is older than the newest this client has
+ * seen: otherwise the server hid or spoilt the certificate that retires them, and the old keys,
+ * which whoever has the kit holds, would sign without a time limit again (P-12, found in review)
+ */
+const trustedHistory = (
+  status: Pick<MemberView, "status">,
+  previous: readonly Certificate[],
+  known: number,
+) =>
+  status.status === "certified" ||
+  previous.length === 0 ||
+  (status.status !== "invalid" && Math.max(...previous.map((c) => c.issuedAt)) >= known);
 
 /** The issue times to remember after a check, or undefined when nothing is newer than known */
 export const newerCertificates = (
