@@ -87,6 +87,16 @@ export const es256Key = (pkcs8: Uint8Array): Uint8Array | undefined => {
 /** base64url with or without padding, as CXF allows; anything else is no bytes */
 const fromBase64Url = (value: string) => bytes().safeParse(value.replace(/=+$/, "")).data;
 
+/**
+ * The rpId as the extension compares it with the page's (apps/extension/src/passkey/rp-id.ts): a
+ * host alone, in lower case and punycode; undefined for anything with a scheme, port, path or user
+ */
+const rpHost = (rpId: string): string | undefined => {
+  const url = `https://${rpId}`;
+  if (/[\s:/?#@\\]/.test(rpId) || !URL.canParse(url)) return undefined;
+  return new URL(url).hostname;
+};
+
 const CxfPasskey = z.object({
   credentialId: text,
   rpId: text,
@@ -113,10 +123,12 @@ export const passkeyEntry = (credential: unknown, item: ItemContext): ImportedEn
   const userHandle = fromBase64Url(passkey.userHandle);
   const pkcs8 = fromBase64Url(passkey.key);
   const key = pkcs8 && es256Key(pkcs8);
-  if (passkey.rpId.trim() === "" || !key || !credentialId?.length || !userHandle) return undefined;
+  const rpId = rpHost(passkey.rpId.trim());
+  // WebAuthn Level 3 §5.1.3: a user handle is 1 to 64 bytes
+  if (!rpId || !key || !credentialId?.length || !userHandle?.length) return undefined;
   if (userHandle.length > MAX_USER_HANDLE) return undefined;
   const content = passkeyContent({
-    rpId: passkey.rpId.trim(),
+    rpId,
     rpName: item.title,
     username: passkey.username,
     displayName: passkey.userDisplayName,

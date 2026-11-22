@@ -161,7 +161,9 @@ Eintrags; der Zähler beginnt bei 0, wie CXF es verlangt. Kennwort meldet nur mi
 sein Schlüssel ein P-256-Schlüssel im PKCS#8-Format ist, der Skalar im gültigen Bereich liegt und
 ein mitgelieferter öffentlicher Schlüssel genau der ist, den der Skalar ergibt. Einen Passkey mit
 Ed25519-, P-384- oder RSA-Schlüssel oder mit fehlender rpId, Credential-ID oder Benutzer-ID lässt
-es weg; die Vorschau sagt, wie viele das sind. Melde dich dort mit dem Passwort an und lege einen
+es weg, ebenso einen, dessen rpId kein reiner Hostname ist (mit Schema, Port, Pfad oder
+Benutzername), denn die Erweiterung vergleicht sie genau mit dem Hostnamen der Seite; Großbuchstaben
+schreibt Kennwort klein. Die Vorschau sagt, wie viele Passkeys wegbleiben. Melde dich dort mit dem Passwort an und lege einen
 neuen Passkey an. Ebenso zählt sie Einmalcodes, die Kennwort nicht berechnen kann.
 
 Eine Datei mit einer neueren Hauptversion als 1 endet mit einer Meldung; Felder und Arten, die
