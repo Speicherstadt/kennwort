@@ -37,12 +37,26 @@ const scriptValue = `${loginForm("Portal")}<script>setTimeout(() => { const f = 
   f.focus(); f.value = "${PASSWORD}"; f.dispatchEvent(new Event("input", { bubbles: true })); f.blur();
   document.title = "fertig"; }, 300);</script>`;
 
+/**
+ * A look-alike page that probes a guess with no user action at all: execCommand's input events are
+ * trusted in Chromium, so isTrusted alone does not tell typing from a script (review of K-405)
+ */
+const execValue = `${loginForm("Portal")}<script>setTimeout(() => { const f = document.forms[0].pass;
+  f.focus(); document.execCommand("insertText", false, "${PASSWORD}"); f.blur();
+  document.title = "fertig"; }, 300);</script>`;
+
+/** A look-alike page that swaps in its guess after the user typed, before the user leaves */
+const swappedValue = `${loginForm("Portal")}<script>const f = document.forms[0].pass;
+  f.addEventListener("input", () => setTimeout(() => { f.value = "${PASSWORD}"; }, 0));</script>`;
+
 const PAGES: Record<string, string> = {
   [`https://${SITE}/login`]: loginForm("Portal"),
   "https://portal-weber-haustechnik.test/login": loginForm("Portal"),
   // Each check below on a host of its own: a warning comes once per page host and password
   "https://hidden-weber-haustechnik.test/login": hiddenField,
   "https://script-weber-haustechnik.test/login": scriptValue,
+  "https://exec-weber-haustechnik.test/login": execValue,
+  "https://swap-weber-haustechnik.test/login": swappedValue,
   "https://login-weber-haustechnik.test/login": loginForm("Portal"),
   "https://weber-haustechnik-portal.test/login": loginForm("Portal"),
   "https://portal.weber-haustechnik-login.test/login": loginForm("Portal"),
@@ -128,6 +142,10 @@ test.describe
       const { accountId } = JSON.parse(owner.device) as { accountId: string };
 
       ({ context, close } = await launchExtension("de-DE", "light", "e2e"));
+      // A phishing page on a public suffix: a bucket of a big cloud store (review of K-405)
+      await context.route("https://s3.amazonaws.com/**", (route) =>
+        route.fulfill({ contentType: "text/html", body: loginForm("Portal") }),
+      );
       await context.route("https://*.test/**", (route) => {
         const url = new URL(route.request().url());
         const body = PAGES[`${url.origin}${url.pathname}`];
@@ -206,6 +224,26 @@ test.describe
       await tab.goto("https://script-weber-haustechnik.test/login");
       await expect(tab).toHaveTitle("fertig");
       await expectNoWarning(tab);
+    });
+
+    test("does not warn for a value the page writes with execCommand", async () => {
+      await tab.goto("https://exec-weber-haustechnik.test/login");
+      await expect(tab).toHaveTitle("fertig");
+      await expectNoWarning(tab);
+    });
+
+    test("does not warn for a value the page swaps in after the user typed", async () => {
+      await tab.goto("https://swap-weber-haustechnik.test/login");
+      await tab.getByLabel("Passwort", { exact: true }).fill("x");
+      await expect(tab.getByLabel("Passwort", { exact: true })).toHaveValue(PASSWORD);
+      await tab.keyboard.press("Tab");
+      await expectNoWarning(tab);
+    });
+
+    test("warns on a page served from a public suffix", async () => {
+      await typePassword(tab, "https://s3.amazonaws.com/weber-portal/login.html", PASSWORD);
+      const warning = await warningIn(tab);
+      await expect(warning.locator("header")).toContainText("s3.amazonaws.com");
     });
 
     test("the page cannot cover the warning or click it away", async () => {

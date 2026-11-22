@@ -112,6 +112,21 @@ describe("the alert broker", () => {
     expect(warnings.take(3)?.entries).toEqual(["portal"]);
   });
 
+  // Review of K-405: a host that is itself a public suffix names no site of its own, so no entry can
+  // be for it; a phishing page in a bucket there (s3.amazonaws.com, an EC2 name, a single label)
+  // must warn, not slip through as "no page"
+  it("warns on a page whose host is a public suffix or a single label", async () => {
+    for (const url of [
+      "https://s3.amazonaws.com/weber-portal/login.html",
+      "http://ec2-203-0-113-7.compute-1.amazonaws.com/login",
+      "http://portal./login",
+    ]) {
+      const { broker, warnings } = setup(url);
+      expect(await broker(check("0a0b0c0d"), content(url))).toEqual({ ok: true });
+      expect(warnings.take(3)?.host).toBe(new URL(url).hostname.replace(/\.$/, ""));
+    }
+  });
+
   it("does not warn on the exact host of an entry with that password, nor for another password", async () => {
     const portal = setup(PORTAL);
     expect(await portal.broker(check("0a0b0c0d"), content(PORTAL))).toEqual({

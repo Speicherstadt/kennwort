@@ -92,6 +92,7 @@ if (runtime?.id) {
   window.addEventListener("resize", save.onViewportChange, { passive: true });
   // The phishing warning (K-405): typed into a password field, then left, Enter or submitted
   document.addEventListener("focusin", alert.onFocusIn, true);
+  document.addEventListener("beforeinput", alert.onBeforeInput, true);
   document.addEventListener("input", alert.onInput, true);
   document.addEventListener("focusout", alert.onFocusOut, true);
   document.addEventListener("keydown", alert.onKeyDown, true);

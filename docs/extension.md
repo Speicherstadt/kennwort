@@ -194,7 +194,9 @@ Passwort gehört, und dem Host der Seite, auf der du gerade bist:
 
 Die Warnung sperrt die Seite nicht; du kannst weiter tippen und klicken. Sie kommt nicht, wenn die
 Seite genau die Website eines Eintrags mit diesem Passwort ist (dieselbe Regel wie beim Ausfüllen),
-bei einem Passwort, das Kennwort nicht kennt, und solange Kennwort gesperrt ist.
+bei einem Passwort, das Kennwort nicht kennt, und solange Kennwort gesperrt ist. Auf einer Seite,
+deren Host selbst eine öffentliche Endung ist, etwa ein Bucket unter `s3.amazonaws.com`, warnt sie
+immer: Für einen solchen Host kann kein Eintrag gespeichert sein.
 
 Was die Extension dabei sicherstellt:
 
@@ -205,8 +207,9 @@ Was die Extension dabei sicherstellt:
   Hash aus dem, was du getippt hast, und gibt nur ihn an den Service Worker weiter, nie den Wert und
   nie bei jedem Tastendruck. An den Server geht nichts davon.
 - **Nur, was du selbst tippst**: Gezählt wird nur ein Wert, den du eingetippt oder eingefügt hast,
-  in einem Feld, das die Seite zeigt. Setzt eine Seite selbst einen Wert ins Feld, prüft die
-  Extension nichts; so kann eine Seite nicht ausprobieren, welche Passwörter du gespeichert hast.
+  in einem Feld, das die Seite zeigt. Setzt eine Seite selbst einen Wert ins Feld, auch über
+  `execCommand`, oder ändert sie ihn, nachdem du getippt hast, prüft die Extension nichts; so kann
+  eine Seite nicht ausprobieren, welche Passwörter du gespeichert hast.
 - **Nur entsperrt**: Beim Sperren, nach der Sperrzeit und beim Schließen des Browsers verschwinden
   die Hashes mit den Schlüsseln. Sie entstehen neu, sobald Popup, Inline-Menü oder Leiste die
   Einträge laden, jedes Mal mit einem neuen Salt.
@@ -284,4 +287,6 @@ Passwortfeld, ein Absenden per Skript, eine Seite auf der Liste „Nie für dies
 verdeckte Leiste nichts speichern. Die Tests der Phishing-Warnung (`e2e/extension-alert.spec.ts`)
 tippen das Passwort des Portals auf einer ähnlich aussehenden Domain ein und prüfen, dass die
 Warnung kommt und sich nicht zudecken lässt, aber nicht auf dem Portal selbst, nicht bei einem
-anderen Passwort, einem versteckten Feld, einem Wert, den die Seite selbst setzt, und nicht gesperrt.
+anderen Passwort, einem versteckten Feld, einem Wert, den die Seite selbst setzt (auch über
+`execCommand`) oder nach dem Tippen austauscht, und nicht gesperrt; auf einer Seite unter
+`s3.amazonaws.com` kommt sie.

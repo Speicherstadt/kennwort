@@ -7,9 +7,15 @@
  * it holds no saved password: whether the tag belongs to a saved password of another host only the
  * worker decides (alert/alert-broker.ts).
  *
- * Only a value the user typed counts: a field is checked once after a trusted `input` event (typing
- * or pasting), so a page that fills a guess by script learns nothing from whether a warning comes,
- * and gets at most one check per time the user types. Only fields the page shows (field-shown.ts)
+ * Only a value the user typed counts, so a page that fills a guess by script learns nothing from
+ * whether a warning comes, and gets at most one check per time the user types. `isTrusted` alone
+ * does not tell: in Chromium, `document.execCommand("insertText")` fires a trusted `input` with no
+ * user action (review of K-405). Typing, pasting and dropping fire a trusted `beforeinput` first,
+ * execCommand does not; so an `input` counts only right after a trusted `beforeinput` on the same
+ * field whose dispatch has ended (not one written from inside a page's handler) and that the page
+ * did not cancel. The value right after that input is what gets checked, and only if the field still
+ * holds it: a value the page changed afterwards is not checked. It stays in this script's memory, as
+ * it does in the field, until the check, and goes with it. Only fields the page shows (field-shown.ts)
  * and only in the top frame or a frame of the same origin as every frame above it (same-origin.ts).
  * With the salt already fetched when the field got focus, the check runs synchronously, so a submit
  * that navigates away still sends it.
@@ -41,8 +47,10 @@ const fieldOf = (event: Event) => {
 
 export const createAlertWatch = (deps: AlertWatchDeps) => {
   const shown = deps.shown ?? fieldShown;
-  /** Fields the user typed into since their last check */
-  const typed = new WeakSet<HTMLInputElement>();
+  /** The trusted beforeinput of each field whose input has not come yet */
+  const pending = new WeakMap<HTMLInputElement, Event>();
+  /** Fields the user typed into since their last check, with the value the user's edit left */
+  const typed = new WeakMap<HTMLInputElement, string>();
   let salt: Uint8Array | undefined;
 
   const fetchSalt = async () => {
@@ -51,30 +59,43 @@ export const createAlertWatch = (deps: AlertWatchDeps) => {
     return salt;
   };
 
-  /** Reads the field only right before it hashes, and keeps neither value nor tag */
-  const sendTag = (field: HTMLInputElement, key: Uint8Array) => {
-    const value = field.value;
-    if (value === "") return;
+  /** Hashes only a value the field still holds as the user left it, and keeps no tag */
+  const sendTag = (field: HTMLInputElement, value: string, key: Uint8Array) => {
+    if (field.value !== value) return;
     void deps.send({ type: "alert-check", tag: hex(deps.tag(value, key)) });
   };
 
   const check = (field: HTMLInputElement | undefined) => {
-    if (!field || !typed.has(field)) return;
+    const value = field && typed.get(field);
+    if (!field || value === undefined) return;
     typed.delete(field);
-    if (!deps.mayCheck() || !shown(field) || field.value === "") return;
-    if (salt) return sendTag(field, salt);
-    void fetchSalt().then((key) => key && sendTag(field, key));
+    if (!deps.mayCheck() || !shown(field) || value === "" || field.value !== value) return;
+    if (salt) return sendTag(field, value, salt);
+    void fetchSalt().then((key) => key && sendTag(field, value, key));
   };
+
+  /** The browser's own edit: its beforeinput ran to the end (eventPhase NONE) and went through */
+  const userEdit = (before: Event | undefined) =>
+    before !== undefined && before.eventPhase === 0 && !before.defaultPrevented;
 
   return {
     /** A password field got focus: fetch the salt now, so the check later needs no round trip */
     onFocusIn: (event: Event) => {
       if (fieldOf(event) && deps.mayCheck()) void fetchSalt();
     },
-    /** Typing or pasting the browser delivered marks the field for one check */
+    /** Typing, pasting or dropping announces its edit: the input that follows may count */
+    onBeforeInput: (event: Event) => {
+      const field = fieldOf(event);
+      if (field && event.isTrusted) pending.set(field, event);
+    },
+    /** The user's edit marks the field for one check; any other trusted edit takes the mark away */
     onInput: (event: Event) => {
       const field = fieldOf(event);
-      if (field && event.isTrusted) typed.add(field);
+      if (!field || !event.isTrusted) return;
+      const before = pending.get(field);
+      pending.delete(field);
+      if (userEdit(before)) typed.set(field, field.value);
+      else typed.delete(field);
     },
     onFocusOut: (event: Event) => check(fieldOf(event)),
     onKeyDown: (event: KeyboardEvent) => {

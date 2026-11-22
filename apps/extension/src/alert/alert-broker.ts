@@ -37,6 +37,24 @@ export type AlertBrokerDeps = {
 };
 
 const TOP = 0;
+const WEB = new Set(["http:", "https:"]);
+
+/**
+ * The page's exact host for the warning (page/matches.ts), and also a host that names no site of
+ * its own: a public suffix (s3.amazonaws.com, an EC2 name) or a single label. No entry is for such
+ * a host, so a saved password typed there warns; to skip it would let a phishing page in a cloud
+ * bucket slip through (review of K-405).
+ */
+const warnHost = (url: string) => {
+  const host = pageHost(url);
+  if (host) return host;
+  try {
+    const parsed = new URL(url);
+    return WEB.has(parsed.protocol) ? parsed.hostname.replace(/\.$/, "") || undefined : undefined;
+  } catch {
+    return undefined;
+  }
+};
 const refuse = (error: Extract<AlertAnswer, { ok: false }>["error"]): AlertAnswer => ({
   ok: false,
   error,
@@ -75,7 +93,7 @@ export const createAlertBroker = (deps: AlertBrokerDeps) => {
     if (!target.ok) return refuse(target.error);
     if (sender.documentId && target.value.documentId !== sender.documentId)
       return refuse("unknown-frame");
-    const host = pageHost(target.value.url);
+    const host = warnHost(target.value.url);
     if (!host) return refuse("no-page");
     const list = await openList();
     if (!list) return refuse("locked");

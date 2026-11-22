@@ -34,8 +34,12 @@ const setup = (
   };
   const watch = createAlertWatch(deps);
   const el = (id: string) => document.getElementById(id) as HTMLInputElement;
-  /** The user types into a field: the value changes, and the browser fires a trusted input */
+  /**
+   * The user types into a field: the browser fires a trusted beforeinput, which has finished its
+   * dispatch (eventPhase NONE) and was not cancelled, changes the value, then fires a trusted input
+   */
   const type = (id: string, value: string, trusted = true) => {
+    watch.onBeforeInput(event(el(id), { eventPhase: 0, defaultPrevented: false }, trusted));
     el(id).value = value;
     watch.onInput(event(el(id), {}, trusted));
   };
@@ -104,6 +108,41 @@ describe("checking a typed password", () => {
     type("other", PASSWORD);
     watch.onSubmit(event(el("login"), {}, false));
     watch.onKeyDown(event(el("other"), { key: "Enter" }, false));
+    await settle();
+    expect(checks()).toEqual([]);
+  });
+
+  // Review of K-405: in Chromium, document.execCommand("insertText") fires a trusted input event
+  // without any user action, but no beforeinput; a page could probe guess after guess
+  it("checks nothing a page wrote with execCommand: a trusted input without the user's beforeinput", async () => {
+    const { watch, el, checks } = setup();
+    watch.onFocusIn(event(el("pass")));
+    await settle();
+    el("pass").value = PASSWORD;
+    watch.onInput(event(el("pass")));
+    watch.onFocusOut(event(el("pass")));
+    // Nor one written from inside the dispatch of the user's beforeinput, or after cancelling it
+    watch.onBeforeInput(event(el("pass"), { eventPhase: 2, defaultPrevented: false }));
+    watch.onInput(event(el("pass")));
+    watch.onFocusOut(event(el("pass")));
+    watch.onBeforeInput(event(el("pass"), { eventPhase: 0, defaultPrevented: true }));
+    watch.onInput(event(el("pass")));
+    watch.onFocusOut(event(el("pass")));
+    await settle();
+    expect(checks()).toEqual([]);
+  });
+
+  it("checks nothing the page changed after the user typed, nor after its own execCommand", async () => {
+    const { watch, el, type, checks } = setup();
+    watch.onFocusIn(event(el("pass")));
+    await settle();
+    type("pass", "x");
+    el("pass").value = PASSWORD;
+    watch.onFocusOut(event(el("pass")));
+    type("pass", "y");
+    el("pass").value = PASSWORD;
+    watch.onInput(event(el("pass")));
+    watch.onSubmit(event(el("login")));
     await settle();
     expect(checks()).toEqual([]);
   });

@@ -1643,15 +1643,24 @@ Warnung deckt den Fall ab, in dem jemand das Passwort selbst eintippt oder einf�
   schreibt, prüft das davor und danach; das Sperren, der Alarm der Sperrzeit und der Service Worker
   bei jeder Anfrage nehmen sie ohne Schlüssel weg. Weder Service Worker noch Content Script sehen
   ein gespeichertes Passwort.
-- Das Content Script zählt nur einen Wert, den der Browser als Eingabe des Nutzers meldet
-  (`input` mit `isTrusted`), in einem Passwortfeld, das die Seite zeigt (dieselbe Regel wie beim
-  Ausfüllen), nur im obersten Frame oder einem Frame derselben Herkunft wie jeder Frame über ihm.
-  Erst wenn der Nutzer das Feld verlässt, Enter drückt oder das Formular abschickt, liest es den
-  Wert einmal, bildet mit dem Salt (beim Fokus geholt, damit auch ein Absenden, das wegnavigiert,
-  noch prüft) den Tag und schickt nur die vier Byte. Den Wert behält es nicht; danach prüft dasselbe
-  Feld erst nach neuer Eingabe wieder.
+- Das Content Script zählt nur einen Wert, den der Nutzer selbst eingegeben hat, in einem
+  Passwortfeld, das die Seite zeigt (dieselbe Regel wie beim Ausfüllen), nur im obersten Frame oder
+  einem Frame derselben Herkunft wie jeder Frame über ihm. `isTrusted` allein genügt dafür nicht:
+  `document.execCommand("insertText")` löst in Chromium ein vertrauenswürdiges `input` ohne jede
+  Handlung des Nutzers aus (Review von K-405). Tippen, Einfügen und Ziehen melden ihre Änderung
+  vorher mit einem vertrauenswürdigen `beforeinput`, `execCommand` nicht; ein `input` zählt daher nur
+  direkt nach einem `beforeinput` im selben Feld, dessen Auslieferung beendet ist (nicht aus dem
+  Handler der Seite heraus geschrieben) und das die Seite nicht abgebrochen hat. Geprüft wird der
+  Wert direkt nach dieser Eingabe und nur, solange das Feld ihn noch hält: Ändert die Seite ihn
+  danach, prüft es nichts. Erst wenn der Nutzer das Feld verlässt, Enter drückt oder das Formular
+  abschickt, bildet es mit dem Salt (beim Fokus geholt, damit auch ein Absenden, das wegnavigiert,
+  noch prüft) den Tag und schickt nur die vier Byte. Den Wert hält es bis dahin im Speicher, wie das
+  Feld selbst, und nach der Prüfung nicht mehr; danach prüft dasselbe Feld erst nach neuer Eingabe
+  wieder.
 - Der Service Worker prüft den Frame am Frame-Baum des Browsers (`webNavigation`, `frameId`,
-  `documentId`), nimmt den Host von dort, vergleicht den Tag mit der Liste und den Host-Tag der Seite
+  `documentId`), nimmt den Host von dort (auch einen, der selbst eine öffentliche Endung ist, etwa
+  `s3.amazonaws.com`, oder nur ein Label: Für ihn ist kein Eintrag gespeichert, eine Phishing-Seite in
+  einem Bucket dort warnt also), vergleicht den Tag mit der Liste und den Host-Tag der Seite
   mit den Host-Tags der passenden Einträge. Warnung nur, wenn der Tag passt und keiner dieser
   Einträge für genau diesen Host gespeichert ist; einmal je Tab, Host und Passwort, solange
   entsperrt. Die Warnung (Host, Adresse, IDs der Einträge, kein Geheimnis) hält er wie ein Login
@@ -1670,8 +1679,11 @@ Warnung deckt den Fall ab, in dem jemand das Passwort selbst eintippt oder einf�
   mit Liste und Salt eingrenzen; Argon2id kostet je Versuch 1 MiB und einige Millisekunden, und wer
   den Sitzungsbereich lesen kann, hat dort ohnehin den Account Key. Der Seite verrät die Warnung nur,
   dass das getippte Passwort für eine andere Website in Kennwort steht; das Passwort selbst hat sie
-  ja schon. Eine Seite kann nicht durchprobieren: Werte, die sie selbst einsetzt, prüft die
-  Extension nicht, und je Eingabe des Nutzers gibt es höchstens eine Prüfung.
+  ja schon. Eine Seite kann nicht durchprobieren: Werte, die sie selbst einsetzt oder nach der
+  Eingabe des Nutzers ändert, prüft die Extension nicht, und je Eingabe des Nutzers gibt es höchstens
+  eine Prüfung. Eine Seite, die eine Taste des Nutzers abfängt und im eigenen `beforeinput`-Handler
+  den Wert umschreibt, bevor der Browser die Taste einfügt, kommt so auf höchstens einen geratenen
+  Wert je Tastendruck.
 - Restrisiko: Eine Seite, die es auf Kennwort anlegt, kann das Element der Warnung aus dem DOM
   nehmen (lesen oder fälschen kann sie es nicht), oder sie immer wieder überdecken, sodass die
   Warnung flackert; „trotzdem fortfahren“ zählt dann nicht. Ein Passwort, das jemand so schnell
@@ -1697,7 +1709,8 @@ und eine verdeckte Leiste speichern nichts, und weder `chrome.storage.local` noc
 Sitzungsbereich enthalten Passwort oder Host im Klartext. Zur Phishing-Warnung
 (`e2e/extension-alert.spec.ts`): Das Passwort des Portals, eingetippt auf einer ähnlich aussehenden
 Domain, warnt; auf dem Portal selbst, mit einem anderen Passwort, in einem versteckten Feld, für
-einen Wert, den die Seite selbst einsetzt, und gesperrt warnt nichts; eine überdeckte oder
+einen Wert, den die Seite selbst einsetzt (auch über `execCommand`) oder nach dem Tippen austauscht,
+und gesperrt warnt nichts; eine Seite unter `s3.amazonaws.com` warnt; eine überdeckte oder
 durchsichtig gemachte Warnung kommt wieder nach oben, und „trotzdem fortfahren“ zählt verdeckt
 nicht; der Sitzungsbereich hält weder Passwort noch Host im Klartext und verliert die Alarmliste
 beim Sperren. Die Regeln selbst prüfen Vitest-Tests neben dem Code (`apps/extension/src/fill`,
