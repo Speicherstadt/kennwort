@@ -2,10 +2,11 @@
  * The passkey prompt (K-406, DESIGN.md Passkey-Leiste): the prompt page shows it instead of the
  * save prompt when the service worker hands it a ceremony a page started. It opens the account the
  * popup unlocked without moving the lock time and loads the entries itself (passkey-view.ts).
- * Locked, without entries, or without a passkey for the sign-in, it hands the ceremony to the
- * browser's own WebAuthn unseen. Otherwise it shows itself at the top right: "Passkey speichern"
- * with the vault to save into, or "Anmelden als …" for each passkey that fits, and always "Anderes
- * Gerät verwenden". Saving and signing take a click the browser delivered while the prompt was
+ * Locked or without entries, it hands the ceremony to the browser's own WebAuthn unseen. Otherwise
+ * it shows itself at the top right: "Passkey speichern" with the vault to save into, "Anmelden als …"
+ * for each passkey that fits, or that none fits, and always "Anderes Gerät verwenden". It keeps one
+ * height whatever it offers: the page sees the frame's size, which must not tell it what Kennwort
+ * holds (passkey-view.ts). Saving and signing take a click the browser delivered while the prompt was
  * visible, uncovered and opaque (passkey-actions.ts); × ends the ceremony with NotAllowedError.
  */
 import { Button, m, selectClass } from "@kennwort/ui";
@@ -121,6 +122,15 @@ const SignIn = (props: { rpId: string; choices: PasskeyChoice[]; actions: Passke
   </div>
 );
 
+/** A sign-in no stored passkey fits: shown all the same, so the page learns nothing from it */
+const NoPasskey = (props: { rpId: string; actions: PasskeyActions }) => (
+  <div class="grid gap-2">
+    <Heading title={m.passkey_prompt_get_title()} rpId={props.rpId} />
+    <p class="text-xs text-muted-foreground">{m.passkey_prompt_none()}</p>
+    <OtherDevice actions={props.actions} />
+  </div>
+);
+
 /** Why the prompt offers nothing it could save */
 const NOTES: Partial<Record<PasskeyView["kind"], () => string>> = {
   excluded: m.passkey_prompt_excluded,
@@ -198,6 +208,9 @@ const PasskeyOffer = (props: {
           <SignIn rpId={props.ceremony.rpId} choices={offer().choices} actions={actions} />
         )}
       </Match>
+      <Match when={view().kind === "none"}>
+        <NoPasskey rpId={props.ceremony.rpId} actions={actions} />
+      </Match>
       <Match when={true}>
         <p role="status" class="text-xs text-muted-foreground">
           {m.popup_loading()}
@@ -239,13 +252,13 @@ export const PasskeyPrompt = (props: {
       }}
       aria-label={m.passkey_prompt_frame()}
       data-armed={armed() ? "true" : "false"}
-      class="flex flex-col overflow-hidden rounded-xl border border-border bg-background text-foreground"
+      class="flex h-58 flex-col overflow-hidden rounded-xl border border-border bg-background text-foreground"
     >
       <PromptHeader
         host={new URL(props.ceremony.origin).host}
         onClose={() => props.onAnswer({ outcome: "error", name: "NotAllowedError" })}
       />
-      <div class="grid gap-2 px-3 py-2">
+      <div class="grid min-h-0 flex-1 content-start gap-2 overflow-y-auto px-3 py-2">
         <Show when={!props.bridge.verifiable}>
           <p class="text-xs text-warning">{m.passkey_prompt_unverified()}</p>
         </Show>

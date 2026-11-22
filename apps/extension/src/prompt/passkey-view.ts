@@ -1,10 +1,12 @@
 /**
  * What the passkey prompt shows (K-406), decided from the account, the loaded entries and the
  * ceremony the service worker checked: the browser's own WebAuthn (`fallback`) while Kennwort is
- * locked, when the entries do not load or when no stored passkey fits a sign-in; otherwise the
- * offer to save a new passkey into a vault this account may write, or the passkeys to sign in with.
- * A sign-in offers only passkeys for exactly the ceremony's rpId, and of those only the ones the
- * page allows (allowCredentials), as an authenticator does (WebAuthn Level 3, §6.3.3 step 3).
+ * locked or when the entries do not load; otherwise the offer to save a new passkey into a vault
+ * this account may write, or the passkeys to sign in with. A sign-in offers only passkeys for
+ * exactly the ceremony's rpId, and of those only the ones the page allows (allowCredentials), as an
+ * authenticator does (WebAuthn Level 3, §6.3.3 step 3). Without one it still shows (`none`): the
+ * page sees the prompt either way, and a prompt that showed only for a match would tell it, before
+ * any consent, whether Kennwort holds a passkey for an ID it tries (§14.5.2).
  */
 import type { StoredEntry } from "@kennwort/client/entries/entries.ts";
 import type { Vault } from "@kennwort/client/vaults/vaults.ts";
@@ -24,7 +26,8 @@ export type PasskeyView =
   | { kind: "create"; vaults: VaultChoice[] }
   | { kind: "excluded" }
   | { kind: "no-vault" }
-  | { kind: "get"; choices: PasskeyChoice[] };
+  | { kind: "get"; choices: PasskeyChoice[] }
+  | { kind: "none" };
 
 export type PasskeyViewInput = {
   phase: Phase;
@@ -60,7 +63,7 @@ const getView = (input: PasskeyViewInput, allow: readonly string[]): PasskeyView
       entryId: entry.idText,
       name: passkey.username || passkey.displayName || entry.content.title,
     }));
-  return choices.length > 0 ? { kind: "get", choices } : { kind: "fallback" };
+  return choices.length > 0 ? { kind: "get", choices } : { kind: "none" };
 };
 
 export const passkeyView = (input: PasskeyViewInput): PasskeyView => {

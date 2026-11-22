@@ -678,6 +678,7 @@
   "passkey_prompt_hidden": "Die Leiste war verdeckt oder durchsichtig. Kennwort hat nichts signiert.",
   "passkey_prompt_unverified": "Dieser Browser kann nicht bestätigen, dass die Leiste sichtbar ist. Nimm ein anderes Gerät.",
   "passkey_prompt_excluded": "Für dieses Konto liegt schon ein Passkey in Kennwort.",
+  "passkey_prompt_none": "Kennwort hat keinen passenden Passkey für diese Website.",
   "passkey_prompt_no_vault": "Es gibt keinen Tresor, in den du speichern darfst.",
   "passkey_prompt_failed": "Das hat nicht geklappt. Versuch es noch einmal oder nimm ein anderes Gerät.",
   "passkey_prompt_no_username": "ohne Benutzername"

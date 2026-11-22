@@ -317,15 +317,23 @@ describe("the passkey prompt signs in", () => {
 });
 
 describe("the passkey prompt hands the ceremony to the browser", () => {
-  it("unseen while locked or without a matching passkey", async () => {
+  it("unseen while locked", async () => {
     const locked = await show(getCeremony(), { phase: "locked" });
     expect(locked.answers).toEqual([{ outcome: "fallback" }]);
     expect(locked.types()).not.toContain("prompt-show");
-    dispose();
+  });
+
+  // The page sees whether the prompt shows: shown only for a match, it would learn which passkeys
+  // Kennwort holds before the user agreed to anything (WebAuthn §14.5.2)
+  it("without a matching passkey only after a click, the prompt shown as for a match", async () => {
     loaded.entries = [storedPasskey("p1", "jonas.weber").entry];
     const none = await show(getCeremony(["AAAA"]));
+    expect(none.answers).toEqual([]);
+    expect(none.types()).toContain("prompt-show");
+    expect(document.body.textContent).toContain("Kennwort hat keinen passenden Passkey");
+    expect(button("Anmelden als jonas.weber")).toBeUndefined();
+    await click("Anderes Gerät verwenden");
     expect(none.answers).toEqual([{ outcome: "fallback" }]);
-    expect(none.types()).not.toContain("prompt-show");
   });
 
   it("on Anderes Gerät verwenden, and ends it with ×, in English too", async () => {

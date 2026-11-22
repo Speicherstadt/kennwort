@@ -1755,11 +1755,15 @@ ersetzt und sonst an den Browser abgibt; der Code ist Kennworts eigener.
   Seite (sonst fünf Minuten) endet sie mit `NotAllowedError`, ein Abbruch der Seite (`AbortSignal`)
   sofort. Die Seite bekommt erst eine Antwort, wenn die Leiste geantwortet hat.
 - Die Leiste öffnet das Konto, das das Popup entsperrt hat (ohne die Sperrzeit zu verschieben), und
-  lädt die Einträge. Gesperrt, ohne geladene Einträge oder ohne Passkey für genau diese rpId (bei
-  `allowCredentials` nur unter den erlaubten Credential-IDs) gibt sie unsichtbar an den Browser ab;
-  die Seite erfährt so nicht, ob es einen Passkey gibt. Sonst bietet sie „Passkey speichern“ mit
-  der Wahl des Tresors oder „Anmelden als …“ je passendem Passkey an, dazu immer „Anderes Gerät
-  verwenden“ (Browser) und × (`NotAllowedError`). Liegt ein Passkey aus `excludeCredentials` schon
+  lädt die Einträge. Gesperrt oder ohne geladene Einträge gibt sie unsichtbar an den Browser ab;
+  die Seite erfährt so nur, dass Kennwort gesperrt ist. Sonst bietet sie „Passkey speichern“ mit
+  der Wahl des Tresors oder „Anmelden als …“ je Passkey für genau diese rpId (bei
+  `allowCredentials` nur unter den erlaubten Credential-IDs) an, dazu immer „Anderes Gerät
+  verwenden“ (Browser) und × (`NotAllowedError`). Passt kein Passkey, erscheint sie trotzdem und
+  sagt das: Die Seite sieht, ob die Leiste erscheint und wie groß ihr Frame ist, und erführe sonst
+  vor jeder Zustimmung, ob Kennwort einen Passkey für eine Credential-ID hält, die sie ausprobiert
+  (WebAuthn Level 3, §14.5.2). Darum hat die Leiste auch immer dieselbe Höhe und rollt, was nicht
+  hineinpasst. Liegt ein Passkey aus `excludeCredentials` schon
   in Kennwort, sagt sie das und bietet nur „Anderes Gerät verwenden“ an.
 - Speichern und Anmelden zählen nur mit denselben Prüfungen gegen Clickjacking wie das Speichern
   eines Logins: Klick vom Browser zugestellt, Leiste seit 500 ms laut IntersectionObserver v2

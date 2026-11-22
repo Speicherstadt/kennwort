@@ -239,8 +239,10 @@ fragt Kennwort oben rechts in derselben Leiste wie beim Speichern:
   selbst, einem Handy oder einem Sicherheitsschlüssel.
 - **Schließen** (×) bricht ab; die Website erfährt nur, dass es nicht geklappt hat.
 
-Ist Kennwort gesperrt oder liegt kein passender Passkey darin, erscheint die Leiste nicht, und der
-Browser fragt wie ohne Kennwort. Ein Passkey ist ein Eintrag wie jeder andere: verschlüsselt,
+Ist Kennwort gesperrt, erscheint die Leiste nicht, und der Browser fragt wie ohne Kennwort. Liegt
+kein passender Passkey darin, erscheint sie trotzdem, gleich groß, und sagt das; „Anderes Gerät
+verwenden“ gibt dann an den Browser ab. So sieht die Website nicht an der Leiste, ob es in Kennwort
+einen Passkey für sie gibt. Ein Passkey ist ein Eintrag wie jeder andere: verschlüsselt,
 synchronisiert auf alle deine Geräte und mit allen teilbar, die den Tresor lesen. Er hat keine
 Adresse, darum bietet ihn weder das Popup unter „Für <Host>“ noch das Inline-Menü zum Ausfüllen an;
 die Suche findet ihn. Neu anlegen lässt er sich nur von der Website aus.

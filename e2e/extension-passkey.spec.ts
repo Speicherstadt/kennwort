@@ -23,7 +23,8 @@ import { extensionWorker, launchExtension, openPopup } from "./extension.ts";
 // and signs in with it, each after his click in the prompt; a look-alike domain that claims the
 // portal's rpId gets SecurityError, a cross-origin frame, a sandboxed frame on the portal's own
 // address, a locked Kennwort and "Anderes Gerät verwenden" go to the browser's own WebAuthn (a
-// virtual authenticator over CDP), and a covered prompt signs nothing.
+// virtual authenticator over CDP), a covered prompt signs nothing, and the prompt shows the same
+// whether or not a passkey fits, so the page cannot probe for them.
 const SERVER = "http://localhost:5176";
 const RP_ID = "weber-haustechnik.test";
 const PORTAL = `https://portal.${RP_ID}`;
@@ -166,11 +167,34 @@ const preview = `<!doctype html><html lang="de"><meta charset="utf-8"><title>Vor
 <iframe title="Anhang" sandbox="allow-scripts" src="${UPLOAD}" style="width:340px;height:200px"
   allow="publickey-credentials-get"></iframe></body>`;
 
+/**
+ * A page of the portal that probes for passkeys: one sign-in that allows any of the portal's
+ * passkeys, one that allows only an ID Kennwort does not hold (as a site would try the IDs of
+ * other accounts), each with a challenge of its own
+ */
+const probePage = `<!doctype html><html lang="de"><meta charset="utf-8"><title>Probe</title>
+<body style="margin:16px"><h1>Probe</h1>
+<button id="known">Bekannt</button> <button id="unknown">Unbekannt</button><p id="status">bereit</p>
+<script>
+const run = async (allowCredentials) => {
+  document.getElementById("status").textContent = "läuft";
+  try {
+    await navigator.credentials.get({ publicKey: { challenge: new Uint8Array(32),
+      rpId: ${JSON.stringify(RP_ID)}, allowCredentials, timeout: 5000 } });
+    document.getElementById("status").textContent = "angemeldet";
+  } catch (error) { document.getElementById("status").textContent = "Fehler " + error.name; }
+};
+document.getElementById("known").addEventListener("click", () => run([]));
+document.getElementById("unknown").addEventListener("click", () =>
+  run([{ type: "public-key", id: new Uint8Array(16).fill(7) }]));
+</script></body>`;
+
 const PAGES: Record<string, string> = {
   [`${PORTAL}/passkey`]: rpPage("Weber Portal"),
   [`${PORTAL}/framed`]: framedPage,
   [`${PORTAL}/vorschau`]: preview,
   [UPLOAD]: upload,
+  [`${PORTAL}/probe`]: probePage,
   [`${FOREIGN}/passkey`]: rpPage("Fremd-Login"),
   [`${LOOK_ALIKE}/passkey`]: rpPage("Portal", RP_ID),
 };
@@ -327,6 +351,29 @@ test.describe
       await frame.getByRole("button", { name: "Öffnen" }).click();
       await expect(frame.locator("#status")).toHaveText(/^Fehler /, { timeout: 30_000 });
       expect(await everShown(tab)).toBe(false);
+    });
+
+    test("lets a page not tell from the prompt whether Kennwort holds a passkey it allows", async () => {
+      await tab.goto(`${PORTAL}/probe`);
+      // What a page can read of the prompt: whether it shows, and its size
+      const size = () =>
+        tab.evaluate(() => {
+          const box = document.querySelector("kennwort-save")?.getBoundingClientRect();
+          return box && [box.width, box.height];
+        });
+      await tab.getByRole("button", { name: "Unbekannt" }).click();
+      const none = await armedPrompt(tab, "Mit Passkey anmelden?");
+      const noneSize = await size();
+      await none.getByRole("button", { name: "Anderes Gerät verwenden" }).click();
+      await expect(status(tab)).toHaveText(/^Fehler /, { timeout: 30_000 });
+      await expect.poll(() => tab.frames().some(isPrompt), { timeout: 10_000 }).toBe(false);
+
+      await tab.getByRole("button", { name: "Bekannt", exact: true }).click();
+      const known = await armedPrompt(tab, "Mit Passkey anmelden?");
+      await expect(known.getByRole("button", { name: "Anmelden als jonas.weber" })).toBeVisible();
+      expect(await size()).toEqual(noneSize);
+      await known.getByRole("button", { name: "Schließen" }).click();
+      await expect(status(tab)).toHaveText("Fehler NotAllowedError", { timeout: 10_000 });
     });
 
     test("refuses a look-alike domain that claims the portal's rpId, without a prompt", async () => {

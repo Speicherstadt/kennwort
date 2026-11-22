@@ -678,6 +678,7 @@
   "passkey_prompt_hidden": "The bar was covered or transparent. Kennwort signed nothing.",
   "passkey_prompt_unverified": "This browser cannot confirm that the bar is visible. Use another device.",
   "passkey_prompt_excluded": "Kennwort already holds a passkey for this account.",
+  "passkey_prompt_none": "Kennwort holds no matching passkey for this website.",
   "passkey_prompt_no_vault": "There is no vault you may save into.",
   "passkey_prompt_failed": "That did not work. Try again or use another device.",
   "passkey_prompt_no_username": "no user name"
