@@ -1,0 +1,55 @@
+name: Mutation
+
+# The stricter gate of packages/crypto and packages/core: every mutant of the code must be killed by a
+# test (100 %). It takes far longer than the five minutes a CI run may take (the user's rule), so it
+# runs nightly and on demand instead of in ci.yml (docs/plan.md, "Mutation-Tests nachts"). A red run
+# is fixed first, before new work in crypto or core (CLAUDE.md, "The agent loop").
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mutation
+  cancel-in-progress: false
+
+jobs:
+  # Four parts side by side; core's three `mutate` lists together are exactly the `mutate` of
+  # packages/core/stryker.config.json
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - part: crypto
+            package: packages/crypto
+            mutate: ""
+          - part: core-sync
+            package: packages/core
+            mutate: "src/sync/**/*.ts,!src/**/*.test.ts,!src/**/test/**"
+          - part: core-import
+            package: packages/core
+            mutate: "src/import/**/*.ts,!src/**/*.test.ts,!src/**/test/**"
+            # Only the parsers' own tests use them (vitest.stryker.config.ts)
+            tests: "src/import/**/*.test.ts"
+          - part: core-rest
+            package: packages/core
+            mutate: "src/**/*.ts,!src/sync/**,!src/import/**,!src/**/*.test.ts,!src/**/test/**"
+    name: mutation (${{ matrix.part }})
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - working-directory: ${{ matrix.package }}
+        env:
+          MUTATE: ${{ matrix.mutate }}
+          STRYKER_TESTS: ${{ matrix.tests || 'src/**/*.test.ts' }}
+        run: |
+          if [ -n "$MUTATE" ]; then bunx stryker run --mutate "$MUTATE"; else bunx stryker run; fi

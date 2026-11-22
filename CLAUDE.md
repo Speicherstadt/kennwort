@@ -30,7 +30,8 @@ sign-in, sessions, access checks and the misbehaving test server in `apps/server
 keys, passphrases, recovery and device pairing in any client, links that carry a secret in the
 fragment included; autofill and the extension's content scripts and storage; the signed update
 of the service worker; the CSP and the dependency allowlist. Never wait for a person: `packages/crypto` merges like the rest,
-behind the stricter gate of test vectors, property and mutation tests; an item that fails three
+behind test vectors and property tests in CI and mutation tests at 100 % nightly
+(`.github/workflows/mutation.yml`, CI stays under five minutes); a red nightly run is fixed first; an item that fails three
 times goes under "Zurückgestellt" with the reason and the loop goes on with the next independent
 one. Steps only a person can do (signing keys, stores, the iOS app) are not on the loop's path;
 build with test keys.
