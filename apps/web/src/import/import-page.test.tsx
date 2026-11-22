@@ -148,6 +148,12 @@ describe("ImportPage with Bitwarden's password-protected JSON (K-502 Teil 4)", (
     if (!field) throw new Error("no password field");
     field.value = password;
     await click(button(root, "Export öffnen"));
+    // PBKDF2 with 100 000 iterations yields to the event loop as often as the device needs, so a
+    // fixed number of ticks is not enough on a slow runner: wait until the step is done opening
+    await vi.waitFor(() => expect(root.textContent).not.toContain("Export wird entschlüsselt"), {
+      timeout: 15_000,
+    });
+    flush();
     return field;
   };
 
