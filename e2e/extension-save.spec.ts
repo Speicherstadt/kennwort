@@ -155,13 +155,14 @@ test.describe
           ? route.fulfill({ contentType: "text/html", body })
           : route.fulfill({ status: 404, body: "" });
       });
-      // What the page itself can see: whether the prompt's element was ever shown
+      // What the page itself can see: whether the prompt's element was ever shown. The document,
+      // not its root element: an init script runs before the parser has made that
       await context.addInitScript(() => {
         new MutationObserver(() => {
           const host = document.querySelector("kennwort-save") as HTMLElement | null;
           if (host?.style.display === "block")
             (window as unknown as { promptShown: boolean }).promptShown = true;
-        }).observe(document.documentElement, {
+        }).observe(document, {
           subtree: true,
           childList: true,
           attributes: true,
@@ -179,6 +180,8 @@ test.describe
       const prompt = await armedPrompt(tab, "Login speichern?");
       await expect(prompt.locator("header")).toContainText("shop.weber-haustechnik.test");
       await expect(prompt.getByText(USERNAME)).toBeVisible();
+      // What the tests that expect no prompt read sees this one (expectNoPrompt)
+      expect(await everShown(tab)).toBe(true);
       // The page sees neither the prompt's content nor its frame
       expect(
         await tab.evaluate(() => [
