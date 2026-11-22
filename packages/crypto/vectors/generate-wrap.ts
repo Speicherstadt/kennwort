@@ -31,6 +31,25 @@ const cases: Case[] = [
     purpose: "share",
     context: [bytes(16, 0x10), bytes(16, 0x20), bytes(16, 0x40)],
   },
+  // K-307 part c (P-13): the three wraps of company recovery
+  {
+    name: "Account Key deposited to the company recovery key",
+    payload: bytes(32, 0xd0),
+    purpose: "company",
+    context: [bytes(16, 0x4d)],
+  },
+  {
+    name: "company recovery key to an owner",
+    payload: bytes(32, 0xe0),
+    purpose: "company-recovery-key",
+    context: [bytes(16, 0x57), bytes(16, 0x4a)],
+  },
+  {
+    name: "recovered Account Key to the employee's new device",
+    payload: bytes(92, 0x00),
+    purpose: "recovery-device",
+    context: [bytes(32, 0x72)],
+  },
 ];
 
 const vectors = cases.map(({ name, payload, purpose, context }, index) => {

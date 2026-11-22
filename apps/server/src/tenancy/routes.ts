@@ -20,6 +20,7 @@ export const companyRoutes = () =>
             createdAt: company.createdAt,
             rootPublicKey: company.rootPublicKey,
             policy: company.policy ? JSON.parse(company.policy) : null,
+            recoveryPublicKey: company.recoveryPublicKey,
           })
         : c.json({ error: "not-found" }, 404);
     })

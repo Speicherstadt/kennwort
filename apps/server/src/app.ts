@@ -1,6 +1,7 @@
 /** The HTTP API (Hono): one place where every route is mounted and every request logged */
 import { eq, sql } from "drizzle-orm";
 import { Hono, type MiddlewareHandler } from "hono";
+import { companyRecoveryRoutes } from "./account/company-recovery.ts";
 import { memberRoutes } from "./account/members.ts";
 import { policyRoutes } from "./account/policy.ts";
 import { accountRoutes } from "./account/routes.ts";
@@ -113,6 +114,7 @@ export const createApp = ({
   api.route("/", accountRoutes({ db, now }));
   api.route("/", memberRoutes({ db, now }));
   api.route("/", policyRoutes({ db, now }));
+  api.route("/", companyRecoveryRoutes({ db, now }));
   api.route("/", deviceRoutes({ db, now }));
   api.route("/", logRoutes({ db, now }));
   api.route("/", requestRoutes({ db, now }));

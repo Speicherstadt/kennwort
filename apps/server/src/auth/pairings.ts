@@ -5,13 +5,18 @@
  * show the same comparison code, confirms. Only then does the new device's poll return a session
  * for that account. The server sees public keys and a package it cannot open; it keeps only a hash
  * of the poll token, and a pairing lasts ten minutes.
+ *
+ * Company recovery (K-307 part c, P-13) answers the same pairing: an owner answers for a member of
+ * its company that has a deposit, with a recovery package, and its confirmation gives the new device
+ * a session for that member. Only who answered may confirm.
  */
 import { createHash, timingSafeEqual } from "node:crypto";
-import { bytes, encodeBytes } from "@kennwort/core";
+import { bytes, encodeBytes, RECOVERY_PACKAGE_LENGTH } from "@kennwort/core";
 import { and, eq, gt, isNotNull, isNull, lte } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { Db } from "../db/database.ts";
+import { hasDeposit } from "../account/company-recovery.ts";
 import { pairings } from "../db/schema.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 import type { Auth } from "./better-auth.ts";
@@ -30,7 +35,11 @@ const Poll = z.object({ pollToken: z.string().min(1).max(128) });
 // A device package and nothing else: X-Wing header and ciphertext, then the box around the four
 // keys of P-04 (version, nonce, enc of 32 + 16 + 16 + 32 bytes, tag); review of K-303
 export const DEVICE_PACKAGE_LENGTH = 1 + 1120 + 1 + 24 + (4 * 4 + 96) + 16;
-const Answer = z.object({ package: bytes(DEVICE_PACKAGE_LENGTH) });
+const Answer = z.object({
+  package: bytes(),
+  /** The member an owner recovers (P-13); absent for a device of the answering account */
+  accountId: z.string().min(1).max(64).optional(),
+});
 
 export type PairingDeps = {
   db: Db;
@@ -105,6 +114,29 @@ export const pairingPublicRoutes = ({ db, auth, now, random, allow, address }: P
       return c.json({ cancelled: true });
     });
 
+type Refusal = { error: string; status: 400 | 403 | 404 };
+
+/**
+ * Whose session the answer is for: the answering account with a device package, or a member of its
+ * company with a deposit, which only an owner recovers with a recovery package (P-13)
+ */
+const answerFor = (
+  db: Db,
+  { scope, session }: TenantEnv["Variables"],
+  answer: z.infer<typeof Answer>,
+): string | Refusal => {
+  const target = answer.accountId ?? session.accountId;
+  const length = answer.package.length;
+  if (target === session.accountId)
+    return length === DEVICE_PACKAGE_LENGTH ? target : { error: "invalid", status: 400 };
+  if (length !== RECOVERY_PACKAGE_LENGTH) return { error: "invalid", status: 400 };
+  if (scope.account(session.accountId)?.role !== "owner") return { error: "forbidden", status: 403 };
+  const member = scope.account(target);
+  return member && member.leftAt === null && hasDeposit(db, member.id)
+    ? member.id
+    : { error: "not-found", status: 404 };
+};
+
 /** For an unlocked device: load the one-time key, answer with the package, confirm the code */
 export const pairingApiRoutes = ({ db, now }: Pick<PairingDeps, "db" | "now">) =>
   new Hono<TenantEnv>()
@@ -127,10 +159,16 @@ export const pairingApiRoutes = ({ db, now }: Pick<PairingDeps, "db" | "now">) =
     .put("/pairings/:id", async (c) => {
       const parsed = Answer.safeParse(await c.req.json().catch(() => undefined));
       if (!parsed.success) return c.json({ error: "invalid" }, 400);
+      const target = answerFor(db, c.var, parsed.data);
+      if (typeof target !== "string") return c.json({ error: target.error }, target.status);
       // The first answer wins; a pairing never changes hands afterwards
       const answered = db
         .update(pairings)
-        .set({ accountId: c.var.session.accountId, package: Buffer.from(parsed.data.package) })
+        .set({
+          accountId: target,
+          answeredBy: c.var.session.accountId,
+          package: Buffer.from(parsed.data.package),
+        })
         .where(
           and(
             eq(pairings.id, c.req.param("id")),
@@ -149,7 +187,7 @@ export const pairingApiRoutes = ({ db, now }: Pick<PairingDeps, "db" | "now">) =
         .where(
           and(
             eq(pairings.id, c.req.param("id")),
-            eq(pairings.accountId, c.var.session.accountId),
+            eq(pairings.answeredBy, c.var.session.accountId),
             isNotNull(pairings.package),
             gt(pairings.expiresAt, now()),
           ),

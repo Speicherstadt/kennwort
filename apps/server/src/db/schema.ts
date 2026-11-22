@@ -16,6 +16,11 @@ export const companies = sqliteTable("companies", {
   rootPublicKey: text("root_public_key"),
   /** The policy the root signed (K-304, F-07), as JSON; clients check it, the server only keeps it */
   policy: text("policy"),
+  /**
+   * The company recovery key's public half (K-307 part c, P-13), base64url; clients deposit to it
+   * only when the signed policy names its fingerprint
+   */
+  recoveryPublicKey: text("recovery_public_key"),
 });
 
 /** An account belongs to exactly one company; its keys and ciphertexts follow in later items */
@@ -39,4 +44,5 @@ export const accounts = sqliteTable(
 export * from "./account-schema.ts";
 export * from "./audit-schema.ts";
 export * from "./auth-schema.ts";
+export * from "./recovery-schema.ts";
 export * from "./sync-schema.ts";

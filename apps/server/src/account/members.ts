@@ -9,6 +9,7 @@ import {
   type Certificate,
   CertificateWire,
   encodeBytes,
+  RECOVERY_GRANT_LENGTH,
   ROOT_GRANT_LENGTH,
   toWire,
 } from "@kennwort/core";
@@ -23,6 +24,8 @@ import {
   entryShares,
   groupMembers,
   invitations,
+  recoveryDeposits,
+  recoveryGrants,
   rootGrants,
   vaultRequests,
 } from "../db/schema.ts";
@@ -80,6 +83,8 @@ const same = (a: Uint8Array, b: Uint8Array) => encodeBytes(a) === encodeBytes(b)
 const RoleChange = z.object({
   certificate: CertificateWire,
   rootGrant: bytes(ROOT_GRANT_LENGTH).optional(),
+  /** The company recovery key for a new owner, while the company has one (K-307 part c) */
+  recoveryGrant: bytes(RECOVERY_GRANT_LENGTH).optional(),
 });
 
 type Keys = typeof accountKeys.$inferSelect;
@@ -129,6 +134,11 @@ const storeRole = (
       tx.insert(rootGrants)
         .values({ accountId: member.id, wrapped: Buffer.from(change.rootGrant), createdAt: at })
         .run();
+    tx.delete(recoveryGrants).where(eq(recoveryGrants.accountId, member.id)).run();
+    if (change.recoveryGrant)
+      tx.insert(recoveryGrants)
+        .values({ accountId: member.id, wrapped: Buffer.from(change.recoveryGrant), createdAt: at })
+        .run();
     return true;
   });
 
@@ -146,8 +156,8 @@ const removal = (me: Member | undefined, member: Member | undefined) => {
 
 /**
  * The account leaves the company (K-307, P-11): marked as left, every session gone, and what only it
- * could use dropped (requests, group memberships, shares to it, a wrapped root key, the open
- * invitations it made). Its keys and certificate stay: the vault logs it signed must still verify.
+ * could use dropped (requests, group memberships, shares to it, a wrapped root or recovery key, its
+ * recovery deposit, the open invitations it made). Its keys and certificate stay: the vault logs it signed must still verify.
  * The vaults it was in owe a removal and a key rotation, which the next manager client signs; the
  * server cannot.
  */
@@ -157,6 +167,8 @@ const leave = (db: Db, member: Member, at: number) =>
     tx.update(accounts).set({ leftAt: at }).where(eq(accounts.id, id)).run();
     tx.delete(authSession).where(eq(authSession.userId, id)).run();
     tx.delete(rootGrants).where(eq(rootGrants.accountId, id)).run();
+    tx.delete(recoveryGrants).where(eq(recoveryGrants.accountId, id)).run();
+    tx.delete(recoveryDeposits).where(eq(recoveryDeposits.accountId, id)).run();
     tx.delete(vaultRequests).where(eq(vaultRequests.accountId, id)).run();
     tx.delete(groupMembers).where(eq(groupMembers.accountId, id)).run();
     tx.delete(entryShares).where(eq(entryShares.recipient, id)).run();
@@ -243,11 +255,14 @@ export const memberRoutes = ({ db, now }: { db: Db; now: () => number }) =>
       if (!parsed.success) return c.json({ error: "invalid" }, 400);
       const keys = db.select().from(accountKeys).where(eq(accountKeys.accountId, member.id)).get();
       if (!keys?.certificate) return c.json({ error: "not-certified" }, 409);
-      const { certificate, rootGrant } = parsed.data;
-      // The root key goes with an owner's or admin's role and with no other
+      const { certificate, rootGrant, recoveryGrant } = parsed.data;
+      // The root key goes with an owner's or admin's role and with no other; the recovery key, while
+      // the company has one, with an owner's and no other (K-307 part c)
+      const recoveryKept = scope.company()?.recoveryPublicKey != null;
       if (
         !fitsKeys(certificate, member, session.companyId, keys) ||
-        (certificate.role === "member") !== (rootGrant === undefined)
+        (certificate.role === "member") !== (rootGrant === undefined) ||
+        (certificate.role === "owner" && recoveryKept) !== (recoveryGrant !== undefined)
       )
         return c.json({ error: "invalid" }, 400);
       if (!storeRole(db, now(), me.id, member, parsed.data))

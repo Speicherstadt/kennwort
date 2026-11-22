@@ -11,16 +11,22 @@ export {
 export {
   type DevicePackage,
   openDevicePackage,
+  openRecoveryPackage,
   PAIRING_SECRET_LENGTH,
+  RECOVERY_PACKAGE_LENGTH,
+  type RecoveryPackage,
   sealDevicePackage,
+  sealRecoveryPackage,
   stateHash,
   unlockWithDevicePackage,
 } from "./account/pairing.ts";
 export {
+  ACCOUNT_RENEWAL_PURPOSE,
   RENEWAL_PURPOSE,
   type RenewDeps,
   renewalFields,
   renewUnlock,
+  renewUnlockWithAccountKey,
   type UnlockUpload,
 } from "./account/renew.ts";
 export {
@@ -162,6 +168,36 @@ export {
   standardPolicy,
   type UnsignedPolicy,
 } from "./membership/policy.ts";
+export {
+  type ApproveError,
+  type ApproveInput,
+  approveRecovery,
+  checkRecovered,
+  type DepositDecision,
+  type Depositor,
+  depositFor,
+  type RecoveredError,
+  type RecoveryBundle,
+} from "./membership/recovery-deposit.ts";
+export {
+  type CompanyRecoveryKey,
+  grantRecoveryKey,
+  newCompanyRecoveryKey,
+  openRecoveryGrant,
+  RECOVERY_GRANT_LENGTH,
+  type RecoveryGrantError,
+  recoveryPolicy,
+} from "./membership/recovery-key.ts";
+export {
+  DEPOSIT_PACKAGE_LENGTH,
+  DepositWire,
+  depositToWire,
+  HeldDepositWire,
+  RecoveryBundleWire,
+  RecoveryGrantWire,
+  RecoveryKeyUpload,
+  recoveryKeyToWire,
+} from "./membership/recovery-wire.ts";
 export {
   changeRole,
   grantRoot,

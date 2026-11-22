@@ -141,7 +141,10 @@ export const pairings = sqliteTable("pairings", {
   id: text("id").primaryKey(),
   publicKey: blob("public_key", { mode: "buffer" }).notNull(),
   pollHash: text("poll_hash").notNull(),
+  /** Whose session the confirmation gives: the answering account, or the member it recovers (P-13) */
   accountId: text("account_id"),
+  /** Who answered and alone may confirm; the owner when it recovers a member (K-307 part c) */
+  answeredBy: text("answered_by"),
   package: blob("package", { mode: "buffer" }),
   confirmed: integer("confirmed", { mode: "boolean" }).notNull().default(false),
   expiresAt: integer("expires_at").notNull(),

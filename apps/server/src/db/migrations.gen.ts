@@ -121,5 +121,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795206917661,
     "breakpoints": true,
     "sql": "ALTER TABLE `accounts` ADD `left_at` integer;"
+  },
+  {
+    "tag": "0020_company_recovery",
+    "when": 1795223881874,
+    "breakpoints": true,
+    "sql": "CREATE TABLE `recovery_deposits` (\n\t`account_id` text PRIMARY KEY NOT NULL,\n\t`pkg` blob NOT NULL,\n\t`commitment` blob NOT NULL,\n\t`signature` blob NOT NULL,\n\t`stored_at` integer NOT NULL,\n\tFOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE TABLE `recovery_grants` (\n\t`account_id` text PRIMARY KEY NOT NULL,\n\t`wrapped` blob NOT NULL,\n\t`created_at` integer NOT NULL,\n\tFOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nALTER TABLE `companies` ADD `recovery_public_key` text;--> statement-breakpoint\nALTER TABLE `pairings` ADD `answered_by` text;"
   }
 ];

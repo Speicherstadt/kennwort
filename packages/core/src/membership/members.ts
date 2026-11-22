@@ -19,6 +19,8 @@ export const CompanyWire = z.object({
   rootPublicKey: bytes(32).nullable(),
   /** The signed policy, none until an owner has saved one (K-304, F-07) */
   policy: PolicyWire.nullable().default(null),
+  /** The company recovery key's public half (K-307 part c); clients take it only by the policy */
+  recoveryPublicKey: bytes(1216).nullable().default(null),
 });
 
 export const MembersWire = z.object({
