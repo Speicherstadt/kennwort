@@ -57,6 +57,20 @@ describe("the fill broker", () => {
     expect(deps.frames).toHaveBeenCalledWith(3);
   });
 
+  // K-407: Firefox serves the menu under moz-extension://<uuid>, Safari under
+  // safari-web-extension://<uuid> (MDN, web_accessible_resources); the ID is still the extension's
+  it.each([
+    "moz-extension://0f8d3a4e-7b1c-4c3e-9a51-2d6f8e9b7c10",
+    "safari-web-extension://E2C2B5A3-2D69-4D6A-B8A3-9E1F5C8F2C41",
+  ])("answers the menu served under %s", async (origin) => {
+    const { broker } = setup(topFrames());
+    const sender = { ...menu, url: `${origin}/src/menu/menu.html#${NONCE}` };
+    expect(await broker({ type: "menu-page", nonce: NONCE }, sender)).toEqual({
+      ok: true,
+      host: "portal.weber-haustechnik.test",
+    });
+  });
+
   it("sends the login to the checked frame's document only", async () => {
     const { broker, delivered } = setup(topFrames());
     expect(await broker(fill(), menu)).toEqual({ ok: true });
@@ -140,6 +154,11 @@ describe("the fill broker", () => {
     ["a content script", { id: ID, url: PORTAL, frameId: 7, tab: { id: 3 } }],
     ["another extension", { id: "other", url: MENU_URL, frameId: 7, tab: { id: 3 } }],
     ["another page of the extension", { ...menu, url: `chrome-extension://${ID}/popup.html` }],
+    ["the menu's path on a web page", { ...menu, url: `https://evil.test/src/menu/menu.html` }],
+    [
+      "the menu's path under webkit-extension:",
+      { ...menu, url: `webkit-extension://x/src/menu/menu.html` },
+    ],
     ["the menu outside a tab", { id: ID, url: MENU_URL, frameId: 7 }],
     ["the menu as a top frame", { ...menu, frameId: 0 }],
   ])("answers %s with a refusal", async (_name, sender) => {

@@ -1,7 +1,7 @@
 /**
- * The MV3 manifest for Chrome/Edge and for Firefox, from one place. Name and description come from
- * _locales (German by default, English), the only texts the browser and the stores read themselves;
- * everything the popup shows comes from Paraglide like in the web app.
+ * The MV3 manifest for Chrome/Edge, Firefox and Safari, from one place. Name and description come
+ * from _locales (German by default, English), the only texts the browser and the stores read
+ * themselves; everything the popup shows comes from Paraglide like in the web app.
  */
 import type { ManifestV3Export } from "@crxjs/vite-plugin";
 import { MENU_PAGE } from "./fill/messages.ts";
@@ -10,7 +10,22 @@ import { PROMPT_PAGE } from "./save/messages.ts";
 /** The manifest as an object (ManifestV3Export also allows a function or a promise) */
 type ManifestV3 = Extract<ManifestV3Export, { manifest_version: number }>;
 
-export type Browser = "chrome" | "firefox";
+/**
+ * Chrome and Edge; Firefox on the desktop and on Android; Safari on macOS and iOS (K-407). Safari's
+ * build is the folder `xcrun safari-web-extension-converter` wraps into an app (docs/extension.md).
+ */
+export const BROWSERS = ["chrome", "firefox", "safari"] as const;
+export type Browser = (typeof BROWSERS)[number];
+
+/**
+ * The oldest versions with every API and key the extension relies on (MDN browser-compat-data
+ * 8.1.10): Firefox 140 (the current ESR) is the first to read `data_collection_permissions`, which
+ * addons.mozilla.org requires, Firefox for Android only 142; Safari 18 is the first that runs a
+ * content script in the page's world (`world: "MAIN"`, the passkeys, K-406).
+ */
+export const FIREFOX_MIN_VERSION = "140.0";
+export const FIREFOX_ANDROID_MIN_VERSION = "142.0";
+export const SAFARI_MIN_VERSION = "18.0";
 
 /**
  * Only for the end-to-end tests (`vite build --mode e2e`): activeTab reveals the tab's address only
@@ -78,9 +93,11 @@ const common = {
 /**
  * The menu page and the save prompt's page are the only pages web pages may load (crxjs adds the
  * content script's own chunks). In Chrome under an address that changes each browser session
- * (use_dynamic_url), so a page cannot frame them by an address it knows; Firefox gives each
- * installation its own random address anyway. A menu or prompt framed without the content script's
- * nonce fills, takes and saves nothing (fill/messages.ts, save/messages.ts).
+ * (use_dynamic_url), so a page cannot frame them by an address it knows. Firefox does not read the
+ * key: it gives each profile its own random address, which stays until the extension is
+ * reinstalled; Safari changes its address with every launch on its own (docs/sicherheitsdesign.md,
+ * P-17). A menu or prompt framed without the content script's nonce fills, takes and saves nothing
+ * (fill/messages.ts, save/messages.ts).
  */
 const FRAMED_PAGES = [MENU_PAGE, PROMPT_PAGE];
 const menuResource = (browser: Browser) => [
@@ -89,34 +106,47 @@ const menuResource = (browser: Browser) => [
     : { resources: FRAMED_PAGES, matches: WEB_PAGES },
 ];
 
+const serviceWorker = { service_worker: WORKER, type: "module" } as const;
+
 /**
- * Firefox differs in two places: it runs the background as an event page from `background.scripts`
- * instead of `service_worker`, which it does not support for extensions, and it wants a fixed ID
- * in `browser_specific_settings.gecko`. 140 (the current ESR) is the first version that reads
- * `data_collection_permissions`, which addons.mozilla.org requires; `storage.session` came in 115.
+ * Firefox runs the background as an event page from `background.scripts` instead of
+ * `service_worker`, which it does not support for extensions, and wants a fixed ID in
+ * `browser_specific_settings.gecko`; `gecko_android` offers the same build on Android.
  */
-const forBrowser = (browser: Browser): ManifestV3 =>
-  browser === "firefox"
-    ? {
-        ...common,
-        web_accessible_resources: menuResource(browser),
-        background: { scripts: [WORKER] },
-        browser_specific_settings: {
-          gecko: {
-            id: GECKO_ID,
-            strict_min_version: "140.0",
-            // Nothing goes to the developer or a third party: the popup talks only to the
-            // company's own server, which the user enters, and sends it only ciphertexts, public
-            // keys and a signature (P-02, P-15); the address of the tab never leaves the popup
-            data_collection_permissions: { required: ["none"] },
-          },
-        },
-      }
-    : {
-        ...common,
-        web_accessible_resources: menuResource(browser),
-        background: { service_worker: WORKER, type: "module" },
-      };
+const firefox = {
+  background: { scripts: [WORKER] },
+  browser_specific_settings: {
+    gecko: {
+      id: GECKO_ID,
+      strict_min_version: FIREFOX_MIN_VERSION,
+      // Nothing goes to the developer or a third party: the popup talks only to the company's own
+      // server, which the user enters, and sends it only ciphertexts, public keys and a signature
+      // (P-02, P-15); the address of the tab never leaves the popup
+      data_collection_permissions: { required: ["none"] },
+    },
+    gecko_android: { strict_min_version: FIREFOX_ANDROID_MIN_VERSION },
+  },
+};
+
+/** Safari runs the same service worker as Chrome; the app around it carries its identity */
+const safari = {
+  background: serviceWorker,
+  browser_specific_settings: { safari: { strict_min_version: SAFARI_MIN_VERSION } },
+};
+
+// crxjs types browser_specific_settings with gecko only; Safari's and gecko_android are read by
+// the browsers that know them (MDN, browser_specific_settings)
+const PER_BROWSER = {
+  chrome: { background: serviceWorker },
+  firefox,
+  safari,
+} as unknown as Record<Browser, Pick<ManifestV3, "background" | "browser_specific_settings">>;
+
+const forBrowser = (browser: Browser): ManifestV3 => ({
+  ...common,
+  web_accessible_resources: menuResource(browser),
+  ...PER_BROWSER[browser],
+});
 
 export const manifest = (browser: Browser, e2e = false): ManifestV3Export =>
   e2e ? { ...forBrowser(browser), host_permissions: E2E_HOSTS } : forBrowser(browser);

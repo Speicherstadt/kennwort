@@ -11,6 +11,7 @@
  *   a typo: nothing is captured.
  */
 import type { Submitted } from "../save/messages.ts";
+import { saysAutocomplete } from "./autocomplete.ts";
 import { fieldShown } from "./field-shown.ts";
 
 type Shown = (input: HTMLInputElement) => boolean;
@@ -19,8 +20,8 @@ const USER_TYPES = new Set(["text", "email", "tel"]);
 
 const usable = (input: HTMLInputElement) => !input.disabled && !input.readOnly;
 const saysUsername = (input: HTMLInputElement) =>
-  /\b(username|email)\b/.test(input.autocomplete) || input.type === "email";
-const saysNew = (input: HTMLInputElement) => /\bnew-password\b/.test(input.autocomplete);
+  saysAutocomplete(input, "username", "email") || input.type === "email";
+const saysNew = (input: HTMLInputElement) => saysAutocomplete(input, "new-password");
 
 /** The inputs a submit covers: a form's own, or those of a document without a form */
 export const inputsOf = (scope: HTMLFormElement | Document): HTMLInputElement[] => {

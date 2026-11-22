@@ -37,7 +37,8 @@ export type BrokerDeps = {
   openPopup: () => Promise<void>;
 };
 
-const EXTENSION_SCHEMES = new Set(["chrome-extension:", "moz-extension:"]);
+/** Chrome and Edge, Firefox, Safari (MDN, web_accessible_resources; K-407) */
+const EXTENSION_SCHEMES = new Set(["chrome-extension:", "moz-extension:", "safari-web-extension:"]);
 
 /**
  * The tab of one of the extension's own pages framed in it (the inline menu, the save prompt);

@@ -8,6 +8,7 @@
  * a page started until the prompt answers it after the user's click (passkey/passkey-broker.ts, K-406).
  */
 import { browserAlarms, lockOnAlarm } from "./account/auto-lock.ts";
+import { openPopupWith, type PopupApis } from "./account/open-popup.ts";
 import { type AlertContentMessage, createAlertBroker } from "./alert/alert-broker.ts";
 import { alertRequest, type Warning } from "./alert/messages.ts";
 import { createFillBroker } from "./fill/broker.ts";
@@ -52,10 +53,9 @@ type Chrome = {
       options: { frameId: number; documentId?: string },
     ): Promise<unknown>;
     onRemoved: { addListener(listener: (tabId: number) => void): void };
+    create(options: { url: string }): Promise<unknown>;
   };
-  action: { openPopup?: () => Promise<void> };
-  windows: { create(options: object): Promise<unknown> };
-};
+} & PopupApis;
 
 // Not awaited at the top level: service workers refuse top-level await. The popup closes the area
 // once more before it stores a key and refuses to store one if that fails (account/unlocked-store.ts).
@@ -89,16 +89,8 @@ if (chrome?.webNavigation && chrome.tabs) {
         ? { frameId: target.frameId, documentId: target.documentId }
         : { frameId: target.frameId },
     );
-  // The popup over the tab; where the browser refuses that, the popup in a window of its own
-  const openPopup = async () => {
-    const opened = await browser.action.openPopup?.().then(
-      () => true,
-      () => false,
-    );
-    if (!opened) {
-      await browser.windows.create({ url: "popup.html", type: "popup", width: 360, height: 600 });
-    }
-  };
+  // The popup over the tab, else in a window of its own, else in a tab (account/open-popup.ts)
+  const openPopup = openPopupWith(browser);
   const broker = createFillBroker({
     extensionId: browser.runtime.id,
     menuPath: `/${MENU_PAGE}`,

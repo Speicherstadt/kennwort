@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build && vite build --mode firefox && bun build/check-bundle.ts chrome firefox",
+    "build": "vite build && vite build --mode firefox && vite build --mode safari && bun run lint:firefox && bun build/check-bundle.ts chrome firefox safari",
     "build:chrome": "vite build && bun build/check-bundle.ts chrome",
-    "build:firefox": "vite build --mode firefox && bun build/check-bundle.ts firefox",
+    "build:firefox": "vite build --mode firefox && bun run lint:firefox && bun build/check-bundle.ts firefox",
+    "build:safari": "vite build --mode safari && bun build/check-bundle.ts safari",
+    "lint:firefox": "addons-linter --self-hosted dist/firefox",
     "build:e2e": "vite build --mode e2e && bun build/check-bundle.ts e2e"
   },
   "dependencies": {
@@ -19,6 +21,7 @@
     "tldts": "7.4.19"
   },
   "devDependencies": {
-    "@crxjs/vite-plugin": "3.0.0"
+    "@crxjs/vite-plugin": "3.0.0",
+    "addons-linter": "10.16.0"
   }
 }

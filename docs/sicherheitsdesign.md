@@ -1837,7 +1837,8 @@ Restrisiko:
 - Das Inline-Menü ist ein iFrame der Extension in einem eigenen Element mit geschlossenem Shadow
   Root, im Top Layer. Die Seite kann weder hineinsehen noch die Adresse des Menüs lesen. Die
   Menü-Seite ist die einzige Seite der Extension, die Websites laden dürfen, in Chrome nur unter
-  einer Adresse, die jede Browser-Sitzung wechselt (`use_dynamic_url`). Jedes Menü trägt eine
+  einer Adresse, die jede Browser-Sitzung wechselt (`use_dynamic_url`); Firefox und Safari
+  kennen das nicht (unten, „Je Browser“). Jedes Menü trägt eine
   zufällige Nonce (128 Bit), die nur das Content Script und sein Menü-Frame kennen; der Service
   Worker lässt sich von genau einem Content Script bestätigen, dass es das Menü mit dieser Nonce
   geöffnet hat, und das Content Script füllt nur für seine eigene Nonce.
@@ -1851,8 +1852,8 @@ Restrisiko:
   Mitte und nahe jeder Ecke. Chromiums v2 erkennt Abdeckungen, aber keine Deckkraft, die die Seite
   setzt; die Prüfung des Content Scripts erkennt sie. Restrisiko: eine Abdeckung, die nur kürzer
   als etwa 100 ms um den Klick liegt, und Abdeckungen in einem geschlossenen Shadow Root der Seite
-  mit `pointer-events: none`, die v2 erst nach seiner Verzögerung meldet. Firefox kennt v2 nicht;
-  dort füllt das Menü nicht aus und sagt das.
+  mit `pointer-events: none`, die v2 erst nach seiner Verzögerung meldet. Firefox und Safari
+  kennen v2 nicht; dort füllt das Menü nicht aus und sagt das.
 - Nur in Felder, die die Seite zeigt: Das Menü öffnet nur auf einem sichtbaren Login-Feld, und
   gefüllt werden nur Felder, die beim Ausfüllen noch sichtbar sind, also angezeigt, nicht
   `visibility: hidden`, mit allen Deckkräften bis zur Wurzel zusammen mindestens 0,2, mindestens
@@ -2062,6 +2063,59 @@ gesperrtes Kennwort gehen an das WebAuthn des Browsers (ein virtueller Authentic
 verdeckte Leiste signiert nichts, und kein Speicherbereich hält etwas vom Passkey. Die Regeln selbst
 prüfen Vitest-Tests neben dem Code (`apps/extension/src/fill`, `save`, `alert`, `content`, `menu`,
 `prompt`, `page`, `passkey`) und die Testvektoren von F-10 und F-12.
+
+**Je Browser (K-407):** Ein Manifest aus `apps/extension/src/manifest.ts` für drei Builds
+(`dist/chrome` für Chrome und Edge, `dist/firefox` für Firefox auf dem Desktop und Android,
+`dist/safari` für Safari auf macOS und iOS). Jede Eigenschaft oben gilt in jedem Browser oder ist
+durch etwas Gleichwertiges ersetzt; wo nicht, steht das Restrisiko hier.
+
+| Eigenschaft | Chrome, Edge | Firefox (Desktop, Android) | Safari (macOS, iOS) |
+| --- | --- | --- | --- |
+| Entsperrte Schlüssel nur in `storage.session` | ja, `setAccessLevel(TRUSTED_CONTEXTS)` | ja; `setAccessLevel` fehlt, der Bereich ist für Content Scripts aber ohnehin gesperrt und lässt sich nicht öffnen | ja, `setAccessLevel` ab Safari 17.1 |
+| Sperr-Alarm | `alarms`, Service Worker | `alarms`, Hintergrundseite (Event Page) | `alarms`, Service Worker |
+| Adresse von Menü und Leiste | wechselt je Browser-Sitzung (`use_dynamic_url`) | zufällige UUID je Profil, fest bis zur Neuinstallation | wechselt bei jedem Start von Safari |
+| Klick nur bei sichtbarem Menü (IntersectionObserver v2) | ja | fehlt: kein Ausfüllen, Speichern, Signieren | fehlt: kein Ausfüllen, Speichern, Signieren |
+| Exakter Host, kein fremder Frame, nur auf Klick, nur sichtbare Felder | ja | ja | ja |
+| Nur ein Dokument (`documentId`) | ja | ab Firefox 153, davor nur `frameId` | ab Safari 18.4, davor nur `frameId` |
+
+- **Kein Ausfüllen ohne v2.** Ohne die Bestätigung des Browsers, dass Menü oder Leiste sichtbar
+  sind, ist die Prüfung des Content Scripts allein (Deckkraft, Top Layer, Hit-Test) die einzige
+  Abwehr gegen Clickjacking; sie übersieht Abdeckungen in einem geschlossenen Shadow Root der Seite
+  mit `pointer-events: none` (oben). Darum füllen Menü und Leiste in Firefox und Safari nicht aus,
+  speichern nicht und signieren keinen Passkey; das Popup kopiert, die Phishing-Warnung zeigt sich
+  und lässt sich nur nicht wegklicken. Die Prüfungen von Content Script und Service Worker laufen
+  trotzdem in beiden Engines und sind dort getestet (`e2e/engines/fill.spec.ts`): Sie stehen
+  zwischen einer Seite und einem Login, sobald ein Browser v2 nachliefert.
+- **Feste Adresse in Firefox.** Firefox liest `use_dynamic_url` nicht; es gibt jeder Installation
+  eine zufällige UUID (`moz-extension://<uuid>`), die erst eine Neuinstallation ändert. Restrisiko:
+  Kennt eine Seite diese Adresse, kann sie die Menü- oder Leisten-Seite selbst einbetten und
+  erkennt, dass Kennwort installiert ist. Füllen, speichern oder signieren kann so ein Rahmen
+  nichts: Ohne die Nonce eines Content Scripts beantwortet der Service Worker keine seiner
+  Nachrichten (`unknown-frame`), und in Firefox füllt das Menü ohnehin nicht. Die Seiten laden
+  nichts von Websites; nur der Server der Firma sieht die Adresse als Herkunft ihrer Anfragen.
+- **Ein Dokument erst ab Firefox 153 und Safari 18.4.** Davor meldet der Frame-Baum keine
+  `documentId`; der Service Worker schickt dann an `frameId` und prüft die Adresse des Frames wie
+  sonst unmittelbar vorher. Restrisiko: ein Frame, der genau zwischen Prüfung und Zustellung auf
+  eine andere Seite navigiert; sein neues Dokument hat aber kein Menü mit dieser Nonce und schreibt
+  nichts.
+- **Server und Herkunft.** Der Server beantwortet CORS für `chrome-extension://<id>`,
+  `moz-extension://<uuid>` und `safari-web-extension://<uuid>` (die UUID in beliebiger
+  Schreibweise, Safari schreibt sie groß), wie für die anderen nur auf `/api` und dem
+  Anmelde-Schlüssel und nie mit Cookies: Jede Anfrage trägt ihr Token selbst, eine fremde
+  Extension bekommt so nichts, was sie nicht schon hätte. Der Service Worker nimmt Nachrichten der
+  eigenen Menü- und Leisten-Seite unter allen drei Schemata an, immer nur mit der eigenen
+  Extension-ID.
+- **Ohne Fenster.** Firefox für Android und Safari auf iOS haben keine `windows`-API: Das Popup
+  findet die Seite als aktiven Tab des zuletzt benutzten Fensters, und „Zum Entsperren öffnen“
+  öffnet es, wo `action.openPopup` nicht geht, in einem Tab. Beides ändert nichts an dem, was die
+  Extension lesen darf (`activeTab` nach einem Klick).
+- **Prüfung je Build.** Jeder Build prüft sein fertiges Manifest
+  (`apps/extension/build/manifest-rules.ts`): dieselben vier Berechtigungen in jedem Browser, keine
+  optionalen Berechtigungen, keine Hosts, kein `<all_urls>`, keine für Websites ladbare Popup-Seite,
+  `use_dynamic_url` nur in Chrome, `gecko` und `gecko_android` nur in Firefox, Safaris
+  Mindestversion nur in Safari. Den Firefox-Build prüft zusätzlich `addons-linter` von Mozilla.
+  Was nur ein echter Browser zeigt – Firefox auf einem Android-Gerät, Safari auf dem Mac –, prüft
+  vor einem Release eine Person.
 
 **Wehrt ab:** E-14.
 

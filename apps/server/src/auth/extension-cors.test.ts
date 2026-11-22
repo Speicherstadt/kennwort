@@ -5,7 +5,7 @@ import { createLog } from "../log.ts";
 import { isExtensionOrigin } from "./extension-cors.ts";
 
 // K-402: the extension's popup talks to the company's server from its own origin
-// (chrome-extension://…, moz-extension://…). Only that origin gets CORS headers, only on the paths
+// (chrome-extension://…, moz-extension://…, safari-web-extension://…). Only that origin gets CORS headers, only on the paths
 // the popup calls, and never with credentials: the API takes a bearer token, not a cookie.
 const app = () => {
   const db = openDatabase(":memory:");
@@ -15,6 +15,8 @@ const app = () => {
 
 const CHROME = "chrome-extension://abcdefghijklmnopabcdefghijklmnop";
 const FIREFOX = "moz-extension://0f8d3a4e-7b1c-4c3e-9a51-2d6f8e9b7c10";
+// K-407: Safari's address changes with every launch; WebKit writes the UUID in capitals
+const SAFARI = "safari-web-extension://E2C2B5A3-2D69-4D6A-B8A3-9E1F5C8F2C41";
 
 const preflight = (path: string, origin: string) =>
   app().request(path, {
@@ -27,7 +29,7 @@ const preflight = (path: string, origin: string) =>
   });
 
 describe("CORS for the extension", () => {
-  it.each([CHROME, FIREFOX])("lets %s call the API with a bearer token", async (origin) => {
+  it.each([CHROME, FIREFOX, SAFARI])("lets %s call the API with a bearer token", async (origin) => {
     const response = await preflight("/api/vaults", origin);
     expect(response.status).toBe(204);
     expect(response.headers.get("access-control-allow-origin")).toBe(origin);
@@ -62,6 +64,9 @@ describe("CORS for the extension", () => {
       `${CHROME}.evil.test`,
       "chrome-extension://ABCDEFGHIJKLMNOPABCDEFGHIJKLMNOP",
       "chrome-extension://short",
+      "safari-web-extension://not-a-uuid",
+      `${SAFARI}.evil.test`,
+      "webkit-extension://E2C2B5A3-2D69-4D6A-B8A3-9E1F5C8F2C41",
       "null",
     ]) {
       const response = await preflight("/api/vaults", origin);
@@ -78,9 +83,13 @@ describe("CORS for the extension", () => {
 });
 
 describe("isExtensionOrigin", () => {
-  it("knows Chrome's and Firefox's extension origins and nothing else", () => {
+  it("knows the extension origins of Chrome, Firefox and Safari and nothing else", () => {
     expect(isExtensionOrigin(CHROME)).toBe(true);
     expect(isExtensionOrigin(FIREFOX)).toBe(true);
+    expect(isExtensionOrigin(SAFARI)).toBe(true);
+    expect(isExtensionOrigin(SAFARI.toLowerCase())).toBe(true);
+    expect(isExtensionOrigin(`${SAFARI}/`)).toBe(false);
+    expect(isExtensionOrigin("moz-extension://0F8D3A4E-7B1C-4C3E-9A51-2D6F8E9B7C10")).toBe(false);
     expect(isExtensionOrigin(`${FIREFOX}/`)).toBe(false);
     expect(isExtensionOrigin("moz-extension://not-a-uuid")).toBe(false);
     expect(isExtensionOrigin("")).toBe(false);
