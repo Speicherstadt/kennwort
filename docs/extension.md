@@ -147,7 +147,8 @@ niemand etwas, bis ein Verwalter ihn gemacht hat.
 Was die Extension dabei sicherstellt:
 
 - **Nur, was du selbst abschickst**: Gezählt wird ein Absenden direkt nach einem echten Klick oder
-  Tastendruck von dir, nicht ein Formular, das ein Skript der Seite selbst abschickt. Neben dem
+  Tastendruck von dir in das Login-Formular oder auf seinen Knopf, nicht ein Formular, das ein Skript
+  der Seite selbst abschickt, auch nicht, wenn du gerade etwas anderes angeklickt hast. Neben dem
   normalen Absenden zählt ein Klick auf den Knopf eines Login-Formulars und Enter in einem Login-Feld
   ohne Formular, für Seiten, die per Skript anmelden.
 - **Nur aus Feldern, die du siehst**: Ein Passwortfeld, das die Seite versteckt, liest die Extension

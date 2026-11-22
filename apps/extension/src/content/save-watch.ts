@@ -4,10 +4,12 @@
  * and in the top frame opens the save prompt when the worker has a login to offer.
  *
  * A submit counts only when the browser delivered it (`isTrusted`) right after a real click or key
- * press of the user (ACTION_MS): a page that submits by script, with `form.submit()` (no event at
- * all) or `requestSubmit()` on its own, captures nothing. A click on a button of the login form and
- * Enter in a login field without a form count as a submit too, for pages that sign in by script
- * (fetch) without submitting a form. Only in the top frame or a frame of the same origin as every
+ * press of the user (ACTION_MS) on the login itself: in its form or on a button of that form, on
+ * the button of a login without a form, in the field Enter was pressed in. A page that submits by
+ * script, with `form.submit()` (no event at all) or `requestSubmit()`, captures nothing, also not
+ * right after the user clicked something else (a cookie banner) or a label the page linked to the
+ * form's button. A click on a button of the login form and Enter in a login field without a form
+ * count as a submit too, for pages that sign in by script (fetch) without submitting a form. Only in the top frame or a frame of the same origin as every
  * frame above it (same-origin.ts), and only from fields the page shows (capture.ts).
  *
  * When is the sign-in done? A page that navigates after it: the next page's content script asks the
@@ -58,13 +60,41 @@ const isInput = (node: unknown): node is HTMLInputElement =>
 const elementOf = (node: unknown): Element | undefined =>
   typeof node === "object" && node !== null && "closest" in node ? (node as Element) : undefined;
 
+/** Whether a node lies in a container, also inside a shadow root under it */
+const within = (container: Node, node: Node) => {
+  for (let at: Node | null = node; at; at = at.parentNode ?? (at as ShadowRoot).host ?? null)
+    if (at === container) return true;
+  return false;
+};
+
+/** In a form, or on a control of it outside it (`form="…"`) */
+const inForm = (form: HTMLFormElement) => (target: Element) =>
+  within(form, target) ||
+  (target.closest("button, input") as HTMLButtonElement | null)?.form === form;
+
 /** The password field a login was read from, to watch it */
 const passwordField = (inputs: readonly HTMLInputElement[], login: Submitted) =>
   inputs.find((input) => input.type === "password" && input.value === login.password);
 
+/** The user's last real click or key press and where it went: a submit counts after one on the login */
+const trackUserActions = (now: () => number) => {
+  let last: { at: number; target: Element | undefined } = {
+    at: Number.NEGATIVE_INFINITY,
+    target: undefined,
+  };
+  return {
+    note: (event: Event) => {
+      if (event.isTrusted) last = { at: now(), target: elementOf(event.composedPath()[0]) };
+    },
+    /** Whether the last one came just now and went to the login (`on`) */
+    actedOn: (on: (target: Element) => boolean) =>
+      now() - last.at <= ACTION_MS && last.target !== undefined && on(last.target),
+  };
+};
+
 export const createSaveWatch = (deps: SaveWatchDeps) => {
   const shown = deps.shown ?? fieldShown;
-  let lastAction = Number.NEGATIVE_INFINITY;
+  const actions = trackUserActions(deps.now);
   let watch: { timer: unknown; field: HTMLInputElement; login: Submitted } | undefined;
   let promptNonce: string | undefined;
 
@@ -95,8 +125,8 @@ export const createSaveWatch = (deps: SaveWatchDeps) => {
     watch = { timer, field, login };
   };
 
-  const capture = async (inputs: readonly HTMLInputElement[]) => {
-    if (deps.now() - lastAction > ACTION_MS || !deps.mayCapture()) return;
+  const capture = async (inputs: readonly HTMLInputElement[], on: (target: Element) => boolean) => {
+    if (!actions.actedOn(on) || !deps.mayCapture()) return;
     const login = submittedLogin(inputs, shown);
     if (!login) return;
     const field = passwordField(inputs, login);
@@ -108,13 +138,11 @@ export const createSaveWatch = (deps: SaveWatchDeps) => {
 
   return {
     /** A click or key press the browser delivered: a submit right after it is the user's */
-    onUserAction: (event: Event) => {
-      if (event.isTrusted) lastAction = deps.now();
-    },
+    onUserAction: actions.note,
     onSubmit: (event: Event) => {
       const form = event.target as HTMLFormElement | null;
       if (!event.isTrusted || form?.tagName !== "FORM") return;
-      void capture(inputsOf(form));
+      void capture(inputsOf(form), inForm(form));
     },
     /** A click on a button of a login form, or of a page whose login has no form */
     onClick: (event: MouseEvent) => {
@@ -130,14 +158,14 @@ export const createSaveWatch = (deps: SaveWatchDeps) => {
         const after = password?.compareDocumentPosition(button);
         if (!after || !(after & Node.DOCUMENT_POSITION_FOLLOWING)) return;
       }
-      void capture(inputs);
+      void capture(inputs, form ? inForm(form) : (target) => within(button, target));
     },
     /** Enter in a login field without a form: a form's own Enter arrives as its submit */
     onKeyDown: (event: KeyboardEvent) => {
       if (!event.isTrusted || event.key !== "Enter") return;
       const field = event.composedPath()[0];
       if (!isInput(field) || field.form) return;
-      void capture(inputsOf(field.ownerDocument));
+      void capture(inputsOf(field.ownerDocument), (target) => target === field);
     },
     /** The page is left: what it watched no longer matters, the next page asks on load */
     onPageHide: stopWatching,
