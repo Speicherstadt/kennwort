@@ -5,6 +5,7 @@ import {
   encodeBytes,
   isCertified,
   openRootGrant,
+  proveKeyBlock,
   RootGrantWire,
   signPolicy,
 } from "@kennwort/core";
@@ -158,7 +159,10 @@ describe("the key block written anew (P-07)", () => {
       w.o.setup.request("/api/account/key-block", {
         method: "PUT",
         token: w.annaToken,
-        body: { keyBlock: encodeBytes(keyBlock) },
+        body: {
+          keyBlock: encodeBytes(keyBlock),
+          proof: encodeBytes(proveKeyBlock(w.anna.keyBlock.ed.secretKey, w.annaIdText, keyBlock)),
+        },
       });
     expect((await put(sealed.subarray(1))).status).toBe(400);
     expect((await put(sealed)).status).toBe(200);
@@ -168,5 +172,32 @@ describe("the key block written anew (P-07)", () => {
       .where(eq(accountKeys.accountId, w.annaIdText))
       .get();
     expect(row && encodeBytes(new Uint8Array(row.keyBlock))).toBe(encodeBytes(sealed));
+  });
+});
+
+describe("the key block and a session alone (found in review)", () => {
+  // The key block holds the account's private keys under AK: every unlock way opens it. A session
+  // alone must not replace it, or whoever holds one destroys the keys for good, as a session alone
+  // cannot replace the unlock ways either (renew.ts)
+  it("keeps the key block when the upload carries no signature of the account's own key", async () => {
+    const w = await weberWithAnna();
+    const stored = () =>
+      w.o.setup.db.select().from(accountKeys).where(eq(accountKeys.accountId, w.annaIdText)).get()
+        ?.keyBlock;
+    const before = stored();
+    const garbage = new Uint8Array(
+      sealKeyBlock(w.anna.accountKey, w.anna.accountId, w.anna.keyBlock).length,
+    ).fill(7);
+    const answer = await w.o.setup.request("/api/account/key-block", {
+      method: "PUT",
+      token: w.annaToken,
+      // signed, but by a key that is not the account's
+      body: {
+        keyBlock: encodeBytes(garbage),
+        proof: encodeBytes(proveKeyBlock(ed25519KeyPair().secretKey, w.annaIdText, garbage)),
+      },
+    });
+    expect(answer.status).toBe(403);
+    expect(stored()).toEqual(before);
   });
 });

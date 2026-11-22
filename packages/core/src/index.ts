@@ -16,6 +16,7 @@ export {
   noteObjection,
   noteRevocation,
 } from "./account/emergency-seen.ts";
+export { KEY_BLOCK_PURPOSE, keyBlockFields, proveKeyBlock } from "./account/key-block-proof.ts";
 export {
   type DevicePackage,
   openDevicePackage,
