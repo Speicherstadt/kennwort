@@ -5,6 +5,11 @@
  * hidden: the prompt page first opens the account and compares, and only asks to be shown when it
  * has something to offer, so a login Kennwort already knows shows nothing. Before a save the content
  * script checks it from the page's side exactly as the menu before a fill (menuIsClear).
+ *
+ * The phishing warning (K-405) comes in the same frame and pins it: while it is shown, a page that
+ * lays something over it in the top layer, hides the popover or restyles the element (transparent,
+ * moved) finds it raised and restyled again within PIN_EVERY_MS, so a phishing page cannot simply
+ * cover the warning (its "continue anyway" still needs the visibility checks of a save).
  */
 import { menuIsClear, topLayer } from "./menu-frame.ts";
 
@@ -12,6 +17,8 @@ export const PROMPT_WIDTH = 360;
 const START_HEIGHT = 120;
 const MAX_HEIGHT = 420;
 const MARGIN = 16;
+/** How often a pinned prompt checks that it is still on top */
+export const PIN_EVERY_MS = 250;
 
 /** At the top right, inside the viewport also when it is narrower than the prompt */
 export const promptPlacement = (viewportWidth: number) => ({
@@ -51,10 +58,30 @@ type Opened = {
   shown: boolean;
   /** What was in the top layer before the prompt showed: it lies below the prompt */
   below: ReadonlySet<Element>;
+  /** The timer of a pinned prompt */
+  pin?: unknown;
+};
+
+/** Timers and the clearance check; tests pass their own */
+export type PromptFrameDeps = {
+  repeat: (run: () => void, ms: number) => unknown;
+  stop: (timer: unknown) => void;
+  clear: (host: HTMLElement, below: ReadonlySet<Element>) => boolean;
+};
+
+const browserDeps: PromptFrameDeps = {
+  repeat: (run, ms) => setInterval(run, ms),
+  stop: (timer) => clearInterval(timer as number),
+  clear: menuIsClear,
 };
 
 /** Opens, shows, sizes and closes the one save prompt of a document */
-export const createPromptFrame = (doc: Document, promptUrl: string, title: string) => {
+export const createPromptFrame = (
+  doc: Document,
+  promptUrl: string,
+  title: string,
+  deps: PromptFrameDeps = browserDeps,
+) => {
   let opened: Opened | undefined;
 
   const place = () => {
@@ -67,8 +94,24 @@ export const createPromptFrame = (doc: Document, promptUrl: string, title: strin
   };
 
   const close = () => {
+    if (opened?.pin !== undefined) deps.stop(opened.pin);
     opened?.host.remove();
     opened = undefined;
+  };
+
+  /** Into the top layer once more, above whatever came after it, with its own style again */
+  const raise = () => {
+    if (!opened?.shown || deps.clear(opened.host, opened.below)) return;
+    const { host } = opened;
+    host.style.cssText = hostStyle("block");
+    opened.below = new Set(topLayer(doc).filter((element) => element !== host));
+    try {
+      host.hidePopover?.();
+      host.showPopover?.();
+    } catch {
+      // Taken out of the document by the page: nothing to raise (docs/sicherheitsdesign.md, P-17)
+    }
+    place();
   };
 
   return {
@@ -102,8 +145,13 @@ export const createPromptFrame = (doc: Document, promptUrl: string, title: strin
       opened.height = Math.round(Math.min(MAX_HEIGHT, Math.max(START_HEIGHT / 2, height)));
       place();
     },
+    /** Keeps the shown prompt on top until it closes (the phishing warning) */
+    pin: () => {
+      if (!opened?.shown || opened.pin !== undefined) return;
+      opened.pin = deps.repeat(raise, PIN_EVERY_MS);
+    },
     isOpen: () => opened !== undefined,
-    isClear: () => (opened?.shown ? menuIsClear(opened.host, opened.below) : false),
+    isClear: () => (opened?.shown ? deps.clear(opened.host, opened.below) : false),
   };
 };
 

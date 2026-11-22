@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { Warning } from "../alert/messages.ts";
 import type { Sender } from "../fill/broker.ts";
 import type { FillTarget, FrameInfo } from "../fill/frames.ts";
 import { createCaptures } from "./captures.ts";
@@ -28,6 +29,7 @@ const setup = (frames: FrameInfo[] = [topFrame, sameOrigin, foreign], owns = tru
     extensionId: ID,
     promptPath: "/src/prompt/prompt.html",
     captures: createCaptures({ now: () => 0, schedule: () => undefined }),
+    warnings: createCaptures<Warning>({ now: () => 0, schedule: () => undefined }),
     frames: vi.fn(async (_tab: number) => frames),
     send: vi.fn(
       async (_tab: number, message: PromptContentMessage, target: FillTarget): Promise<unknown> => {
@@ -185,11 +187,13 @@ describe("the save broker", () => {
       ok: true,
     });
     expect(await broker({ type: "prompt-check", nonce: NONCE }, prompt)).toEqual({ ok: true });
+    expect(await broker({ type: "prompt-pin", nonce: NONCE }, prompt)).toEqual({ ok: true });
     expect(await broker({ type: "prompt-close", nonce: NONCE }, prompt)).toEqual({ ok: true });
     expect(delivered()).toEqual([
       [3, { type: "kennwort-prompt-show", nonce: NONCE }, target],
       [3, { type: "kennwort-prompt-size", nonce: NONCE, height: 140 }, target],
       [3, { type: "kennwort-prompt-check", nonce: NONCE }, target],
+      [3, { type: "kennwort-prompt-pin", nonce: NONCE }, target],
       [3, { type: "kennwort-prompt-close", nonce: NONCE }, target],
     ]);
     expect(await broker({ type: "prompt-unlock", nonce: NONCE }, prompt)).toEqual({ ok: true });
@@ -212,6 +216,36 @@ describe("the save broker", () => {
     expect(await broker({ type: "prompt-check", nonce: NONCE }, prompt)).toEqual({
       ok: false,
       error: "prompt-hidden",
+    });
+  });
+
+  // K-405: a phishing warning goes through the same prompt, before a login to save
+  it("offers a pending warning on load and hands it to the prompt before any login", async () => {
+    const { broker, deps } = setup();
+    const warning = {
+      host: "portal-weber.test",
+      url: "https://portal-weber.test/",
+      entries: ["e1"],
+    };
+    await broker(submit, content(topFrame));
+    deps.warnings.put(3, warning);
+    expect(await broker({ type: "save-pending" }, content(topFrame))).toEqual({ ok: true });
+    expect(await broker({ type: "prompt-take", nonce: NONCE }, prompt)).toEqual({
+      ok: true,
+      warning,
+    });
+    // The login of the page that raised the warning is not offered after it
+    expect(await broker({ type: "prompt-take", nonce: NONCE }, prompt)).toEqual({
+      ok: false,
+      error: "nothing",
+    });
+
+    const alone = setup();
+    alone.deps.warnings.put(3, warning);
+    expect(await alone.broker({ type: "save-pending" }, content(topFrame))).toEqual({ ok: true });
+    expect(await alone.broker({ type: "prompt-take", nonce: NONCE }, prompt)).toEqual({
+      ok: true,
+      warning,
     });
   });
 

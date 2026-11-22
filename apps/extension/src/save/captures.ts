@@ -4,7 +4,8 @@
  * document of its tab that asks within OFFER_MS of the submit (the page after a sign-in that
  * navigates, or the same page after one that does not), and handed to that document's prompt once;
  * then the worker forgets it. Whatever is not taken is forgotten after KEEP_MS, and all of it when
- * the browser stops the worker.
+ * the browser stops the worker. The phishing warning (K-405) holds its warnings the same way, so a
+ * warning raised just before the page navigated reaches the prompt of the next page.
  */
 import type { Capture } from "./messages.ts";
 
@@ -13,7 +14,7 @@ export const OFFER_MS = 30_000;
 /** A login nobody took is forgotten this long after the submit */
 export const KEEP_MS = 60_000;
 
-type Held = { capture: Capture; at: number; offered: boolean };
+type Held<T> = { capture: T; at: number; offered: boolean };
 
 export type CaptureDeps = {
   now: () => number;
@@ -21,8 +22,8 @@ export type CaptureDeps = {
   schedule: (run: () => void, ms: number) => unknown;
 };
 
-export const createCaptures = (deps: CaptureDeps) => {
-  const held = new Map<number, Held>();
+export const createCaptures = <T = Capture>(deps: CaptureDeps) => {
+  const held = new Map<number, Held<T>>();
   const fresh = (tabId: number, within: number) => {
     const entry = held.get(tabId);
     if (entry && deps.now() - entry.at <= within) return entry;
@@ -31,8 +32,8 @@ export const createCaptures = (deps: CaptureDeps) => {
   };
   return {
     /** Holds the tab's newest submit; an older one of the same tab is replaced */
-    put: (tabId: number, capture: Capture) => {
-      const entry: Held = { capture, at: deps.now(), offered: false };
+    put: (tabId: number, capture: T) => {
+      const entry: Held<T> = { capture, at: deps.now(), offered: false };
       held.set(tabId, entry);
       deps.schedule(() => {
         if (held.get(tabId) === entry) held.delete(tabId);
@@ -46,7 +47,7 @@ export const createCaptures = (deps: CaptureDeps) => {
       return true;
     },
     /** The offered submit, handed over once; the worker keeps nothing of it after */
-    take: (tabId: number): Capture | undefined => {
+    take: (tabId: number): T | undefined => {
       const entry = fresh(tabId, KEEP_MS);
       if (!entry?.offered) return undefined;
       held.delete(tabId);
@@ -57,4 +58,9 @@ export const createCaptures = (deps: CaptureDeps) => {
   };
 };
 
-export type Captures = ReturnType<typeof createCaptures>;
+export type Captures<T = Capture> = {
+  put: (tabId: number, capture: T) => void;
+  offer: (tabId: number) => boolean;
+  take: (tabId: number) => T | undefined;
+  drop: (tabId: number) => boolean;
+};

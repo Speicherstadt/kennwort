@@ -18,6 +18,7 @@ const fakeFrame = () =>
     resize: vi.fn(),
     isOpen: vi.fn(() => true),
     isClear: vi.fn(() => true),
+    pin: vi.fn(),
   }) satisfies PromptFrame;
 
 /** An event as the browser would deliver it; happy-dom's own are never trusted */
@@ -307,5 +308,22 @@ describe("the prompt's messages", () => {
   it("answers nothing before a prompt was opened", () => {
     const { watch } = setup();
     expect(watch.onMessage({ type: "kennwort-prompt-owns", nonce: NONCE }, WORKER)).toBeUndefined();
+  });
+
+  // K-405: the worker opens the prompt for a phishing warning, which then pins itself
+  it("opens the prompt hidden when the worker pushes a warning, and pins it when asked", () => {
+    const { watch, frame } = setup();
+    expect(watch.onMessage({ type: "kennwort-alert-open" }, WORKER)).toEqual({ ok: true });
+    expect(frame.open).toHaveBeenCalledExactlyOnceWith(NONCE);
+    expect(watch.onMessage({ type: "kennwort-prompt-pin", nonce: NONCE }, WORKER)).toEqual({
+      ok: true,
+    });
+    expect(frame.pin).toHaveBeenCalledOnce();
+    // From a page or another extension, or in a child frame: nothing opens
+    expect(watch.onMessage({ type: "kennwort-alert-open" }, { id: ID, tab: {} })).toBeUndefined();
+    expect(watch.onMessage({ type: "kennwort-alert-open" }, { id: "x" })).toBeUndefined();
+    const child = setup({ frame: undefined });
+    expect(child.watch.onMessage({ type: "kennwort-alert-open" }, WORKER)).toBeUndefined();
+    expect(frame.open).toHaveBeenCalledOnce();
   });
 });

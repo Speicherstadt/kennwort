@@ -18,6 +18,7 @@ import {
 } from "solid-js";
 import { createEntryLoad } from "../account/load-entries.ts";
 import type { PopupAccount } from "../account/popup-account.ts";
+import { refreshAlertList } from "../alert/alert-refresh.ts";
 import type { VisibilityGuard } from "../menu/visibility.ts";
 import type { Capture } from "../save/messages.ts";
 import { frameRequest, type PromptBridge, waitOf } from "./bridge.ts";
@@ -124,7 +125,10 @@ export const Offer = (props: {
   guard: VisibilityGuard;
   onNote: (note: string | undefined) => void;
 }) => {
-  const { load, entries, vaults, store, start } = createEntryLoad(props.account, { policy: false });
+  const { load, entries, vaults, store, start } = createEntryLoad(props.account, {
+    policy: false,
+    onEntries: refreshAlertList,
+  });
   const [done, setDone] = createSignal<string>();
   // Decided once: the prompt's own save changes the entries, and must not turn its offer into
   // "nothing to offer" and close it before it said "Gespeichert"

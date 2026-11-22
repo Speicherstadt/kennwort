@@ -17,10 +17,16 @@
  * within WATCH_MS; a field that stays, also one the page only emptied, reads as a failed sign-in,
  * and nothing is offered. In a same-origin child frame only the first way works: the prompt belongs to the top
  * frame, which learns of the login when it loads anew.
+ *
+ * The phishing warning (K-405) uses the same prompt: the worker pushes `kennwort-alert-open` to the
+ * top frame, which opens the prompt hidden with a new nonce; the prompt's page takes the warning
+ * and asks to be pinned on top of the page (prompt-frame.ts).
  */
+import { alertOpenMessage } from "../alert/messages.ts";
 import { newNonce } from "../fill/messages.ts";
 import {
   type CaptureRequest,
+  type PromptContentMessage,
   promptContentMessage,
   type SaveAnswer,
   type Submitted,
@@ -92,6 +98,29 @@ const trackUserActions = (now: () => number) => {
   };
 };
 
+/** What the prompt's frame does for one of the worker's messages, and the answer */
+const frameAnswer = (frame: PromptFrame, message: PromptContentMessage): { ok: boolean } => {
+  switch (message.type) {
+    case "kennwort-prompt-owns":
+      return { ok: frame.isOpen() };
+    case "kennwort-prompt-check":
+      return { ok: frame.isClear() };
+    case "kennwort-prompt-show":
+      frame.show();
+      break;
+    case "kennwort-prompt-size":
+      frame.resize(message.height);
+      break;
+    case "kennwort-prompt-close":
+      frame.close();
+      break;
+    case "kennwort-prompt-pin":
+      frame.pin();
+      break;
+  }
+  return { ok: true };
+};
+
 export const createSaveWatch = (deps: SaveWatchDeps) => {
   const shown = deps.shown ?? fieldShown;
   const actions = trackUserActions(deps.now);
@@ -103,13 +132,17 @@ export const createSaveWatch = (deps: SaveWatchDeps) => {
     watch = undefined;
   };
 
-  /** Asks the worker for a login to offer and opens the prompt, hidden, if there is one */
+  /** Opens the prompt hidden with a new nonce: its page asks the worker what it is for */
+  const openPrompt = (frame: PromptFrame) => {
+    promptNonce = newNonce(deps.random);
+    frame.open(promptNonce);
+  };
+
+  /** Asks the worker for a login or a warning to offer and opens the prompt if there is one */
   const askPending = async () => {
     if (!deps.frame) return;
     const answer = await deps.send({ type: "save-pending" });
-    if (!answer?.ok) return;
-    promptNonce = newNonce(deps.random);
-    deps.frame.open(promptNonce);
+    if (answer?.ok) openPrompt(deps.frame);
   };
 
   /** The sign-in is done once the submitted password field is gone or hidden */
@@ -175,25 +208,16 @@ export const createSaveWatch = (deps: SaveWatchDeps) => {
     /** A runtime message about the prompt; the answer goes back to the worker */
     onMessage: (raw: unknown, sender: Sender): { ok: boolean } | undefined => {
       if (sender.id !== deps.extensionId || sender.tab !== undefined) return undefined;
+      if (alertOpenMessage(raw)) {
+        if (!deps.frame) return undefined;
+        openPrompt(deps.frame);
+        return { ok: true };
+      }
       const message = promptContentMessage(raw);
       if (!message || !deps.frame || !promptNonce || message.nonce !== promptNonce)
         return undefined;
-      switch (message.type) {
-        case "kennwort-prompt-owns":
-          return { ok: deps.frame.isOpen() };
-        case "kennwort-prompt-show":
-          deps.frame.show();
-          return { ok: true };
-        case "kennwort-prompt-size":
-          deps.frame.resize(message.height);
-          return { ok: true };
-        case "kennwort-prompt-check":
-          return { ok: deps.frame.isClear() };
-        case "kennwort-prompt-close":
-          deps.frame.close();
-          promptNonce = undefined;
-          return { ok: true };
-      }
+      if (message.type === "kennwort-prompt-close") promptNonce = undefined;
+      return frameAnswer(deps.frame, message);
     },
   };
 };

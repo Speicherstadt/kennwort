@@ -42,6 +42,8 @@ describe("the messages of saving a login", () => {
       "prompt-check",
       "prompt-close",
       "prompt-unlock",
+      // K-405: the phishing warning asks to stay on top
+      "prompt-pin",
     ])
       expect(promptRequest({ type, nonce: NONCE })).toEqual({ type, nonce: NONCE });
     expect(promptRequest({ type: "prompt-size", nonce: NONCE, height: 90 })).toEqual({
@@ -64,6 +66,7 @@ describe("the messages of saving a login", () => {
       "kennwort-prompt-show",
       "kennwort-prompt-check",
       "kennwort-prompt-close",
+      "kennwort-prompt-pin",
     ])
       expect(promptContentMessage({ type, nonce: NONCE })).toEqual({ type, nonce: NONCE });
     expect(

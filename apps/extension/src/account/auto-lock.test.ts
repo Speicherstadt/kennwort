@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createSessionKeys, DEVICE_ITEM } from "../session-keys.ts";
+import { ALERT_ITEM, createSessionKeys, DEVICE_ITEM } from "../session-keys.ts";
 import { cancelLock, LOCK_ALARM, lockOnAlarm, lockStillAhead, scheduleLock } from "./auto-lock.ts";
 import { fakeAlarms, memoryArea } from "./popup.test-kit.ts";
 
@@ -23,9 +23,11 @@ describe("the automatic lock", () => {
     expect(await lockStillAhead(undefined, 0)).toBe(false);
   });
 
-  it("clears the unlocked keys when the alarm rings, and keeps the device", async () => {
+  it("clears the unlocked keys and the alert list when the alarm rings, and keeps the device", async () => {
     const area = memoryArea();
     await createSessionKeys(area).store({ "account-key": new Uint8Array(32) });
+    // K-405: the tags of the saved passwords go with the keys
+    await area.set({ [ALERT_ITEM]: { salt: "00".repeat(16), records: [] } });
     await createSessionKeys(area, DEVICE_ITEM).store({ secret: new Uint8Array(16) });
     await lockOnAlarm(area, { name: "something-else" });
     expect(await createSessionKeys(area).read()).not.toEqual({ ok: true, value: undefined });

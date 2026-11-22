@@ -2,10 +2,13 @@
  * The service worker (an event page in Firefox): it closes the session area to content scripts,
  * clears the unlocked keys when the lock alarm rings (account/auto-lock.ts), also while no popup
  * is open, answers the inline menu: which page it sits on, and a fill, which it hands only to
- * the frame it checked (fill/broker.ts, K-403), and holds a login the user submitted until the
- * save prompt takes it (save/save-broker.ts, K-404).
+ * the frame it checked (fill/broker.ts, K-403), holds a login the user submitted until the save
+ * prompt takes it (save/save-broker.ts, K-404), and compares the tag of a typed password with the
+ * alert list for the phishing warning (alert/alert-broker.ts, K-405).
  */
 import { browserAlarms, lockOnAlarm } from "./account/auto-lock.ts";
+import { type AlertContentMessage, createAlertBroker } from "./alert/alert-broker.ts";
+import { alertRequest, type Warning } from "./alert/messages.ts";
 import { createFillBroker } from "./fill/broker.ts";
 import type { FillTarget, FrameInfo } from "./fill/frames.ts";
 import { type ContentMessage, MENU_PAGE, menuRequest } from "./fill/messages.ts";
@@ -38,7 +41,7 @@ type Chrome = {
   tabs: {
     sendMessage(
       tabId: number,
-      message: ContentMessage | PromptContentMessage,
+      message: ContentMessage | PromptContentMessage | AlertContentMessage,
       options: { frameId: number; documentId?: string },
     ): Promise<unknown>;
     onRemoved: { addListener(listener: (tabId: number) => void): void };
@@ -65,7 +68,7 @@ if (chrome?.webNavigation && chrome.tabs) {
   // documentId pins the one document the frame tree showed: a frame that navigated gets nothing
   const send = (
     tabId: number,
-    message: ContentMessage | PromptContentMessage,
+    message: ContentMessage | PromptContentMessage | AlertContentMessage,
     target: FillTarget,
   ) =>
     browser.tabs.sendMessage(
@@ -93,21 +96,36 @@ if (chrome?.webNavigation && chrome.tabs) {
     openPopup,
   });
   // A submitted login lives only in this worker's memory, and only briefly (save/captures.ts)
-  const captures = createCaptures({ now: Date.now, schedule: (run, ms) => setTimeout(run, ms) });
-  browser.tabs.onRemoved.addListener((tabId) => captures.drop(tabId));
+  const held = { now: Date.now, schedule: (run: () => void, ms: number) => setTimeout(run, ms) };
+  const captures = createCaptures(held);
+  // Phishing warnings wait for the prompt the same way, and hold no secret (alert/messages.ts)
+  const warnings = createCaptures<Warning>(held);
+  const alerts = createAlertBroker({
+    extensionId: browser.runtime.id,
+    area: browserSessionArea(),
+    frames,
+    send,
+    warnings,
+  });
+  browser.tabs.onRemoved.addListener((tabId) => {
+    captures.drop(tabId);
+    alerts.drop(tabId);
+  });
   const saving = createSaveBroker({
     extensionId: browser.runtime.id,
     promptPath: `/${PROMPT_PAGE}`,
     captures,
+    warnings,
     frames,
     send,
     openPopup,
   });
   browser.runtime.onMessage.addListener((message, sender, respond) => {
-    // The menu's messages and those about saving are the only ones this worker answers
+    // The menu's messages, those about saving and the warning's are the only ones it answers
     if (menuRequest(message)) void broker(message, sender).then(respond);
     else if (captureRequest(message) || promptRequest(message))
       void saving(message, sender).then(respond);
+    else if (alertRequest(message)) void alerts(message, sender).then(respond);
     else return undefined;
     // The answer comes later
     return true;

@@ -1,6 +1,12 @@
 import { flush } from "solid-js";
 import { describe, expect, it, vi } from "vitest";
-import { DEVICE_ITEM, KEYS_ITEM, type SessionArea, STATE_ITEM } from "../session-keys.ts";
+import {
+  ALERT_ITEM,
+  DEVICE_ITEM,
+  KEYS_ITEM,
+  type SessionArea,
+  STATE_ITEM,
+} from "../session-keys.ts";
 import { LOCK_ALARM } from "./auto-lock.ts";
 import { accountServer, derive, fakeAlarms, memoryArea, PASSPHRASE } from "./popup.test-kit.ts";
 import { createPopupAccount, type PopupAccountDeps } from "./popup-account.ts";
@@ -142,9 +148,11 @@ describe("connecting and unlocking", () => {
 });
 
 describe("locking", () => {
-  it("clears AK and the token from the area and the memory, and keeps the device", async () => {
+  it("clears AK, the token and the alert list from the area and the memory, and keeps the device", async () => {
     const { account, input, area, alarms } = setup();
     await account.connect(input);
+    // K-405: the tags of the saved passwords go with the keys
+    await area.set({ [ALERT_ITEM]: { salt: "00".repeat(16), records: [] } });
     const accountKey = account.opened()?.accountKey as Uint8Array;
     await account.lock();
     flush();

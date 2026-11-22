@@ -17,6 +17,7 @@ import {
   unlockWithAccountKey,
 } from "@kennwort/core";
 import {
+  clearUnlocked,
   createSessionKeys,
   DEVICE_ITEM,
   restrictToTrustedContexts,
@@ -112,7 +113,8 @@ export const createUnlockedStore = (
       const opened = { ...opening.value, accountId: record.accountId, token: unlocked.token };
       return withKept(opened, stored);
     },
-    clearKeys: () => keys.clear(),
+    /** Locks: the keys and the alert list made from the open account (K-405) */
+    clearKeys: () => clearUnlocked(area),
     /** Another account: the device and the state it kept go */
     clearDevice: async () => {
       await state.clear();
