@@ -286,7 +286,7 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   Leiste nichts speichert. Das Passwort geht nur vom Content Script an den Service Worker, liegt nur
   in dessen Arbeitsspeicher (nie in `chrome.storage.local` oder im DOM der Seite) und verfällt nach
   kurzer Zeit (Test); Leser und Tresore mit ausstehendem Schlüsselwechsel speichern nichts.
-- [ ] **K-405 Phishing-Warnung** – Warnung beim Eintippen eines gespeicherten Passworts auf fremder
+- [x] **K-405 Phishing-Warnung** – Warnung beim Eintippen eines gespeicherten Passworts auf fremder
   Domain.
   Fertig, wenn: Playwright mit geladener Extension gegen den e2e-Server warnt, sobald jemand das
   gespeicherte Passwort eines Eintrags auf einer ähnlich aussehenden Domain selbst eintippt und das
