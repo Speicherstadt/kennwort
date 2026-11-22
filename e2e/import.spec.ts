@@ -141,7 +141,9 @@ test.describe("import", { tag: "@phone" }, () => {
     await expect(page.getByRole("heading", { level: 1, name: "Werkstatt-WLAN" })).toBeVisible();
   });
 
-  test("Jonas opens the company's KeePassXC database with password and key file", async ({
+  // A copy of the KeePassXC database with a cheap KDF (Argon2id, 1 MiB): KeePassXC's own AES-KDF
+  // of a second per attempt takes several in a browser on CI; the Vitest tests open that one
+  test("Jonas opens the company's KeePass database with password and key file", async ({
     page,
   }) => {
     await setUpCompany(page);
@@ -151,7 +153,7 @@ test.describe("import", { tag: "@phone" }, () => {
     await page.getByRole("button", { name: "KeePass / KeePassXC (KDBX)", exact: true }).click();
     await page
       .getByLabel("Datenbank (.kdbx) wählen")
-      .setInputFiles(coreFixture("keepassxc-keyfile.kdbx"));
+      .setInputFiles(coreFixture("kdbx-keyfile-v1.kdbx"));
     const password = page.getByLabel("Master-Passwort");
     await password.fill("Weber-Haustechnik-2026");
     await axe(page);
@@ -164,13 +166,13 @@ test.describe("import", { tag: "@phone" }, () => {
 
     await page
       .getByLabel("Datenbank (.kdbx) wählen")
-      .setInputFiles(coreFixture("keepassxc-keyfile.kdbx"));
+      .setInputFiles(coreFixture("kdbx-keyfile-v1.kdbx"));
     await page
       .getByLabel("Schlüsseldatei (nur wenn die Datenbank eine hat)")
-      .setInputFiles(coreFixture("keepassxc-keyfile.keyx"));
+      .setInputFiles(coreFixture("kdbx-key-v1.key"));
     await password.fill("Weber-Haustechnik-2026");
     await page.getByRole("button", { name: "Datenbank öffnen" }).click();
-    await expect(page.getByText("4 Einträge in der Datei")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText("4 Einträge in der Datei")).toBeVisible();
     await expect(rows(page)).toContainText("Wärmepumpen-Portal");
     await expect(rows(page)).not.toContainText("Gelöschter Zugang");
     await expect(rows(page)).not.toContainText("Bilanz#2026-Anna");
