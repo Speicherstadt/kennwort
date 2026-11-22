@@ -4,7 +4,7 @@
  * it held wrapped anew, signed by the account's previous Ed25519 key (F-11). The server replaces
  * all of it in one transaction and keeps nothing the old keys open or signed: the old boxes and
  * wrapped vault keys, the recovery deposit, the root and recovery keys wrapped to the old bundle,
- * shares and emergency grants to and by it, and every other session (Bitwarden and 1Password sign the other devices
+ * shares and emergency grants to and by it, every passkey and every other session (Bitwarden and 1Password sign the other devices
  * out as well). The old certificate goes to the history, for the logs it signed; the new bundle
  * counts once an owner or admin certifies it after comparing its code with the person.
  */
@@ -16,6 +16,7 @@ import { z } from "zod";
 import type { Db } from "../db/database.ts";
 import {
   accountKeys,
+  authPasskey,
   authSession,
   emergencyGrants,
   emergencyRevocations,
@@ -105,6 +106,9 @@ const dropOld = (tx: Pick<Db, "delete">, accountId: string, sessionId: string | 
   tx.delete(authSession)
     .where(and(eq(authSession.userId, accountId), ne(authSession.id, sessionId ?? "")))
     .run();
+  // A passkey gives a session too, and whoever had the kit could add one with a session of the old
+  // keys; the person adds hers anew (found in review)
+  tx.delete(authPasskey).where(eq(authPasskey.userId, accountId)).run();
 };
 
 /** Everything at once, only on top of the state counter the server holds */

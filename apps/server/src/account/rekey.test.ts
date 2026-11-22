@@ -21,6 +21,7 @@ import {
 import { eq } from "drizzle-orm";
 import {
   accountKeys,
+  authPasskey,
   authSession,
   emergencyGrants,
   entryShares,
@@ -142,6 +143,29 @@ describe("PUT /api/account/rekey", () => {
       .where(eq(authSession.userId, w.annaIdText))
       .all();
     expect(sessions).toHaveLength(1);
+  });
+
+  it("drops her passkeys: one registered with a session from the old kit signs in no more", async () => {
+    // Found in review: whoever had the kit signed in with the old Recovery Key and added a passkey;
+    // it would give a session after the renewal, against which the window before the new
+    // certificate (P-12) is only safe because the old keys have no session left
+    const { w, rekeyed, send } = await renewal();
+    w.o.setup.db
+      .insert(authPasskey)
+      .values({
+        id: "pk-thief",
+        publicKey: "AA",
+        userId: w.annaIdText,
+        credentialID: "thief",
+        counter: 0,
+        deviceType: "singleDevice",
+        backedUp: false,
+      })
+      .run();
+    await send(rekeyed());
+    expect(
+      w.o.setup.db.select().from(authPasskey).where(eq(authPasskey.userId, w.annaIdText)).all(),
+    ).toEqual([]);
   });
 
   it("drops her recovery deposit and the shares to and by her: old keys open or signed them", async () => {

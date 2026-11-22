@@ -180,7 +180,9 @@ alles, was jemand mit ihnen kopiert hat, nichts mehr, was ab jetzt geschrieben w
 Was sonst passiert:
 
 - Deine anderen Geräte werden abgemeldet. Verbinde sie neu über **Mit einem anderen Gerät
-  verbinden** oder mit dem neuen Recovery-Kit; der alte Secret Key passt nicht mehr.
+  verbinden** oder mit dem neuen Recovery-Kit; der alte Secret Key passt nicht mehr. Auch Passkeys,
+  die zu deinem Konto angemeldet sind, werden gelöscht: Wer das alte Kit hatte, könnte einen eigenen
+  angelegt haben.
 - Freigaben einzelner Einträge und Notfallzugriffe, die du gegeben hast, gelten nicht mehr; gib sie
   neu. Wer mit dem alten Kit deine alten Schlüssel hat, könnte sonst in deinem Namen welche fälschen.
   Ebenso enden Freigaben und Notfallzugriffe an dich; die anderen geben sie dir neu.
