@@ -19,7 +19,8 @@ und die Schritte für Menschen am Ende erledigt sind.
    einen fehlschlagenden Test, Befunde fixen, bis keine mehr kommen. Alles andere geht ohne Review.
 5. **CI grün → selbst mergen** (Squash), den Punkt hier im selben Pull Request abhaken. Der Loop
    wartet nie auf einen Menschen, auch nicht bei `packages/crypto`: Dort gilt statt einer Freigabe
-   ein strengeres Gate – Testvektoren, Property-Tests und Mutation-Tests müssen grün sein.
+   ein strengeres Gate – Testvektoren und Property-Tests in CI, Mutation-Tests zu 100 % jede Nacht
+   (CI bleibt unter fünf Minuten); ein roter nächtlicher Lauf wird zuerst behoben.
 6. **Nicht hängen bleiben**: Scheitert ein Punkt dreimal, trägt der Loop ihn mit Grund unter
    „Zurückgestellt“ ein und macht mit dem nächsten Punkt weiter, der nicht davon abhängt. Am Ende
    kommt er auf die zurückgestellten Punkte zurück. Was nur ein Mensch erledigen kann, steht unten
