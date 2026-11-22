@@ -54,19 +54,46 @@ const secondsIn = (text: string | undefined): number | undefined => {
 };
 
 /**
- * The release's place in the order of releases, in seconds: SOURCE_DATE_EPOCH, else the time of the
- * last commit (`commit`, the output of `git log -1 --format=%ct`), else the build's own time. The
- * commit's time makes two builds of the same commit sign the same release.json (K-408, reproducible
- * builds); releases come from successive commits on main, so it still grows with every release.
+ * The sequence of the last of these commits, from their committer times oldest first: each commit
+ * gets its own time, but at least one more than the commit before. Committer time alone can stand
+ * still or go backwards from one commit to the next (two commits in one second, a clock behind, a
+ * fast-forward of a commit made earlier); the worker would then never take the newer release, or a
+ * worker installed fresh on it would take the older one as an update (P-16 rollback protection).
+ */
+export const sequenceAlong = (times: readonly number[]): number | undefined =>
+  times.reduce<number | undefined>(
+    (before, time) => (before === undefined ? time : Math.max(time, before + 1)),
+    undefined,
+  );
+
+/** The output of `git log --first-parent --reverse --format=%ct`, one time per line */
+const historyIn = (text: string | undefined): number[] | undefined => {
+  const times = (text ?? "")
+    .split("\n")
+    .filter((line) => line.trim() !== "")
+    .map(secondsIn);
+  return times.length > 0 && times.every((time): time is number => time !== undefined)
+    ? times
+    : undefined;
+};
+
+/**
+ * The release's place in the order of releases, in seconds: SOURCE_DATE_EPOCH, else from the first-
+ * parent history up to the last commit (`history`, the output of `git log --first-parent --reverse
+ * --format=%ct`, see sequenceAlong), else the build's own time. The history makes two builds of the
+ * same commit sign the same release.json (K-408, reproducible builds) and the number grow with every
+ * commit on main, whatever its committer time says.
  */
 export const sequenceOf = (
   env: Env,
-  { commit, nowMs }: { commit: string | undefined; nowMs: number },
+  { history, nowMs }: { history: string | undefined; nowMs: number },
 ): Sequence => {
   const given = secondsIn(env.SOURCE_DATE_EPOCH);
   if (given !== undefined) return { sequence: given, source: "SOURCE_DATE_EPOCH" };
-  const committed = secondsIn(commit);
-  if (committed !== undefined) return { sequence: committed, source: "commit" };
+  const times = historyIn(history);
+  const committed = times && sequenceAlong(times);
+  if (committed !== undefined && Number.isSafeInteger(committed))
+    return { sequence: committed, source: "commit" };
   return { sequence: Math.floor(nowMs / 1000), source: "clock" };
 };
 

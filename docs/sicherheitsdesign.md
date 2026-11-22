@@ -1752,10 +1752,15 @@ sw.js         = der Service Worker, der öffentliche Release-Schlüssel eingebau
 
 - `files` nennt jede Datei des Builds außer diesen dreien, auch `index.html`, das Web-App-Manifest
   und die Icons. `version` sind die ersten 16 Hex-Zeichen des SHA-256 über die Liste der Hashes,
-  derselbe Inhalt ergibt also dieselbe Version. `sequence` ist `SOURCE_DATE_EPOCH`, sonst die
-  Zeit des letzten Commits (`git log -1 --format=%ct`), außerhalb eines Git-Checkouts die Bauzeit,
-  jeweils in Sekunden. Releases kommen aus aufeinanderfolgenden Commits auf `main`, die Zahl
-  wächst also mit jedem Release; derselbe Commit ergibt dieselbe Zahl (siehe „Nachbauen“ unten).
+  derselbe Inhalt ergibt also dieselbe Version. `sequence` ist `SOURCE_DATE_EPOCH`, sonst folgt
+  sie der Commit-Zeit entlang der Geschichte (`git log --first-parent --reverse --format=%ct`):
+  Jeder Commit bekommt seine Commit-Zeit, aber mindestens eins mehr als der Commit davor;
+  außerhalb eines Git-Checkouts die Bauzeit, jeweils in Sekunden. Die Commit-Zeit allein kann von
+  einem Commit zum nächsten stehen bleiben oder zurückgehen (zwei Commits in einer Sekunde, eine
+  nachgehende Uhr, ein später übernommener älterer Commit); dann nähme der Service Worker das neue
+  Release nie, und einer, der frisch auf dem neuen installiert wurde, nähme das alte als Update.
+  So wächst die Zahl mit jedem Commit auf `main`, und derselbe Commit ergibt in einem vollständigen
+  Klon dieselbe Zahl (siehe „Nachbauen“ unten).
 - Signiert werden genau die Bytes von `release.json`; der Service Worker prüft die Signatur, bevor
   er die Datei überhaupt liest.
 - `sw.js` baut Bun außerhalb von Vite und ohne Hash im Namen. Es bleibt Byte für Byte gleich,
@@ -1851,8 +1856,8 @@ Verglichen wird alles, was `bun run build` baut:
 | `apps/extension/dist/chrome`, `firefox`, `safari` | ja (ZIP-Dateien baut der Build keine; verpackt wird für die Stores von Hand) |
 | `apps/server/dist/kennwort-server` (`bun build --compile`) | ja, bei derselben Bun-Version und Plattform; das Binary enthält die Laufzeit von Bun |
 
-Was sonst von Build zu Build wechseln könnte, ist ausgeschlossen: Die Folgenummer kommt aus dem
-Commit statt aus der Uhr, Ed25519 signiert ohne Zufall (RFC 8032), dasselbe Manifest mit demselben
+Was sonst von Build zu Build wechseln könnte, ist ausgeschlossen: Die Folgenummer kommt aus der
+Geschichte des Commits statt aus der Uhr, Ed25519 signiert ohne Zufall (RFC 8032), dasselbe Manifest mit demselben
 Schlüssel ergibt also dieselbe `release.sig`; `release.json` sortiert die Dateien, Vite und Bun
 benennen Dateien nach ihrem Inhalt und schreiben keine absoluten Pfade und keine Bauzeit. CI baut im
 `unit`-Job nach `bun run build` ein zweites Mal und vergleicht (`bun run reproducible --reuse`); ein

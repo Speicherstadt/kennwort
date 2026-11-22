@@ -335,7 +335,7 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   abweichenden Dateien (bei Text mit der ersten abweichenden Zeile) fehlschlägt; die Web-App samt
   `release.json` und `release.sig`, die Extension für Chrome, Firefox und Safari und der
   kompilierte Server Byte für Byte gleich sind; die Folgenummer des Release-Manifests ohne
-  `SOURCE_DATE_EPOCH` die Zeit des letzten Commits ist statt der Bauzeit; `--release` die Web-App
+  `SOURCE_DATE_EPOCH` aus der Commit-Zeit entlang der Geschichte kommt statt aus der Bauzeit, mit jedem Commit wächst; `--release` die Web-App
   mit einem veröffentlichten `release.json` vergleicht (Version und jeder Hash); der `unit`-Job in
   CI nach `bun run build` mit `bun run reproducible --reuse` einen zweiten Build vergleicht, ohne
   neuen Job; Vitest die reinen Teile prüft und `docs/sicherheitsdesign.md` (P-16), `docs/plan.md`
