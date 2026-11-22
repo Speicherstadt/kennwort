@@ -225,15 +225,16 @@ bindung(schlüssel, zweck, kontext…) = kdf(schlüssel, leer, "kennwort/key-com
 
 Die Bindung verrät den Schlüssel nicht (HKDF ist eine Einwegfunktion) und steht im signierten
 Log-Eintrag, in der signierten Freigabe, im signierten Notfall-Paket oder in der signierten
-Firmen-Recovery-Hinterlegung. Ein Paket ohne passende signierte Bindung wird verworfen (E-16).
+Firmen-Recovery-Hinterlegung (F-08). Ein Paket ohne passende signierte Bindung wird verworfen (E-16).
 Zwei Fälle prüfen anders:
 
 - **Private Schlüssel** (Firmen-Wurzelschlüssel, Firmen-Recovery-Schlüssel): Der öffentliche
   Schlüssel ist die Bindung seines privaten. Der Client leitet ihn aus dem entpackten privaten
   Schlüssel ab und vergleicht ihn mit dem gemerkten Wurzel-Fingerabdruck aus dem Schlüsselblock bzw.
   mit dem Fingerabdruck des Recovery-Schlüssels in der vom Wurzelschlüssel signierten Richtlinie.
-- **Das Paket an ein neues Gerät** ([P-04](#p-04-neues-gerat)): Dort prüfen der QR-Code und der
-  Vergleichscode auf beiden Geräten, wer verpackt hat.
+- **Das Paket an ein neues Gerät** ([P-04](#p-04-neues-gerat)), auch das der Firmen-Recovery
+  ([P-13](#p-13-firmen-recovery)): Dort prüfen der QR-Code und der Vergleichscode auf beiden Geräten,
+  wer verpackt hat.
 
 ### F-03 Signatur v1
 
@@ -279,6 +280,25 @@ signatur   = F-03(wurzel, "policy", richtlinie)
 
 Die Version zählt von 1 an hoch; ohne Richtlinie gilt die Standardregel (zehn Minuten,
 Firmen-Recovery aus). Sperren nach 1 bis 60 Minuten. Der Fingerabdruck steht nur bei Recovery an.
+
+### F-08 Firmen-Recovery-Hinterlegung v1
+
+```text
+paket    = F-02(recovery-schlüssel, AK, zweck "company", kontext konto-ID)
+bindung  = bindung(AK, "company", konto-ID)
+signatur = F-03(konto, "company-deposit",
+                enc("kennwort/deposit/v1", firmen-ID, konto-ID, fp(recovery-schlüssel), bindung, paket))
+```
+
+Die Signatur des Kontos deckt Firma, Konto, den Fingerabdruck des Recovery-Schlüssels, die Bindung
+und das Paket selbst: Eine Hinterlegung für einen früheren Schlüssel, ein vom Server getauschtes
+Paket oder eine, die der Server ganz erfunden hat, besteht die Prüfung weder beim Inhaber noch beim
+Konto selbst. Umgesetzt in `packages/crypto/src/company-recovery.ts`; die Testvektoren in
+`packages/crypto/vectors/deposit-v1.json` entstehen ohne den Code, den sie prüfen (HKDF und
+SHA-512/256 aus `node:crypto`, AEAD und Ed25519 aus libsodium, X-Wing gegen die Vektoren des Entwurfs
+geprüft). Die beiden anderen Verpackungen der Firmen-Recovery – der Recovery-Schlüssel an einen
+Inhaber (Zweck `company-recovery-key`) und AK an das neue Gerät (Zweck `recovery-device`) – sind
+F-02 und stehen mit eigenen Vektoren in `wrap-v1.json`.
 
 ## Schlüsselhierarchie
 
@@ -654,8 +674,8 @@ durchgelassen hat.
   besteht, ändert nichts: Der Client bleibt bei der letzten gültigen und zeigt eine Warnung. Ihre
   Sperrzeit steht dafür mit der Version im Kontozustand; auch nach einem Neuladen oder auf einem
   anderen Gerät kann der Server sie nicht verlängern, indem er die Richtlinie weglässt.
-  Den Schalter für Firmen-Recovery bringt K-307 mit dem Firmen-Recovery-Schlüssel; das Format trägt
-  ihn schon.
+  Mit `recovery = 1` nennt sie den Fingerabdruck des Firmen-Recovery-Schlüssels
+  ([P-13](#p-13-firmen-recovery)); nur an diesen Schlüssel hinterlegt ein Client.
 - Der gemerkte Fingerabdruck steht im Schlüsselblock unter AK
   ([Schlüsselhierarchie](#schlusselhierarchie)), nicht nur auf einem Gerät: Jedes Gerät des Kontos
   prüft gegen ihn, auch eines, das mit Passphrase, Recovery-Kit oder Firmen-Recovery entsperrt.
@@ -1145,46 +1165,95 @@ bisher; neu ist nur der Zweck `account-rekey` der Signatur, mit eigenen Testvekt
 
 ### P-13 Firmen-Recovery
 
-- Standard für Firmen, pro Firma abschaltbar (Projektplan, Entscheidungen). Der Firmen-Recovery-
-  Schlüssel ist ein X-Wing-Schlüsselpaar; der private Teil liegt an die Inhaber verpackt.
-- Der Client verpackt AK an den Firmen-Recovery-Schlüssel (F-02) nur, wenn die Firmen-Richtlinie
-  vom Wurzelschlüssel signiert ist, Firmen-Recovery dort an ist und der Schlüssel dem dort genannten
-  Fingerabdruck entspricht. Er signiert die Hinterlegung mit seinem zertifizierten Ed25519-Schlüssel
-  (F-03, Zweck `company-recovery`, mit `bindung(AK, "company", konto-ID)`).
-- Bevor der Inhaber einen hinterlegten AK verwendet, prüft sein Client: Die Signatur stammt vom
-  zertifizierten Bündel des Mitarbeiters, AK passt zur Bindung, AK entschlüsselt den Schlüsselblock
-  des Mitarbeiters, und dessen Wurzel-Fingerabdruck und öffentliche Schlüssel stimmen mit dem
-  eigenen Wurzelschlüssel und dem zertifizierten Bündel überein. Ein AK, den der Server selbst
-  verpackt hat, besteht keine dieser Prüfungen.
-- Wiederherstellen: Der Inhaber entschlüsselt AK, verpackt ihn an ein neues Gerät des Mitarbeiters
-  ([P-04](#p-04-neues-gerat)) und signiert einen Audit-Eintrag; statt des eigenen Kontozustands
-  trägt das Paket den Hash des Kontozustands des Mitarbeiters, den der Inhaber mit dessen AK
-  entschlüsselt hat. Den Wurzelschlüssel liest das neue Gerät aus dem Schlüsselblock des
-  Mitarbeiters. Der Mitarbeiter legt danach neue Entsperr-Wege an.
+Standard für Firmen, pro Firma abschaltbar (Projektplan, Entscheidungen): Wer Passphrase,
+Recovery-Kit und Geräte verloren hat, bekommt über einen Inhaber wieder Zugang. Vorbild sind die
+„Account Recovery“ von Bitwarden (der Schlüssel des Benutzers an den öffentlichen Schlüssel der
+Organisation verpackt) und die Account Recovery von Passbolt (eine Anfrage, die ein Admin freigibt);
+anders als dort prüfen die Clients jeden Schritt gegen die vom Wurzelschlüssel signierte
+Richtlinie, nicht gegen das Wort des Servers. Die Verpackung ist F-02 (X-Wing als KEM wie im
+Basismodus von RFC 9180, mit Bindung an den Empfänger).
 
-Ein Server, der eine Wiederherstellung mit eigenem Schlüssel unterschiebt, scheitert an der
-fehlenden Signatur der Richtlinie.
+**Schlüssel anlegen, Schalter in der Richtlinie.** Der Client eines Inhabers erzeugt ein
+X-Wing-Schlüsselpaar, verpackt den privaten Teil an jeden zertifizierten Inhaber (F-02, Zweck
+`company-recovery-key`, Kontext Firmen-ID und Konto-ID) und signiert die nächste Richtlinie (F-07)
+mit `recovery = 1` und dem Fingerabdruck des Schlüssels (F-04). `PUT /api/company/recovery-key`
+nimmt alle drei in einem Schritt, nur von einem Inhaber, nur mit Paketen für genau die aktuellen
+Inhaber, nur mit einer neueren, vom Wurzelschlüssel signierten Richtlinie, deren Fingerabdruck der
+mitgeschickte öffentliche Schlüssel hat; `GET /api/company` gibt den öffentlichen Teil heraus. Ein
+Inhaber nimmt seinen Teil (`GET /api/account/recovery-grant`) nur, wenn dessen öffentlicher Teil den
+Fingerabdruck der gültigen Richtlinie hat; einen Schlüssel, den der Server selbst verpackt hat,
+lehnt er ab. Ausschalten ist eine neue Richtlinie mit `recovery = 0` (`PUT /api/company/policy`);
+dann löscht der Server Schlüssel, Pakete und alle Hinterlegungen. Eine Richtlinie mit Recovery an
+nimmt diese Route nur mit dem Fingerabdruck des Schlüssels, den der Server schon hält (etwa für eine
+neue Sperrzeit). Wird jemand Inhaber, verpackt der Client des Inhabers, der die Rolle gibt, den
+privaten Teil mit (`recoveryGrant` an `PUT /api/members/:id/role`); der Server verlangt das, solange
+die Firma einen Recovery-Schlüssel hat, und löscht das Paket, wenn jemand kein Inhaber mehr ist oder
+geht.
 
-Die Bausteine stehen in `packages/crypto/src/company-recovery.ts`. Der Plan für den Rest
-(K-307 Teil c):
+**Hinterlegen (F-08).** Jedes Konto hält seine Hinterlegung beim Öffnen selbst aktuell: Es lädt die
+Richtlinie, prüft sie unter dem gemerkten Wurzelschlüssel und gegen die höchste gesehene Version
+(P-07) und verpackt AK nur an den öffentlichen Schlüssel, dessen Fingerabdruck die Richtlinie nennt
+(`depositFor` in `packages/core/src/membership/recovery-deposit.ts`). Liefert der Server einen
+anderen Schlüssel oder keinen, entsteht keine Hinterlegung, und die Seite „Mitglieder“ sagt das.
+Die Hinterlegung, die der Server hält (`GET /api/account/recovery-deposit`), prüft der Client
+selbst: von ihm signiert, für den Fingerabdruck in Kraft, mit der Bindung an seinen AK. Eine ältere
+für einen früheren Schlüssel, eine, die der Server erfunden hat, oder keine ersetzt er
+(`PUT /api/account/recovery-deposit`; der Server prüft die Signatur mit dem Ed25519-Schlüssel des
+Kontos und den Fingerabdruck des Schlüssels, den er hält). Die Extension hinterlegt nicht; das macht
+die Web-App beim nächsten Entsperren.
 
-- **Schlüssel anlegen**: Der Client eines Inhabers erzeugt das X-Wing-Paar, verpackt den privaten
-  Teil an jeden Inhaber (F-02, Zweck `company-recovery-key`, Kontext Firmen-ID und Konto-ID) und
-  signiert eine neue Richtlinie (F-07) mit `recovery = 1` und dem Fingerabdruck. Der Server legt
-  den öffentlichen Schlüssel und die Pakete ab (`PUT /api/company/recovery-key`, nur Inhaber); ein
-  Inhaber nimmt den privaten Teil nur, wenn sein öffentlicher Teil den Fingerabdruck der gültigen
-  Richtlinie hat. Einen neuen Inhaber bekommt ihn verpackt wie den Wurzelschlüssel (P-07).
-- **Hinterlegen**: Jedes Konto hinterlegt AK beim Entsperren, sobald die gültige Richtlinie
-  Firmen-Recovery verlangt und noch keine Hinterlegung zu diesem Fingerabdruck besteht
-  (`PUT /api/account/recovery-deposit`); schaltet die Richtlinie Firmen-Recovery aus, löscht der
-  Client die Hinterlegung, und der Server löscht alle.
-- **Neuer Schlüssel, wenn ein Inhaber geht**: Er hatte den privaten Recovery-Schlüssel und damit
-  jeden hinterlegten AK. Der Client eines verbleibenden Inhabers erzeugt einen neuen Schlüssel und
-  eine neue Richtlinie; jedes Konto hinterlegt danach neu. Die alten Hinterlegungen löscht der
-  Server; wer sie kopiert hat, öffnet mit ihnen nur die alten AK – darum gilt für ein Konto, dessen
-  AK der Gehende öffnen konnte, dasselbe wie für ein Kit in fremden Händen (P-12, Teil e), wenn der
-  Inhaber nicht ehrlich ging.
-- **Wiederherstellen** wie oben, im Audit-Log signiert (`recovery`).
+**Wiederherstellen.** Das neue Gerät des Mitarbeiters („Alles verloren? Über die Firma
+wiederherstellen“) startet eine Kopplung wie in P-04 und zeigt den QR-Code mit Kopplungs-ID,
+Fingerabdruck des Einmal-Schlüssels und dem Kopplungs-Geheimnis `r`. Der Inhaber öffnet den Link auf
+„Gerät hinzufügen“ und wählt unter „Gerät für“ das Mitglied. Sein Client
+
+1. nimmt den Einmal-Schlüssel nur mit dem Fingerabdruck aus dem QR-Code,
+2. öffnet seinen Recovery-Schlüssel (nur mit dem Fingerabdruck der gültigen Richtlinie),
+3. lädt Hinterlegung, versiegelten Schlüsselblock und Kontozustand des Mitglieds
+   (`GET /api/members/:id/recovery`, nur für Inhaber) und prüft: Die Signatur stammt vom
+   zertifizierten Bündel des Mitglieds und nennt Firma, Konto und den Fingerabdruck in Kraft, AK passt
+   zur Bindung, AK öffnet den Schlüsselblock, dessen Schlüssel dem Zertifikat und dessen
+   Wurzel-Fingerabdruck dem eigenen gleichen, und AK öffnet den Kontozustand unter dem gelieferten
+   Zähler (`approveRecovery`),
+4. verpackt AK, Konto-ID und den Hash des versiegelten Kontozustands an den Einmal-Schlüssel
+   (F-02, Zweck `recovery-device`, Kontext `r`; ohne Secret Key, den der Inhaber nie kannte) und
+   antwortet (`PUT /api/pairings/:id` mit `accountId`; der Server nimmt das nur von einem Inhaber,
+   für ein Mitglied seiner Firma mit Hinterlegung und nur in der Größe eines Recovery-Pakets).
+
+Beide Geräte zeigen den Vergleichscode aus P-04. Erst nach „Code stimmt“ auf beiden signiert der
+Inhaber das Ereignis `recovery` ins Audit-Log (P-20, Gegenstand Konto-ID und Kopplungs-ID) und
+bestätigt; nur wer geantwortet hat, kann bestätigen, und die nächste Abfrage gibt dem neuen Gerät
+eine Sitzung für das Mitglied. Das neue Gerät öffnet nur ein Paket, das an `r` gebunden ist – ein
+AK, den der Server selbst an den Einmal-Schlüssel verpackt, scheitert. Dann prüft es: Konto-ID und
+Hash des Kontozustands passen zu dem, was der Server liefert, AK öffnet Schlüsselblock und
+Kontozustand, und der Wurzelschlüssel der Firma hat den Fingerabdruck aus dem Schlüsselblock und hat
+genau dessen Schlüssel für dieses Konto zertifiziert (`checkRecovered`). Danach wählt der
+Mitarbeiter eine neue Passphrase; das Gerät erzeugt einen neuen Secret Key und einen neuen Recovery
+Key und ersetzt die Entsperr-Wege wie in P-12 (`PUT /api/account/unlock`), bewiesen mit dem
+Ed25519-Schlüssel des Kontos aus dem Schlüsselblock (Zweck `unlock-renewal-account`), da weder
+Passphrase noch Recovery Key da sind. Das neue Recovery-Kit wird gezeigt. AK bleibt derselbe; der
+Inhaber kannte ihn ohnehin (das ist der Sinn der Hinterlegung).
+
+**Neuer Schlüssel, wenn ein Inhaber geht.** Er hatte den privaten Recovery-Schlüssel und damit jeden
+hinterlegten AK. Entfernt ein Inhaber einen anderen Inhaber aus der Firma oder nimmt ihm die Rolle,
+erzeugt sein Client sofort einen neuen Schlüssel und eine neue Richtlinie (auch von Hand: „Neuen
+Recovery-Schlüssel anlegen“); der Server löscht alle Pakete und Hinterlegungen des alten, und jedes
+Konto hinterlegt beim nächsten Öffnen neu. Wer die alten kopiert hat, öffnet mit ihnen nur die
+alten AK, die aber gültig bleiben: Für ein Konto, dessen AK der Gehende öffnen konnte, gilt dasselbe
+wie für ein Kit in fremden Händen (P-12, K-307 Teil e), wenn der Inhaber nicht ehrlich ging. Der
+Wurzelschlüssel selbst wechselt erst mit Teil f (P-07).
+
+Umgesetzt in `packages/crypto/src/company-recovery.ts` (F-08), `packages/core/src/membership/recovery-key.ts`,
+`recovery-deposit.ts` und `recovery-wire.ts`, `packages/core/src/account/pairing.ts` (Recovery-Paket),
+`apps/server/src/account/company-recovery.ts`, `apps/server/src/auth/pairings.ts`,
+`packages/client/src/policy/recovery.ts` und in der Web-App in `apps/web/src/recovery/`,
+`apps/web/src/policy/recovery-section.tsx` und `apps/web/src/account/recover-company-page.tsx`.
+
+Restrisiko: Wer einmal Inhaber war, kann die AK, die er damals öffnen konnte, behalten. Das neue
+Gerät hat beim Wiederherstellen nichts Eigenes, gegen das es prüfen könnte: Es vertraut dem
+Vergleichscode und dem Inhaber, dem es den QR-Code zeigt. Einen Server, der die Hinterlegung
+löscht oder verweigert, erkennt der Client und hinterlegt neu, kann ihn aber nicht zwingen, sie zu
+behalten.
 
 **Wehrt ab:** E-01, E-02, E-10.
 

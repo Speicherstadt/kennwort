@@ -160,6 +160,45 @@ Auf deinem bekannten Gerät bleibt der Secret Key gleich, deine anderen Geräte 
 der neuen Passphrase weiter. Auf einem fremden Gerät bekommst du einen neuen Secret Key; deine
 anderen Geräte brauchen ihn dann zusammen mit der neuen Passphrase.
 
+## Firmen-Recovery
+
+Hast du Passphrase, Recovery-Kit und Geräte zugleich verloren, holt dich ein Inhaber deiner Firma
+zurück – wenn die Firma Firmen-Recovery eingeschaltet hat.
+
+**Einschalten (Inhaber).** Unter **Einstellungen → Mitglieder → Firmen-Recovery** schaltet ein
+Inhaber sie mit **Firmen-Recovery einschalten** ein. Sein Gerät erzeugt dafür einen
+Recovery-Schlüssel, gibt ihn verschlüsselt jedem Inhaber und nennt ihn in den signierten
+Firmen-Richtlinien. **Firmen-Recovery ausschalten** löscht Schlüssel und alle Hinterlegungen auf dem
+Server.
+
+**Hinterlegen (alle).** Ist sie an, hinterlegt jedes Gerät beim Entsperren den Schlüssel deines
+Kontos verschlüsselt für den Recovery-Schlüssel, und nur für den, den die signierten Richtlinien
+nennen. Unter **Firmen-Recovery** steht dann **Dein Zugang ist hinterlegt.** Meldet Kennwort dort,
+der Server liefere einen anderen Schlüssel, wurde nichts hinterlegt: Sag einem Inhaber Bescheid.
+
+**Wiederherstellen.**
+
+1. Wähle auf einem neuen Gerät **Alles verloren? Über die Firma wiederherstellen**. Es zeigt einen
+   QR-Code und darunter einen Link.
+2. Ein Inhaber scannt den Code mit seinem entsperrten Gerät oder fügt den Link unter
+   **Einstellungen → Gerät hinzufügen** ein, wählt unter **Gerät für** „*Name* wiederherstellen“ und
+   tippt **Verbinden**.
+3. Beide Geräte zeigen einen sechsstelligen Code. Vergleicht ihn – am besten nebeneinander oder am
+   Telefon. Nur wenn er gleich ist: auf deinem Gerät **Code stimmt**, beim Inhaber
+   **Code stimmt – Zugang wiederherstellen**.
+4. Wähle eine neue Passphrase. Du bekommst einen neuen Secret Key und ein neues Recovery-Kit;
+   speichere es wie beim Anlegen.
+
+Dein Gerät prüft, dass es wirklich dein Konto bekommt: vom Wurzelschlüssel der Firma bestätigt und
+mit genau dem Stand, den der Inhaber gesehen hat. Einen Zugang, den der Server selbst verpackt,
+lehnt es ab. Jede Wiederherstellung steht signiert im Audit-Log.
+
+**Wenn ein Inhaber geht.** Er hatte den Recovery-Schlüssel. Entfernt ein Inhaber einen anderen
+Inhaber oder nimmt ihm die Rolle, legt Kennwort sofort einen neuen Recovery-Schlüssel an, und alle
+hinterlegen beim nächsten Entsperren neu. Von Hand geht das mit **Neuen Recovery-Schlüssel
+anlegen**. Was der Gehende schon öffnen konnte, schützt erst ein Wechsel des Account Key (ein
+späterer Teil von K-307).
+
 ## Automatisch sperren
 
 Kennwort sperrt sich nach zehn Minuten ohne Tastendruck oder Klick, und sofort mit **Sperren** in der

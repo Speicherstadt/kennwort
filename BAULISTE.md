@@ -222,7 +222,7 @@ und die Schritte für Menschen am Ende erledigt sind.
     Markierung, auch wenn der Server ihn vor dem Wechsel versteckt hat, andere Clients schreiben nicht, solange einer aussteht, und warnen. Fertig, wenn:
     Entfernen aus Firma und Tresor, die Markierung und der Bericht als Playwright-Test desktop und
     `@phone` laufen und die entfernte Person danach keinen neuen Eintrag öffnet.
-  - [ ] Teil c: Firmen-Recovery (P-13) – Schlüssel anlegen und an Inhaber verpacken, Schalter in
+  - [x] Teil c: Firmen-Recovery (P-13) – Schlüssel anlegen und an Inhaber verpacken, Schalter in
     der Richtlinie (F-07), Hinterlegung jedes Kontos, Wiederherstellen über ein neues Gerät, neuer
     Schlüssel, wenn ein Inhaber geht. Fertig, wenn: eine Hinterlegung an einen Schlüssel, den die
     Richtlinie nicht nennt, nie entsteht, ein vom Server verpackter AK abgelehnt wird (Test gegen
