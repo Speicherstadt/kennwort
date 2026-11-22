@@ -74,6 +74,23 @@ describe("the passkey channel", () => {
     expect(await asked).toBeUndefined();
   });
 
+  // The page's world is the page's: a sandboxed document posts the request itself. The content
+  // script sees the document's opaque origin and leaves the ceremony to the browser, which refuses it
+  it("leaves a document with an opaque origin to the browser without asking the worker", async () => {
+    const send = vi.fn(async () => ({ outcome: "error", name: "SecurityError" }));
+    const win = {
+      origin: "null",
+      postMessage: vi.fn((data: unknown, _origin: string, ports: MessagePort[]) => {
+        bridge({ source: win, data, ports } as unknown as MessageEvent);
+      }),
+    };
+    const bridge = createPasskeyBridge({ win, send });
+    expect(await askContentScript(win, fakeTimers())(request, undefined)).toEqual({
+      outcome: "fallback",
+    });
+    expect(send).not.toHaveBeenCalled();
+  });
+
   it("ignores messages from another window and without the channel or a port", () => {
     const send = vi.fn(async () => ({ outcome: "fallback" }));
     const win = {};

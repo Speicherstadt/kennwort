@@ -63,8 +63,11 @@ export const askContentScript =
       win.postMessage({ channel: CHANNEL, request }, "*", [port2]);
     });
 
+/** Whether the window's document has an opaque origin (iframe sandbox, CSP sandbox) */
+const opaque = (win: unknown) => isObject(win) && win.origin === "null";
+
 export type BridgeDeps = {
-  /** The frame's window: only messages it posted to itself count */
+  /** The frame's window: only messages it posted to itself count, and none of an opaque origin */
   win: unknown;
   /** chrome.runtime.sendMessage to the service worker */
   send: (message: PageRequest | AbortRequest) => Promise<unknown>;
@@ -76,7 +79,8 @@ export const createPasskeyBridge = (deps: BridgeDeps) => (event: MessageEvent) =
   const port = event.ports[0];
   if (!port) return;
   const request = pageRequest(event.data.request);
-  if (!request) {
+  // A sandboxed document's origin is opaque ("null"), whatever its address: the browser refuses it
+  if (!request || opaque(deps.win)) {
     port.postMessage(FALLBACK);
     return port.close();
   }

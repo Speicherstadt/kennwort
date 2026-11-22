@@ -21,9 +21,9 @@ import { extensionWorker, launchExtension, openPopup } from "./extension.ts";
 // test relying party under .test that checks every registration and sign-in with SimpleWebAuthn's
 // server (MasterKale/SimpleWebAuthn), here in the test process. Jonas saves a passkey for the portal
 // and signs in with it, each after his click in the prompt; a look-alike domain that claims the
-// portal's rpId gets SecurityError, a cross-origin frame, a locked Kennwort and "Anderes Gerät
-// verwenden" go to the browser's own WebAuthn (a virtual authenticator over CDP), and a covered
-// prompt signs nothing.
+// portal's rpId gets SecurityError, a cross-origin frame, a sandboxed frame on the portal's own
+// address, a locked Kennwort and "Anderes Gerät verwenden" go to the browser's own WebAuthn (a
+// virtual authenticator over CDP), and a covered prompt signs nothing.
 const SERVER = "http://localhost:5176";
 const RP_ID = "weber-haustechnik.test";
 const PORTAL = `https://portal.${RP_ID}`;
@@ -142,9 +142,35 @@ const relyingParty = (origin: string) => {
   };
 };
 
+/**
+ * An upload on the portal's own address, which the portal shows as sites show untrusted files: in
+ * a sandboxed iframe, so it runs in an opaque origin. Its script asks for an assertion for the
+ * portal's rpId with a challenge of its own; the browser refuses that, and so must Kennwort
+ */
+const UPLOAD = `${PORTAL}/uploads/anhang.html`;
+const upload = `<!doctype html><html lang="de"><meta charset="utf-8"><title>Anhang</title>
+<body><button id="login">Öffnen</button><p id="status">bereit</p>
+<script>
+document.getElementById("login").addEventListener("click", async () => {
+  document.getElementById("status").textContent = "läuft";
+  try {
+    const credential = await navigator.credentials.get({ publicKey: {
+      challenge: new Uint8Array(32), rpId: ${JSON.stringify(RP_ID)}, userVerification: "required",
+      timeout: 15000 } });
+    document.getElementById("status").textContent = "signiert " + credential.id;
+  } catch (error) { document.getElementById("status").textContent = "Fehler " + error.name; }
+});
+</script></body>`;
+const preview = `<!doctype html><html lang="de"><meta charset="utf-8"><title>Vorschau</title>
+<body style="margin:16px"><h1>Vorschau</h1>
+<iframe title="Anhang" sandbox="allow-scripts" src="${UPLOAD}" style="width:340px;height:200px"
+  allow="publickey-credentials-get"></iframe></body>`;
+
 const PAGES: Record<string, string> = {
   [`${PORTAL}/passkey`]: rpPage("Weber Portal"),
   [`${PORTAL}/framed`]: framedPage,
+  [`${PORTAL}/vorschau`]: preview,
+  [UPLOAD]: upload,
   [`${FOREIGN}/passkey`]: rpPage("Fremd-Login"),
   [`${LOOK_ALIKE}/passkey`]: rpPage("Portal", RP_ID),
 };
@@ -293,6 +319,14 @@ test.describe
       expect(areas.local).toEqual({});
       expect(areas.session).not.toContain("private-key");
       expect(areas.session).not.toContain(RP_ID);
+    });
+
+    test("serves no sandboxed frame on the portal's address, whose origin is opaque", async () => {
+      await tab.goto(`${PORTAL}/vorschau`);
+      const frame = tab.frameLocator('iframe[title="Anhang"]');
+      await frame.getByRole("button", { name: "Öffnen" }).click();
+      await expect(frame.locator("#status")).toHaveText(/^Fehler /, { timeout: 30_000 });
+      expect(await everShown(tab)).toBe(false);
     });
 
     test("refuses a look-alike domain that claims the portal's rpId, without a prompt", async () => {

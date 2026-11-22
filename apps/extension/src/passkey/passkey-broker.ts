@@ -4,7 +4,8 @@
  * browser's frame tree shows it (fill/frames.ts); a cross-origin frame goes to the browser's own
  * WebAuthn, which applies the Permissions Policy (`publickey-credentials-get`/`-create`) itself.
  * The origin comes from that frame tree, never from the page, and the rpId must be the frame's host
- * or a registrable suffix of it (rp-id.ts). The checked ceremony waits in memory, one per tab, while
+ * or a registrable suffix of it (rp-id.ts). Where the browser names the sender document's own origin
+ * (Chrome), it must be that origin: a sandboxed document's is opaque, and the browser refuses it. The checked ceremony waits in memory, one per tab, while
  * the top frame opens the prompt, which takes it once and answers after the user's click; only then
  * does the content script's request, and so the page, get an answer. A prompt that never takes it,
  * or a page that is not secure, falls back to the browser's own WebAuthn.
@@ -122,6 +123,8 @@ export const createPasskeyBroker = (deps: PasskeyBrokerDeps) => {
       return checked.error === "SecurityError"
         ? { outcome: "error", name: "SecurityError" }
         : FALLBACK;
+    // A sandboxed document has an opaque origin behind the address the tree shows: the browser decides
+    if (sender.origin !== undefined && sender.origin !== checked.value.origin) return FALLBACK;
     if (!takesEs256(message)) return FALLBACK;
     const ceremony = ceremonyOf(message, checked.value.origin, checked.value.rpId);
     const answer = hold(

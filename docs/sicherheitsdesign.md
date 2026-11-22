@@ -1737,7 +1737,11 @@ ersetzt und sonst an den Browser abgibt; der Code ist Kennworts eigener.
   Der nimmt sie nur von einem Frame, der nach dem Frame-Baum des Browsers (`webNavigation`) der
   oberste ist oder dieselbe Herkunft hat wie jeder Frame über ihm, dieselbe Regel wie beim Ausfüllen,
   und nur für das Dokument, das gefragt hat (`documentId`). Die Herkunft nimmt er aus dem Frame-Baum,
-  nicht aus der Nachricht. Die rpId muss der Host des Frames sein oder ein registrierbares Suffix
+  nicht aus der Nachricht, und wo der Browser die eigene Herkunft des Dokuments nennt (Chrome:
+  `sender.origin`), muss sie dieselbe sein: Ein Dokument in einer Sandbox (`<iframe sandbox>` oder
+  CSP `sandbox`, wie Websites Anhänge zeigen) hat unter derselben Adresse eine opake Herkunft, und
+  das WebAuthn des Browsers lehnt es ab. Dasselbe prüft das Content Script an `window.origin`.
+  Die rpId muss der Host des Frames sein oder ein registrierbares Suffix
   davon, gelesen mit `tldts` gegen die Public Suffix List samt privatem Teil: `portal.example.test`
   darf `example.test` beanspruchen, aber nie `test`, `co.uk`, `github.io` oder die Domain einer
   anderen Website; sonst endet die Zeremonie in `SecurityError`, ohne dass etwas erscheint. Ein

@@ -127,6 +127,25 @@ describe("the passkey broker", () => {
     expect(deps.send).not.toHaveBeenCalled();
   });
 
+  // A sandboxed document (iframe sandbox, or CSP sandbox on the page itself, as sites serve
+  // uploads) has an opaque origin, while the frame tree shows only its address: the browser
+  // refuses WebAuthn there, so the frame's address must not stand in for its origin
+  it("leaves a document with an opaque or another origin to the browser and opens no prompt", async () => {
+    const { broker, deps } = setup();
+    expect(await broker(get(), content(topFrame, { origin: "null" }))).toEqual({
+      outcome: "fallback",
+    });
+    expect(await broker(get(), content(sameOrigin, { origin: "https://ads.test" }))).toEqual({
+      outcome: "fallback",
+    });
+    expect(deps.send).not.toHaveBeenCalled();
+    expect(broker.take(3)).toBeUndefined();
+    // The sender's own origin, where the browser names it, serves as before
+    void broker(get(), content(topFrame, { origin: "https://portal.weber-haustechnik.test" }));
+    await settled();
+    expect(broker.take(3)?.origin).toBe("https://portal.weber-haustechnik.test");
+  });
+
   it("refuses an rpId of another site with SecurityError, before any prompt", async () => {
     const { broker, deps } = setup();
     for (const message of [

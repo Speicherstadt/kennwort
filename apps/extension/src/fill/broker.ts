@@ -19,6 +19,8 @@ export type Sender = {
   frameId?: number;
   /** Chrome only: the sender's document */
   documentId?: string;
+  /** Chrome only: the sender document's own origin, "null" for a sandboxed (opaque) one */
+  origin?: string;
   tab?: { id?: number };
 };
 

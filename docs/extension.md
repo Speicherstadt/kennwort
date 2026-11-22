@@ -257,7 +257,9 @@ Was die Extension dabei sicherstellt:
   `portal-weber-haustechnik.test` für `weber-haustechnik.test`, nie `co.uk` oder `github.io`.
   Prüft wird mit `tldts` gegen die Public Suffix List, wie beim Ausfüllen, und mit der Adresse des
   Frames aus dem Frame-Baum des Browsers, nicht mit dem, was die Seite behauptet.
-- **Nie in fremden Frames**: Bedient wird nur die Seite selbst oder ein Frame derselben Herkunft.
+- **Nie in fremden Frames**: Bedient wird nur die Seite selbst oder ein Frame derselben Herkunft,
+  nie ein Dokument in einer Sandbox, auch nicht unter der Adresse der Website (etwa ein Anhang, den
+  sie in einem `<iframe sandbox>` zeigt): Das geht an den Browser, der es ablehnt.
   Will ein eingebettetes Fremd-Formular einen Passkey, fragt der Browser selbst und prüft dabei,
   ob die Seite es mit `allow="publickey-credentials-get"` (oder `-create`) erlaubt hat.
 - **Die Seite sieht nicht hinein**: Ein kleines Skript im Kontext der Seite stellt sich vor
