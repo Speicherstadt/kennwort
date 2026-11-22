@@ -1732,9 +1732,10 @@ Verschlüsseln auf ein Vielfaches von 256 Byte aufgefüllt.
   Release-Schlüssel (Ed25519, F-03, Zweck `release`). Der Service Worker kennt den öffentlichen
   Schlüssel seit der Installation und aktiviert ein Update erst, wenn Signatur und alle Hashes
   stimmen. Der Loop signiert mit einem Test-Schlüssel; der echte kommt zur Veröffentlichung.
-  Einzelheiten unten.
-- **Extension**: Klartext-Oberfläche in der Extension, reproduzierbarer Build (K-408), Prüfung der
-  Web-App durch die Extension.
+  Der Build ist reproduzierbar: Jeder kann einen Commit nachbauen und die Hashes mit dem
+  veröffentlichten Release-Manifest vergleichen (K-408). Einzelheiten unten.
+- **Extension**: Klartext-Oberfläche in der Extension, reproduzierbarer Build je Browser (K-408,
+  „Nachbauen und vergleichen“ unten), Prüfung der Web-App durch die Extension.
 - **Abhängigkeiten**: etwa sechs Laufzeitpakete auf einer Liste mit Begründung (K-102), exakt
   gepinnt, keine Install-Skripte.
 
@@ -1751,8 +1752,10 @@ sw.js         = der Service Worker, der öffentliche Release-Schlüssel eingebau
 
 - `files` nennt jede Datei des Builds außer diesen dreien, auch `index.html`, das Web-App-Manifest
   und die Icons. `version` sind die ersten 16 Hex-Zeichen des SHA-256 über die Liste der Hashes,
-  derselbe Inhalt ergibt also dieselbe Version. `sequence` ist `SOURCE_DATE_EPOCH` (bei
-  reproduzierbaren Builds die Zeit des letzten Commits), sonst die Bauzeit in Sekunden.
+  derselbe Inhalt ergibt also dieselbe Version. `sequence` ist `SOURCE_DATE_EPOCH`, sonst die
+  Zeit des letzten Commits (`git log -1 --format=%ct`), außerhalb eines Git-Checkouts die Bauzeit,
+  jeweils in Sekunden. Releases kommen aus aufeinanderfolgenden Commits auf `main`, die Zahl
+  wächst also mit jedem Release; derselbe Commit ergibt dieselbe Zahl (siehe „Nachbauen“ unten).
 - Signiert werden genau die Bytes von `release.json`; der Service Worker prüft die Signatur, bevor
   er die Datei überhaupt liest.
 - `sw.js` baut Bun außerhalb von Vite und ohne Hash im Namen. Es bleibt Byte für Byte gleich,
@@ -1816,6 +1819,48 @@ Restrisiko:
   HTML-Dokument, das der Server darauf antwortet, liefe unter der Herkunft der App; verhindern
   könnten das nur Kopfzeilen des Servers, dem Kennwort nicht vertraut.
 - Die PWA am Handy ohne Extension.
+
+#### Nachbauen und vergleichen (K-408)
+
+Der Build ist reproduzierbar: Derselbe Commit ergibt Byte für Byte dieselben Dateien, egal wann, in
+welchem Ordner, in welcher Zeitzone und mit welcher Locale. Damit kann jeder ohne Vertrauen in den
+Server oder in uns prüfen, ob ein signiertes Release aus dem öffentlichen Quelltext stammt:
+
+```sh
+git clone https://github.com/Speicherstadt/kennwort && cd kennwort
+git checkout <Commit des Releases>
+bun install --frozen-lockfile          # dieselbe Bun-Version wie in package.json, packageManager
+curl -o veroeffentlicht.json https://<server>/release.json
+bun run reproducible --release veroeffentlicht.json
+```
+
+`bun run reproducible` baut zweimal von einem sauberen Stand, das zweite Mal mit `TZ` und `LC_ALL`
+auf anderen Werten, hasht jede Datei mit SHA-256 und bricht mit der Liste der abweichenden Dateien
+ab, bei Text mit der ersten abweichenden Zeile. Mit `--release` vergleicht es danach die Web-App mit
+einem veröffentlichten `release.json`: `version` und den Hash jeder Datei. `sequence` und die
+Signatur bleiben dabei außen vor, weil der Nachbau mit dem Test-Schlüssel signiert. Wer die Signatur
+selbst prüfen will, nimmt `release.sig` und den öffentlichen Release-Schlüssel (F-03, Zweck
+`release`). `version` ist der Hash über die Zeilen `<sha256>  <pfad>` in sortierter Reihenfolge,
+dasselbe Format wie die Ausgabe von `sha256sum`.
+
+Verglichen wird alles, was `bun run build` baut:
+
+| Ausgabe | Reproduzierbar |
+| --- | --- |
+| `apps/web/dist` mit `release.json`, `release.sig` und `sw.js` | ja |
+| `apps/extension/dist/chrome`, `firefox`, `safari` | ja (ZIP-Dateien baut der Build keine; verpackt wird für die Stores von Hand) |
+| `apps/server/dist/kennwort-server` (`bun build --compile`) | ja, bei derselben Bun-Version und Plattform; das Binary enthält die Laufzeit von Bun |
+
+Was sonst von Build zu Build wechseln könnte, ist ausgeschlossen: Die Folgenummer kommt aus dem
+Commit statt aus der Uhr, Ed25519 signiert ohne Zufall (RFC 8032), dasselbe Manifest mit demselben
+Schlüssel ergibt also dieselbe `release.sig`; `release.json` sortiert die Dateien, Vite und Bun
+benennen Dateien nach ihrem Inhalt und schreiben keine absoluten Pfade und keine Bauzeit. CI baut im
+`unit`-Job nach `bun run build` ein zweites Mal und vergleicht (`bun run reproducible --reuse`); ein
+Build, der davon abweicht, kommt nicht auf `main`.
+
+Restrisiko: Der Nachbau beweist, dass der Quelltext dieses Commits genau diese Dateien ergibt, nicht,
+dass der Quelltext und seine Abhängigkeiten (`bun.lock`) gutartig sind; dagegen helfen die
+Prüfungen unter „Abhängigkeiten“ oben und ein Audit.
 
 **Wehrt ab:** E-22, E-17.
 

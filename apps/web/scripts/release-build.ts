@@ -43,15 +43,31 @@ export const trustedKey = (env: Env): Keys<Uint8Array> => {
   return keys.ok ? { ok: true, value: keys.value.publicKey } : keys;
 };
 
+export type Sequence = { sequence: number; source: "SOURCE_DATE_EPOCH" | "commit" | "clock" };
+
+/** Whole seconds since 1970, as SOURCE_DATE_EPOCH and `git log --format=%ct` write them */
+const secondsIn = (text: string | undefined): number | undefined => {
+  const trimmed = text?.trim() ?? "";
+  return /^\d+$/.test(trimmed) && Number.isSafeInteger(Number(trimmed))
+    ? Number(trimmed)
+    : undefined;
+};
+
 /**
- * The release's place in the order of releases: SOURCE_DATE_EPOCH, as reproducible builds set it
- * to the time of the last commit, else the build's own time; both in seconds
+ * The release's place in the order of releases, in seconds: SOURCE_DATE_EPOCH, else the time of the
+ * last commit (`commit`, the output of `git log -1 --format=%ct`), else the build's own time. The
+ * commit's time makes two builds of the same commit sign the same release.json (K-408, reproducible
+ * builds); releases come from successive commits on main, so it still grows with every release.
  */
-export const sequenceOf = (env: Env, nowMs: number): number => {
-  const given = Number(env.SOURCE_DATE_EPOCH);
-  return env.SOURCE_DATE_EPOCH && Number.isSafeInteger(given) && given >= 0
-    ? given
-    : Math.floor(nowMs / 1000);
+export const sequenceOf = (
+  env: Env,
+  { commit, nowMs }: { commit: string | undefined; nowMs: number },
+): Sequence => {
+  const given = secondsIn(env.SOURCE_DATE_EPOCH);
+  if (given !== undefined) return { sequence: given, source: "SOURCE_DATE_EPOCH" };
+  const committed = secondsIn(commit);
+  if (committed !== undefined) return { sequence: committed, source: "commit" };
+  return { sequence: Math.floor(nowMs / 1000), source: "clock" };
 };
 
 /** The path a browser asks for, from a path relative to the build's folder */

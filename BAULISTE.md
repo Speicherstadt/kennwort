@@ -329,7 +329,17 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   Felder, kein IntersectionObserver v2 außerhalb von Chromium), und `docs/extension.md`,
   `docs/sicherheitsdesign.md` (P-17, „Je Browser“) und `docs/plan.md` Unterschiede, Restrisiken
   und die Schritte einer Person (Xcode, Signatur, App Store, Android-Gerät) beschreiben.
-- [ ] **K-408 Reproduzierbarer Build** – zweimal bauen, Hashes vergleichen, in CI.
+- [x] **K-408 Reproduzierbarer Build** – zweimal bauen, Hashes vergleichen, in CI.
+  Fertig, wenn: `bun run reproducible` denselben Commit zweimal sauber baut, das zweite Mal in
+  anderer Zeitzone und Locale, jede Datei per SHA-256 vergleicht und mit der Liste der
+  abweichenden Dateien (bei Text mit der ersten abweichenden Zeile) fehlschlägt; die Web-App samt
+  `release.json` und `release.sig`, die Extension für Chrome, Firefox und Safari und der
+  kompilierte Server Byte für Byte gleich sind; die Folgenummer des Release-Manifests ohne
+  `SOURCE_DATE_EPOCH` die Zeit des letzten Commits ist statt der Bauzeit; `--release` die Web-App
+  mit einem veröffentlichten `release.json` vergleicht (Version und jeder Hash); der `unit`-Job in
+  CI nach `bun run build` mit `bun run reproducible --reuse` einen zweiten Build vergleicht, ohne
+  neuen Job; Vitest die reinen Teile prüft und `docs/sicherheitsdesign.md` (P-16), `docs/plan.md`
+  und `docs/extension.md` beschreiben, wie jeder nachbaut und vergleicht.
 
 ## Phase 5 – Import und Export
 
