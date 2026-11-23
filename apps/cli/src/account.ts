@@ -90,14 +90,24 @@ export const withAccount = async (
   connection: Connection,
 ): Promise<{ ok: true; value: Loaded } | { ok: false; error: AccountError }> => {
   const api = apiFor(device, connection);
+  // The token of a sign-in whose keys then do not open is signed out too, not left to run out
+  let signedIn: string | undefined;
+  const signIn: Api["signIn"] = async (...args) => {
+    const result = await api.signIn(...args);
+    if (result.ok) signedIn = result.token;
+    return result;
+  };
   const unlocked = await signInAndUnlock(
-    api,
+    { signIn, keys: api.keys },
     device.accountId,
     passphrase,
     device.secretKey,
     connection.derive,
   );
-  if (!unlocked.ok) return unlocked;
+  if (!unlocked.ok) {
+    if (signedIn) await signOut(api, signedIn).catch(() => undefined);
+    return unlocked;
+  }
   const { opened, stored } = unlocked.value;
   const merged = withKeptState(opened, connection.kept.read(), stored.stateCounter);
   connection.kept.keep(merged.kept);
