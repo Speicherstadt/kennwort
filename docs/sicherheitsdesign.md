@@ -1088,16 +1088,8 @@ signatur  = F-03(autor, "entry", tresor-ID, eintrags-ID, version, epoche, SHA-51
 - **AAD** mit Tresor-ID, Eintrags-ID und Version (E-12, E-13).
 - **Versionszähler**: Der Client merkt sich die höchste Version je Eintrag und lehnt kleinere ab
   (E-13).
-- **Signatur des Autors**: Der Client prüft, dass der Autor laut Log „bearbeiten“ durfte; so kann
-  auch ein lesendes Mitglied, das VKₑ kennt, nichts unterschieben. Maßgeblich ist der Log-Stand,
-  den die Version als `zuletzt-gesehen` signiert nennt: Darf der Autor jetzt bearbeiten, gilt die
-  Version; sonst nur, wenn er an genau diesem Stand des Logs, in der Epoche der Version,
-  „bearbeiten“ durfte. Was ein Mitglied vor seiner Herabstufung auf „lesen“ gespeichert hat, gilt
-  so für alle weiter. Was es danach schreibt, nennt einen Stand nach der Herabstufung und wird
-  abgelehnt; einen früheren Stand kann der Server nicht eintragen, ohne die Signatur zu brechen,
-  und einen Stand, den das geprüfte Log nicht enthält, nimmt der Client nicht an. Ein entferntes
-  Mitglied fällt aus allen früheren Ständen heraus: Seine Versionen gelten nicht mehr, bis der
-  Schlüsselwechsel sie neu schreibt ([P-11](#p-11-austritt-und-schlusselwechsel)).
+- **Signatur des Autors**: Der Client prüft, dass der Autor zur angegebenen Epoche laut Log
+  „bearbeiten“ durfte; so kann auch ein lesendes Mitglied, das VKₑ kennt, nichts unterschieben.
   Der Schlüssel dazu kommt nur aus einem Zertifikat, das der Firmen-Wurzelschlüssel für genau
   diesen Autor signiert hat und dessen Fingerabdruck das Log für ihn nennt (E-05).
 - **Löschen** ist ein signierter Grabstein mit neuer Version. Verschwindet ein bekannter Eintrag
@@ -1112,10 +1104,7 @@ signatur  = F-03(autor, "entry", tresor-ID, eintrags-ID, version, epoche, SHA-51
   unterschieben (E-16).
 
 Restrisiko: Einen neuen Eintrag, den ein Client nie gesehen hat, kann der Server diesem Client
-vorenthalten. Ein herabgestuftes Mitglied, das seinen Client verändert, kann eine neue Version mit
-einem Stand von vor der Herabstufung signieren; der Server nimmt von lesenden Mitgliedern keine
-Version an, nur ein Server, der mit ihm zusammenarbeitet, könnte sie verteilen. Wer das ausschließen
-will, entfernt das Mitglied und wechselt den Schlüssel (P-11).
+vorenthalten.
 
 In Web-App und Extension lädt `packages/client/src/entries/entry-store.ts` die Einträge jedes
 geöffneten Tresors mit `pull` und `sync` aus `packages/core` und prüft jeden Datensatz gegen das
@@ -3033,8 +3022,9 @@ neuer Tresor nicht ohnehin bringt:
    Eintrags-Schlüssel, AAD mit neuem Tresor, signiert) und nimmt die Person, die der Kunde ist, als
    Verwalter auf – nur, wenn der gemerkte Wurzelschlüssel dieser Firma sie bestätigt.
 3. Danach signiert der Handwerker, solange er noch Verwalter ist, für sich selbst `rolle` mit
-   „bearbeiten“, damit er die Einträge bei der Wartung weiter pflegen kann. Die Einträge, die er
-   geschrieben hat, gelten auch nach einer späteren Herabstufung auf „lesen“ weiter (P-09).
+   „bearbeiten“. Nicht „lesen“: Ein Datensatz gilt nur, solange sein Autor nach dem Log, wie es jetzt
+   steht, bearbeiten darf (P-09); die Einträge, die er gerade geschrieben hat, ließen sich sonst nicht
+   mehr öffnen.
 
 Ab dann entscheidet der Kunde: Er ist der einzige Verwalter. Entfernt er den Handwerker, wechselt
 sein Client den Schlüssel und schreibt jeden Eintrag unter seiner eigenen Signatur neu

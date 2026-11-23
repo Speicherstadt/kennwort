@@ -37,15 +37,7 @@ export type LogState = {
    * written until a `rekey` entry names the new bundle and a rotation follows
    */
   superseded: string[];
-  /**
-   * Who could edit at each state of the log, by hex hash of that state, with its epoch (P-09): a
-   * record names the state its author wrote at, so what someone saved before being reduced to
-   * reading stays valid. Someone removed is taken out of every earlier state: their versions count
-   * no more (P-11). Absent for a state built by hand: only the roles of now count.
-   */
-  editorsAt?: ReadonlyMap<string, EditorsAt>;
 };
-export type EditorsAt = { epoch: number; editors: ReadonlySet<string> };
 export type Remembered = { seq: number; hash: Uint8Array };
 
 export type LogError =
@@ -347,7 +339,6 @@ export const verifyLog = (
   if (entries.length === 0) return err("empty");
   let state = genesisState();
   const seen = new Set<string>();
-  const editorsAt = new Map<string, { epoch: number; editors: Set<string> }>();
   for (const entry of entries) {
     const next = step(state, entry, vaultId, trust);
     if (!next.ok) return next;
@@ -355,9 +346,6 @@ export const verifyLog = (
     if (entry.lastSeen.length > 0 && !seen.has(idKey(entry.lastSeen))) return err("fork");
     state = next.value;
     seen.add(idKey(state.hash));
-    if (entry.action === "remove")
-      for (const then of editorsAt.values()) then.editors.delete(idKey(entry.accountId));
-    editorsAt.set(idKey(state.hash), { epoch: state.epoch, editors: editorsOf(state) });
     if (
       remembered &&
       state.seq === remembered.seq &&
@@ -369,19 +357,8 @@ export const verifyLog = (
   const superseded = [...state.members]
     .filter(([key, member]) => isSuperseded(trust, fromIdKey(key), member.fingerprint))
     .map(([key]) => key);
-  return ok({
-    ...state,
-    superseded,
-    rotationDue: state.rotationDue || superseded.length > 0,
-    editorsAt,
-  });
+  return ok({ ...state, superseded, rotationDue: state.rotationDue || superseded.length > 0 });
 };
-
-/** Whether a role lets its member write entries (P-05) */
-export const mayEdit = (role: VaultRole | undefined) => role === "edit" || role === "manage";
-
-const editorsOf = (state: Chain) =>
-  new Set([...state.members].filter(([, member]) => mayEdit(member.role)).map(([key]) => key));
 
 export const fromIdKey = (key: string) =>
   Uint8Array.from(key.match(/../g) ?? [], (pair) => Number.parseInt(pair, 16));

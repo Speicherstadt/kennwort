@@ -5,8 +5,9 @@
  * there makes a new vault through the normal paths: genesis signed by the installer (P-05), every
  * entry encrypted, signed and bound anew under the new vault's keys (P-09), the customer added as
  * manager after the pinned root of that company confirmed them, and the installer's own role
- * reduced from managing to editing, signed while still a manager (P-06): editing, so he can still
- * keep the entries up to date during maintenance (docs/handwerk.md). From then on the customer decides: removing the
+ * reduced from managing to editing, signed while still a manager (P-06). Not to reading: a record
+ * counts only while its author may edit by the log as it now stands (P-09), so the entries the
+ * installer just wrote would no longer open. From then on the customer decides: removing the
  * installer rotates the key and writes every entry anew under the customer's signature (P-11), and
  * nothing the installer signs can make him a manager again. The server only stores what any new
  * vault brings: ciphertexts, a log, keys.
