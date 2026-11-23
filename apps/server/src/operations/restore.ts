@@ -8,7 +8,16 @@
  */
 import { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
-import { chmodSync, copyFileSync, existsSync, mkdirSync, renameSync, rmSync } from "node:fs";
+import {
+  closeSync,
+  existsSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname } from "node:path";
 import type { EmbeddedMigration } from "../db/embed.ts";
 import { migrations } from "../db/migrations.gen.ts";
@@ -64,6 +73,21 @@ const checkBackup = (backup: string, list: readonly EmbeddedMigration[]) => {
   return ok(applied.length);
 };
 
+const randomSuffix = () => Buffer.from(crypto.getRandomValues(new Uint8Array(6))).toString("hex");
+
+/**
+ * Creates the file anew, readable by the owner alone from the first byte: "wx" fails on anything
+ * already there, a planted link included, so nothing is written through it (review of K-703)
+ */
+const writeExclusive = (path: string, data: Uint8Array) => {
+  const fd = openSync(path, "wx", 0o600);
+  try {
+    writeFileSync(fd, data);
+  } finally {
+    closeSync(fd);
+  }
+};
+
 export type RestoreDeps = {
   now: () => number;
   /** The migrations this server knows; only tests pass others */
@@ -75,9 +99,8 @@ export const restoreDatabase = (backup: string, database: string, deps: RestoreD
   if (!checked.ok) return checked;
   if (existsSync(database) && !notInUse(database)) return err<RestoreError>("in-use");
   mkdirSync(dirname(database), { recursive: true, mode: 0o700 });
-  const incoming = `${database}.restoring`;
-  copyFileSync(backup, incoming);
-  chmodSync(incoming, 0o600);
+  const incoming = `${database}.restoring-${randomSuffix()}`;
+  writeExclusive(incoming, readFileSync(backup));
   const replaced = existsSync(database) ? `${database}.replaced-${deps.now()}` : undefined;
   if (replaced) renameSync(database, replaced);
   // Left over only from a server that did not shut down cleanly; they belong to the old file

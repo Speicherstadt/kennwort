@@ -1,5 +1,13 @@
 import { Database } from "bun:sqlite";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -94,6 +102,22 @@ describe("restoreDatabase", () => {
     migrate(reopened);
     expect(reopened.select().from(companies).all()).toHaveLength(1);
     reopened.$client.close();
+  });
+
+  it("follows no link planted at its temporary name and writes nowhere else", () => {
+    const dir = scratch();
+    const { path, stop } = liveDatabase(dir);
+    const backup = join(dir, "backup.db");
+    expect(backupDatabase(path, backup).ok).toBe(true);
+    stop();
+    const elsewhere = join(dir, "elsewhere");
+    writeFileSync(elsewhere, "untouched", { mode: 0o644 });
+    symlinkSync(elsewhere, `${path}.restoring`);
+    expect(restoreDatabase(backup, path, { now }).ok).toBe(true);
+    expect(readFileSync(elsewhere, "utf8")).toBe("untouched");
+    expect(statSync(elsewhere).mode & 0o777).toBe(0o644);
+    expect(companyIds(path)).toEqual(["weber"]);
+    expect(statSync(path).mode & 0o777).toBe(0o600);
   });
 
   it("restores into a fresh installation with no database yet", () => {
