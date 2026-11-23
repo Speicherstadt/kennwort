@@ -4,6 +4,12 @@
  * all its clients; an event names only IDs, the client fetches and checks the rest itself.
  */
 export type Change = { entryId: string; version: number };
+/**
+ * A change as the sync publishes it: with the accounts that may hear it (current members of the
+ * vault by its log who have not left the company), worked out once for every listening stream
+ * instead of once per stream (K-702, the load test). Only the change goes out to clients
+ */
+export type LiveChange = Change & { audience: ReadonlySet<string> };
 
 export const createHub = <T = Change>() => {
   type Listener = (event: T) => void;
@@ -24,4 +30,4 @@ export const createHub = <T = Change>() => {
   };
 };
 
-export type Hub = ReturnType<typeof createHub<Change>>;
+export type Hub = ReturnType<typeof createHub<LiveChange>>;
