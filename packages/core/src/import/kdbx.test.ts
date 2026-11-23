@@ -382,7 +382,12 @@ describe("gunzip", () => {
     const listener = (reason: unknown) => stray.push(reason);
     process.on("unhandledRejection", listener);
     try {
-      expect(await gunzip(packed, 1)).toEqual({ ok: false, error: "too-large" });
+      // Which error comes first is zlib's: Node 24 hands out the 1000 bytes before it reports the
+      // junk (too-large), Node 22 reads the junk as a broken second gzip member and fails before
+      // any output (Z_DATA_ERROR, bad-kdbx). The data stays this small so that on Node 24 the
+      // output and the junk land in one zlib call, the case where a cancel rejected
+      const result = await gunzip(packed, 1);
+      expect(result.ok ? "ok" : result.error).toMatch(/^(too-large|bad-kdbx)$/);
       await new Promise((resolve) => setTimeout(resolve, 50));
     } finally {
       process.off("unhandledRejection", listener);
