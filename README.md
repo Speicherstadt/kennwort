@@ -53,6 +53,25 @@ deinem eigenen Server betreibst.
 | 📤 Export | Inhaber und Admins exportieren einen Tresor oder alle als verschlüsseltes JSON (wieder importierbar, mit allem), als KeePass-Datenbank (KDBX 4) oder als CSV für andere Passwortmanager; die Datei entsteht nur auf dem Gerät, jeder Export steht im Audit-Log |
 | 🛡️ Sicherheit im Alltag | [Sicherheits-Übersicht](https://kennwort.app/sicherheit.html) mit schwachen, mehrfach verwendeten und geleakten Passwörtern und „Jetzt ändern“ direkt zur Seite der Website fürs Passwortändern (`/.well-known/change-password`); Prüfung gegen Datenlecks nur auf Wunsch, je Person, per k-Anonymität (nur 5 Zeichen eines Hashs gehen über deinen Server hinaus, das Passwort nie); Monatsbericht für Inhaber und Admins; „Zum Ändern“-Liste, Einmal-Links für Externe ohne Konto (ein Eintrag oder freier Text, bis zu sieben Tage und zehn Abrufe, auf Wunsch mit Passphrase, jederzeit widerrufbar; erst ein Klick zeigt den Inhalt, damit Linkvorschauen ihn nicht verbrauchen) |
 
+## Installation
+
+Ein Container mit Caddy davor für TLS, mit Docker Compose oder Podman Quadlet:
+
+```sh
+curl -fsSLO https://raw.githubusercontent.com/Speicherstadt/kennwort/main/docker/compose.yaml
+curl -fsSLO https://raw.githubusercontent.com/Speicherstadt/kennwort/main/docker/Caddyfile
+curl -fsSL -o .env https://raw.githubusercontent.com/Speicherstadt/kennwort/main/docker/kennwort.env.example
+# KENNWORT_DOMAIN, KENNWORT_AUTH_SECRET und KENNWORT_SETUP_CODE in .env eintragen
+docker compose up -d
+```
+
+Das Image `ghcr.io/speicherstadt/kennwort` (amd64, arm64) läuft ohne root und ohne Shell, schreibt
+nur in sein Volume und trägt dieselbe signierte Web-App wie das Release. Backups macht der Server
+selbst, während er läuft (`kennwort-server backup`); sie enthalten nur Chiffretext, nie einen
+Schlüssel. Erscheint ein neues Release, erfahren es Inhaber und Admins in der App (abschaltbar).
+Mehr: [Installation](https://kennwort.app/installation.html),
+[Backups](https://kennwort.app/backup.html), [Updates](https://kennwort.app/updates.html).
+
 ## Sicherheit
 
 Kennwort verschlüsselt auf deinem Gerät, bevor etwas den Server erreicht: XChaCha20-Poly1305, X25519 kombiniert

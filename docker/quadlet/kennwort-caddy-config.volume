@@ -1,0 +1,3 @@
+# Caddy's own settings (K-703)
+[Volume]
+VolumeName=kennwort-caddy-config

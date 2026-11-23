@@ -72,6 +72,10 @@ nav:
   - Browser-Extension: extension.md
   - Kommandozeile: cli.md
   - Import und Export: import-export.md
+  - Betrieb:
+      - Installation: installation.md
+      - Backups: backup.md
+      - Updates: updates.md
   - Sicherheitsdesign: sicherheitsdesign.md
   - Entwicklung:
       - Projektplan: plan.md

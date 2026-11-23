@@ -8,6 +8,7 @@ import { parseRelease } from "../src/sw/release.ts";
 import { EMPTY_STATE, installed, isNewer } from "../src/sw/state.ts";
 
 const script = join(import.meta.dirname, "sign-release.ts");
+const printSequence = join(import.meta.dirname, "print-sequence.ts");
 
 /**
  * sign-release.ts in a repository of its own, so the commits and their committer times are the
@@ -66,5 +67,20 @@ describe("sign-release.ts: the sequence along the history (K-408, P-16 rollback 
     expect(again.status).toBe(0);
     const second = parseRelease(readFileSync(join(repo, "dist", "release.json")));
     expect(second.ok && second.value.sequence).toBe(first.sequence);
+  });
+
+  it("prints the sequence it signs, for the release workflow's image build (K-703)", () => {
+    const signed = releaseAt("<p>1</p>", 2_000_000_000);
+    releaseAt("<p>2</p>", 1_999_999_000);
+    const printed = spawnSync("bun", [printSequence], { cwd: repo, env: env(), encoding: "utf8" });
+    expect(printed.status).toBe(0);
+    expect(Number(printed.stdout.trim())).toBe(signed.sequence + 1);
+  });
+
+  it("prints nothing outside a checkout, where the number would come from the clock", () => {
+    rmSync(join(repo, ".git"), { recursive: true, force: true });
+    const printed = spawnSync("bun", [printSequence], { cwd: repo, env: env(), encoding: "utf8" });
+    expect(printed.status).toBe(1);
+    expect(printed.stdout).toBe("");
   });
 });
