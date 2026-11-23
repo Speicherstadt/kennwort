@@ -5,7 +5,16 @@
  * the file takes to make; the file itself goes straight to a download (export.ts).
  */
 import type { ExportFormat, ExportScope } from "@kennwort/core";
-import { Button, Input, m, pageClass, selectClass } from "@kennwort/ui";
+import {
+  Button,
+  Input,
+  introClass,
+  m,
+  pageClass,
+  panelClass,
+  panelTitleClass,
+  selectClass,
+} from "@kennwort/ui";
 import { createSignal, createUniqueId, For, Match, Show, Switch } from "solid-js";
 import { Alert } from "../import/import-steps.tsx";
 import { type ExportDeps, type ExportOutcome, MIN_PASSPHRASE, runExport } from "./export.ts";
@@ -60,11 +69,11 @@ const CsvWarning = () => (
 const FormatChoice = (props: { value: ExportFormat; onChange: (format: ExportFormat) => void }) => {
   const id = createUniqueId();
   return (
-    <fieldset class="grid gap-2">
-      <legend class="mb-1 text-xs font-medium">{m.export_format()}</legend>
+    <fieldset class="grid gap-2 sm:grid-cols-3">
+      <legend class="mb-2 text-xs font-medium">{m.export_format()}</legend>
       <For each={FORMATS}>
         {(choice) => (
-          <label class="flex min-h-11 items-start gap-2 md:min-h-0">
+          <label class="flex min-h-11 cursor-pointer items-start gap-2 rounded-lg border border-border p-3 transition-colors hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-accent">
             <input
               type="radio"
               name={`${id}-format`}
@@ -125,7 +134,7 @@ const ExportForm = (props: {
   };
   return (
     <form
-      class="grid max-w-xl gap-4"
+      class={`${panelClass} gap-4`}
       onSubmit={(event) => {
         event.preventDefault();
         setMissing(undefined);
@@ -185,8 +194,8 @@ const ExportForm = (props: {
 };
 
 const DoneStep = (props: { count: number; name: string; csv: boolean; onAgain: () => void }) => (
-  <div class="grid max-w-xl gap-4" role="status">
-    <h2 class="font-semibold">{m.export_done_title()}</h2>
+  <div class={`${panelClass} gap-4`} role="status">
+    <h2 class={panelTitleClass}>{m.export_done_title()}</h2>
     <p>{m.export_done({ count: props.count, name: props.name })}</p>
     <p
       role="note"
@@ -207,14 +216,17 @@ export const ExportPage = (props: { deps: ExportPageDeps }) => {
   const choice = { format, setFormat, scope, setScope };
   return (
     <section aria-labelledby="page-title" class={pageClass()}>
-      <h1 id="page-title" class="mb-2 text-[28px] font-semibold md:text-lg">
+      <h1 id="page-title" class="mb-1 text-[28px] font-semibold md:text-lg">
         {m.export_title()}
       </h1>
-      <Show when={props.deps.allowed()} fallback={<p class="max-w-xl">{m.export_not_allowed()}</p>}>
-        <p class="mb-4 max-w-xl text-muted-foreground">{m.export_intro()}</p>
+      <Show
+        when={props.deps.allowed()}
+        fallback={<p class={`${panelClass} text-[13px]`}>{m.export_not_allowed()}</p>}
+      >
+        <p class={introClass}>{m.export_intro()}</p>
         <Switch>
           <Match when={state().state === "busy"}>
-            <p role="status" class="text-[13px]">
+            <p role="status" class={`${panelClass} text-[13px] text-muted-foreground`}>
               {m.export_busy()}
             </p>
           </Match>

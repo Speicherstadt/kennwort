@@ -4,7 +4,7 @@
  * step says how many of how many codes it has and hands all links on as text. Nothing of them
  * goes to the server.
  */
-import { Button, m, TextArea } from "@kennwort/ui";
+import { Button, m, panelClass, panelTitleClass, TextArea } from "@kennwort/ui";
 import { createSignal, createUniqueId, Show } from "solid-js";
 import { type QrKind, QrScanDialog } from "../qr/qr-scan-dialog.tsx";
 import { Alert } from "./import-steps.tsx";
@@ -49,13 +49,13 @@ export const QrStep = (props: {
   return (
     <>
       <form
-        class="grid max-w-xl gap-4"
+        class={`${panelClass} gap-4`}
         onSubmit={(event) => {
           event.preventDefault();
           submit();
         }}
       >
-        <h2 class="font-semibold">{props.choice.label()}</h2>
+        <h2 class={panelTitleClass}>{props.choice.label()}</h2>
         <section aria-labelledby={`${id}-howto`} class="rounded-xl border border-border p-3.5">
           <h3 id={`${id}-howto`} class="mb-1 text-xs font-medium">
             {m.import_howto_title()}

@@ -9,7 +9,7 @@
 import type { ImportWrite } from "@kennwort/client/entries/entry-import.ts";
 import { typeLabel } from "@kennwort/client/entries/entry-types.ts";
 import type { ImportedEntry } from "@kennwort/core";
-import { Button, m } from "@kennwort/ui";
+import { Button, m, panelClass, panelTitleClass } from "@kennwort/ui";
 import { createMemo, createSignal, createUniqueId, For, Show } from "solid-js";
 import { Choice } from "../entries/choice.tsx";
 import { Link } from "../frame/link.tsx";
@@ -66,8 +66,8 @@ export const PreviewStep = (props: {
   const putCode = (index: number, target: string) =>
     setTargets(new Map(targets()).set(index, target));
   return (
-    <div class="grid gap-4">
-      <h2 class="font-semibold">{m.import_preview_title()}</h2>
+    <div class={`${panelClass} gap-4`}>
+      <h2 class={panelTitleClass}>{m.import_preview_title()}</h2>
       <p>{m.import_found({ count: props.entries.length })}</p>
       <ul aria-label={m.import_types()} class="flex flex-wrap gap-1.5">
         <For each={countByType(props.entries)}>
@@ -146,7 +146,7 @@ export const PreviewStep = (props: {
 };
 
 export const ProgressStep = (props: { done: number; total: number }) => (
-  <div class="grid max-w-md gap-2">
+  <div class={panelClass}>
     <progress class="w-full" max={props.total} value={props.done} aria-label={m.import_title()} />
     <p role="status">{m.import_progress({ done: props.done, total: props.total })}</p>
   </div>
@@ -167,8 +167,8 @@ export const DoneStep = (props: {
   weak: number;
   onAgain: () => void;
 }) => (
-  <div class="grid max-w-xl gap-4">
-    <h2 class="font-semibold">{m.import_done_title()}</h2>
+  <div class={`${panelClass} gap-4`}>
+    <h2 class={panelTitleClass}>{m.import_done_title()}</h2>
     <p role="status">{m.import_done({ count: props.outcome.imported })}</p>
     <Show when={props.outcome.unsaved > 0 && props.outcome.error === undefined}>
       <p class="text-[13px] text-danger">{m.import_unsaved({ count: props.outcome.unsaved })}</p>

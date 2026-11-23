@@ -6,7 +6,7 @@
  * its field when the form is sent, handed to core's reader and never kept in the page's state;
  * the field is emptied right after, so the form holds it no longer than the reader needs it.
  */
-import { Button, Input, m } from "@kennwort/ui";
+import { Button, Input, m, panelClass, panelTitleClass } from "@kennwort/ui";
 import { createSignal, createUniqueId, Show } from "solid-js";
 import { Alert } from "./import-steps.tsx";
 import type { VendorChoice } from "./vendors.ts";
@@ -108,13 +108,13 @@ export const UnlockStep = (props: {
   };
   return (
     <form
-      class="grid max-w-xl gap-4"
+      class={`${panelClass} gap-4`}
       onSubmit={(event) => {
         event.preventDefault();
         submit(event.currentTarget);
       }}
     >
-      <h2 class="font-semibold">{props.choice.label()}</h2>
+      <h2 class={panelTitleClass}>{props.choice.label()}</h2>
       <section aria-labelledby={`${id}-howto`} class="rounded-xl border border-border p-3.5">
         <h3 id={`${id}-howto`} class="mb-1 text-xs font-medium">
           {m.import_howto_title()}

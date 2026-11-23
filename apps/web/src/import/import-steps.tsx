@@ -4,12 +4,12 @@
  * nothing of it goes to the server.
  */
 import type { Columns } from "@kennwort/core";
-import { Button, m, selectClass } from "@kennwort/ui";
+import { Button, Icon, m, panelClass, panelTitleClass, selectClass } from "@kennwort/ui";
+import { ChevronRight } from "@kennwort/ui/icons";
 import { createUniqueId, For, Show } from "solid-js";
+import { alertClass } from "../blocks/empty-state.tsx";
 import { TABLE_PARTS, type TablePart } from "./read-file.ts";
 import type { VendorChoice } from "./vendors.ts";
-
-const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
 
 export const Alert = (props: { text: string | undefined }) => (
   <Show when={props.text}>
@@ -25,16 +25,20 @@ export const VendorStep = (props: {
   choices: VendorChoice[];
   onChoose: (choice: VendorChoice) => void;
 }) => (
-  <div class="grid gap-2">
-    <h2 id="import-vendor" class="font-semibold">
+  <div class={panelClass}>
+    <h2 id="import-vendor" class={panelTitleClass}>
       {m.import_vendor_step()}
     </h2>
     <ul aria-labelledby="import-vendor" class="grid gap-1.5 sm:grid-cols-2">
       <For each={props.choices}>
         {(choice) => (
           <li>
-            <Button class="h-11 w-full justify-start md:h-9" onClick={() => props.onChoose(choice)}>
+            <Button
+              class="h-11 w-full justify-between md:h-10"
+              onClick={() => props.onChoose(choice)}
+            >
               {choice.label()}
+              <Icon icon={ChevronRight} class="text-muted-foreground" />
             </Button>
           </li>
         )}
@@ -52,9 +56,9 @@ export const FileStep = (props: {
 }) => {
   const id = createUniqueId();
   return (
-    <div class="grid max-w-xl gap-4">
-      <h2 class="font-semibold">{props.choice.label()}</h2>
-      <section aria-labelledby={`${id}-howto`} class="rounded-xl border border-border p-3.5">
+    <div class={`${panelClass} gap-4`}>
+      <h2 class={panelTitleClass}>{props.choice.label()}</h2>
+      <section aria-labelledby={`${id}-howto`} class="rounded-lg bg-accent p-3.5">
         <h3 id={`${id}-howto`} class="mb-1 text-xs font-medium">
           {m.import_howto_title()}
         </h3>
@@ -70,7 +74,7 @@ export const FileStep = (props: {
           accept={props.choice.accept}
           disabled={props.busy}
           aria-describedby={`${id}-hint`}
-          class="text-[13px]"
+          class="rounded-md border border-dashed border-border p-3 text-[13px] file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-[13px] file:font-medium file:text-primary-foreground"
           onChange={(event) => {
             const input = event.currentTarget;
             const file = input.files?.[0];
@@ -142,13 +146,13 @@ export const MapStep = (props: {
   onBack: () => void;
 }) => (
   <form
-    class="grid max-w-xl gap-4"
+    class={`${panelClass} gap-4`}
     onSubmit={(event) => {
       event.preventDefault();
       props.onNext();
     }}
   >
-    <h2 class="font-semibold">{m.import_map_title()}</h2>
+    <h2 class={panelTitleClass}>{m.import_map_title()}</h2>
     <p class="text-[13px] text-muted-foreground">{m.import_map_intro()}</p>
     <div class="grid grid-cols-2 gap-3">
       <For each={TABLE_PARTS}>
