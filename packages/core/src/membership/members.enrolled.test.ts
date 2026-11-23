@@ -91,6 +91,10 @@ describe("certifyEnrolled", () => {
     expect(certifyEnrolled(root.secretKey, viewOf({ oidc: false }), company, 500)).toBeUndefined();
     const certified = viewOf({ certificate: certificate(100) });
     expect(certifyEnrolled(root.secretKey, certified, company, 500)).toBeUndefined();
+    // The bundle alone is not enough: the status must say enrolled
+    expect(certifyEnrolled(root.secretKey, { ...viewOf(), status: "waiting" }, company, 500)).toBe(
+      undefined,
+    );
     const { enrolled: _, ...noBundle } = viewOf();
     expect(certifyEnrolled(root.secretKey, noBundle, company, 500)).toBeUndefined();
   });

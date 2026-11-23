@@ -119,6 +119,9 @@ describe("PushSubscriptionWire", () => {
       false,
     );
     expect(PushSubscriptionWire.safeParse({ endpoint: "not a url" }).success).toBe(false);
+    // The scheme is exactly https, not one that merely starts or ends with it
+    for (const endpoint of ["xhttps://push.example/x", "httpsx://push.example/x"])
+      expect(PushSubscriptionWire.safeParse({ endpoint }).success).toBe(false);
   });
 });
 

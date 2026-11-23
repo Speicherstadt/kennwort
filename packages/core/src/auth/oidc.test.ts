@@ -62,12 +62,17 @@ describe("OidcStatusWire", () => {
       linked: true,
     });
     expect(OidcStatusWire.parse(admin)).toEqual(admin);
+    // Plain http too, for a server on this machine
+    const local = { ...admin, enrolmentUrl: "http://localhost:8100/auth/oidc/start?company=x" };
+    expect(OidcStatusWire.parse(local)).toEqual(local);
   });
 
   it.each([
     ["an empty name", { name: "" }],
     ["a link that is no boolean", { linked: "yes" }],
     ["an address that is no web address", { enrolmentUrl: "javascript:alert(1)" }],
+    ["a scheme that only ends in http", { enrolmentUrl: "xhttp://kennwort.test/x" }],
+    ["a scheme that only starts with http", { enrolmentUrl: "httpx://kennwort.test/x" }],
     ["an empty claim", { groupsClaim: "" }],
     ["a group without a name", { groups: [{ id: "g", name: "", viaIdp: 0 }] }],
     ["a group without an ID", { groups: [{ id: "", name: "T", viaIdp: 0 }] }],
@@ -83,6 +88,8 @@ describe("OidcLinkWire", () => {
     expect(OidcLinkWire.parse({ url: "https://sso.test/authorize?x=1" }).url).toBe(
       "https://sso.test/authorize?x=1",
     );
-    expect(OidcLinkWire.safeParse({ url: "javascript:alert(1)" }).success).toBe(false);
+    expect(OidcLinkWire.safeParse({ url: "http://localhost:28091/authorize" }).success).toBe(true);
+    for (const url of ["javascript:alert(1)", "xhttp://sso.test/a", "httpx://sso.test/a"])
+      expect(OidcLinkWire.safeParse({ url }).success).toBe(false);
   });
 });
