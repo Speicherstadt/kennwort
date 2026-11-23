@@ -43,8 +43,6 @@ Geplant ist:
   iOS-Schlüsselbund verpackt;
 - Ausfüllen in allen Apps und Browsern über den Android-Autofill-Dienst und die
   AutoFill-Erweiterung von iOS, mit Passkeys;
-- die Zwischenablage nach 30 Sekunden leeren, kein Screenshot in der Eintragsansicht.
-
 Bis dahin ist die Web-App der Weg am Handy.
 
 ### Stand
@@ -54,6 +52,23 @@ Das Gerüst steht: eine Tauri-3-App (3.0.0-alpha.6; Tauri 3 ist noch nicht stabi
 und das iOS-Projekt sind angelegt. Noch fehlt die Verbindung zum Kennwort-Server: Die Web-App
 spricht ihren Server unter derselben Adresse an, von der sie geladen wurde, und in der App ist das
 die App selbst. Solange das offen ist, startet die App, meldet sich aber bei keinem Server an.
+
+### Zwischenablage und Bildschirmschutz
+
+Kopierst du ein Passwort, einen Einmalcode oder ein anderes Feld, leert Kennwort die
+Zwischenablage nach 30 Sekunden wieder, aber nur, wenn dort noch genau dieser Wert liegt. Hast du
+inzwischen etwas anderes kopiert, bleibt es unangetastet.
+
+- **App unter Android**: Die Kopie ist als sensibel markiert; ab Android 13 zeigt das System
+  dann keine Vorschau des Inhalts. Die App lässt keine Screenshots und Bildschirmaufnahmen zu, und
+  in der Übersicht der zuletzt genutzten Apps erscheint sie leer. Android erlaubt das Lesen der
+  Zwischenablage nur der App im Vordergrund: Bist du nach 30 Sekunden in einer anderen App, bleibt
+  die Kopie liegen, bis Android sie selbst entfernt.
+- **Web-App und Browser**: Kennwort liest die Zwischenablage nach 30 Sekunden zurück und leert sie,
+  wenn noch der kopierte Wert darin liegt. Fragt der Browser dabei nach der Erlaubnis zum Einfügen
+  oder ist die Seite nicht im Vordergrund, wird nichts geleert, damit nie eine fremde Kopie
+  verschwindet.
+- **App unter iOS**: kopiert vorerst wie die Web-App.
 
 ### Updates der App
 

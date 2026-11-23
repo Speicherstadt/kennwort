@@ -242,7 +242,7 @@ Code und Endgeräten, nicht in den Algorithmen.
 | SSO-Konto übernommen | SSO entschlüsselt nichts, Passkey/Passphrase nötig | keins |
 | Mitarbeiter verlässt Firma | neuer Tresor-Schlüssel, Passwörter zum Ändern markiert | kopierte Passwörter bis zur Änderung |
 | Malware auf dem Gerät | automatisches Sperren, Schlüssel nur im Speicher | hoch, außerhalb des Modells |
-| Passwort bleibt am Handy in der Zwischenablage | Kopieren nur auf Tipp; native App leert die Zwischenablage nach 30 s und markiert sie als sensibel | PWA kann nicht zuverlässig leeren |
+| Passwort bleibt am Handy in der Zwischenablage | Kopieren nur auf Tipp; native App leert die Zwischenablage nach 30 s und markiert sie als sensibel | Die PWA leert nach 30 s nur, wenn noch ihr Wert in der Zwischenablage liegt und der Browser das Lesen erlaubt |
 | Anmeldung durchprobieren | Rate-Limits, Sperre nach Fehlversuchen; die Passphrase kommt nie zum Server | gering |
 | Datenleck-Prüfung verrät Passwörter | nur die ersten 5 Hex-Zeichen von SHA-1 gehen über den eigenen Server hinaus, mit Polsterung; Vergleich auf dem Gerät; aus, bis die Person sie einschaltet | gering: Server und Dienst sehen, welche Präfixe ein Konto abfragt |
 
@@ -382,7 +382,7 @@ systemweit ausfüllt. In Firefox für Android läuft zusätzlich die Extension.
 
 | Angebot | Wann | Ausfüllen am Handy |
 | --- | --- | --- |
-| PWA | Bauphase 3 | Kopieren mit einem Tipp; Zwischenablage wird nicht automatisch geleert |
+| PWA | Bauphase 3 | Kopieren mit einem Tipp; Zwischenablage nach 30 s geleert, soweit der Browser das Lesen erlaubt |
 | Extension in Firefox für Android | Bauphase 4 | Inline-Menü wie am Desktop |
 | Tauri-3-Mobile-App | Bauphase 8 (iOS von Hand) | systemweit in allen Apps und Browsern, dazu Passkeys |
 
