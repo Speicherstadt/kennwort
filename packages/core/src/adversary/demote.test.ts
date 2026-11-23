@@ -322,4 +322,19 @@ describe("reducing an editor to reading", () => {
     // Nothing older goes out above it; the entry waits for a restore from honest versions
     expect((await server.pull()).find((r) => idKey(r.entryId) === idKey(byAnna))?.version).toBe(4);
   });
+  it("a broken copy of the withheld version does not pass for one a reader wrote", async () => {
+    const { server, jonasDevice } = await saved();
+    const resaved = await resave(server, jonasDevice);
+    const newer = withField(bank, "user", "jonas-neu");
+    const device = (await sync(edit(resaved, byAnna, newer), server, contextFor(jonas))).device;
+    server.push(
+      sealRecord(asAuthor(anna), contextFor(anna).ring, byAnna, 4, bank, contextFor(anna).lastSeen),
+    );
+    const lying = lyingServer(server, {
+      versions: (records) =>
+        records.map((r) => (r.version === 3 ? { ...r, signature: flipByte(r.signature) } : r)),
+    });
+    const restored = await restore(lying, device);
+    expect(restored.device.known.get(idKey(byAnna))?.content).toEqual(newer);
+  });
 });
