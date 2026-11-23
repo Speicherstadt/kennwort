@@ -2,7 +2,7 @@
  * The leak check while the account is open (K-603, P-23): the state the security page shows, and
  * a run over the entries it is given. The ranges stay in the check's memory (packages/core,
  * createLeakCheck) and go with the account when it locks; while the check is off nothing is asked.
- * A run that a newer one overtook leaves the state to the newer one.
+ * A run that a newer one overtook leaves the state to the newer one and sends no further batch.
  */
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import type { LeakCheck, LeakError } from "@kennwort/core";
@@ -25,7 +25,8 @@ export const createLeaks = (check: LeakCheck) => {
     if (run !== latest) return;
     if (!enabled) return setState({ kind: "off" });
     setState({ kind: "checking" });
-    const result = await check.check(passwordsToCheck(entries), enabled);
+    // A newer run (the switch turned off, other entries) stops this one before its next batch
+    const result = await check.check(passwordsToCheck(entries), () => run === latest);
     if (run !== latest) return;
     if (result.ok) setState({ kind: "done", leaked: leakedByEntry(entries, result.value) });
     else

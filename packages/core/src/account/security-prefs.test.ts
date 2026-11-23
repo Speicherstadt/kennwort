@@ -7,6 +7,7 @@ import {
   leakCheckOn,
   mergeSecurityPrefs,
   monthOf,
+  nextChoice,
   ReportMonth,
   reportDue,
 } from "./security-prefs.ts";
@@ -92,5 +93,16 @@ describe("security settings in the account state", () => {
     const plain = mergeStates(emptyState(root), emptyState(root));
     expect(plain.ok && "leakCheck" in plain.value).toBe(false);
     expect(plain.ok && leakCheckOn(plain.value)).toBe(false);
+  });
+});
+
+describe("nextChoice (review of K-603)", () => {
+  it("dates a choice now, or just after the current one when that is dated ahead", () => {
+    expect(nextChoice(undefined, true, 100)).toEqual(on(100));
+    expect(nextChoice(on(50), false, 100)).toEqual(off(100));
+    expect(nextChoice(on(99), false, 100)).toEqual(off(100));
+    expect(nextChoice(on(100), false, 100)).toEqual(off(101));
+    expect(nextChoice(on(5000), false, 100)).toEqual(off(5001));
+    expect(laterChoice(on(5000), nextChoice(on(5000), false, 100))).toEqual(off(5001));
   });
 });

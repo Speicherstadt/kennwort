@@ -25,6 +25,28 @@ export type UpstreamDeps = {
   now: () => number;
 };
 
+/**
+ * The body as text, read only up to `limit` bytes: a longer one is no range, and reading on would
+ * hold whatever an endless answer sends in memory (review of K-603); undefined then
+ */
+const textUpTo = async (response: Response, limit: number) => {
+  const reader = response.body?.getReader();
+  if (!reader) return "";
+  const decoder = new TextDecoder();
+  let text = "";
+  let length = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) return text + decoder.decode();
+    length += value.length;
+    if (length > limit) {
+      await reader.cancel().catch(() => undefined);
+      return undefined;
+    }
+    text += decoder.decode(value, { stream: true });
+  }
+};
+
 const ask = async ({ url, fetch }: UpstreamDeps, prefix: string) => {
   const response = await fetch(`${url}${prefix}`, {
     headers: { "Add-Padding": "true", "User-Agent": "Kennwort" },
@@ -32,10 +54,8 @@ const ask = async ({ url, fetch }: UpstreamDeps, prefix: string) => {
     signal: AbortSignal.timeout(RANGE_TIMEOUT_MS),
   }).catch(() => undefined);
   if (!response?.ok) return undefined;
-  const text = await response.text().catch(() => undefined);
-  return text !== undefined && text.length <= MAX_RANGE_LENGTH && parseRange(text).ok
-    ? text
-    : undefined;
+  const text = await textUpTo(response, MAX_RANGE_LENGTH).catch(() => undefined);
+  return text !== undefined && parseRange(text).ok ? text : undefined;
 };
 
 export const upstreamRanges = (deps: UpstreamDeps): RangeSource => {

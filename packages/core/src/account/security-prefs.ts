@@ -26,6 +26,17 @@ export const laterChoice = (
   return theirs.at > mine.at || (theirs.at === mine.at && !theirs.on) ? theirs : mine;
 };
 
+/**
+ * This person's new choice over the current one: dated now, but always after the current one, so
+ * it wins on every device even when the current one came from a device whose clock ran ahead
+ * (review of K-603: else that device would merge the check back on)
+ */
+export const nextChoice = (
+  current: LeakCheckChoice | undefined,
+  on: boolean,
+  now: number,
+): LeakCheckChoice => ({ on, at: Math.max(now, current ? current.at + 1 : 0) });
+
 /** The later of two months; YYYY-MM sorts as text */
 export const laterMonth = (mine: string | undefined, theirs: string | undefined) =>
   [mine, theirs]

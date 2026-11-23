@@ -2,7 +2,8 @@
  * The leak check of the security overview (K-603, docs/sicherheitsdesign.md P-23): which of the
  * given passwords appear in Have I Been Pwned's Pwned Passwords, by k-anonymity. Per password only
  * the first five hex characters of its SHA-1 go to `fetchRange`; the range that comes back is
- * compared with the other 35 on the device. Nothing at all goes out while the check is off.
+ * compared with the other 35 on the device. Nothing at all goes out while the check is off, and a
+ * run that is switched off part way sends no further batch (review of K-603).
  *
  * Each prefix is asked once and its range kept in memory for as long as the check lives (the open
  * account), never on a disk; a range that failed is asked again next time. Prefixes go out in
@@ -41,26 +42,37 @@ export const createLeakCheck = (fetchRange: FetchRange) => {
     ranges.set(prefix, parsed.value);
     return undefined;
   };
-  /** A few at a time; the first batch with a failure ends it, the batches after it go nowhere */
-  const loadAll = async (prefixes: readonly string[]): Promise<LeakError | undefined> => {
+  /**
+   * A few at a time; the first batch with a failure ends it, the batches after it go nowhere.
+   * Before each batch the check must still be on: switched off part way, nothing more goes out.
+   */
+  const loadAll = async (
+    prefixes: readonly string[],
+    enabled: () => boolean,
+  ): Promise<LeakError | undefined> => {
     if (prefixes.length === 0) return undefined;
+    if (!enabled()) return "off";
     const failures = await Promise.all(prefixes.slice(0, LEAK_CONCURRENCY).map(load));
     return (
-      failures.find((failure) => failure !== undefined) ?? loadAll(prefixes.slice(LEAK_CONCURRENCY))
+      failures.find((failure) => failure !== undefined) ??
+      loadAll(prefixes.slice(LEAK_CONCURRENCY), enabled)
     );
   };
   return {
-    /** The leaked passwords among these; while `enabled` is false, err("off") and no request */
+    /**
+     * The leaked passwords among these; while `enabled` says false, err("off") and no request.
+     * It is asked again before every batch, so switching off part way stops the run
+     */
     check: async (
       passwords: readonly string[],
-      enabled: boolean,
+      enabled: () => boolean,
     ): Promise<Result<LeakCounts, LeakError>> => {
-      if (!enabled) return err("off");
+      if (!enabled()) return err("off");
       const hashes = new Map(
         passwords.filter((p) => p !== "").map((password) => [password, pwnedHash(password)]),
       );
       const prefixes = [...new Set([...hashes.values()].map((hash) => hash.prefix))].sort();
-      const failure = await loadAll(prefixes);
+      const failure = await loadAll(prefixes, enabled);
       if (failure) return err(failure);
       const counts = new Map<string, number>();
       for (const [password, { prefix, suffix }] of hashes) {

@@ -12,6 +12,7 @@ import {
   createLeakCheck,
   leakCheckOn,
   monthOf,
+  nextChoice,
   reportDue,
 } from "@kennwort/core";
 import { mayExport } from "../export/export.ts";
@@ -52,7 +53,8 @@ export const createSecurity = (wiring: SecurityWiring) => {
       const current = state();
       return current !== undefined && leakCheckOn(current);
     },
-    setLeakCheck: (on) => save((current) => ({ ...current, leakCheck: { on, at: now() } })),
+    setLeakCheck: (on) =>
+      save((current) => ({ ...current, leakCheck: nextChoice(current.leakCheck, on, now()) })),
     leaks,
     reportMonth: () => {
       const current = state();

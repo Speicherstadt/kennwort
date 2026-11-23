@@ -6,6 +6,9 @@ import { createLeakCheck, type FetchRange, LEAK_CONCURRENCY } from "./leak-check
 /** SHA-1 by node:crypto, apart from the code under test */
 const sha1 = (password: string) => createHash("sha1").update(password).digest("hex").toUpperCase();
 
+const ON = () => true;
+const OFF = () => false;
+
 const LEAKED: Record<string, number> = { password: 9_545_824, sommer2019: 412, Hallo123: 77 };
 
 /** A padded range as the service sends it: the leaked suffixes under the prefix, and made-up ones with 0 */
@@ -31,13 +34,13 @@ const recording = (answer: FetchRange = async (prefix) => ok(rangeOf(prefix))) =
 describe("createLeakCheck", () => {
   it("sends nothing while the check is off", async () => {
     const { asked, check } = recording();
-    expect(await check.check(["password", "sommer2019"], false)).toEqual(err("off"));
+    expect(await check.check(["password", "sommer2019"], OFF)).toEqual(err("off"));
     expect(asked).toEqual([]);
   });
 
   it("asks only for the five-character prefix and finds the leaked passwords by the suffix", async () => {
     const { asked, check } = recording();
-    const result = await check.check(["password", "Kessel-Pumpe-Rohr-7!", "sommer2019"], true);
+    const result = await check.check(["password", "Kessel-Pumpe-Rohr-7!", "sommer2019"], ON);
     expect(result.ok && [...result.value].sort()).toEqual([
       ["password", 9_545_824],
       ["sommer2019", 412],
@@ -50,7 +53,7 @@ describe("createLeakCheck", () => {
 
   it("never sends a password, its suffix or more than the prefix", async () => {
     const { asked, check } = recording();
-    await check.check(["Hallo123"], true);
+    await check.check(["Hallo123"], ON);
     expect(asked).toEqual([sha1("Hallo123").slice(0, 5)]);
     expect(asked.join()).not.toContain("Hallo123");
     expect(asked.join()).not.toContain(sha1("Hallo123").slice(5));
@@ -59,7 +62,7 @@ describe("createLeakCheck", () => {
   it("asks for each prefix once, in sorted order, and skips empty passwords", async () => {
     const { asked, check } = recording();
     const passwords = ["Hallo123", "password", "password", "", "Rohr-9", "sommer2019"];
-    await check.check(passwords, true);
+    await check.check(passwords, ON);
     const expected = [
       ...new Set(["Hallo123", "password", "Rohr-9", "sommer2019"].map((p) => sha1(p).slice(0, 5))),
     ].sort();
@@ -68,8 +71,8 @@ describe("createLeakCheck", () => {
 
   it("keeps each range in memory: a second check asks for new prefixes only", async () => {
     const { asked, check } = recording();
-    await check.check(["password"], true);
-    const second = await check.check(["password", "Hallo123"], true);
+    await check.check(["password"], ON);
+    const second = await check.check(["password", "Hallo123"], ON);
     expect(asked).toEqual([sha1("password").slice(0, 5), sha1("Hallo123").slice(0, 5)]);
     expect(second.ok && second.value.get("password")).toBe(9_545_824);
     expect(second.ok && second.value.get("Hallo123")).toBe(77);
@@ -86,7 +89,7 @@ describe("createLeakCheck", () => {
       return ok(rangeOf(prefix));
     });
     const passwords = Array.from({ length: 10 }, (_, i) => `Passwort-${i}`);
-    const result = await check.check(passwords, true);
+    const result = await check.check(passwords, ON);
     expect(result.ok).toBe(true);
     expect(most).toBe(LEAK_CONCURRENCY);
     expect(new Set(asked).size).toBe(10);
@@ -98,7 +101,7 @@ describe("createLeakCheck", () => {
     const { check } = recording(async (prefix) =>
       prefix === failing ? err("unreachable") : ok(rangeOf(prefix)),
     );
-    expect(await check.check(passwords, true)).toEqual(err("unreachable"));
+    expect(await check.check(passwords, ON)).toEqual(err("unreachable"));
   });
 
   it("stops at the first batch that fails, says why, and asks for a failed range again", async () => {
@@ -106,9 +109,9 @@ describe("createLeakCheck", () => {
     const { asked, check } = recording(async (prefix) =>
       fail ? err("limited") : ok(rangeOf(prefix)),
     );
-    expect(await check.check(["password"], true)).toEqual(err("limited"));
+    expect(await check.check(["password"], ON)).toEqual(err("limited"));
     fail = false;
-    const again = await check.check(["password"], true);
+    const again = await check.check(["password"], ON);
     expect(again.ok && again.value.get("password")).toBe(9_545_824);
     expect(asked).toEqual([sha1("password").slice(0, 5), sha1("password").slice(0, 5)]);
   });
@@ -116,7 +119,7 @@ describe("createLeakCheck", () => {
   it("asks no further batch after a failed one", async () => {
     const { asked, check } = recording(async () => err("unreachable"));
     const passwords = Array.from({ length: 10 }, (_, i) => `Passwort-${i}`);
-    expect(await check.check(passwords, true)).toEqual(err("unreachable"));
+    expect(await check.check(passwords, ON)).toEqual(err("unreachable"));
     expect(asked).toHaveLength(LEAK_CONCURRENCY);
   });
 
@@ -125,15 +128,34 @@ describe("createLeakCheck", () => {
     const { asked, check } = recording(async (prefix) =>
       html ? ok("<html>Wartung</html>") : ok(rangeOf(prefix)),
     );
-    expect(await check.check(["password"], true)).toEqual(err("malformed"));
+    expect(await check.check(["password"], ON)).toEqual(err("malformed"));
     html = false;
-    expect((await check.check(["password"], true)).ok).toBe(true);
+    expect((await check.check(["password"], ON)).ok).toBe(true);
     expect(asked).toHaveLength(2);
   });
 
   it("finds nothing for passwords that are not in the list", async () => {
     const { check } = recording();
-    const result = await check.check(["Kessel-Pumpe-Rohr-7!"], true);
+    const result = await check.check(["Kessel-Pumpe-Rohr-7!"], ON);
     expect(result.ok && result.value.size).toBe(0);
+  });
+});
+
+describe("createLeakCheck, switched off part way (review of K-603)", () => {
+  it("sends no further batch once the check is off, and answers off", async () => {
+    let on = true;
+    const { asked, check } = recording(async (prefix) => {
+      on = false;
+      return ok(rangeOf(prefix));
+    });
+    const passwords = Array.from({ length: LEAK_CONCURRENCY * 3 }, (_, i) => `Weber-${i}-Rohr!`);
+    expect(await check.check(passwords, () => on)).toEqual(err("off"));
+    expect(asked).toHaveLength(LEAK_CONCURRENCY);
+  });
+
+  it("answers off, not an empty result, while off even with no password to check", async () => {
+    const { asked, check } = recording();
+    expect(await check.check([], OFF)).toEqual(err("off"));
+    expect(asked).toEqual([]);
   });
 });

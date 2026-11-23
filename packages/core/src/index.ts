@@ -51,6 +51,7 @@ export {
   LeakCheckChoice,
   leakCheckOn,
   monthOf,
+  nextChoice,
   reportDue,
 } from "./account/security-prefs.ts";
 export {

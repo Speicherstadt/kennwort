@@ -2567,10 +2567,14 @@ treffer = Zeile mit suffix und ANZAHL > 0
 
 1. **Aus, bis die Person sie einschaltet.** Die Wahl steht als `leakCheck: { on, at }` im
    Kontozustand, versiegelt unter AK (Schlüsselhierarchie); zwischen Geräten gilt die spätere Wahl,
-   bei gleicher Zeit „aus“. Je Person statt je Firma, weil eine Firmen-Einstellung in der signierten
+   bei gleicher Zeit „aus“. Eine neue Wahl trägt die jetzige Zeit, mindestens aber eine Millisekunde
+   nach der bisherigen (`nextChoice`): Auch wenn die Uhr des Geräts, das sie einschaltete, vorging,
+   gilt das spätere „aus“ auf allen Geräten. Je Person statt je Firma, weil eine Firmen-Einstellung in der signierten
    Richtlinie (F-07) ein neues Format bräuchte, und eine unsignierte der Server einschalten könnte,
    um Präfixe zu sammeln, die er nie sehen sollte. Solange sie aus ist, geht keine Anfrage hinaus
    (`createLeakCheck` gibt `off` zurück, ohne zu fragen; Test in `packages/core` und Playwright).
+   Vor jedem Schub fragt die Prüfung erneut, ob sie noch an ist: Wird sie mitten im Lauf
+   ausgeschaltet, geht kein weiterer Präfix hinaus.
 2. **Nur fünf Hex-Zeichen.** Das Gerät schickt je verschiedenem Präfix eine Anfrage, sortiert und
    höchstens vier zugleich: Die Reihenfolge verrät nicht, zu welchem Eintrag ein Präfix gehört. Der
    Server nimmt nur genau fünf große Hex-Zeichen (`isRangePrefix`), alles andere beantwortet er mit
@@ -2579,7 +2583,8 @@ treffer = Zeile mit suffix und ANZAHL > 0
    Web-App braucht für `connect-src` keinen fremden Host, und Have I Been Pwned sieht die Adresse
    des Servers statt der Person (Entscheidungen im Projektplan). Der Server fragt mit
    `Add-Padding: true`, damit jede Antwort etwa gleich groß ist, und reicht die Antwort samt
-   Polsterung unverändert weiter, wenn sie sich als Bereich lesen lässt (`parseRange`), sonst 502.
+   Polsterung unverändert weiter, wenn sie sich als Bereich lesen lässt (`parseRange`), sonst 502;
+   er liest höchstens 1 MiB und bricht eine längere Antwort ab, statt sie im Speicher zu sammeln.
    Er hält sie eine Stunde im Speicher (höchstens 10 000), nie auf der Platte, und schreibt den
    Pfad als `/api/pwned/:prefix` ins Log. Je Konto nimmt er 1200 Anfragen in zehn Minuten.
    Mit `KENNWORT_PWNED_URL` trägt der Betreiber einen Spiegel ein, mit `off` schaltet er die
