@@ -11,18 +11,27 @@ export type PushResult = { ok: true } | { ok: false; current: EntryRecord | unde
 export type SyncServer = {
   push: (record: EntryRecord) => PushResult | Promise<PushResult>;
   pull: () => EntryRecord[] | Promise<EntryRecord[]>;
+  /** Every version of one entry the server keeps, oldest first: a re-save after a demotion (P-09) */
+  versions?: (entryId: Uint8Array) => EntryRecord[] | Promise<EntryRecord[]>;
 };
-type MemoryServer = { push: (record: EntryRecord) => PushResult; pull: () => EntryRecord[] };
+type MemoryServer = {
+  push: (record: EntryRecord) => PushResult;
+  pull: () => EntryRecord[];
+  versions: (entryId: Uint8Array) => EntryRecord[];
+};
 
 export const memoryServer = (): MemoryServer => {
   const records = new Map<string, EntryRecord>();
+  const history: EntryRecord[] = [];
   return {
     push: (record) => {
       const current = records.get(idKey(record.entryId));
       if ((current?.version ?? 0) + 1 !== record.version) return { ok: false, current };
       records.set(idKey(record.entryId), record);
+      history.push(record);
       return { ok: true };
     },
     pull: () => [...records.values()],
+    versions: (entryId) => history.filter((r) => idKey(r.entryId) === idKey(entryId)),
   };
 };

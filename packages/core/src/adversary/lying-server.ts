@@ -11,6 +11,8 @@ export type Lie = {
   pull?: (records: EntryRecord[]) => EntryRecord[];
   /** Answers a push itself instead of the honest server; undefined lets it through */
   push?: (record: EntryRecord) => PushResult | undefined;
+  /** Changes the versions of an entry a device asks for */
+  versions?: (records: EntryRecord[]) => EntryRecord[];
 };
 
 export const lyingServer = (honest: SyncServer, lie: Lie): SyncServer => ({
@@ -19,6 +21,10 @@ export const lyingServer = (honest: SyncServer, lie: Lie): SyncServer => ({
     return lie.pull ? lie.pull(records) : records;
   },
   push: async (record) => lie.push?.(record) ?? honest.push(record),
+  versions: async (entryId) => {
+    const records = (await honest.versions?.(entryId)) ?? [];
+    return lie.versions ? lie.versions(records) : records;
+  },
 });
 
 /** Flips one byte, as a server that tampers with a ciphertext or a signature would */

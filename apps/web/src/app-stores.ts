@@ -53,7 +53,14 @@ export const createStores = (props: {
   const sharing = createSharing(props.api, props.session, entries.keys);
   const exits = createExits(
     { api: props.api, session: props.session },
-    { reload: () => store.reload(), rotate: entries.rotate, behind: entries.behind },
+    {
+      reload: () => store.reload(),
+      rotate: entries.rotate,
+      behind: entries.behind,
+      resave: entries.resave,
+      restore: entries.restore,
+      restorable: entries.restorable,
+    },
   );
   const store: VaultStore = createVaultStore(props.api, props.session, async (loaded) => {
     await Promise.all([entries.load(loaded.vaults, loaded.trust), sharing.load(loaded)]);

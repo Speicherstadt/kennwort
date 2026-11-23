@@ -53,6 +53,12 @@ export const httpServer = (connection: Connection, vaultId: Uint8Array): SyncSer
     const current = EntryRecord.safeParse(conflict.success ? conflict.data.current : undefined);
     return { ok: false, current: current.success ? current.data : undefined };
   },
+  versions: async (entryId) => {
+    const url = `${vaultUrl(connection, vaultId)}/entries/${encodeBytes(entryId)}/versions`;
+    const response = await connection.fetch(url, { headers: authorization(connection) });
+    if (!response.ok) throw unexpected("versions", response.status);
+    return parsedRecords(await response.json().catch(() => undefined));
+  },
 });
 
 const toLiveEvent = (event: string, data: string): LiveEvent | undefined => {

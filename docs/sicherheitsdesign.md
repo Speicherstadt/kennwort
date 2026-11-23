@@ -1090,6 +1090,18 @@ signatur  = F-03(autor, "entry", tresor-ID, eintrags-ID, version, epoche, SHA-51
   (E-13).
 - **Signatur des Autors**: Der Client prüft, dass der Autor zur angegebenen Epoche laut Log
   „bearbeiten“ durfte; so kann auch ein lesendes Mitglied, das VKₑ kennt, nichts unterschieben.
+  Maßgeblich ist die Rolle, wie das Log jetzt steht.
+- **Herabstufen auf „lesen“**: Damit die Einträge eines Mitglieds, das nicht mehr bearbeiten darf,
+  für alle lesbar bleiben, schreibt der Client des Verwalters vor dem Log-Eintrag `rolle` jeden
+  Eintrag, dessen neueste Version dieses Mitglied geschrieben hat, unverändert unter seiner eigenen
+  Signatur neu, wie beim Schlüsselwechsel ([P-11](#p-11-austritt-und-schlusselwechsel)); scheitert
+  das, signiert er die Rolle nicht. Danach holt er den Tresor neu: Eine Version, die das Mitglied
+  zwischen dem Neuschreiben und dem Log-Eintrag noch auf den Server gebracht hat, gilt nicht mehr;
+  der Client nimmt aus den gespeicherten Versionen des Eintrags die neueste, die jetzt gilt, und
+  schreibt sie über der abgelehnten neu – nie eine, die nicht gilt, auch nicht, wenn er sie vorher
+  angenommen hatte. Bricht das ab (offline), holt es der Client eines Verwalters nach dem nächsten
+  Entsperren nach, wie einen unvollständigen Schlüsselwechsel (`packages/core/src/sync/resave.ts`,
+  `apps/web/src/vaults/demote.ts`).
   Der Schlüssel dazu kommt nur aus einem Zertifikat, das der Firmen-Wurzelschlüssel für genau
   diesen Autor signiert hat und dessen Fingerabdruck das Log für ihn nennt (E-05).
 - **Löschen** ist ein signierter Grabstein mit neuer Version. Verschwindet ein bekannter Eintrag
@@ -3022,9 +3034,8 @@ neuer Tresor nicht ohnehin bringt:
    Eintrags-Schlüssel, AAD mit neuem Tresor, signiert) und nimmt die Person, die der Kunde ist, als
    Verwalter auf – nur, wenn der gemerkte Wurzelschlüssel dieser Firma sie bestätigt.
 3. Danach signiert der Handwerker, solange er noch Verwalter ist, für sich selbst `rolle` mit
-   „bearbeiten“. Nicht „lesen“: Ein Datensatz gilt nur, solange sein Autor nach dem Log, wie es jetzt
-   steht, bearbeiten darf (P-09); die Einträge, die er gerade geschrieben hat, ließen sich sonst nicht
-   mehr öffnen.
+   „bearbeiten“, damit er die Einträge bei der Wartung weiter pflegen kann. Stuft der Kunde ihn
+   später auf „lesen“ herab, schreibt dessen Client die Einträge des Handwerkers neu (P-09).
 
 Ab dann entscheidet der Kunde: Er ist der einzige Verwalter. Entfernt er den Handwerker, wechselt
 sein Client den Schlüssel und schreibt jeden Eintrag unter seiner eigenen Signatur neu

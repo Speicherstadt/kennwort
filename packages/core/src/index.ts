@@ -233,6 +233,7 @@ export {
   sealRecord,
   type VaultKeyring,
 } from "./sync/record.ts";
+export { refusedByReaders, resaveBy, restoreRefused, writtenByReaders } from "./sync/resave.ts";
 export {
   genuineShares,
   makeShare,

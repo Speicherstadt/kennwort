@@ -25,10 +25,12 @@ import {
   rotateVaultKey,
   sealVaultName,
   type Trust,
+  type VaultRole,
   verifyLog,
   type WrappedKey,
 } from "@kennwort/core";
 import type { Session } from "../session/session.ts";
+import { changeRole, type DemoteStores } from "./demote.ts";
 import { catchUpRenewals } from "./renewals.ts";
 import { type ChangeError, fromIdKey } from "./vault-members.ts";
 
@@ -44,7 +46,9 @@ export type ExitStores = {
   ) => Promise<{ ok: true; value: Rotated } | { ok: false; error: SaveError }>;
   /** Whether the vault still has entries from before its current epoch */
   behind: (vaultIdText: string) => boolean;
-};
+  /** Whether the device refused an entry as written by someone reduced to reading (demote.ts) */
+  restorable: (vaultIdText: string) => boolean;
+} & DemoteStores;
 
 export type ExitError = ChangeError | SaveError | "not-member" | "uncertified-member";
 type Done = { ok: true } | { ok: false; error: ExitError };
@@ -194,11 +198,16 @@ export const catchUp = async (
   for (const vault of ready) {
     const due = dueExits(vault.log, loaded.left);
     const attempt = `${vault.idText}:${vault.log.seq}`;
-    if ((!due.rotate && !stores.behind(vault.idText)) || tried.has(attempt)) continue;
+    const behind = stores.behind(vault.idText);
+    // A demotion whose last step did not run: written anew once no rotation is due (demote.ts)
+    const restore = !vault.log.rotationDue && stores.restorable(vault.idText);
+    if ((!due.rotate && !behind && !restore) || tried.has(attempt)) continue;
     tried.add(attempt);
     const done = due.rotate
       ? await exitVault(deps, stores, vault, loaded.trust, due.remove.map(fromIdKey))
-      : await rewrite(deps, stores, loaded, vault.idText);
+      : behind
+        ? await rewrite(deps, stores, loaded, vault.idText)
+        : await stores.restore(vault.idText);
     if (!done.ok) failed.push({ idText: vault.idText, error: done.error });
   }
   return failed;
@@ -227,6 +236,9 @@ export const createExits = (deps: ExitDeps, stores: ExitStores) => {
       const remove = [accountId, ...others.map(fromIdKey)];
       return oneAtATime(() => exitVault(deps, stores, vault, trust, remove));
     },
+    /** Another role for a member; down to reading with the re-save of their entries (demote.ts) */
+    changeRole: (vault: Vault, accountId: Uint8Array, role: VaultRole) =>
+      oneAtATime(() => changeRole(deps, stores, vault, accountId, role)),
     /**
      * First the rekey entries of renewed keys (P-12): when the server took any, the vaults load
      * anew, and that load catches up on the rotation they want

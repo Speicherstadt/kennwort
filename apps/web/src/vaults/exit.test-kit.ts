@@ -32,7 +32,14 @@ export const annaInBuero = async () => {
     return vault;
   };
   const deps: ExitDeps = { api: { ...w.api, ...w.shares.api }, session: w.c.session };
-  const exits = { reload, rotate: w.store.rotate, behind: w.store.behind };
+  const exits = {
+    reload,
+    rotate: w.store.rotate,
+    behind: w.store.behind,
+    resave: w.store.resave,
+    restore: w.store.restore,
+    restorable: w.store.restorable,
+  };
   return { ...w, reload, loaded, vaultOf, deps, exits };
 };
 

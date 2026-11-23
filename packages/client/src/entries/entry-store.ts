@@ -32,6 +32,7 @@ import type { Vault } from "../vaults/vaults.ts";
 import { withPulled, withSynced } from "./device-merge.ts";
 import type { StoredEntry } from "./entries.ts";
 import { entryImport } from "./entry-import.ts";
+import { entryResave } from "./entry-resave.ts";
 import { entryRotation } from "./entry-rotation.ts";
 import { entryWrites } from "./entry-writes.ts";
 
@@ -92,6 +93,7 @@ const copyServer = (copy: EntryCopy, vaultIdText: string): SyncServer => ({
  * the copy, which keeps it only if it opens under the vault's checked log (P-09)
  */
 const keeping = (server: SyncServer, keep: (records: EntryRecord[]) => void): SyncServer => ({
+  ...(server.versions && { versions: server.versions }),
   pull: async () => {
     const records = await server.pull();
     keep(records);
@@ -187,7 +189,7 @@ const vaultSync = (deps: {
     }));
     return { queued, synced };
   };
-  return { pullNow, syncDevice };
+  return { pullNow, syncDevice, serverNow: openOf };
 };
 
 /** Syncing queued changes of one or more entries, refused in a vault nobody may write in now */
@@ -282,7 +284,12 @@ export const createEntryStore = (serverFor: ServerFor, session: Session, copy?: 
     }));
   };
 
-  const { pullNow, syncDevice } = vaultSync({ trust: () => trust, session, serverOf, update });
+  const { pullNow, syncDevice, serverNow } = vaultSync({
+    trust: () => trust,
+    session,
+    serverOf,
+    update,
+  });
 
   const { syncEntries, syncChange } = entrySyncs({ current, trust: () => trust, syncDevice });
 
@@ -317,6 +324,7 @@ export const createEntryStore = (serverFor: ServerFor, session: Session, copy?: 
     ...entryWrites(syncChange, current, update),
     ...entryImport(syncEntries, current, update),
     ...entryRotation({ current, states, pullNow, syncDevice }),
+    ...entryResave({ current, pullNow, syncDevice, serverNow }),
     entries,
     refused,
   };

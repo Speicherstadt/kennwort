@@ -136,7 +136,7 @@ const OpenedFrame = (props: {
             store={store}
             api={props.api}
             session={props.session}
-            onRemove={exits.remove}
+            exits={exits}
             onHandOver={handover.possible() ? handover.open : undefined}
           />
         )}

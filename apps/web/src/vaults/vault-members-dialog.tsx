@@ -20,7 +20,6 @@ import { VaultGroups } from "./vault-groups.tsx";
 import {
   addToVault,
   candidates,
-  changeVaultRole,
   declineRequest,
   grantRequest,
   hasExpired,
@@ -149,6 +148,8 @@ export const VaultMembersDialog = (props: {
   store: VaultStore;
   /** Takes someone out of the vault and rotates its key (exit.ts) */
   onRemove: (accountId: Uint8Array) => Promise<Outcome>;
+  /** Another role; down to reading re-saves their entries first (demote.ts) */
+  onRole: (accountId: Uint8Array, role: VaultRole) => Promise<Outcome>;
 }) => {
   const state = createDialogState(props);
   const { busy, error, requests, run } = state;
@@ -172,9 +173,7 @@ export const VaultMembersDialog = (props: {
               outside={outside().has(idKey(member.accountId))}
               editable={mayManage(props.vault)}
               busy={busy()}
-              onRole={(role) =>
-                run(() => changeVaultRole(api, session, props.vault, member.accountId, role))
-              }
+              onRole={(role) => run(() => props.onRole(member.accountId, role))}
               onRemove={() => run(() => props.onRemove(member.accountId))}
             />
           )}
