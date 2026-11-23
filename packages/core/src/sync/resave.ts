@@ -48,15 +48,22 @@ export const writtenByReaders = (records: readonly EntryRecord[], ctx: SyncConte
     })
     .map((record) => record.entryId);
 
-/** The newest of an entry's versions that passes every check of P-09 now */
-const newestValid = (versions: readonly EntryRecord[], ctx: SyncContext) =>
+const opening = (versions: readonly EntryRecord[], ctx: SyncContext) =>
   versions
     .toSorted((a, b) => b.version - a.version)
     .map((record) => ({
       record,
       opened: openRecordWithKey(record, ringOf(ctx, record.epoch), ctx.log, ctx.trust, 0),
-    }))
-    .find(({ opened }) => opened.ok);
+    }));
+
+/**
+ * Whether a version the device holds is one a reader wrote: only then may an older version replace
+ * it. A server that withholds a newer version that counts gets nothing restored (no rollback).
+ */
+const writtenByReader = (opened: ReturnType<typeof opening>, version: number) =>
+  opened.some(
+    ({ record, opened: o }) => record.version === version && !o.ok && o.error === "not-editor",
+  );
 
 /**
  * Takes the newest version of each entry that still counts and queues it unchanged for a re-save
@@ -68,10 +75,13 @@ export const restoreRefused = (
   ctx: SyncContext,
 ): Device =>
   histories.reduce((current, versions) => {
-    const found = newestValid(versions, ctx);
+    const all = opening(versions, ctx);
+    const found = all.find(({ opened }) => opened.ok);
     if (!found?.opened.ok) return current;
     const { record, opened } = found;
     const mine = current.known.get(idKey(record.entryId));
+    if (mine && mine.version > record.version && !writtenByReader(all, mine.version))
+      return current;
     // Even if the device took a newer version while its author could still edit: that one does
     // not count now, and this device must not sign it anew
     const kept =
