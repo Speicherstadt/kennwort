@@ -8,7 +8,12 @@
 
 type Entry = { reason: string; workspaces: string[] };
 /** npm packages, and the Rust crates the mobile app links into its binary (K-801) */
-export type Allowlist = { packages: Record<string, Entry>; crates?: Record<string, Entry> };
+export type Allowlist = {
+  packages: Record<string, Entry>;
+  crates?: Record<string, Entry>;
+  /** Every crate a Cargo.lock may hold, direct or indirect (lockViolations) */
+  lockedCrates?: { reason: string; names: string[] };
+};
 /** A workspace's runtime dependencies, as a map or as entries when several fields name one package */
 export type Workspace = { dir: string; dependencies: Record<string, string> | [string, string][] };
 
@@ -106,4 +111,32 @@ export const manifestCrates = (manifest: Record<string, unknown>): [string, unkn
   );
   // Entries, not a merged map: one name in two tables is checked twice, never hidden by the other
   return [table(manifest.dependencies), ...targets].flatMap((deps) => Object.entries(deps));
+};
+
+/** A package of a Cargo.lock: the crates the app's build resolved, direct and indirect */
+export type LockedCrate = { name: string; source?: string };
+
+const CRATES_IO = "registry+https://github.com/rust-lang/crates.io-index";
+
+/**
+ * Every crate of a workspace's Cargo.lock that the allowlist's `lockedCrates` does not name, and
+ * every one from somewhere other than crates.io (K-802, closing the review gap of K-801): the
+ * manifest check sees only the crates the app names itself, the lockfile every crate it links. A
+ * crate without a source is the workspace's own. A new indirect crate fails lint until someone
+ * looked at it and added its name; a newer version of a listed one passes, as Cargo.lock pins it.
+ */
+export const lockViolations = (
+  allowlist: Allowlist,
+  dir: string,
+  locked: LockedCrate[],
+): string[] => {
+  const names = new Set(allowlist.lockedCrates?.names ?? []);
+  return locked.flatMap(({ name, source }) => {
+    if (source === undefined) return [];
+    if (source !== CRATES_IO)
+      return [`${dir}: crate ${name} in Cargo.lock does not come from crates.io`];
+    return names.has(name)
+      ? []
+      : [`${dir}: crate ${name} in Cargo.lock is not in lockedCrates of allowed-dependencies.json`];
+  });
 };

@@ -1,0 +1,69 @@
+name: Android emulator
+
+# K-802: the autofill service end to end in an Android emulator (app/src/androidTest,
+# AutofillServiceTest): Kennwort is chosen as the autofill service, another app's login form gets
+# its suggestion, and tapping it opens Kennwort without filling anything. Nightly and by hand
+# only, never on a pull request: an emulator run is slow and flaky, so it does not block a merge
+# (docs/plan.md, Entscheidungen "Autofill unter Android"). The JVM unit tests run in android.yml;
+# filling after unlocking is checked on a real phone by a person.
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: android-emulator
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  autofill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: echo "JAVA_HOME=$JAVA_HOME_21_X64" >> "$GITHUB_ENV"
+      - run: echo "NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
+      - run: rustup target add x86_64-linux-android
+      # The emulator needs KVM on the runner
+      - run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/mobile/src-tauri/target
+            ~/.gradle/caches
+          key: android-emulator-${{ runner.os }}-${{ hashFiles('apps/mobile/src-tauri/Cargo.lock', 'apps/mobile/src-tauri/gen/android/**/*.gradle*') }}
+      # The x86_64 debug APK for the emulator; this also writes the Gradle files the app module applies
+      - run: bun run --cwd apps/mobile tauri android build --debug --apk --target x86_64
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          working-directory: apps/mobile/src-tauri/gen/android
+          # Install the app, choose Kennwort as the autofill service, then run the instrumented test
+          script: |
+            ./gradlew installUniversalDebug
+            adb shell settings put secure autofill_service app.kennwort/.autofill.KennwortAutofillService
+            adb shell dumpsys autofill | grep -i kennwort
+            ./gradlew connectedUniversalDebugAndroidTest
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-emulator-report
+          path: apps/mobile/src-tauri/gen/android/app/build/reports/androidTests/
+          retention-days: 14

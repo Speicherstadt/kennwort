@@ -9,11 +9,11 @@
  * first: the login submitted on the page that raised it is not offered for saving. A passkey
  * ceremony (K-406) goes before both, and the prompt's answer to it goes back to the passkey broker.
  */
-import type { Warning } from "../alert/messages.ts";
 
+import { pageHost } from "@kennwort/client/autofill/matches.ts";
+import type { Warning } from "../alert/messages.ts";
 import { extensionFrameSender, type Sender, targetOf } from "../fill/broker.ts";
 import { type FillTarget, type FrameInfo, fillTarget } from "../fill/frames.ts";
-import { pageHost } from "../page/matches.ts";
 import type { Ceremony, PasskeyAnswer } from "../passkey/messages.ts";
 import type { Captures } from "./captures.ts";
 import {

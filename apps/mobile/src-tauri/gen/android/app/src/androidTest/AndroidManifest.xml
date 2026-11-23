@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- K-802: a login screen in the test APK (package app.kennwort.test), another app to Kennwort -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity android:name="app.kennwort.autofill.LoginScreenActivity" android:exported="false" />
+    </application>
+</manifest>

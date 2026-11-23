@@ -51,7 +51,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 // Ids the native side mints itself (a UUID); bounded so a broken caller cannot flood the webview
 const REQUEST_ID = /^[A-Za-z0-9-]{1,64}$/;
 // A lower-case host as Android's ViewNode.webDomain and URL parsing give it; the exact match itself
-// stays with the shared matcher (apps/extension/src/page/matches.ts, moved to packages in K-802)
+// stays with the shared matcher (matches.ts, moved here from the extension in K-802)
 const HOST = /^[a-z0-9.-]{1,253}$/;
 // An Android package name or an iOS service identifier
 const APP_ID = /^[A-Za-z][A-Za-z0-9_.]{0,254}$/;
@@ -104,3 +104,39 @@ export const cancelResponse = (request: FillRequest): FillResponse => ({
   requestId: request.requestId,
   kind: "cancel",
 });
+
+/**
+ * A login the system offered to save after the person typed it into another app or page and
+ * confirmed Android's own "Save to Kennwort?" (K-802). It opens the app's editor filled in; only a
+ * second confirmation there saves it, so nothing is written on the native side's word alone.
+ */
+export type SaveProposal = {
+  version: typeof BRIDGE_VERSION;
+  requestId: string;
+  target: FillTarget;
+  username: string;
+  password: string;
+};
+
+// What one form field may carry: bounded, so a broken caller cannot flood the webview
+const MAX_VALUE = 4096;
+const isValue = (value: unknown): value is string =>
+  typeof value === "string" && value.length <= MAX_VALUE;
+
+export const parseSaveProposal = (raw: unknown): Result<SaveProposal, BridgeError> => {
+  if (!isRecord(raw)) return err("not-an-object");
+  if (raw.version !== BRIDGE_VERSION) return err("wrong-version");
+  if (typeof raw.requestId !== "string" || !REQUEST_ID.test(raw.requestId))
+    return err("bad-request-id");
+  const target = parseTarget(raw.target);
+  if (!target) return err("bad-target");
+  if (!isValue(raw.username) || !isValue(raw.password) || raw.password === "")
+    return err("bad-fields");
+  return ok({
+    version: BRIDGE_VERSION,
+    requestId: raw.requestId,
+    target,
+    username: raw.username,
+    password: raw.password,
+  });
+};

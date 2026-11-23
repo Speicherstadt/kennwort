@@ -12,11 +12,12 @@
  * prompt frame, whose page takes the warning once. Once per tab, page host and password while the
  * account stays unlocked. While locked there is no list, so nothing is compared or warned.
  */
+
+import { pageHost } from "@kennwort/client/autofill/matches.ts";
 import { alertHostTag } from "@kennwort/crypto";
 import type { Sender } from "../fill/broker.ts";
 import { targetOf } from "../fill/broker.ts";
 import { type FillTarget, type FrameInfo, fillTarget } from "../fill/frames.ts";
-import { pageHost } from "../page/matches.ts";
 import type { Captures } from "../save/captures.ts";
 import { contentSender, said } from "../save/save-broker.ts";
 import { ALERT_ITEM, KEYS_ITEM, type SessionArea } from "../session-keys.ts";

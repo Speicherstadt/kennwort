@@ -669,8 +669,20 @@ Ganz am Schluss, damit Tauri 3 bis dahin möglichst stabil ist. iOS baut der Loo
   (`apps/mobile/src/autofill/bridge.ts`, Entscheidung im Projektplan). Lokal ohne Android SDK und NDK
   (dl.google.com gesperrt): nur `cargo check` für `aarch64-linux-android`; die Debug-APK baut der
   Workflow „Android“. Offen: die Verbindung der App zu ihrem Server (Offene Fragen im Projektplan).
-- [ ] **K-802 Android-Autofill** – `AutofillService`, Biometrie, Keystore.
-  Fertig, wenn: der Autofill-Dienst im Android-Emulator in CI ausfüllt.
+- [x] **K-802 Android-Autofill** – `AutofillService`, Biometrie, Keystore.
+  Fertig, wenn: der `AutofillService` (Kotlin) im Workflow „Android“ mit der Debug-APK baut und
+  seine JVM-Unit-Tests (Felderkennung, Ziel aus App-Paket oder Web-Domain, nichts ausgefüllt ohne
+  die Antwort auf genau die offene Anfrage) dort mit `./gradlew test…UnitTest` grün laufen; ein
+  Ende-zu-Ende-Test im Android-Emulator als eigener Workflow nachts und auf Knopfdruck
+  (`workflow_dispatch`) läuft, der keinen Merge blockiert; und die Person das Ausfüllen auf einem
+  echten Handy prüft. (Kriterium am 23.11.2026 auf Wunsch des Nutzers geändert, statt „der
+  Autofill-Dienst im Android-Emulator in CI ausfüllt“; siehe Projektplan, Entscheidungen.)
+  Gebaut: Dienst, Anmelde-Activity und Plugin in `gen/android` (`app.kennwort.autofill`), der
+  Abgleich aus der Extension in `packages/client/src/autofill` (mit der Brücke, Format unverändert
+  Version 1), Apps über `android://Paketname` im Adressfeld, Auswahl in der App erst nach dem
+  normalen Entsperren; Biometrie und Keystore bewusst noch nicht (Sicherheitsdesign, P-17). Der
+  Emulator-Workflow „Android emulator“ ist neu und kann anfangs rot sein. `Cargo.lock` wird jetzt
+  mit geprüft (`lockedCrates`).
 - [x] **K-803 Zwischenablage und Bildschirmschutz** – Leeren nach 30 s, sensibel markiert.
 
 ## Zurückgestellt

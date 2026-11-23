@@ -3,9 +3,10 @@
  * entries the search and the favorites filter leave, by title. The search is the web app's
  * (packages/client/src/search.ts): it never looks into secret values.
  */
+
+import { matchesHost } from "@kennwort/client/autofill/matches.ts";
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { matchesSearch } from "@kennwort/client/search.ts";
-import { matchesHost } from "../page/matches.ts";
 
 const byTitle = (a: ShownEntry, b: ShownEntry) => a.title.localeCompare(b.title);
 
