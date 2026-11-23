@@ -9,11 +9,16 @@ import { render } from "@solidjs/web";
 import type { AutofillHost } from "../app.tsx";
 import { nativeAutofill } from "./autofill-native.ts";
 import { appServer, type Invoke, nativeSend } from "./native-send.ts";
+import { type Channels, nativeStream, tauriChannels } from "./native-stream.ts";
 import { ServerSetup } from "./server-setup.tsx";
 
-/** The app's fetch for one origin: the webview's checks first, then Rust's */
-export const appFetch = (origin: string, invoke: Invoke): typeof fetch =>
-  serverFetch(origin, nativeSend(origin, invoke));
+/** The app's fetch for one origin: the webview's checks first, then Rust's; live streams too */
+export const appFetch = (
+  origin: string,
+  invoke: Invoke,
+  channels: Channels | undefined = tauriChannels(),
+): typeof fetch =>
+  serverFetch(origin, nativeSend(origin, invoke, channels && nativeStream(invoke, channels)));
 
 export const startInApp = async (
   root: HTMLElement,

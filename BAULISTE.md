@@ -684,6 +684,19 @@ Ganz am Schluss, damit Tauri 3 bis dahin möglichst stabil ist. iOS baut der Loo
   Emulator-Workflow „Android emulator“ ist neu und kann anfangs rot sein. `Cargo.lock` wird jetzt
   mit geprüft (`lockedCrates`).
 - [x] **K-803 Zwischenablage und Bildschirmschutz** – Leeren nach 30 s, sensibel markiert.
+- [x] **K-708 Live-Sync in der App** – Live-Ströme für Mitteilungen und Tresore über einen
+  Tauri-Kanal statt nur Abgleich.
+  Fertig, wenn: das Kommando `server_stream` nur `/api/notifications/events` und
+  `/api/vaults/:id/events` ohne Query auf dem gespeicherten Origin mit `accept` und `authorization`
+  öffnet, `ServerPlugin.kt` den Strom ohne Weiterleitung und mit Zeilengrenze liest und Rust jedes
+  Ereignis prüft (nur die Ereignisse des Servers, höchstens 4 KiB, höchstens 200 auf einmal und 20
+  je Sekunde, sonst endet der Strom); die WebView die Ereignisse als Event-Stream an
+  `watchNotifications` und `watchVault` gibt, beim Abbrechen (Sperren, Abmelden)
+  `server_stream_close` ruft und mit wachsender Pause (2 s bis 30 s) neu verbindet; nichts
+  protokolliert wird; die CSP und ihr Test unverändert bleiben; und Rust-Tests (Pfade, Kopfzeilen,
+  Größe, Rate), Kotlin-JVM-Tests (SSE-Parser) und Vitest (Kanal, Reihenfolge, Schließen) grün sind.
+  Gebaut mit Tauri-Kanälen in beide Richtungen (3.0.0-alpha.6), ohne Rückfall auf Abfragen, ohne
+  neue Crates; Entscheidung „Live-Sync in der App“ im Projektplan.
 
 ## Zurückgestellt
 

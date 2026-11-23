@@ -66,9 +66,16 @@ wie bei jeder anderen App. Ihre Inhaltsrichtlinie erlaubt deshalb weiterhin kein
 irgendeinem Host. Für einen **anderen Server** löschst du die Daten der App (unter Android
 **Einstellungen → Apps → Kennwort → Speicher → Daten löschen**) und richtest sie neu ein.
 
-Noch nicht in der App: die Anmeldung über den Identitätsanbieter deiner Firma (OIDC) und die
-Live-Aktualisierung; Änderungen anderer siehst du nach dem nächsten Abgleich. Auf dem iPhone fehlt
-die Verbindung noch ganz, sie kommt mit dem Bau auf dem Mac.
+Neue Mitteilungen und Änderungen anderer kommen **live**, wie in der Web-App. Auch dafür öffnet
+nicht die Oberfläche die Verbindung, sondern der Kern der App: nur zu den beiden Live-Strömen des
+eingerichteten Servers, ohne Weiterleitung, und jede Nachricht darf höchstens 4 KiB groß sein und
+nicht schneller kommen als 20 je Sekunde (kurz bis zu 200 auf einmal). Schickt der Server mehr,
+beendet die App den Strom und verbindet nach einer Pause neu: erst nach 2 Sekunden, dann jeweils
+doppelt so lange, höchstens nach 30 Sekunden. Beim Sperren und Abmelden schließt die App den Strom.
+Protokolliert wird davon nichts.
+
+Noch nicht in der App: die Anmeldung über den Identitätsanbieter deiner Firma (OIDC). Auf dem
+iPhone fehlt die Verbindung noch ganz, sie kommt mit dem Bau auf dem Mac.
 
 ### Ausfüllen in anderen Apps
 
