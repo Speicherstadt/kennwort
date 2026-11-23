@@ -31,7 +31,7 @@ deinem eigenen Server betreibst.
 
 - **Nur ihr könnt es lesen**: Ende-zu-Ende-verschlüsselt, mit Post-Quanten-Schutz; der Server sieht nur
   Verschlüsseltes und kann niemandem heimlich Zugriff geben.
-- **Entsperren mit dem Finger**: Passkey statt Master-Passwort, die Passphrase bleibt der Notweg.
+- **Anmelden mit Passkey**: entsperrt wird mit Passphrase und Secret Key, die dein Gerät nie verlassen; Passkeys für Websites speichert Kennwort gleich mit.
 - **Für Teams gebaut**: Tresore, Gruppen, Rechte, Zugriff auf Zeit, Freigabe durch Verwalter, Audit-Log.
 - **Für Handwerk und IT-Dienstleister**: QR-Etiketten für Geräte, Übergabe der Zugänge an den Kunden, mehrere
   Firmen in einem Konto.
@@ -98,7 +98,7 @@ Ja, dafür ist Kennwort gemacht: ein Container auf deinem Server, Tresore und Gr
 Ja. Kennwort liest deren Exporte direkt auf deinem Gerät; die Datei wird nie hochgeladen.
 
 ### Brauche ich einen Anmeldedienst wie Keycloak?
-Nein. Kennwort hat eigene Konten mit Passkey; OpenID Connect ist ein Zusatz für Firmen, die schon einen haben. Auch dann entsperrst du mit deiner Passphrase: Der Anmeldedienst bestätigt nur, wer du bist, und bekommt nie einen Schlüssel.
+Nein. Kennwort hat eigene Konten mit Anmeldung per Passkey; OpenID Connect ist ein Zusatz für Firmen, die schon einen haben. Auch dann entsperrst du mit deiner Passphrase: Der Anmeldedienst bestätigt nur, wer du bist, und bekommt nie einen Schlüssel.
 
 Weitere Antworten in der [FAQ](https://kennwort.app/faq.html).
 

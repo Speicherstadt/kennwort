@@ -24,7 +24,8 @@ Ende-zu-Ende-verschlüsselt, mit Post-Quanten-Schutz, Open Source und ohne Koste
 
 - **Tresore fürs Team**: Logins, Notizen, WLAN, Karten, SSH- und API-Schlüssel, Einmal-Codes und
   Passkeys in [Tresoren](tresore.md) mit Gruppen, Rollen und Zugriff auf Zeit.
-- **Entsperren mit Passkey**: statt Master-Passwort, die Passphrase bleibt der Notweg; dazu
+- **Anmelden mit Passkey, entsperren auf dem Gerät**: Anmelden per Passkey, entsperrt wird mit
+  Passphrase und Secret Key, die das Gerät nie verlassen; dazu
   Recovery-Kit, Firmen-Recovery und Notfallzugriff ([Konto und Entsperren](konto.md)).
 - **Browser-Extension**: Treffer nur für den exakten Host, Ausfüllen erst nach deinem Klick,
   Speichern neuer Logins, Phishing-Warnung und Passkeys ([Browser-Extension](extension.md)).
