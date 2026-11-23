@@ -8,7 +8,7 @@ import { cn } from "../lib/cn.ts";
 import { variants } from "../lib/variants.ts";
 
 export const badgeVariants = variants(
-  "inline-flex w-fit shrink-0 items-center gap-1 rounded-md border px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap transition-colors [&_svg]:size-3",
+  "inline-flex w-fit shrink-0 items-center gap-1 rounded-md border px-2.5 py-0.5 text-xs font-semibold tabular-nums whitespace-nowrap transition-colors [&_svg]:size-3",
   {
     variant: {
       default: "border-transparent bg-primary text-primary-foreground",

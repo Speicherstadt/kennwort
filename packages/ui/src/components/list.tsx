@@ -67,7 +67,7 @@ export const List = (props: ListProps) => {
             id={optionId(base, item.id)}
             aria-selected={ariaBoolean(item.id === props.selected)}
             class={cn(
-              "flex cursor-default items-center gap-2.5 rounded-md p-2",
+              "flex cursor-default items-center gap-2.5 rounded-md p-2 transition-colors",
               item.id === props.selected ? "bg-accent" : "hover:bg-accent/60",
             )}
           >

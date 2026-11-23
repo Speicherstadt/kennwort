@@ -29,7 +29,7 @@ export const Rail = (props: {
           label={section.label()}
           current={isSection(props.nav.route(), section.page)}
           class={cn(
-            "grid size-9 place-items-center rounded-lg",
+            "grid size-9 place-items-center rounded-lg transition-colors",
             isSection(props.nav.route(), section.page)
               ? "bg-accent text-foreground"
               : "text-muted-foreground hover:bg-accent",

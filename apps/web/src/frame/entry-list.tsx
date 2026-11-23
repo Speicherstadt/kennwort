@@ -132,7 +132,11 @@ export const EntryList = (props: {
       <div class="min-h-0 flex-1 overflow-auto px-2 pb-2">
         <Show
           when={shown().length > 0}
-          fallback={<p class="p-4 text-muted-foreground">{m.list_empty()}</p>}
+          fallback={
+            <p class="m-2 rounded-xl border border-dashed border-border px-4 py-10 text-center text-[13px] text-muted-foreground">
+              {m.list_empty()}
+            </p>
+          }
         >
           <List
             label={listTitle(props.filter, props.vaults)}
