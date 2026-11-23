@@ -62,6 +62,24 @@ describe("backupDatabase", () => {
     }
   });
 
+  it("keeps the copy readable by the owner alone from its first byte, whatever the umask", () => {
+    const dir = scratch();
+    const { path, stop } = liveDatabase(dir);
+    stop();
+    const modes: number[] = [];
+    const check = (partial: string) => {
+      modes.push(statSync(partial).mode & 0o777);
+      return isIntact(partial);
+    };
+    const before = process.umask(0);
+    try {
+      expect(backupDatabase(path, join(dir, "b.db"), { isIntact: check }).ok).toBe(true);
+    } finally {
+      process.umask(before);
+    }
+    expect(modes).toEqual([0o600]);
+  });
+
   it("never overwrites a file that is there, and leaves no partial copy behind", () => {
     const dir = scratch();
     const { path, stop } = liveDatabase(dir);
