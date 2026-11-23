@@ -58,23 +58,28 @@ export const requestRoutes = (deps: Deps) => {
       const vaultId = c.req.param("vaultId");
       if (!a.inCompany(c, vaultId)) return c.json({ error: "not-found" }, 404);
       if (a.memberOf(c, vaultId)) return c.json({ error: "member" }, 409);
+      const accountId = c.var.session.accountId;
+      const before = a.db.select().from(vaultRequests).where(requestRow(vaultId, accountId)).get();
       a.db
         .insert(vaultRequests)
-        .values({ vaultId, accountId: c.var.session.accountId, requestedAt: deps.now() })
+        .values({ vaultId, accountId, requestedAt: deps.now() })
         // Asking oneself outlasts what a group filed: unlinking the group no longer drops it
         .onConflictDoUpdate({
           target: [vaultRequests.vaultId, vaultRequests.accountId],
           set: { viaGroup: null },
         })
         .run();
-      // The managers hear of it (K-602): which vault and who, by ID; the client knows the names
-      (deps.notify ?? noNotify)({
-        companyId: c.var.session.companyId,
-        recipients: vaultManagers(a.db, vaultId, deps.now()),
-        kind: "access-requested",
-        subject: vaultId,
-        actor: c.var.session.accountId,
-      });
+      // The managers hear of it (K-602): which vault and who, by ID; the client knows the names.
+      // Only of a request new as the person's own: asking again would flood their list and prune
+      // older rows, such as an emergency request they must object to in time (P-14)
+      if (!before || before.viaGroup !== null)
+        (deps.notify ?? noNotify)({
+          companyId: c.var.session.companyId,
+          recipients: vaultManagers(a.db, vaultId, deps.now()),
+          kind: "access-requested",
+          subject: vaultId,
+          actor: accountId,
+        });
       return c.json({ ok: true }, 201);
     })
     .get("/vaults/:vaultId/requests", (c) => {
