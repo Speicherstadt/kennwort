@@ -127,7 +127,7 @@ export const Sidebar = (props: {
         filter={{ kind: "to-change" }}
         icon={TriangleExclamationPoint}
         label={m.nav_to_change()}
-        trailing={<Badge tone="warning">{toChangeCount(props.entries ?? demoEntries)}</Badge>}
+        trailing={<Badge variant="outline">{toChangeCount(props.entries ?? demoEntries)}</Badge>}
       />
       <Show when={props.entries?.some((entry) => entry.sharedBy !== undefined)}>
         <Item

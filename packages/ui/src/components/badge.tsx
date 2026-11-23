@@ -15,7 +15,9 @@ export const badgeVariants = variants(
       secondary: "border-transparent bg-accent text-foreground",
       outline: "border-border text-foreground",
       destructive: "border-transparent bg-danger text-white",
-      warning: "border-transparent bg-warning-surface text-warning",
+      // Subtle: an outline with a warning dot, not a loud filled pill
+      warning:
+        "border-border text-warning before:size-1.5 before:shrink-0 before:rounded-full before:bg-warning before:content-['']",
       success: "border-border text-success",
     },
   },
