@@ -1243,5 +1243,14 @@
   "settings_renew_help": "New keys and a new recovery kit.",
   "settings_privacy_help": "What the server stores, your data and deleting it.",
   "settings_add_device_help": "Connect another device to this account.",
-  "settings_lock_help": "Closes Kennwort here; you need the passphrase to open it again."
+  "settings_lock_help": "Closes Kennwort here; you need the passphrase to open it again.",
+  "entry_editor_cancel": "Cancel",
+  "entry_editor_keys": "Esc cancels, Ctrl+Enter saves.",
+  "entry_editor_basics": "General",
+  "entry_editor_fields": "Fields",
+  "entry_editor_unsaved": "Not saved",
+  "entry_editor_discard_title": "Discard changes?",
+  "entry_editor_discard_text": "What you changed in this entry will be lost.",
+  "entry_editor_keep": "Keep editing",
+  "entry_editor_discard": "Discard"
 }

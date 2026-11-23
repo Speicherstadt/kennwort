@@ -29,7 +29,7 @@ test.describe("one-time codes", { tag: "@phone" }, () => {
       .filter({ visible: true })
       .first()
       .click();
-    const dialog = page.getByRole("dialog", { name: "Neuer Eintrag" });
+    const dialog = page.getByRole("form", { name: "Neuer Eintrag" });
     await dialog.getByLabel("Titel").fill("DATEV");
     await dialog.getByLabel("Benutzername").fill("jonas");
     const key = dialog.getByLabel("Einmalcode", { exact: true });

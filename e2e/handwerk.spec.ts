@@ -29,7 +29,7 @@ const addEntryTo = async (page: Page, vault: string, title: string, password: st
     .filter({ visible: true })
     .first()
     .click();
-  const dialog = page.getByRole("dialog", { name: "Neuer Eintrag" });
+  const dialog = page.getByRole("form", { name: "Neuer Eintrag" });
   await dialog.getByLabel("Tresor").selectOption({ label: vault });
   await dialog.getByLabel("Titel").fill(title);
   await dialog.getByLabel("Passwort", { exact: true }).fill(password);

@@ -59,8 +59,20 @@ Badge) und Avatar · Seitenleiste (232 px,
 ab `lg`) mit Firma, „Alle Einträge“, „Favoriten“, „Zum Ändern“, „Mit mir geteilt“ (sobald jemand
 etwas geteilt hat), Tresoren und Gruppen, unten der
 Hinweis zur Verschlüsselung · Liste (340 px) mit Titel, Suche (`/`) und Einträgen · Detail mit
-Kopfzeile (Icon, Titel, Tresor, letzte Änderung, Teilen, Bearbeiten), Feldkarte und rechts Zugriff
-und Verlauf.
+Kopfzeile (Icon, Titel, Tresor, letzte Änderung; rechts daneben Stern und „Bearbeiten“ als einzige
+Hauptaktion), darunter eine ruhige Zeile kleiner Knöpfe (Teilen, Einmal-Link, Etikett), Feldkarte
+und – sobald der Bereich mindestens 768 px breit ist (Container-Query, nicht die Fensterbreite) –
+rechts Zugriff und Verlauf.
+
+**Eintrag bearbeiten und anlegen**: kein Dialog, sondern ein Formular an Ort und Stelle im Bereich
+des Eintrags; am Handy ein eigener Screen ohne Liste. Titel (`h1`, „Neuer Eintrag“ oder „Eintrag
+bearbeiten“) mit dem Tastenhinweis darunter, dann Panels: Allgemein (Tresor und Art beim Anlegen,
+Titel), Felder (mit „Feld hinzufügen“ als Ghost-Knopf), Tags. Unten klebt die Leiste mit dem Badge
+„Nicht gespeichert“, sobald sich etwas geändert hat, „Abbrechen“ und dem Hauptknopf „Speichern“.
+Esc bricht ab, Strg/Cmd+Enter speichert, Enter in einem Feld speichert wie gewohnt. Wer mit
+Änderungen geht (Abbrechen, Esc, ein Link in der App, Schließen des Tabs), wird gefragt: „Änderungen
+verwerfen?“ mit „Weiter bearbeiten“ (Fokus) und „Verwerfen“ in `--danger`; das ist ein echter
+`<dialog>`, wie jede Bestätigung, die etwas zerstört.
 
 **Seiten neben der Liste** (Mitglieder, Mitteilungen, Sicherheit, Einstellungen und die Seiten
 darunter): `pageClass()` aus `packages/ui` legt alles in eine zentrierte Spalte, nie halb leer an

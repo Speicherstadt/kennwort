@@ -60,7 +60,7 @@ test.describe("generator", { tag: "@phone" }, () => {
       .filter({ visible: true })
       .first()
       .click();
-    const dialog = page.getByRole("dialog", { name: "Neuer Eintrag" });
+    const dialog = page.getByRole("form", { name: "Neuer Eintrag" });
     const field = dialog.getByLabel("Passwort", { exact: true });
     await expect(field).toHaveValue("");
     await dialog.getByRole("button", { name: "Passwort erzeugen" }).click();

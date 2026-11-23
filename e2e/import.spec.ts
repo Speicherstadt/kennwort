@@ -66,7 +66,7 @@ const addLoginWithCode = async (page: Page, title: string, username: string, key
     .filter({ visible: true })
     .first()
     .click();
-  const dialog = page.getByRole("dialog", { name: "Neuer Eintrag" });
+  const dialog = page.getByRole("form", { name: "Neuer Eintrag" });
   await dialog.getByLabel("Titel").fill(title);
   await dialog.getByLabel("Benutzername").fill(username);
   await dialog.getByLabel("Einmalcode", { exact: true }).fill(key);

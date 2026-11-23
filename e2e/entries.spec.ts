@@ -38,7 +38,7 @@ test.describe("entries", { tag: "@phone" }, () => {
       .filter({ visible: true })
       .first()
       .click();
-    const editor = page.getByRole("dialog", { name: "Neuer Eintrag" });
+    const editor = page.getByRole("form", { name: "Neuer Eintrag" });
     await editor.getByLabel("Tresor").selectOption({ label: "Büro" });
     await editor.getByLabel("Titel").fill("Sparkasse");
     await editor.getByLabel("Benutzername").fill("jonas@weber-haustechnik.de");
@@ -50,7 +50,7 @@ test.describe("entries", { tag: "@phone" }, () => {
     await expect(page.getByText("Tresor Büro")).toBeVisible();
 
     await page.getByRole("button", { name: "Bearbeiten" }).click();
-    const change = page.getByRole("dialog", { name: "Eintrag bearbeiten" });
+    const change = page.getByRole("form", { name: "Eintrag bearbeiten" });
     await expect(change.getByLabel("Titel")).toHaveValue("Sparkasse");
     await change.getByLabel("Passwort", { exact: true }).fill("Neu-2027!");
     await change.getByRole("button", { name: "Speichern" }).click();

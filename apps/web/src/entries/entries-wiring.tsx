@@ -1,8 +1,8 @@
 /**
  * What the opened app does with entries (K-306 parts 1, 2 and 5): the store loads them from every
  * vault the vault store opened, and the editor writes a new entry of any type into a vault this
- * account may edit in, or changes one; after saving, the app shows the entry. A star in the detail
- * marks an entry as a favorite.
+ * account may edit in, or changes one, inline in the entry pane; after saving, the app shows the
+ * entry. A star in the detail marks an entry as a favorite.
  */
 
 import { type LoginInput, type ShownEntry, shown } from "@kennwort/client/entries/entries.ts";
@@ -12,7 +12,7 @@ import {
   type ServerFor,
 } from "@kennwort/client/entries/entry-store.ts";
 import { m } from "@kennwort/ui";
-import { createSignal, Show } from "solid-js";
+import { createEffect, createSignal, Show } from "solid-js";
 import type { Navigation } from "../navigation.ts";
 import type { Session } from "../session/session.ts";
 import type { VaultStore } from "../vaults/vault-store.ts";
@@ -44,12 +44,27 @@ export const createEntries = (serverFor: ServerFor, session: Session, copy?: Ent
       setEditing(undefined);
       if (savedId) props.nav.go(`/entries/${savedId}`);
     };
+    // Back or forward in the browser past what the editor is for closes it (links ask first)
+    createEffect(
+      () => {
+        const what = editing();
+        const route = props.nav.route();
+        return (
+          what !== undefined &&
+          (route.page !== "entries" || (what.kind === "change" && route.entry !== what.entry.id))
+        );
+      },
+      (away) => {
+        if (away) setEditing(undefined);
+      },
+    );
     return (
       <Show when={editing()} keyed>
         {(what) => {
           const stored = () => (what.kind === "change" ? storedOf(what.entry.id) : undefined);
           return (
             <EntryEditor
+              guard={props.nav.setGuard}
               title={what.kind === "new" ? m.entry_new_title() : m.entry_change_title()}
               initial={what.initial}
               vaults={what.kind === "new" ? writableVaults(props.vaults) : undefined}
@@ -83,6 +98,8 @@ export const createEntries = (serverFor: ServerFor, session: Session, copy?: Ent
     /** Every entry with its decrypted content, for the export (K-504) */
     stored: store.entries,
     editor,
+    /** Whether the editor is open, so the frame shows it in the entry pane */
+    editing: () => editing() !== undefined,
     /** New entries and codes for logins from an import, a batch in one sync (K-501, K-503) */
     saveImport: store.saveImport,
     startNew: () => setEditing({ kind: "new", initial: newInput("login") }),

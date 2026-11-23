@@ -216,3 +216,28 @@ describe("a fragment that arrives while the app is open", () => {
     expect(taken).toEqual([]);
   });
 });
+
+describe("the guard before a link", () => {
+  it("holds go() back while it says so, and lets it pass when called on", () => {
+    const at = openAt("/entries/e-1");
+    let held: (() => void) | undefined;
+    const release = at.setGuard((proceed) => {
+      held = proceed;
+      return true;
+    });
+    at.go("/settings");
+    expect(window.location.pathname).toBe("/entries/e-1");
+    held?.();
+    expect(window.location.pathname).toBe("/settings");
+    release();
+    at.go("/entries");
+    expect(window.location.pathname).toBe("/entries");
+  });
+
+  it("does not ask replace(), which only drops what the address carried", () => {
+    const at = openAt("/entries");
+    at.setGuard(() => true);
+    at.replace("/settings");
+    expect(window.location.pathname).toBe("/settings");
+  });
+});

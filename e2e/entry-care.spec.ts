@@ -24,7 +24,7 @@ const add = async (page: Page, login: Parameters<typeof addEntry>[1]) => {
   await toList(page);
   await addEntry(page, login);
 };
-const editor = (page: Page) => page.getByRole("dialog", { name: "Eintrag bearbeiten" });
+const editor = (page: Page) => page.getByRole("form", { name: "Eintrag bearbeiten" });
 
 test.describe("entry care", { tag: "@phone" }, () => {
   test("Jonas changes the bank password and finds the old one under Frühere Passwörter", async ({
