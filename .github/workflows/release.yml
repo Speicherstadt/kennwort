@@ -1,0 +1,226 @@
+name: Release
+
+# K-703: on a tag vX.Y.Z the image on ghcr.io, the compiled server and CLI, and the signed,
+# reproducible web build (K-408) as release files. Follows firsttris/workflows
+# (.github/workflows/docker-release.yml): the tag must match package.json, one build job per
+# platform with arm64 on GitHub's native ARM runner, pushed by digest and joined into one
+# multi-arch tag (x.y.z, x.y, latest; a pre-release vX.Y.Z-rc.N gets x.y.z-rc.N and next), the
+# build cache in the registry. The GitHub release itself comes from firsttris/workflows'
+# github-release.yml. Unlike docker-release.yml the image goes to ghcr.io only (no Docker Hub).
+#
+# Signed with the loop's TEST release key (apps/web/scripts/release-build.ts): the real key is a
+# step for people (BAULISTE.md, "Schritte für Menschen"); until then a release says so.
+#
+# Runs on tags only, never on a pull request, so ci.yml keeps its five minutes; ci.yml runs once
+# more here (workflow_call) before anything is published.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      sequence: ${{ steps.sequence.outputs.sequence }}
+      image: ${{ steps.version.outputs.image }}
+    steps:
+      # The whole history: the release's sequence number follows the commits (K-408, P-16)
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      # As firsttris/workflows docker-release.yml: the tag names the version of package.json
+      - id: version
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          declared="$(jq -r .version package.json)"
+          if [[ "$declared" != "$version" ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match version $declared in package.json"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$version" == *-* ]]; then echo "prerelease=true"; else echo "prerelease=false"; fi >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      # One number for the release files and the image, so both sign the same release.json
+      - id: sequence
+        run: echo "sequence=$(bun apps/web/scripts/print-sequence.ts)" >> "$GITHUB_OUTPUT"
+
+  files:
+    needs: [ci, prepare]
+    runs-on: ubuntu-latest
+    env:
+      SOURCE_DATE_EPOCH: ${{ needs.prepare.outputs.sequence }}
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      # Built twice and compared, as in ci.yml: the files anyone can rebuild from this commit
+      - run: bun run reproducible --reuse
+      - name: Server and CLI for each platform
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          for target in linux-x64 linux-arm64; do
+            bun build --compile --minify --target="bun-$target" apps/server/src/main.ts --outfile "release/kennwort-server-$VERSION-$target"
+          done
+          for target in linux-x64 linux-arm64 darwin-x64 darwin-arm64 windows-x64; do
+            bun build --compile --minify --target="bun-$target" apps/cli/src/main.ts --outfile "release/kennwort-$VERSION-$target"
+          done
+      - name: Web build as an archive that is the same on every build
+        run: |
+          set -euo pipefail
+          tar --sort=name --mtime="@$SOURCE_DATE_EPOCH" --owner=0 --group=0 --numeric-owner \
+            -C apps/web/dist -czf "release/kennwort-web-$VERSION.tar.gz" .
+          cp apps/web/dist/release.json apps/web/dist/release.sig release/
+          (cd release && sha256sum -- * > SHA256SUMS)
+      - uses: actions/upload-artifact@v7
+        with:
+          name: kennwort-release
+          path: release/*
+          if-no-files-found: error
+
+  # One job per platform, arm64 natively (firsttris/workflows docker-release.yml)
+  image:
+    needs: [ci, prepare, files]
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - platform: linux/amd64
+            pair: linux-amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            pair: linux-arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ needs.prepare.outputs.image }}
+      # The web build in the image must be the published one, byte for byte
+      - name: Web build of the image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: web
+          platforms: ${{ matrix.platform }}
+          build-args: SOURCE_DATE_EPOCH=${{ needs.prepare.outputs.sequence }}
+          outputs: type=local,dest=image-web
+          cache-from: type=registry,ref=${{ needs.prepare.outputs.image }}-buildcache:${{ matrix.pair }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: kennwort-release
+          path: release
+      - run: cmp image-web/release.json release/release.json && cmp image-web/release.sig release/release.sig
+      - id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: SOURCE_DATE_EPOCH=${{ needs.prepare.outputs.sequence }}
+          outputs: type=image,"name=${{ needs.prepare.outputs.image }}",push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=registry,ref=${{ needs.prepare.outputs.image }}-buildcache:${{ matrix.pair }}
+          cache-to: type=registry,ref=${{ needs.prepare.outputs.image }}-buildcache:${{ matrix.pair }},mode=max,ignore-error=true
+      - env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: digest-${{ matrix.pair }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    needs: [prepare, image]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digest-*
+          merge-multiple: true
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ needs.prepare.outputs.image }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.prepare.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.prepare.outputs.version }},enable=${{ needs.prepare.outputs.prerelease == 'false' }}
+            type=raw,value=latest,enable=${{ needs.prepare.outputs.prerelease == 'false' }}
+            type=raw,value=next,enable=${{ needs.prepare.outputs.prerelease == 'true' }}
+      - working-directory: ${{ runner.temp }}/digests
+        env:
+          IMAGE: ${{ needs.prepare.outputs.image }}
+        run: |
+          # shellcheck disable=SC2046,SC2059 # one -t per tag, one source per digest
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf "$IMAGE@sha256:%s " *)
+      - env:
+          IMAGE: ${{ needs.prepare.outputs.image }}
+          TAG: ${{ steps.meta.outputs.version }}
+        run: docker buildx imagetools inspect "$IMAGE:$TAG"
+
+  release:
+    needs: [prepare, files, merge]
+    permissions:
+      contents: write
+    uses: firsttris/workflows/.github/workflows/github-release.yml@v1
+    with:
+      release-artifact: kennwort-release
+      notes: >-
+        Image: `${{ needs.prepare.outputs.image }}:${{ needs.prepare.outputs.version }}`.
+        The web build is signed with the TEST release key until the release key is made
+        (BAULISTE.md, "Schritte für Menschen"); rebuild and compare it with
+        `bun run reproducible --release release.json` (docs/sicherheitsdesign.md, K-408).

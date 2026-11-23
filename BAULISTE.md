@@ -562,8 +562,35 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
 
 - [ ] **K-701 Alle ETH-Angriffe** – jeder der 27 Angriffe als Test gegen den bösartigen Testserver.
 - [ ] **K-702 Lasttest** – viele Geräte mit Live-Sync.
-- [ ] **K-703 Installation und Betrieb** – Docker-Image, Compose, Quadlet, Caddy, Backups mit
+- [x] **K-703 Installation und Betrieb** – Docker-Image, Compose, Quadlet, Caddy, Backups mit
   Wiederherstellung, Update-Hinweis; Release-Workflow aus firsttris/workflows.
+  Fertig, wenn: `docker/Dockerfile` mehrstufig mit der Bun-Version aus `packageManager` den Server
+  und die signierte Web-App baut und auf `gcr.io/distroless/cc-debian12:nonroot` als Benutzer 65532
+  ohne Shell ausliefert (`KENNWORT_WEB_ROOT=/app/web`, Datenbank im Volume `/data`, nur Variablen
+  aus `config.ts`, Healthcheck über `kennwort-server health`); `docker/compose.yaml` und die
+  Quadlet-Units in `docker/quadlet/` Server und Caddy schreibgeschützt, ohne Capabilities und mit
+  `no-new-privileges` starten; `docker/Caddyfile` nur durchreicht und keine Kopfzeile setzt und
+  `docker/Caddyfile.static` genau die Kopfzeilen von `appHeaders({ secure: true })` sendet (ein
+  Server-Test vergleicht jeden Wert und prüft Compose, Dockerfile und Quadlet gegen `config.ts`);
+  `kennwort-server backup <datei>` bei laufendem Server mit `VACUUM INTO` eine geprüfte Kopie (0600,
+  nie über eine vorhandene Datei) schreibt und `restore <datei>` nur bei gestopptem Server ein
+  unbeschädigtes Backup derselben oder einer älteren Version einsetzt und die alte Datenbank behält;
+  ein Integrationstest (Ports 28330/28331) ein Backup des laufenden Servers mit Weber Haustechnik
+  macht, das Zurückspielen in den laufenden verweigert sieht, es in einen frischen Server spielt und
+  Jonas' Konto dort wie die CLI mit allen Prüfungen öffnet und jeden Eintrag findet; der Server
+  zehn Minuten nach dem Start und dann täglich nur ein GET an
+  `https://api.github.com/repos/Speicherstadt/kennwort/releases/latest` schickt (ohne Weiterleitung,
+  ohne Cookie und Version, höchstens 256 KiB, nur `tag_name`) und Inhaber und Admins jeder Firma
+  einmal je neuerem Release die Mitteilung „update-available“ schickt (Texte de/en,
+  `KENNWORT_UPDATE_CHECK=false` schaltet ab; Tests mit einem gefälschten Release-Host, Entscheidung
+  im Projektplan); `.github/workflows/release.yml` nur auf Tags `v*` nach firsttris/workflows CI
+  erneut laufen lässt, das Tag gegen `package.json` prüft, mit der ganzen Geschichte die Folgenummer
+  bestimmt, damit Web-App (zweimal gebaut und verglichen), Server und CLI je Plattform baut, das Image
+  je Plattform nach ghcr.io schiebt, nachdem es `release.json` und `release.sig` der Web-App im Image
+  mit den Release-Dateien verglichen hat, und das GitHub-Release mit dem Test-Schlüssel und dem
+  Hinweis darauf anlegt; CI das Image nur baut und startet, wenn ein Pull Request `docker/` ändert;
+  Seiten Installation, Backups und Updates und ein Abschnitt im README. Lokal ohne Docker-Daemon und
+  ohne Caddy gebaut: Image, `caddy validate` und Release-Workflow laufen erst auf GitHub.
 - [ ] **K-704 Doku und Website** – alle Seiten aus dem Projektplan, Startseite als Produkt-Website,
   README aktuell.
 - [ ] **K-705 Screenshots** – Workflow „Update screenshots“, hell und dunkel.

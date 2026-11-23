@@ -1080,5 +1080,7 @@
   "cli_error_ambiguous": "Mehrere Einträge heißen „{value}“. Nimm die ID:",
   "cli_error_no_field": "Der Eintrag hat kein solches Feld: {value}. Felder: {fields}",
   "cli_error_empty_field": "Das Feld ist leer.",
-  "cli_error_invalid_totp": "Der Schlüssel für Einmal-Codes lässt sich nicht lesen."
+  "cli_error_invalid_totp": "Der Schlüssel für Einmal-Codes lässt sich nicht lesen.",
+  "notifications_update_available": "Eine neuere Version von Kennwort ist erschienen. Bitte den Betreiber eures Servers, ihn zu aktualisieren (kennwort.app/updates.html).",
+  "push_kind_update_available": "Neue Version von Kennwort"
 }

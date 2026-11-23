@@ -29,7 +29,7 @@ export type UpstreamDeps = {
  * The body as text, read only up to `limit` bytes: a longer one is no range, and reading on would
  * hold whatever an endless answer sends in memory (review of K-603); undefined then
  */
-const textUpTo = async (response: Response, limit: number) => {
+export const textUpTo = async (response: Response, limit: number) => {
   const reader = response.body?.getReader();
   if (!reader) return "";
   const decoder = new TextDecoder();

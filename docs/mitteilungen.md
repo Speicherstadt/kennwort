@@ -37,6 +37,7 @@ löscht eine Mitteilung. Kennwort hebt für jedes Konto die neuesten 200 auf.
 | „Einer deiner Einmal-Links wurde abgerufen.“ | jemand einen deiner Einmal-Links öffnet |
 | „Sandra hat sich über den Anmeldedienst angemeldet und wartet auf den Code-Vergleich.“ | du Inhaber oder Admin bist und jemand über den [Anmeldedienst](anmeldedienst.md) beigetreten ist |
 | „Sandra ist beim Anmeldedienst nicht mehr in der Gruppe von Büro. …“ | du einen Tresor verwaltest und jemand darin beim Anmeldedienst die verknüpfte Gruppe verlassen hat – entferne die Person, wenn der Zugriff enden soll |
+| „Eine neuere Version von Kennwort ist erschienen. …“ | du Inhaber oder Admin bist und ein neues Release erschienen ist; einmal je Release, abschaltbar für den ganzen Server ([Updates](updates.md)) |
 
 Die Namen setzt deine App selbst ein, aus dem, was sie geprüft hat; der Server schickt nur IDs.
 Kennt sie jemanden noch nicht, steht dort „Jemand“.

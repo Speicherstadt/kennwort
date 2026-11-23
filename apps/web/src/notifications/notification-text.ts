@@ -28,6 +28,7 @@ const texts: Record<NotificationKind, (name: string, vault: string) => string> =
   "security-report": () => m.notifications_security_report(),
   "member-enrolled": (name) => m.notifications_member_enrolled({ name }),
   "group-left": (name, vault) => m.notifications_group_left({ name, vault }),
+  "update-available": () => m.notifications_update_available(),
 };
 
 /** The page where the person checks and acts; a vault's own page where it has one */
@@ -56,6 +57,9 @@ const hrefOf = (note: Notification): string => {
       return "/links";
     case "security-report":
       return "/security";
+    // The server's operator updates it; the notification itself says how
+    case "update-available":
+      return "/notifications";
   }
 };
 
@@ -81,4 +85,5 @@ export const kindLabels: Record<NotificationKind, () => string> = {
   "security-report": () => m.push_kind_security_report(),
   "member-enrolled": () => m.push_kind_member_enrolled(),
   "group-left": () => m.push_kind_group_left(),
+  "update-available": () => m.push_kind_update_available(),
 };
