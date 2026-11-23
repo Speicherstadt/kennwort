@@ -201,7 +201,10 @@ describe("httpServer versions (P-09, re-save after a demotion)", () => {
     const versions = (await httpServer(connection, vaultId).versions?.(entryId)) ?? [];
     expect(versions).toEqual([one]);
     expect(
-      seen.map((s) => [s.url, (s.init?.headers as Record<string, string>).authorization]),
+      seen.map((s) => [
+        s.url,
+        (s.init?.headers as Record<string, string> | undefined)?.authorization,
+      ]),
     ).toEqual([[versionsUrl, "Bearer t-jonas"]]);
   });
 

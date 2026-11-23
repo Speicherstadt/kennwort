@@ -271,4 +271,39 @@ describe("reducing an editor to reading", () => {
     expect(refused).toEqual([]);
     expect(device.known.get(idKey(byAnna))?.content).toEqual(bank);
   });
+
+  it("goes above only a version refused as not-editor, not above any other refusal", async () => {
+    const { server, jonasDevice } = await saved();
+    const forged = {
+      ...sealRecord(asAuthor(anna), contextFor(anna).ring, byJonas, 5, bank, new Uint8Array()),
+      author: jonas.id,
+    };
+    const lying = lyingServer(server, { pull: (records) => [...records, forged] });
+    const changed = withField(bank, "user", "jonas-neu");
+    const synced = await sync(edit(jonasDevice, byJonas, changed), lying, contextFor(jonas));
+    expect(synced.refused.map((r) => r.error)).toEqual(["bad-signature"]);
+    expect(synced.device.known.get(idKey(byJonas))?.version).toBe(2);
+  });
+
+  it("a lying server passes the honest versions through, and none from a server without any", async () => {
+    const { server } = await saved();
+    expect((await lyingServer(server, {}).versions?.(byAnna))?.map((r) => r.version)).toEqual([1]);
+    const without = { pull: server.pull, push: server.push };
+    expect(await lyingServer(without, {}).versions?.(byAnna)).toEqual([]);
+  });
+
+  it("finds the newest version that counts, with its entry key, and only entries a reader wrote last", async () => {
+    const { server, jonasDevice } = await saved();
+    const resaved = await resave(server, jonasDevice);
+    await sync(edit(resaved, byAnna, withField(bank, "user", "jonas")), server, contextFor(jonas));
+    const restored = restoreRefused(emptyDevice(), [server.versions(byAnna)], after(jonas));
+    const known = restored.known.get(idKey(byAnna));
+    expect(known?.version).toBe(3);
+    expect(known?.key?.epoch).toBe(0);
+    expect(known?.key?.entryKey).toHaveLength(32);
+    const annas = server.versions(byAnna)[0] as EntryRecord;
+    const jonass = server.versions(byJonas)[0] as EntryRecord;
+    const broken = { ...annas, entryId: id(0xe4), signature: flipByte(annas.signature) };
+    expect(writtenByReaders([annas, jonass, broken], after(jonas))).toEqual([byAnna]);
+  });
 });
