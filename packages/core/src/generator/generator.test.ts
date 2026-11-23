@@ -2,8 +2,10 @@ import { digest, randomBytes } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
 import { effLargeWords } from "./eff-large.ts";
 import {
+  AMBIGUOUS,
   DIGITS,
   LOWER,
+  MIN_COUNT,
   PASSPHRASE_WORDS,
   PASSWORD_LENGTH,
   type PassphraseOptions,
@@ -104,10 +106,11 @@ describe("password", () => {
     expect(SYMBOLS).toBe("!#$%&*+-=?@^_");
   });
 
-  it("draws whole passwords from all chosen characters until one holds every kind", () => {
-    // First a-h (no capital: drawn again), then a A b B c C d D
-    const given = randomBelow(numbers(0, 1, 2, 3, 4, 5, 6, 7, 0, 26, 1, 27, 2, 28, 3, 29));
-    expect(password({ length: 8, digits: false, symbols: false }, given)).toBe("aAbBcCdD");
+  it("draws a split by weight, the characters of each kind, then shuffles them", () => {
+    // Letters only, 8 long: the draw 0 (two numbers for 46 bits) takes the first split (1 lowercase,
+    // 7 capitals), then a, seven times A, then Fisher–Yates swaps with j = 0: the a moves last
+    const given = randomBelow(numbers(...Array.from({ length: 17 }, () => 0)));
+    expect(password({ length: 8, digits: false, symbols: false }, given)).toBe("AAAAAAAa");
   });
 
   it("is uniform over all passwords that hold every kind (review of K-306 part 3)", () => {
@@ -130,6 +133,127 @@ describe("password", () => {
   it("is the same for the same random numbers", () => {
     const fixed = () => randomBelow(numbers(...Array.from({ length: 64 }, (_, i) => i * 7919)));
     expect(password(allOn, fixed())).toBe(password(allOn, fixed()));
+  });
+});
+
+describe("password options: ambiguous characters and minimum counts", () => {
+  const count = (made: string, kind: string) => [...made].filter((c) => kind.includes(c)).length;
+
+  it("knows the ambiguous characters and the range of the minimums", () => {
+    expect(AMBIGUOUS).toBe("0Oo1Iil|");
+    expect(MIN_COUNT).toEqual({ min: 0, max: 9, initial: 1 });
+  });
+
+  it("never yields an ambiguous character when asked to avoid them, but uses all others", () => {
+    const seen = new Set<string>();
+    for (let i = 0; i < 2000; i++) {
+      const made = password({ ...allOn, avoidAmbiguous: true }, below);
+      for (const c of made) {
+        expect(AMBIGUOUS).not.toContain(c);
+        seen.add(c);
+      }
+    }
+    const expected = [...(LOWER + UPPER + DIGITS + SYMBOLS)].filter((c) => !AMBIGUOUS.includes(c));
+    expect([...seen].sort()).toEqual(expected.sort());
+  });
+
+  it("always holds the minimum digits and symbols and keeps the length", () => {
+    for (let i = 0; i < 500; i++) {
+      const made = password(
+        { length: 12, digits: true, symbols: true, minDigits: 4, minSymbols: 3 },
+        below,
+      );
+      expect(made).toHaveLength(12);
+      expect(count(made, DIGITS)).toBeGreaterThanOrEqual(4);
+      expect(count(made, SYMBOLS)).toBeGreaterThanOrEqual(3);
+      expect(count(made, LOWER)).toBeGreaterThanOrEqual(1);
+      expect(count(made, UPPER)).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it("fills the whole length when the minimums and the two letters take all of it", () => {
+    for (let i = 0; i < 200; i++) {
+      const made = password(
+        { length: 8, digits: true, symbols: true, minDigits: 3, minSymbols: 3 },
+        below,
+      );
+      expect(made).toHaveLength(8);
+      expect(count(made, DIGITS)).toBe(3);
+      expect(count(made, SYMBOLS)).toBe(3);
+      expect(count(made, LOWER)).toBe(1);
+      expect(count(made, UPPER)).toBe(1);
+    }
+  });
+
+  it("lowers minimums that do not fit, symbols first, and ignores those of kinds not chosen", () => {
+    for (let i = 0; i < 200; i++) {
+      const made = password(
+        { length: 8, digits: true, symbols: true, minDigits: 9, minSymbols: 9 },
+        below,
+      );
+      expect(made).toHaveLength(8);
+      expect(count(made, DIGITS)).toBe(6);
+      const none = password(
+        { length: 8, digits: false, symbols: false, minDigits: 9, minSymbols: 9 },
+        below,
+      );
+      expect(none).toMatch(/^[a-zA-Z]{8}$/);
+    }
+    expect(
+      passwordBits({ length: 8, digits: true, symbols: true, minDigits: 9, minSymbols: 9 }),
+    ).toBe(passwordBits({ length: 8, digits: true, symbols: true, minDigits: 6, minSymbols: 0 }));
+  });
+
+  it("holds for random options (property)", () => {
+    for (let i = 0; i < 300; i++) {
+      const options: PasswordOptions = {
+        length: PASSWORD_LENGTH.min + below(PASSWORD_LENGTH.max - PASSWORD_LENGTH.min + 1),
+        digits: below(2) === 1,
+        symbols: below(2) === 1,
+        avoidAmbiguous: below(2) === 1,
+        minDigits: below(10),
+        minSymbols: below(10),
+      };
+      const made = password(options, below);
+      expect(made).toHaveLength(options.length);
+      const room = options.length - 2;
+      const digits = options.digits ? Math.min(room, options.minDigits ?? 1) : 0;
+      const symbols = options.symbols ? Math.min(room - digits, options.minSymbols ?? 1) : 0;
+      expect(count(made, DIGITS)).toBeGreaterThanOrEqual(digits);
+      expect(count(made, SYMBOLS)).toBeGreaterThanOrEqual(symbols);
+      if (!options.digits) expect(count(made, DIGITS)).toBe(0);
+      if (!options.symbols) expect(count(made, SYMBOLS)).toBe(0);
+      if (options.avoidAmbiguous) for (const c of made) expect(AMBIGUOUS).not.toContain(c);
+      expect(count(made, LOWER)).toBeGreaterThanOrEqual(1);
+      expect(count(made, UPPER)).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it("does not pin the required characters to places", () => {
+    // 8 long, 3 digits and 3 symbols required: every place holds a digit 3/8 of the time
+    const runs = 8000;
+    const digitsAt = Array.from({ length: 8 }, () => 0);
+    for (let i = 0; i < runs; i++) {
+      const made = password(
+        { length: 8, digits: true, symbols: true, minDigits: 3, minSymbols: 3 },
+        below,
+      );
+      [...made].forEach((c, at) => {
+        if (DIGITS.includes(c)) digitsAt[at] = (digitsAt[at] ?? 0) + 1;
+      });
+    }
+    for (const n of digitsAt) expect(Math.abs(n / runs - 3 / 8)).toBeLessThan(0.03);
+  });
+
+  it("counts fewer bits for fewer characters and more required ones", () => {
+    expect(passwordBits({ ...allOn, minDigits: 1, minSymbols: 1 })).toBe(124);
+    expect(passwordBits({ ...allOn, avoidAmbiguous: true })).toBeLessThan(124);
+    expect(passwordBits({ ...allOn, minDigits: 5, minSymbols: 5 })).toBeLessThan(124);
+    // Only a split is left: 1 lowercase, 1 capital, 3 digits, 3 symbols placed in 8!/(3!·3!) ways
+    const exact = 1120n * 26n * 26n * 10n ** 3n * 13n ** 3n;
+    expect(
+      passwordBits({ length: 8, digits: true, symbols: true, minDigits: 3, minSymbols: 3 }),
+    ).toBe(exact.toString(2).length - 1);
   });
 });
 
