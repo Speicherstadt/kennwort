@@ -6,9 +6,11 @@
 import type { Given, Received } from "@kennwort/client/emergency/emergency.ts";
 import type { OpenedVault } from "@kennwort/client/emergency/open.ts";
 import type { ListedGrant } from "@kennwort/core";
-import { Button, m, type Toasts } from "@kennwort/ui";
+import { Badge, Button, m, panelTitleClass, type Toasts } from "@kennwort/ui";
+import { LifeBuoy, ShieldUser } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { For, Match, Show, Switch } from "solid-js";
+import { EmptyState } from "../blocks/empty-state.tsx";
 import { Field } from "../frame/secret-field.tsx";
 import { dateText } from "../vaults/day.ts";
 import { DAY_SECONDS, type Phase, phaseOf } from "./emergency.ts";
@@ -16,35 +18,41 @@ import { DAY_SECONDS, type Phase, phaseOf } from "./emergency.ts";
 const terms = (listed: ListedGrant) =>
   `${listed.grant.scope === "full" ? m.emergency_scope_full_short() : m.emergency_scope_view_short()} · ${m.emergency_days({ count: listed.grant.waitSeconds / DAY_SECONDS })}`;
 
-const statusClass = "text-xs font-medium";
-
 const PhaseText = (props: { listed: ListedGrant; phase: Phase }) => (
   <Switch>
     <Match when={props.phase === "idle"}>
-      <span class="text-xs text-muted-foreground">{m.emergency_status_idle()}</span>
+      <Badge variant="outline">{m.emergency_status_idle()}</Badge>
     </Match>
     <Match when={props.phase === "waiting"}>
-      <span class={statusClass}>
+      <Badge variant="warning">
         {m.emergency_status_waiting({ date: dateText(props.listed.releaseAt ?? 0) })}
-      </span>
+      </Badge>
     </Match>
     <Match when={props.phase === "objected"}>
-      <span class={statusClass}>{m.emergency_status_objected()}</span>
+      <Badge variant="secondary">{m.emergency_status_objected()}</Badge>
     </Match>
     <Match when={props.phase === "released"}>
-      <span class={statusClass}>{m.emergency_status_released()}</span>
+      <Badge variant="success">{m.emergency_status_released()}</Badge>
     </Match>
   </Switch>
 );
 
 const Row = (props: { name: string; listed: ListedGrant; now: number; children: JSX.Element }) => (
-  <li class="grid gap-2 px-3.5 py-2.5">
-    <div class="flex flex-wrap items-center gap-2">
-      <span class="flex-1 font-medium">{props.name}</span>
+  <li class="grid gap-3 px-4 py-3">
+    <div class="flex flex-wrap items-center gap-3">
+      <span
+        aria-hidden="true"
+        class="grid size-9 shrink-0 place-items-center rounded-full bg-accent text-[13px] font-semibold"
+      >
+        {props.name.slice(0, 1).toUpperCase()}
+      </span>
+      <span class="grid min-w-0 flex-1 gap-0.5">
+        <span class="truncate text-[13px] font-medium">{props.name}</span>
+        <span class="text-xs text-muted-foreground">{terms(props.listed)}</span>
+      </span>
       <PhaseText listed={props.listed} phase={phaseOf(props.listed, props.now)} />
     </div>
-    <p class="text-xs text-muted-foreground">{terms(props.listed)}</p>
-    <div class="flex flex-wrap gap-2">{props.children}</div>
+    <div class="flex flex-wrap gap-2 empty:hidden">{props.children}</div>
   </li>
 );
 
@@ -56,16 +64,16 @@ export const GivenList = (props: {
   onApprove: (given: Given) => void;
   onRevoke: (given: Given) => void;
 }) => (
-  <section class="grid gap-2" aria-labelledby="emergency-given-title">
-    <h2 id="emergency-given-title" class="font-semibold">
+  <section class="grid gap-3" aria-labelledby="emergency-given-title">
+    <h2 id="emergency-given-title" class={panelTitleClass}>
       {m.emergency_given_title()}
     </h2>
     <Show
       when={props.given.length > 0}
-      fallback={<p class="text-[13px] text-muted-foreground">{m.emergency_none_given()}</p>}
+      fallback={<EmptyState icon={ShieldUser} text={m.emergency_none_given()} />}
     >
       <ul
-        class="divide-y divide-border rounded-xl border border-border"
+        class="divide-y divide-border overflow-hidden rounded-xl border border-border"
         aria-label={m.emergency_given_title()}
       >
         <For each={props.given}>
@@ -139,16 +147,16 @@ export const ReceivedList = (props: {
   onRequest: (received: Received) => void;
   onOpen: (received: Received) => void;
 }) => (
-  <section class="grid gap-2" aria-labelledby="emergency-received-title">
-    <h2 id="emergency-received-title" class="font-semibold">
+  <section class="grid gap-3" aria-labelledby="emergency-received-title">
+    <h2 id="emergency-received-title" class={panelTitleClass}>
       {m.emergency_received_title()}
     </h2>
     <Show
       when={props.received.length > 0}
-      fallback={<p class="text-[13px] text-muted-foreground">{m.emergency_none_received()}</p>}
+      fallback={<EmptyState icon={LifeBuoy} text={m.emergency_none_received()} />}
     >
       <ul
-        class="divide-y divide-border rounded-xl border border-border"
+        class="divide-y divide-border overflow-hidden rounded-xl border border-border"
         aria-label={m.emergency_received_title()}
       >
         <For each={props.received}>

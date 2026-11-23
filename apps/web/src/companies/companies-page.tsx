@@ -5,17 +5,26 @@
  * that they belong together from anything but the requests of one device.
  */
 import type { StateDeps } from "@kennwort/client/session/state-sync.ts";
-import { Badge, Button, Icon, Input, m, pageClass } from "@kennwort/ui";
+import {
+  Badge,
+  Button,
+  Icon,
+  Input,
+  introClass,
+  m,
+  pageClass,
+  panelClass,
+  panelTitleClass,
+} from "@kennwort/ui";
 import { Building2 } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { createSignal, For, Show } from "solid-js";
 import { errorText } from "../account/form.tsx";
+import { alertClass } from "../blocks/empty-state.tsx";
 import type { LinkError } from "../session/companies.ts";
 import type { Session } from "../session/session.ts";
 import type { CompanySwitcher } from "./company-switch.ts";
 import { parseInvitationLink } from "./invitation-link.ts";
-
-const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
 
 const linkErrorText = (error: LinkError | "link") =>
   error === "link"
@@ -51,8 +60,8 @@ const LinkForm = (props: {
     props.onLinked(done.value);
   };
   return (
-    <form class="grid max-w-md gap-2" onSubmit={submit}>
-      <h2 class="font-semibold">{props.title}</h2>
+    <form class={panelClass} onSubmit={submit}>
+      <h2 class={panelTitleClass}>{props.title}</h2>
       <Input
         label={m.companies_name()}
         hint={m.companies_name_hint()}
@@ -74,7 +83,7 @@ const LinkForm = (props: {
           </p>
         )}
       </Show>
-      <Button type="submit" class="w-fit" disabled={busy()}>
+      <Button type="submit" variant="primary" class="w-fit" disabled={busy()}>
         {busy() ? m.working() : props.submit}
       </Button>
     </form>
@@ -82,9 +91,11 @@ const LinkForm = (props: {
 };
 
 const Row = (props: { name: string; active: boolean; children?: JSX.Element }) => (
-  <li class="flex flex-wrap items-center gap-3 px-3.5 py-2.5">
-    <Icon icon={Building2} />
-    <span class="min-w-0 flex-1 truncate">{props.name}</span>
+  <li class="flex flex-wrap items-center gap-3 px-4 py-3">
+    <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-muted-foreground">
+      <Icon icon={Building2} />
+    </span>
+    <span class="min-w-0 flex-1 truncate font-medium">{props.name}</span>
     <Show when={props.active}>
       <Badge tone="success">{m.companies_active()}</Badge>
     </Show>
@@ -106,13 +117,13 @@ export const CompaniesPage = (props: {
   const linked = (accountId: string) => void props.switcher.switchTo(accountId);
   return (
     <section aria-labelledby="page-title" class={pageClass()}>
-      <h1 id="page-title" class="mb-4 text-[28px] font-semibold md:text-lg">
+      <h1 id="page-title" class="mb-1 text-[28px] font-semibold md:text-lg">
         {m.companies_title()}
       </h1>
-      <p class="mb-4 max-w-prose text-muted-foreground">{m.companies_intro()}</p>
+      <p class={introClass}>{m.companies_intro()}</p>
       <ul
         aria-label={m.companies_title()}
-        class="mb-6 divide-y divide-border rounded-xl border border-border"
+        class="mb-6 divide-y divide-border overflow-hidden rounded-xl border border-border"
       >
         <For each={companies().companies()}>
           {(company) => {
@@ -131,6 +142,8 @@ export const CompaniesPage = (props: {
                 </Show>
                 <Show when={!company.home && companies().atHome()}>
                   <Button
+                    variant="ghost"
+                    class="text-danger"
                     aria-label={m.companies_remove({ name })}
                     onClick={() => void companies().unlink(props.api, company.accountId)}
                   >
@@ -143,7 +156,7 @@ export const CompaniesPage = (props: {
         </For>
       </ul>
       <Show when={props.switcher.busy()}>
-        <p class="mb-4 text-muted-foreground" role="status">
+        <p class="mb-4 text-[13px] text-muted-foreground" role="status">
           {m.companies_switching()}
         </p>
       </Show>
@@ -156,9 +169,9 @@ export const CompaniesPage = (props: {
       </Show>
       <Show
         when={companies().atHome()}
-        fallback={<p class="text-muted-foreground">{m.companies_manage_at_home()}</p>}
+        fallback={<p class="text-[13px] text-muted-foreground">{m.companies_manage_at_home()}</p>}
       >
-        <div class="grid gap-8">
+        <div class="grid items-start gap-6 lg:grid-cols-2">
           <LinkForm
             title={m.companies_join_title()}
             field={m.companies_join_link()}

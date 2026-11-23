@@ -900,6 +900,7 @@
   "links_text_title": "Title (optional)",
   "links_text_label": "Secret",
   "links_active": "Your active links",
+  "links_new_title": "New link for a text",
   "links_none": "No active links.",
   "links_failed": "The links could not be loaded or revoked.",
   "links_created": "Created on {date}",
