@@ -6,11 +6,16 @@ package app.kennwort
 // in the capabilities, so the webview cannot reach it directly. Android's own TLS and trust store,
 // no redirect followed, nothing logged: requests and answers carry session tokens and ciphertexts,
 // and an exception's text could name the address, so a failure goes back as one fixed word.
+// `stream` opens one of the two live streams (K-708) that Rust checked (live.rs): the same address
+// rules, no redirect, events read with a cap (live/SseReader.kt) and handed to Rust's channel, which
+// checks each one again; `close` ends it at the lock or the logout.
 
 import android.app.Activity
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
 import app.tauri.annotation.TauriPlugin
+import app.kennwort.live.SseReader
+import app.tauri.plugin.Channel
 import app.tauri.plugin.Invoke
 import app.tauri.plugin.JSObject
 import app.tauri.plugin.Plugin
@@ -18,6 +23,7 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 
 @InvokeArg
@@ -33,6 +39,22 @@ class FetchArgs {
   var headers: Array<HeaderArg> = arrayOf()
   var body: String? = null
 }
+
+@InvokeArg
+class StreamArgs {
+  var id: Int = 0
+  lateinit var url: String
+  var headers: Array<HeaderArg> = arrayOf()
+  lateinit var channel: Channel
+}
+
+@InvokeArg
+class CloseArgs {
+  var id: Int = 0
+}
+
+// The notifications and at most a few vaults; more is a webview that forgot to close
+private const val MAX_STREAMS = 8
 
 private val LOCAL = setOf("localhost", "127.0.0.1", "[::1]")
 // The same cap as MAX_BODY in server.rs, for answers
@@ -87,6 +109,37 @@ private fun send(args: FetchArgs): JSObject {
   }
 }
 
+/** Connects a live stream; returns it only when the server answered 200 with an event stream */
+private fun connect(args: StreamArgs): HttpURLConnection {
+  val url = URL(args.url)
+  check(allowed(url))
+  val connection = url.openConnection() as HttpURLConnection
+  try {
+    connection.instanceFollowRedirects = false
+    connection.useCaches = false
+    connection.connectTimeout = 15_000
+    // The server pings every 20 s; a silent minute is a dead connection
+    connection.readTimeout = 60_000
+    connection.requestMethod = "GET"
+    args.headers.forEach { connection.setRequestProperty(it.name, it.value) }
+    check(connection.responseCode == 200)
+    check(connection.url.toString() == url.toString())
+    check(connection.contentType?.startsWith("text/event-stream") == true)
+    return connection
+  } catch (failure: Exception) {
+    connection.disconnect()
+    throw failure
+  }
+}
+
+private fun event(name: String, data: String) =
+  JSObject().apply {
+    put("event", name)
+    put("data", data)
+  }
+
+private fun end() = JSObject().apply { put("end", "closed") }
+
 @TauriPlugin
 class ServerPlugin(activity: Activity) : Plugin(activity) {
   // Network calls may not run on the main thread; a few at once, as a browser would
@@ -99,5 +152,41 @@ class ServerPlugin(activity: Activity) : Plugin(activity) {
       val answer = runCatching { send(args) }.getOrNull()
       if (answer != null) invoke.resolve(answer) else invoke.reject("unreachable")
     }
+  }
+
+  private val streams = ConcurrentHashMap<Int, HttpURLConnection>()
+
+  @Command
+  fun stream(invoke: Invoke) {
+    val args = invoke.parseArgs(StreamArgs::class.java)
+    // Each stream holds its thread for as long as it is open
+    Thread {
+      val connection = runCatching { connect(args) }.getOrNull()
+      if (connection == null || streams.size >= MAX_STREAMS) {
+        connection?.disconnect()
+        invoke.reject("unreachable")
+        return@Thread
+      }
+      streams[args.id] = connection
+      invoke.resolve()
+      runCatching {
+        connection.inputStream.use { input ->
+          SseReader.read(input, { !streams.containsKey(args.id) }) {
+            args.channel.send(event(it.event, it.data))
+          }
+        }
+      }
+      streams.remove(args.id)
+      connection.disconnect()
+      args.channel.send(end())
+    }.start()
+  }
+
+  @Command
+  fun close(invoke: Invoke) {
+    val args = invoke.parseArgs(CloseArgs::class.java)
+    // Disconnecting from another thread ends the blocked read at once
+    streams.remove(args.id)?.disconnect()
+    invoke.resolve()
   }
 }

@@ -14,6 +14,7 @@ mod bridge;
 mod clipboard;
 #[cfg(feature = "shell")]
 mod commands;
+mod live;
 mod server;
 
 #[cfg(feature = "shell")]
@@ -31,7 +32,9 @@ pub fn run() {
       clipboard::copy_secret,
       commands::server_get,
       commands::server_set,
-      commands::server_fetch
+      commands::server_fetch,
+      commands::server_stream,
+      commands::server_stream_close
     ])
     .run(tauri::generate_context!())
     .expect("error while running Kennwort");

@@ -8,6 +8,7 @@
  * serverFetch (packages/client), so the webview side refuses other origins and redirects as well.
  */
 import type { Send } from "@kennwort/client/session/server-fetch.ts";
+import type { OpenStream } from "./native-stream.ts";
 
 /** Tauri's IPC as @tauri-apps/api/core calls it, without the package: one function */
 export type Invoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
@@ -30,9 +31,12 @@ const bodyOf = (body: BodyInit | null | undefined): string | null => {
 
 const refused = () => new TypeError("the server cannot be reached"); // i18n-ignore
 
-/** fetch through the Rust side to the stored origin; to be wrapped in serverFetch(server, …) */
+/**
+ * fetch through the Rust side to the stored origin; to be wrapped in serverFetch(server, …). A live
+ * stream goes to `openStream` (native-stream.ts, K-708); without it, none is opened
+ */
 export const nativeSend =
-  (server: string, invoke: Invoke): Send =>
+  (server: string, invoke: Invoke, openStream?: OpenStream): Send =>
   async (input, init) => {
     const request = input instanceof Request ? input : undefined;
     const url = new URL(request ? request.url : String(input));
@@ -41,9 +45,11 @@ export const nativeSend =
     const headers = [...new Headers(init?.headers ?? request?.headers)].map(
       ([name, value]) => [name.toLowerCase(), value] as const,
     );
-    // A live stream (sync/http.ts watchVault) needs a socket the IPC does not give; the sync pulls
-    if (headers.some(([name, value]) => name === "accept" && value.includes("text/event-stream")))
-      throw new TypeError("no live stream in the app"); // i18n-ignore
+    // A live stream needs a socket the request IPC does not give: a channel of its own carries it
+    if (headers.some(([name, value]) => name === "accept" && value.includes("text/event-stream"))) {
+      if (!openStream) throw new TypeError("no live stream in the app"); // i18n-ignore
+      return openStream(url.pathname + url.search, headers, init?.signal ?? request?.signal);
+    }
     const answer = await invoke<NativeAnswer>("server_fetch", {
       request: {
         method: (init?.method ?? request?.method ?? "GET").toUpperCase(),
