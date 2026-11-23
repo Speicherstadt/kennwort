@@ -83,6 +83,8 @@ Server sieht den Bericht nie.
     über den Einladungslink kennt. Kennwort vertraut dann keinem Mitglied. Sprich mit dem, der den
     Server betreibt.
 
+Wer das eigene Konto löschen will, findet das unter [Datenschutz](datenschutz.md#konto-loschen).
+
 ## Neuer Firmenschlüssel
 
 Wer als Inhaber oder Admin geht oder zum Mitarbeiter wird, hat den alten Firmenschlüssel noch. Darum

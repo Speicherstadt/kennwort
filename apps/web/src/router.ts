@@ -32,6 +32,7 @@ const simplePages = [
   "security",
   "renew",
   "companies",
+  "privacy",
   "setup",
   "unlock",
   "recover",

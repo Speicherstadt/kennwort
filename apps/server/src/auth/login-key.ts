@@ -89,7 +89,9 @@ export const loginKeyRoutes = ({ db, secret, auth, now, random, allow, address }
         )
         .returning()
         .get();
-      if (!challenge) return c.json({ error: "unknown-challenge" }, 401);
+      // A challenge that confirms a deletion (K-607) never signs anyone in
+      if (!challenge || challenge.way === "delete")
+        return c.json({ error: "unknown-challenge" }, 401);
       const { accountId } = challenge;
       if (isLocked(db, accountId, at)) return c.json({ error: "locked" }, 423);
       const key = db.select().from(loginKeys).where(eq(loginKeys.accountId, accountId)).get();

@@ -27,6 +27,8 @@ export type Route =
   | { page: "renew" }
   /** Einstellungen → „Firmen“ (K-605): the companies of the account, joining and switching */
   | { page: "companies" }
+  /** Einstellungen → „Datenschutz“ (K-607): what the server keeps, the download, deleting */
+  | { page: "privacy" }
   | { page: "setup" }
   | { page: "unlock" }
   | { page: "recover" }

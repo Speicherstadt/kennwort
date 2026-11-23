@@ -11,6 +11,7 @@ import {
   Lock,
   RefreshCw,
   ShieldCheck,
+  ShieldUser,
   Users,
 } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
@@ -94,6 +95,7 @@ export const SettingsPage = (props: {
   onSecurity?: (() => void) | undefined;
   onRenew?: (() => void) | undefined;
   onCompanies?: (() => void) | undefined;
+  onPrivacy?: (() => void) | undefined;
   devices?: (() => JSX.Element) | undefined;
 }) => {
   const [theme, setTheme] = createSignal<Theme>(readTheme(globalThis.localStorage));
@@ -183,6 +185,13 @@ export const SettingsPage = (props: {
           {(open) => (
             <Button class="w-fit" onClick={() => open()()}>
               <Icon icon={RefreshCw} /> {m.settings_renew()}
+            </Button>
+          )}
+        </Show>
+        <Show when={props.onPrivacy}>
+          {(open) => (
+            <Button class="w-fit" onClick={() => open()()}>
+              <Icon icon={ShieldUser} /> {m.settings_privacy()}
             </Button>
           )}
         </Show>

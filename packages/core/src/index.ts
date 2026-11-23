@@ -123,7 +123,9 @@ export {
 } from "./auth/oidc.ts";
 export {
   answerChallenge,
+  answerDeletionChallenge,
   answerRecoveryChallenge,
+  DELETION_PURPOSE,
   type Derive,
   loginKeyPair,
   type Post,

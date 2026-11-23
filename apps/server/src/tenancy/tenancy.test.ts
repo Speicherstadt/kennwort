@@ -19,6 +19,7 @@ import {
   groupMembers,
   groups,
   invitations,
+  loginChallenges,
   loginKeys,
   notificationPrefs,
   notifications,
@@ -334,6 +335,47 @@ const cases: Record<string, () => Promise<void>> = {
       })
       .run();
     expect((await asJonas("/api/account/keys")).status).toBe(404);
+  },
+  // K-607: the plan, the export and the deletion read and touch only the session's own account
+  "GET /api/account/deletion": async () => {
+    const answer = await asJonas("/api/account/deletion");
+    expect(answer.status).toBe(200);
+    expect(JSON.stringify(await answer.json())).not.toContain(muellerVault);
+  },
+  "GET /api/account/export": async () => {
+    const answer = await asJonas("/api/account/export");
+    expect(answer.status).toBe(200);
+    const text = JSON.stringify(await answer.json());
+    expect(text).toContain('"companyId":"weber"');
+    expect(text).not.toContain("mueller");
+    expect(text).not.toContain('"max"');
+  },
+  "POST /api/account/deletion/challenge": async () => {
+    // Jonas has no sign-in key here: no challenge, and none in Max's name
+    expect((await jonasSends("POST", "/api/account/deletion/challenge", {})).status).toBe(409);
+    expect(
+      app.db.select().from(loginChallenges).where(eq(loginChallenges.accountId, "max")).all(),
+    ).toEqual([]);
+  },
+  "DELETE /api/account": async () => {
+    // Max's deletion challenge does nothing in Jonas's session, and Max stays
+    app.db
+      .insert(loginChallenges)
+      .values({
+        id: "max-delete",
+        accountId: "max",
+        way: "delete",
+        challenge: "AAAA",
+        expiresAt: Date.now() + 60_000,
+      })
+      .run();
+    const answer = await jonasSends("DELETE", "/api/account", {
+      challengeId: "max-delete",
+      signature: encodeBytes(new Uint8Array(65)),
+    });
+    expect(answer.status).toBe(401);
+    expect(app.db.select().from(accounts).where(eq(accounts.id, "max")).get()?.leftAt).toBeNull();
+    expect(app.db.select().from(accounts).where(eq(accounts.id, "jonas")).get()?.leftAt).toBeNull();
   },
   "PUT /api/account/keys": async () => {
     const keys = {

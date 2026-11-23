@@ -54,6 +54,8 @@ export const Frame = (props: {
   companies?: CompanySwitch | undefined;
   /** Einstellungen → „Firmen“ (K-605) */
   companiesPage?: (() => JSX.Element) | undefined;
+  /** Einstellungen → „Datenschutz“ (K-607) */
+  privacyPage?: (() => JSX.Element) | undefined;
   /** Einstellungen → „Einmal-Links“ (K-601): a link for a free text and the account's links */
   linksPage?: (() => JSX.Element) | undefined;
   /** „Sicherheit“ (K-603): weak, reused and leaked passwords and the monthly report */
@@ -162,6 +164,7 @@ export const Frame = (props: {
               onSecurity={props.securityPage ? () => props.nav.go("/security") : undefined}
               onRenew={props.renewPage ? () => props.nav.go("/renew") : undefined}
               onCompanies={props.companiesPage ? () => props.nav.go("/companies") : undefined}
+              onPrivacy={props.privacyPage ? () => props.nav.go("/privacy") : undefined}
               devices={props.devices}
             />
           </main>
@@ -192,6 +195,9 @@ export const Frame = (props: {
         </Match>
         <Match when={route().page === "companies" && props.companiesPage}>
           <main class="flex min-h-0 flex-1">{props.companiesPage?.()}</main>
+        </Match>
+        <Match when={route().page === "privacy" && props.privacyPage}>
+          <main class="flex min-h-0 flex-1">{props.privacyPage?.()}</main>
         </Match>
         <Match when={route().page === "renew" && props.renewPage}>
           <main class="flex min-h-0 flex-1">{props.renewPage?.()}</main>

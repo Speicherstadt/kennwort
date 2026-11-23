@@ -36,6 +36,18 @@ export const answerRecoveryChallenge = (
   challenge: Uint8Array,
 ) => sign(secretKey, "login-recovery", accountId, challenge);
 
+/**
+ * Deleting the account (K-607, P-28) is confirmed with the passphrase: the sign-in key answers a
+ * challenge the server gave the account's own session, under a purpose of its own, so the answer
+ * never signs anyone in and a sign-in answer never deletes
+ */
+export const DELETION_PURPOSE = "delete-account";
+export const answerDeletionChallenge = (
+  secretKey: Uint8Array,
+  accountId: string,
+  challenge: Uint8Array,
+) => sign(secretKey, DELETION_PURPOSE, accountId, challenge);
+
 const Challenge = z.object({
   challengeId: z.string(),
   challenge: bytes(32),
