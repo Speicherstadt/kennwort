@@ -54,11 +54,20 @@ const setUp = (
   known: string | undefined = device.accountId,
 ) => {
   const opens: Opened[] = [];
+  const sent: { method: string; path: string; token: string | undefined }[] = [];
   const unlock = createPasskeyUnlock(
     {
       storage,
       passkeys: {
-        call: async () => ({ status: 0, json: undefined }),
+        call: async (method, path, _body, token) => {
+          sent.push({ method, path, token });
+          return path === "/api/devices"
+            ? {
+                status: 200,
+                json: { devices: [{ id: "s-1", name: null, signedInAt: 1, lastSeenAt: 1, current: true }] },
+              }
+            : { status: 0, json: undefined };
+        },
         webAuthn: {} as never,
         api: { keys: async () => undefined, writeState: async () => ({ ok: true }) },
       },
@@ -76,7 +85,7 @@ const setUp = (
       device: () => (known ? { accountId: known, secretKey: new Uint8Array(16) } : undefined),
     },
   );
-  return { unlock, storage, opens };
+  return { unlock, storage, opens, sent };
 };
 
 describe("the passkey this device unlocks with (K-707)", () => {
@@ -164,6 +173,17 @@ describe("the passkey this device unlocks with (K-707)", () => {
     expect(await unlock.unlock()).toEqual({ ok: false, error: "passkey-removed" });
     expect(opens).toEqual([]);
     expect(gone.accountKey).toEqual(new Uint8Array(32));
+  });
+
+  it("signs out the new session when a removal this device kept refuses the passkey", async () => {
+    const storage = memory({ "kennwort-passkey": JSON.stringify(device) });
+    const gone = opened(removePasskey(addPasskey({}, rawId, salt, 1) ?? {}, rawId) ?? {});
+    const { unlock, sent } = setUp(
+      { unlock: async () => ({ ok: true, value: { opened: gone, stored } }) },
+      storage,
+    );
+    await unlock.unlock();
+    expect(sent).toContainEqual({ method: "DELETE", path: "/api/devices/s-1", token: "t" });
   });
 
   it("forgets it when this device's passkey is removed", async () => {
