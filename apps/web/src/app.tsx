@@ -27,7 +27,7 @@ import { RecoverPage } from "./account/recover-page.tsx";
 import { renewPage } from "./account/renew-route.tsx";
 import { SetupPage } from "./account/setup-page.tsx";
 import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
-import { emergencyPage, importPage, noAccessFor } from "./app-pages.tsx";
+import { emergencyPage, importPage, noAccessFor, OpenLink } from "./app-pages.tsx";
 import { renewEmergency } from "./emergency/emergency.ts";
 import { EmergencyNotice } from "./emergency/emergency-notice.tsx";
 import { createEntries } from "./entries/entries-wiring.tsx";
@@ -340,6 +340,9 @@ export const App = (props: {
                 )}
               </Show>
             )}
+          </Match>
+          <Match when={route().page === "open"}>
+            <OpenLink nav={props.nav} />
           </Match>
           <Match when={route().page === "oidc"}>
             <Show when={link()} keyed>

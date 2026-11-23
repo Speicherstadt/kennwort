@@ -5,6 +5,8 @@
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import type { Vault, VaultDeps } from "@kennwort/client/vaults/vaults.ts";
 import type { Toasts } from "@kennwort/ui";
+import { onSettled } from "solid-js";
+import { openTarget } from "./deep-link.ts";
 import { EmergencyPage } from "./emergency/emergency-page.tsx";
 import { writableVaults } from "./entries/entries-wiring.tsx";
 import { type ImportDeps, ImportPage } from "./import/import-page.tsx";
@@ -48,3 +50,9 @@ export const noAccessFor =
     if (known || !id) return undefined;
     return <NoAccess onRequest={() => requestAccess(props.api, props.session, id)} />;
   };
+
+/** A deep link of another app (K-604): replaced at once by the page it names, IDs only */
+export const OpenLink = (props: { nav: Navigation }) => {
+  onSettled(() => props.nav.replace(openTarget(location.search)));
+  return null;
+};

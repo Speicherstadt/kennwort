@@ -38,6 +38,7 @@ const simplePages = [
   "pair",
   "link",
   "oidc",
+  "open",
 ] as const;
 
 const entriesOf = (filter: ListFilter, entry?: string): Route =>
