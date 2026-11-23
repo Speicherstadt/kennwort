@@ -306,4 +306,20 @@ describe("reducing an editor to reading", () => {
     const broken = { ...annas, entryId: id(0xe4), signature: flipByte(annas.signature) };
     expect(writtenByReaders([annas, jonass, broken], after(jonas))).toEqual([byAnna]);
   });
+  it("a server cannot roll back a newer version the device took that still counts, by withholding it from the versions", async () => {
+    const { server, jonasDevice } = await saved();
+    const resaved = await resave(server, jonasDevice);
+    const newer = withField(bank, "user", "jonas-neu");
+    const device = (await sync(edit(resaved, byAnna, newer), server, contextFor(jonas))).device;
+    server.push(
+      sealRecord(asAuthor(anna), contextFor(anna).ring, byAnna, 4, bank, contextFor(anna).lastSeen),
+    );
+    const lying = lyingServer(server, {
+      versions: (records) => records.filter((r) => r.version !== 3),
+    });
+    const restored = await restore(lying, device);
+    expect(restored.device.known.get(idKey(byAnna))?.content).toEqual(newer);
+    // Nothing older goes out above it; the entry waits for a restore from honest versions
+    expect((await server.pull()).find((r) => idKey(r.entryId) === idKey(byAnna))?.version).toBe(4);
+  });
 });
