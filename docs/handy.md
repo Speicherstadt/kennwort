@@ -43,8 +43,6 @@ Geplant ist:
   iOS-Schlüsselbund verpackt;
 - Ausfüllen in allen Apps und Browsern über den Android-Autofill-Dienst und die
   AutoFill-Erweiterung von iOS, mit Passkeys;
-- die Zwischenablage nach 30 Sekunden leeren, kein Screenshot in der Eintragsansicht.
-
 Bis dahin ist die Web-App der Weg am Handy.
 
 ### Stand
@@ -70,6 +68,23 @@ irgendeinem Host. Für einen **anderen Server** löschst du die Daten der App (u
 Noch nicht in der App: die Anmeldung über den Identitätsanbieter deiner Firma (OIDC) und die
 Live-Aktualisierung; Änderungen anderer siehst du nach dem nächsten Abgleich. Auf dem iPhone fehlt
 die Verbindung noch ganz, sie kommt mit dem Bau auf dem Mac.
+
+### Zwischenablage und Bildschirmschutz
+
+Kopierst du ein Passwort, einen Einmalcode oder ein anderes Feld, leert Kennwort die
+Zwischenablage nach 30 Sekunden wieder, aber nur, wenn dort noch genau dieser Wert liegt. Hast du
+inzwischen etwas anderes kopiert, bleibt es unangetastet.
+
+- **App unter Android**: Die Kopie ist als sensibel markiert; ab Android 13 zeigt das System
+  dann keine Vorschau des Inhalts. Die App lässt keine Screenshots und Bildschirmaufnahmen zu, und
+  in der Übersicht der zuletzt genutzten Apps erscheint sie leer. Android erlaubt das Lesen der
+  Zwischenablage nur der App im Vordergrund: Bist du nach 30 Sekunden in einer anderen App, bleibt
+  die Kopie liegen, bis Android sie selbst entfernt.
+- **Web-App und Browser**: Kennwort liest die Zwischenablage nach 30 Sekunden zurück und leert sie,
+  wenn noch der kopierte Wert darin liegt. Fragt der Browser dabei nach der Erlaubnis zum Einfügen
+  oder ist die Seite nicht im Vordergrund, wird nichts geleert, damit nie eine fremde Kopie
+  verschwindet.
+- **App unter iOS**: kopiert vorerst wie die Web-App.
 
 ### Updates der App
 

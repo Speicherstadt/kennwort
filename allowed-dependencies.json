@@ -88,7 +88,11 @@
       "workspaces": ["apps/mobile"]
     },
     "serde": {
-      "reason": "Reads and writes the server bridge's requests and answers between webview, Rust and the Kotlin HTTP client (src-tauri/src/bridge.rs); already linked through tauri, the same version, only named so the bridge can derive its types",
+      "reason": "serializes the arguments the Rust command copy_secret hands to the Android clipboard plugin (K-803) and the server bridge's requests and answers (src-tauri/src/bridge.rs); already linked as a dependency of tauri, so the binary gains nothing",
+      "workspaces": ["apps/mobile"]
+    },
+    "serde_json": {
+      "reason": "the JSON value an Android plugin call answers with (PluginHandle::run_mobile_plugin, K-803); already linked as a dependency of tauri, so the binary gains nothing",
       "workspaces": ["apps/mobile"]
     },
     "url": {

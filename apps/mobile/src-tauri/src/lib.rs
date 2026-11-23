@@ -9,6 +9,8 @@
 
 mod bridge;
 #[cfg(feature = "shell")]
+mod clipboard;
+#[cfg(feature = "shell")]
 mod commands;
 mod server;
 
@@ -18,7 +20,9 @@ pub fn run() {
   tauri::Builder::default()
     .runtime(tauri_runtime_wry::Wry::default())
     .plugin(commands::native_http())
+    .plugin(clipboard::init())
     .invoke_handler(tauri::generate_handler![
+      clipboard::copy_secret,
       commands::server_get,
       commands::server_set,
       commands::server_fetch

@@ -19,8 +19,10 @@ tauri-build = { version = "=3.0.0-alpha.4", features = [] }
 [dependencies]
 tauri = { version = "=3.0.0-alpha.6", features = [], optional = true }
 tauri-runtime-wry = { version = "=3.0.0-alpha.6", optional = true }
-# Both already in the tree through tauri; named here for the server bridge (server.rs, bridge.rs)
+# Already in the tree through tauri; named for the server bridge (server.rs, bridge.rs) and the
+# Android clipboard plugin (K-803)
 serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.154"
 url = "=2.5.9"
 
 # The shell (Tauri and its webview) is on by default. Without it only the pure server rules build,
