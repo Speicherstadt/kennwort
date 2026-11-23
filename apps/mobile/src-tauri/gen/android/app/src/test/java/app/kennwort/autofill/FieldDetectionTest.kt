@@ -92,4 +92,16 @@ class FieldDetectionTest {
     val page = FormNode(id = "doc", webDomain = "portal.weber-haustechnik.test", children = listOf(frame))
     assertFalse(detect(listOf(page)).mixedDocuments)
   }
+
+  @Test
+  fun aFrameOfTheSameHostServedOverHttpCountsAsAnotherDocument() {
+    // P-17: never fill into a page served over http, also not into an http frame of an https page
+    val detected = detect(listOf(FormNode(id = "page", webDomain = "bank.test", webScheme = "https", children = listOf(
+      field("u") { copy(hints = listOf("username")) },
+      FormNode(id = "frame", webDomain = "bank.test", webScheme = "http", children = listOf(
+        field("p") { copy(hints = listOf("password")) },
+      )),
+    ))))
+    assertTrue(detected.mixedDocuments)
+  }
 }
