@@ -8,7 +8,7 @@ use std::{fs, path::Path};
 use serde::{Deserialize, Serialize};
 
 use crate::server::{
-  Refusal, check_body, check_headers, check_method, request_url, server_origin,
+  MAX_BODY, Refusal, check_body, check_headers, check_method, request_url, server_origin,
 };
 
 /// The file in the app's own data directory that holds the origin, nothing else
@@ -83,8 +83,12 @@ pub fn native_request(origin: Option<&str>, request: ApiRequest) -> Result<Nativ
   })
 }
 
-/// An answer the webview may see: a final status, never a redirect the client should have refused
+/// An answer the webview may see: a final status, never a redirect the client should have refused,
+/// and no larger than the platform client's cap (ServerPlugin.kt), in case a client lacks one
 pub fn checked_response(response: ApiResponse) -> Result<ApiResponse, Refusal> {
+  if response.body.len() > MAX_BODY {
+    return Err(Refusal::TooLarge);
+  }
   let fine = (200..=599).contains(&response.status) && !(300..=399).contains(&response.status);
   fine.then_some(response).ok_or(Refusal::Unreachable)
 }
@@ -168,5 +172,11 @@ mod tests {
     for status in [0, 101, 301, 302, 307, 308, 600] {
       assert_eq!(checked_response(answer(status)).map(|r| r.status), Err(Refusal::Unreachable));
     }
+  }
+
+  #[test]
+  fn caps_the_answer_in_rust_too() {
+    let big = ApiResponse { status: 200, content_type: None, body: "a".repeat(MAX_BODY + 1) };
+    assert_eq!(checked_response(big).map(|r| r.status), Err(Refusal::TooLarge));
   }
 }
