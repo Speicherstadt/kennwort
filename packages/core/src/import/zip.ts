@@ -164,10 +164,9 @@ const inflate = async (packed: Uint8Array, size: number): Promise<Result<Uint8Ar
     const chunk = await nextChunk(reader);
     if (!chunk.ok) return chunk;
     if (chunk.value === undefined) break;
-    if (length + chunk.value.length > size) {
-      void reader.cancel();
-      return err("bad-zip");
-    }
+    // Stopped by no longer reading: backpressure halts the inflater. A cancel would reject on
+    // Node 24 when junk follows the stream's end (ERR_TRAILING_JUNK_AFTER_STREAM_END), unhandled
+    if (length + chunk.value.length > size) return err("bad-zip");
     out.set(chunk.value, length);
     length += chunk.value.length;
   }
