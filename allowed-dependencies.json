@@ -88,11 +88,15 @@
       "workspaces": ["apps/mobile"]
     },
     "serde": {
-      "reason": "serializes the arguments the Rust command copy_secret hands to the Android clipboard plugin (K-803); already linked as a dependency of tauri, so the binary gains nothing",
+      "reason": "serializes the arguments the Rust command copy_secret hands to the Android clipboard plugin (K-803) and the server bridge's requests and answers (src-tauri/src/bridge.rs); already linked as a dependency of tauri, so the binary gains nothing",
       "workspaces": ["apps/mobile"]
     },
     "serde_json": {
       "reason": "the JSON value an Android plugin call answers with (PluginHandle::run_mobile_plugin, K-803); already linked as a dependency of tauri, so the binary gains nothing",
+      "workspaces": ["apps/mobile"]
+    },
+    "url": {
+      "reason": "Parses the server address and builds each API address on the one stored origin (src-tauri/src/server.rs); already linked through tauri (it is tauri::Url), named so the rules build and test without the shell",
       "workspaces": ["apps/mobile"]
     }
   }

@@ -343,6 +343,7 @@
   "entry_editor_remove_tag": "Remove tag {tag}",
   "popup_connect_title": "Connect to Kennwort",
   "popup_connect_text": "Your recovery kit shows the server, the account ID and the Secret Key. The extension remembers them until you close the browser.",
+  "mobile_server_placeholder": "https://kennwort.example.com",
   "popup_server": "Server",
   "popup_connect_submit": "Connect and unlock",
   "popup_account_on": "Account on {server}",
@@ -1192,5 +1193,9 @@
   "demo_notice": "Runs only in your browser, without a server. Don't enter real passwords; a reload starts over.",
   "demo_passphrase": "Passphrase:",
   "demo_preparing": "Setting up the demo company Weber Haustechnik …",
-  "demo_failed": "The demo could not start. Reload the page."
+  "demo_failed": "The demo could not start. Reload the page.",
+  "mobile_server_title": "Connect to your server",
+  "mobile_server_text": "Enter the address of your company's Kennwort server; it is in your recovery kit. From then on the app talks to this server only.",
+  "mobile_server_submit": "Connect",
+  "mobile_server_storage_failed": "The app could not save the address. Restart it and try again."
 }
