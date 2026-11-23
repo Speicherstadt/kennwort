@@ -1243,5 +1243,10 @@
   "settings_renew_help": "Neue Schlüssel und ein neues Recovery-Kit.",
   "settings_privacy_help": "Was der Server speichert, Auskunft und Löschen.",
   "settings_add_device_help": "Ein weiteres Gerät mit diesem Konto verbinden.",
-  "settings_lock_help": "Schließt Kennwort hier; zum Öffnen brauchst du die Passphrase."
+  "settings_lock_help": "Schließt Kennwort hier; zum Öffnen brauchst du die Passphrase.",
+  "card_tagline": "Ende-zu-Ende verschlüsselt. Der Server sieht nur Chiffretext.",
+  "vaults_empty": "Noch keine Tresore. Lege unten einen gemeinsamen Tresor an.",
+  "vaults_create_hint": "Ein gemeinsamer Tresor für dich und dein Team.",
+  "groups_empty": "Noch keine Gruppen.",
+  "groups_no_members": "Noch keine Mitglieder."
 }

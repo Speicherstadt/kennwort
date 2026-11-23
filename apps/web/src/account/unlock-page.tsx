@@ -65,7 +65,11 @@ export const UnlockPage = (props: {
         <Button variant="primary" disabled={busy()} onClick={withPasskey}>
           {m.passkey_unlock()}
         </Button>
-        <p class="text-center text-xs text-muted-foreground">{m.passkey_or_passphrase()}</p>
+        <div class="flex items-center gap-3 text-xs text-muted-foreground">
+          <span class="h-px flex-1 bg-border" />
+          {m.passkey_or_passphrase()}
+          <span class="h-px flex-1 bg-border" />
+        </div>
       </Show>
       <form class="grid gap-4" onSubmit={submit}>
         <Show when={!known()}>
@@ -92,11 +96,11 @@ export const UnlockPage = (props: {
           {busy() ? m.working() : m.unlock_submit()}
         </Button>
       </form>
-      <div class="flex flex-wrap gap-2">
-        <Button variant="ghost" class="w-fit" onClick={() => props.nav.go("/recover")}>
+      <div class="-mx-2 flex flex-wrap justify-center gap-x-1 gap-y-2 border-t border-border pt-4">
+        <Button variant="ghost" onClick={() => props.nav.go("/recover")}>
           {m.unlock_forgot()}
         </Button>
-        <Button variant="ghost" class="w-fit" onClick={() => props.nav.go("/recover-company")}>
+        <Button variant="ghost" onClick={() => props.nav.go("/recover-company")}>
           {m.recovery_start()}
         </Button>
         <OidcSignIn name={props.oidc} />
@@ -112,8 +116,8 @@ export const WelcomePage = (props: {
   oidc?: string | undefined;
 }) => (
   <Card title={m.welcome_title()}>
-    <p class="text-[13px] text-muted-foreground">{m.welcome_text()}</p>
-    <div class="flex flex-wrap gap-2">
+    <p class="text-center text-[13px] text-muted-foreground">{m.welcome_text()}</p>
+    <div class="grid gap-2">
       <Button variant="primary" onClick={() => props.nav.go("/setup")}>
         {m.welcome_setup()}
       </Button>
@@ -121,8 +125,10 @@ export const WelcomePage = (props: {
       <Button onClick={() => props.onUnlock()}>{m.unlock_other()}</Button>
       <OidcSignIn name={props.oidc} />
     </div>
-    <Button variant="ghost" class="w-fit" onClick={() => props.nav.go("/recover-company")}>
-      {m.recovery_start()}
-    </Button>
+    <div class="flex justify-center border-t border-border pt-4">
+      <Button variant="ghost" onClick={() => props.nav.go("/recover-company")}>
+        {m.recovery_start()}
+      </Button>
+    </div>
   </Card>
 );

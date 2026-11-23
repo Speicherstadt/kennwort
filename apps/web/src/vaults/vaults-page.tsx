@@ -5,7 +5,16 @@
  */
 
 import type { CreateError, Vault } from "@kennwort/client/vaults/vaults.ts";
-import { Button, Icon, Input, m, pageClass } from "@kennwort/ui";
+import {
+  Badge,
+  Button,
+  Icon,
+  Input,
+  m,
+  pageClass,
+  panelClass,
+  panelTitleClass,
+} from "@kennwort/ui";
 import { Archive, Handshake, TriangleExclamationPoint, Users } from "@kennwort/ui/icons";
 import { createSignal, For, Match, onSettled, Show, Switch } from "solid-js";
 import { Link } from "../frame/link.tsx";
@@ -36,8 +45,11 @@ const CreateForm = (props: { onCreate: (name: string) => Promise<CreateError | u
     if (!failed) setName("");
   };
   return (
-    <form class="mt-6 grid max-w-md gap-2" onSubmit={submit}>
-      <h2 class="font-semibold">{m.vaults_create_title()}</h2>
+    <form class={`mt-6 ${panelClass}`} onSubmit={submit}>
+      <div class="grid gap-1">
+        <h2 class={panelTitleClass}>{m.vaults_create_title()}</h2>
+        <p class="text-[13px] text-muted-foreground">{m.vaults_create_hint()}</p>
+      </div>
       <Input
         label={m.vaults_create_name()}
         value={name()}
@@ -52,7 +64,7 @@ const CreateForm = (props: { onCreate: (name: string) => Promise<CreateError | u
           </p>
         )}
       </Show>
-      <Button type="submit" disabled={busy()}>
+      <Button type="submit" variant="primary" class="w-fit justify-self-end" disabled={busy()}>
         {m.vaults_create()}
       </Button>
     </form>
@@ -75,7 +87,7 @@ export const VaultsPage = (props: {
   onSettled(() => void props.store.reload());
   return (
     <section aria-labelledby="page-title" class={pageClass()}>
-      <h1 id="page-title" class="mb-4 text-[28px] font-semibold md:text-lg">
+      <h1 id="page-title" class="mb-6 text-[28px] font-semibold md:text-lg">
         {m.vaults_title()}
       </h1>
       <Switch>
@@ -102,18 +114,27 @@ export const VaultsPage = (props: {
         >
           {(ready) => (
             <>
-              <ul class="divide-y divide-border rounded-xl border border-border">
+              <Show when={ready().vaults.length === 0 && ready().refused.length === 0}>
+                <p class="rounded-xl border border-dashed border-border px-4 py-8 text-center text-[13px] text-muted-foreground">
+                  {m.vaults_empty()}
+                </p>
+              </Show>
+              <ul class="divide-y divide-border overflow-hidden rounded-xl border border-border empty:hidden">
                 <For each={ready().vaults}>
                   {(vault) => (
-                    <li class="flex flex-wrap items-center gap-2 pr-2">
+                    <li class="flex flex-wrap items-center gap-2 pr-3">
                       <Link
                         nav={props.nav}
                         href={`/vaults/${vault.idText}`}
-                        class="flex min-w-0 flex-1 items-center gap-3 px-3.5 py-2.5 hover:bg-accent"
+                        class="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 hover:bg-accent"
                       >
-                        <Icon icon={Archive} />
-                        <span class="flex-1 truncate">{vault.name ?? m.vaults_unnamed()}</span>
-                        <span class="text-xs text-muted-foreground">{roleText(vault.role)}</span>
+                        <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-accent">
+                          <Icon icon={Archive} />
+                        </span>
+                        <span class="flex-1 truncate font-medium">
+                          {vault.name ?? m.vaults_unnamed()}
+                        </span>
+                        <Badge variant="outline">{roleText(vault.role)}</Badge>
                       </Link>
                       <Button
                         aria-label={m.vault_members_of({ name: vault.name ?? m.vaults_unnamed() })}
@@ -138,7 +159,7 @@ export const VaultsPage = (props: {
                 </For>
                 <For each={ready().refused}>
                   {() => (
-                    <li class="flex items-center gap-3 px-3.5 py-2.5 text-danger">
+                    <li class="flex items-center gap-3 px-4 py-3 text-danger">
                       <Icon icon={TriangleExclamationPoint} />
                       <span class="flex-1">{m.vaults_refused()}</span>
                     </li>

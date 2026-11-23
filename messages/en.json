@@ -1243,5 +1243,10 @@
   "settings_renew_help": "New keys and a new recovery kit.",
   "settings_privacy_help": "What the server stores, your data and deleting it.",
   "settings_add_device_help": "Connect another device to this account.",
-  "settings_lock_help": "Closes Kennwort here; you need the passphrase to open it again."
+  "settings_lock_help": "Closes Kennwort here; you need the passphrase to open it again.",
+  "card_tagline": "End-to-end encrypted. The server only sees ciphertext.",
+  "vaults_empty": "No vaults yet. Create a shared vault below.",
+  "vaults_create_hint": "A shared vault for you and your team.",
+  "groups_empty": "No groups yet.",
+  "groups_no_members": "No members yet."
 }
