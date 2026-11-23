@@ -20,6 +20,9 @@ const Config = z.object({
   // Lets the first owner create the company (POST /auth/setup); chosen by the admin, at least 16
   // characters, and never written to a log. Without it the server cannot be set up from outside.
   KENNWORT_SETUP_CODE: z.string().min(16).optional(),
+  // The built web app (apps/web/dist) the server serves with its security headers; without it a
+  // reverse proxy serves the app and must send the same headers (docs/sicherheitsdesign.md, P-16)
+  KENNWORT_WEB_ROOT: z.string().min(1).optional(),
   // Web Push (K-602): on by default; the pushes are empty, a push service learns only when
   KENNWORT_PUSH: z.enum(["true", "false"]).default("true"),
   // Who sends, for the push services (RFC 8292 `sub`): a mailto: or https address, else the public one
@@ -47,6 +50,9 @@ export type Config = {
   authSecret: string;
   behindProxy: boolean;
   setupCode: string | undefined;
+  webRoot: string | undefined;
+  /** People reach the server over https: HSTS and upgrade-insecure-requests */
+  secure: boolean;
   /** Web Push (K-602): undefined when turned off */
   push: { subject: string; extraHosts: string[] } | undefined;
   /** The leak check's range address, or undefined when the operator turned it off */
@@ -78,6 +84,8 @@ export const readConfig = (env: Record<string, string | undefined>) => {
     authSecret: data.KENNWORT_AUTH_SECRET,
     behindProxy: data.KENNWORT_BEHIND_PROXY === "true",
     setupCode: data.KENNWORT_SETUP_CODE,
+    webRoot: data.KENNWORT_WEB_ROOT,
+    secure: new URL(data.KENNWORT_PUBLIC_URL).protocol === "https:",
     push:
       data.KENNWORT_PUSH === "true"
         ? {

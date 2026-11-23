@@ -1874,8 +1874,114 @@ Restrisiko:
 - Dokumente, die eine fremde Seite einbettet: Ein `<object>` oder `<embed>` auf eine Adresse des
   Servers ist eine Anfrage der fremden Seite, die der Service Worker von Kennwort nie sieht. Ein
   HTML-Dokument, das der Server darauf antwortet, liefe unter der Herkunft der App; verhindern
-  könnten das nur Kopfzeilen des Servers, dem Kennwort nicht vertraut.
+  können das nur Kopfzeilen des Servers, dem Kennwort nicht vertraut. Ein ehrlicher Server sendet
+  sie (`frame-ancestors 'none'`, `X-Frame-Options`, `Cross-Origin-Resource-Policy`, die Sandbox für
+  seine eigenen Antworten, siehe „CSP und Sicherheits-Kopfzeilen“).
 - Die PWA am Handy ohne Extension.
+
+#### CSP und Sicherheits-Kopfzeilen
+
+Die Web-App läuft unter einer strengen Content Security Policy. Sie hilft nicht gegen einen
+bösartigen Server (der schickt die Kopfzeilen selbst und könnte sie weglassen), sondern gegen alles,
+was über einen ehrlichen Server unter die Herkunft der App gerät: eingeschleustes HTML in einem
+Eintrag, einem Import oder einem Namen, eine fremde Seite, die die App in einen Frame lädt, ein
+Link mit Geheimnis im Fragment, dessen Adresse als Referrer abfließt. Eine Tabelle in
+`packages/core/src/headers/security-headers.ts` legt die Kopfzeilen fest; Server und Service Worker
+nehmen beide sie, sodass sie nicht auseinanderlaufen.
+
+Wer sie setzt:
+
+- **Der Server**, wenn er die gebaute Web-App selbst ausliefert (`KENNWORT_WEB_ROOT=<Pfad zu
+  apps/web/dist>`): jede Datei des Builds und jede Seite der App (jeder Pfad ohne Dateiendung, etwa
+  `/entries/…` oder `/s/<id>`, bekommt `index.html`) mit den Kopfzeilen der App. Seine eigenen
+  Antworten (`/api`, `/auth`, `/health`, auch Fehler und Weiterleitungen) bekommen dieselben
+  Kopfzeilen, aber die Policy `default-src 'none'; frame-ancestors 'none'; sandbox`: Als Seite
+  geöffnet, läuft darin nichts. `/assets/…` (Name nach Inhalt) darf ein Jahr im Cache bleiben, alles
+  andere, auch `sw.js`, `release.json` und `release.sig`, nur mit `no-cache`.
+- **Der Service Worker** setzt die Kopfzeilen der App auf jede Antwort aus seinen geprüften Caches.
+  Er legt dort nur die geprüften Bytes ab, nie die Antworten des Netzes mit ihren Kopfzeilen; ohne
+  das liefe jede Seite nach der Installation ohne Policy. Die Kopfzeilen sind damit Teil von
+  `sw.js`, nicht des Release-Manifests: `release.json` nennt die Dateien des Builds, keine
+  Kopfzeilen. HSTS setzt er nicht, das nehmen Browser nur aus dem Netz.
+
+Die Policy der App, jede Direktive mit ihrem Grund:
+
+| Direktive | Grund |
+| --- | --- |
+| `default-src 'none'` | alles verboten, was unten nicht steht: Frames, Medien-Adressen, Plugins, Prefetch |
+| `script-src 'self'` | nur die gebauten Skripte; kein Inline-Skript, kein `eval`, kein `'wasm-unsafe-eval'`, weil Argon2id aus `@noble/hashes` reines JavaScript ist und nichts sonst WASM braucht. Zod würde beim Anlegen eines Schemas `new Function` ausprobieren; die Web-App schaltet das vor jedem Schema ab (`jitless`), sonst meldete jeder Versuch einen Verstoß |
+| `style-src 'self'` | nur die gebaute CSS-Datei von Tailwind. Kein `'unsafe-inline'`: Solid setzt `style`-Werte (Anker der Popover und Menüs) über das CSSOM (`style.setProperty`), das `style-src` nicht regelt, und die Templates enthalten keine `style`-Attribute |
+| `img-src 'self'` | Icons und Manifest-Bilder; QR-Codes sind SVG-Elemente, gelesene QR-Bilder gehen über `createImageBitmap`, also weder `data:` noch `blob:` |
+| `font-src 'self'` | Geist und Geist Mono liegen im Build (`@fontsource-variable`), nichts von Google Fonts |
+| `connect-src 'self'` | nur der eigene Server (`/api`, `/auth`, Live-Sync, `release.json`) |
+| `manifest-src 'self'`, `worker-src 'self'` | das Web-App-Manifest und `sw.js` |
+| `object-src 'none'`, `base-uri 'none'` | kein Plugin, kein eingeschleustes `<base>`, das relative Adressen umlenkt |
+| `form-action 'self'` | ein eingeschleustes Formular schickt nichts an eine fremde Adresse |
+| `frame-ancestors 'none'` | keine fremde Seite legt die App in einen Frame (Clickjacking) |
+| `upgrade-insecure-requests` | nur hinter https (`KENNWORT_PUBLIC_URL` mit `https://`, im Service Worker eine https-Herkunft); über http auf `localhost` (Entwicklung, E2E) bräche es jede Anfrage |
+
+Die Kamera des QR-Scanners (K-306) braucht keine Direktive: Ihr Bild kommt über `srcObject`, keine
+Adresse. Speichern (Recovery-Kit, Export) geht über einen `blob:`-Link mit `download`, den die
+Policy nicht regelt.
+
+Nicht in der Policy: `require-trusted-types-for 'script'`. Solid baut jedes Template über
+`innerHTML` eines `<template>`, und die Registrierung des Service Workers übergibt eine Zeichenkette;
+unter Trusted Types rendert die App nichts (ausprobiert mit `e2e/csp.spec.ts`). Eine Default-Policy,
+die jede Zeichenkette durchlässt, schützte nur zum Schein.
+
+Die übrigen Kopfzeilen, auf jeder Antwort:
+
+| Kopfzeile | Wert und Grund |
+| --- | --- |
+| `X-Content-Type-Options` | `nosniff`: der Browser nimmt den Typ, den der Server nennt; er nennt ihn für jede Datei ausdrücklich |
+| `Referrer-Policy` | `no-referrer`: keine Adresse der App geht an eine andere Seite, auch nicht `/s/<id>` (P-18) |
+| `Cross-Origin-Opener-Policy` | `same-origin`: ein Fenster, das die App öffnet oder das sie öffnet, bekommt keinen Griff auf sie |
+| `Cross-Origin-Resource-Policy` | `same-origin`: fremde Seiten binden keine Datei der App und keine Antwort des Servers ein; die Extension ruft die API mit CORS, das davon nicht betroffen ist |
+| `X-Frame-Options` | `DENY`, für Browser ohne `frame-ancestors` |
+| `Permissions-Policy` | alles verboten außer `camera=(self)` für den QR-Scanner, `clipboard-write=(self)` zum Kopieren und `autoplay=(self)` für das stumme Kamerabild, das erst nach der Freigabe der Kamera startet, oft lange nach dem Klick. `publickey-credentials-get` und `-create` sind verboten: Die Web-App ruft selbst kein WebAuthn auf, Passkeys sind bei ihr nur Einträge |
+| `Strict-Transport-Security` | `max-age=31536000`, nur wenn `KENNWORT_PUBLIC_URL` mit `https://` beginnt; ohne `includeSubDomains`, weil andere Hosts unter der Domain des Betreibers vielleicht kein https haben |
+
+Antworten des Servers, die der Service Worker bei einer Navigation weitergibt (`/api`, `/auth`,
+siehe Ablauf oben), macht er weiter zu Text mit `Content-Security-Policy: sandbox`. Anhänge gibt es
+noch nicht; zeigt die App sie einmal an, dann ebenso in einer Sandbox mit opaker Herkunft.
+
+**Für Betreiber.** Am einfachsten liefert der Server die Web-App selbst aus
+(`KENNWORT_WEB_ROOT`), und der Reverse Proxy reicht alles unverändert an ihn durch, etwa mit Caddy:
+
+```text
+kennwort.example.de {
+  reverse_proxy localhost:8100
+}
+```
+
+Caddy holt das Zertifikat, der Server setzt mit `KENNWORT_PUBLIC_URL=https://kennwort.example.de`
+und `KENNWORT_BEHIND_PROXY=true` HSTS und `upgrade-insecure-requests` selbst. Der Proxy soll die
+Kopfzeilen nicht ein zweites Mal setzen: Zwei CSP-Kopfzeilen gelten beide, und zwei
+`Strict-Transport-Security` sind ein Fehler. Wer `includeSubDomains` oder `preload` will, ersetzt
+HSTS im Proxy (`header Strict-Transport-Security "max-age=31536000; includeSubDomains"`). Liefert
+der Proxy die Web-App selbst aus statt des Servers, muss er genau die Kopfzeilen der Tabelle oben
+senden; die Installation (K-703) bringt dafür eine fertige Konfiguration mit. Der Entwicklungsserver
+von Vite (Port 5175) sendet keine Policy, weil er Skripte und Styles inline nachlädt; die E2E-Tests
+laufen gegen den Server mit dem Build und damit unter der Policy.
+
+Geprüft wird das in CI: Ein Server-Test prüft jede Kopfzeile auf `/`, einem tiefen Pfad, `/s/<id>`,
+den Dateien des Builds und den Antworten des Servers (`apps/server/src/web/web.test.ts`), ein
+Vitest prüft die Antworten des Service Workers, und `e2e/csp.spec.ts` (desktop und `@phone`) legt
+eine Firma an, schreibt einen Eintrag, entsperrt neu und öffnet einen Einmal-Link, ohne dass ein
+einziger Verstoß (`securitypolicyviolation`) oder Konsolenfehler auftritt; ein eingeschleustes
+Inline-Skript läuft dabei nicht. Alle übrigen E2E-Tests laufen ebenfalls unter der Policy.
+
+Restrisiko:
+
+- Die Policy kommt vom Server und, nach der Installation, aus `sw.js`, also aus derselben Quelle wie
+  der Code; gegen einen bösartigen Server hilft sie nicht (siehe oben, P-16).
+- Ohne Trusted Types prüft der Browser nicht, was in `innerHTML` landet. Die App setzt nie Text des
+  Benutzers als HTML (Solid schreibt Text als Textknoten); ein Fehler dort bliebe aber an
+  `script-src 'self'` hängen, nicht an Trusted Types.
+- Firefox und Safari kennen die `Permissions-Policy` nur zum Teil; dort gilt, was der Browser von
+  sich aus erlaubt.
+- Der erste Abruf über http, bevor HSTS gilt, ist ungeschützt, solange die Domain nicht in der
+  Preload-Liste steht.
 
 #### Nachbauen und vergleichen (K-408)
 

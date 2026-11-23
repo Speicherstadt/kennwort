@@ -9,7 +9,9 @@
     "./adversary": "./src/adversary/index.ts",
     "./contract": "./src/sync/test/contract.ts",
     "./words": "./src/generator/eff-large.ts",
-    "./webauthn": "./src/webauthn/index.ts"
+    "./webauthn": "./src/webauthn/index.ts",
+    "./headers": "./src/headers/security-headers.ts",
+    "./without-eval": "./src/headers/without-eval.ts"
   },
   "dependencies": {
     "@kennwort/crypto": "workspace:*",

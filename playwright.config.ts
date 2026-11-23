@@ -4,9 +4,9 @@ import { PWNED_PORT } from "./e2e/pwned.ts";
 import { SETUP_CODE } from "./e2e/setup-code.ts";
 
 // What a user does, on the desktop and on a phone: every spec runs on `desktop`, specs tagged
-// @phone also on `phone`. The e2e ports (server 28100, Vite 5176) keep clear of a running dev server.
+// @phone also on `phone`. The e2e port (5176: the server with the web build) keeps clear of a
+// running dev server.
 const port = 5176;
-const serverPort = 28100;
 // Where the pinned Playwright's own browser is missing (some sandboxes), CHROMIUM_PATH names another
 const executablePath = process.env.CHROMIUM_PATH;
 const launchOptions = executablePath ? { executablePath } : {};
@@ -30,17 +30,24 @@ export default defineConfig({
   ],
   webServer: [
     {
-      // A real server with a database in memory: every test sets up its own company (e2e/account.ts)
-      command: "bun apps/server/src/main.ts",
-      port: serverPort,
+      // The real server with a database in memory (every test sets up its own company,
+      // e2e/account.ts), serving the web build itself with the headers of production
+      // (KENNWORT_WEB_ROOT, P-16), so the CSP holds in every test. The showcase of packages/ui is
+      // built for these tests only (apps/web/vite.config.ts); the extension is built first for
+      // e2e/extension*.spec.ts, which load it into their own Chromium: the release build and the one
+      // that may read the test pages' addresses (e2e/extension.ts)
+      command:
+        "bun run --cwd apps/extension build:chrome && bun run --cwd apps/extension build:e2e && KENNWORT_SHOWCASE=1 bun run --cwd apps/web build && bun apps/server/src/main.ts",
+      port,
       reuseExistingServer: false,
       env: {
-        KENNWORT_PORT: String(serverPort),
+        KENNWORT_PORT: String(port),
         KENNWORT_DATABASE: ":memory:",
         KENNWORT_LOG_LEVEL: "warn",
         KENNWORT_PUBLIC_URL: `http://localhost:${port}`,
         KENNWORT_AUTH_SECRET: "e2e-only-secret-e2e-only-secret-e2e",
         KENNWORT_SETUP_CODE: SETUP_CODE,
+        KENNWORT_WEB_ROOT: "apps/web/dist",
         // Every test sends its own X-Forwarded-For as its client address (e2e/account.ts)
         KENNWORT_BEHIND_PROXY: "true",
         // The leak check (K-603) asks the stand-in below, never the real service
@@ -68,14 +75,6 @@ export default defineConfig({
       // The stand-in for Have I Been Pwned's Pwned Passwords (e2e/pwned.ts)
       command: "bun e2e/pwned-server.ts",
       port: PWNED_PORT,
-      reuseExistingServer: false,
-    },
-    {
-      // The showcase of packages/ui is built for these tests only (apps/web/vite.config.ts); the
-      // extension is built first for e2e/extension*.spec.ts, which load it into their own Chromium:
-      // the release build and the one that may read the test pages' addresses (e2e/extension.ts)
-      command: `bun run --cwd apps/extension build:chrome && bun run --cwd apps/extension build:e2e && KENNWORT_SHOWCASE=1 bun run --cwd apps/web build && KENNWORT_API=http://localhost:${serverPort} bun run --cwd apps/web preview`,
-      port,
       reuseExistingServer: false,
     },
   ],
