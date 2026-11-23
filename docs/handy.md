@@ -183,6 +183,57 @@ Auf dem Mac:
 4. In Xcode das Team für die Signatur wählen (`bundle.iOS.developmentTeam` in
    `src-tauri/tauri.conf.json`) und die Bundle-ID `app.kennwort` im Apple-Konto anlegen.
 
-Die AutoFill-Erweiterung (Credential Provider mit Passkeys) kommt später als eigenes Xcode-Target
-dazu und nutzt dieselbe Brücke wie der Android-Autofill-Dienst (siehe
-[Projektplan](plan.md#entscheidungen)).
+### iOS-AutoFill bauen
+
+Die AutoFill-Erweiterung (Credential Provider) liegt fertig geschrieben in
+`apps/mobile/plugins/autofill/ios`, aber noch nie übersetzt: Ohne Mac gibt es weder Xcode noch
+einen Swift-Compiler im automatischen Lauf. Sie nutzt dieselbe Brücke wie der Android-Autofill-Dienst
+(siehe [Projektplan](plan.md#entscheidungen), „Autofill unter iOS“). Drei Teile:
+
+- `KennwortAutofillCore`: ein Swift-Paket mit den Regeln (Anfrage bauen, Host aus den
+  Service-Identifiern, Antwort streng prüfen, Übergabe über die App Group) und seinen Tests.
+- `Plugin`: das Tauri-Plugin der App. `src-tauri/build.rs` bindet es beim Bauen für iOS selbst
+  ein, dafür ist in Xcode nichts zu tun.
+- `Extension`: der View-Controller der Erweiterung mit `Info.plist` und Entitlements.
+
+Auf dem Mac, nach den Schritten oben:
+
+1. Die Tests des Kerns laufen lassen: in `apps/mobile/plugins/autofill/ios/KennwortAutofillCore`
+   `swift test`. Auf dem Mac laufen dabei auch die Tests der Versiegelung mit CryptoKit.
+2. Das Target anlegen: Xcode-Projekt aus `apps/mobile/src-tauri/gen/apple` öffnen, **File → New →
+   Target… → iOS → AutoFill Credential Provider Extension**, Name `KennwortAutofill`, Sprache
+   Swift, Bundle-ID `app.kennwort.autofill`, **Embed in Application** `kennwort_mobile_iOS`. Die
+   Dateien, die Xcode dafür anlegt (View-Controller, Storyboard, `Info.plist`, Entitlements),
+   löschen und stattdessen die drei aus `apps/mobile/plugins/autofill/ios/Extension` per **Add
+   Files… → Reference files in place** dem Target hinzufügen.
+3. Den Kern einbinden: **File → Add Package Dependencies… → Add Local…**, den Ordner
+   `KennwortAutofillCore` wählen und die Produkte `KennwortAutofillCore` und
+   `KennwortAutofillApple` dem Target `KennwortAutofill` hinzufügen (nicht der App, die bekommt sie
+   über das Plugin).
+4. Einstellungen des Targets `KennwortAutofill`:
+   - **General**: Minimum Deployments iOS 17.0.
+   - **Build Settings**: `INFOPLIST_FILE` auf `…/Extension/Info.plist`,
+     `CODE_SIGN_ENTITLEMENTS` auf `…/Extension/KennwortAutofill.entitlements` (Pfade relativ zum
+     Projekt), `GENERATE_INFOPLIST_FILE` auf `NO`.
+   - **Signing & Capabilities**: dasselbe Team wie die App, **AutoFill Credential Provider** und
+     **App Groups** mit `group.app.kennwort`.
+5. Bei der App (`kennwort_mobile_iOS`) unter **Signing & Capabilities** ebenfalls **App Groups** mit
+   `group.app.kennwort` einschalten; die Entitlements der App tragen die Gruppe schon. Im
+   Apple-Konto die App-ID `app.kennwort.autofill` und die App Group anlegen.
+6. Die `Info.plist` der Erweiterung trägt schon, was iOS liest: `NSExtensionPointIdentifier`
+   `com.apple.authentication-services-credential-provider-ui`, `NSExtensionPrincipalClass`
+   `$(PRODUCT_MODULE_NAME).CredentialProviderViewController` und unter `NSExtensionAttributes` →
+   `ASCredentialProviderExtensionCapabilities` `ProvidesPasswords` = YES, `ProvidesPasskeys` = NO.
+   Nichts davon ändern, ohne das Sicherheitsdesign anzupassen.
+7. Bauen und auf ein Gerät oder in den Simulator bringen: `bun run tauri ios dev` oder in Xcode
+   **Product → Run** mit dem Schema der App.
+8. Einschalten: **Einstellungen → Allgemein → AutoFill & Passwörter** (vor iOS 18:
+   **Einstellungen → Passwörter → Passwortoptionen**) und dort **Kennwort** wählen.
+9. Ausprobieren: In Safari eine Anmeldeseite über https öffnen, ins Passwortfeld tippen, über der
+   Tastatur **Passwörter** und dann **Kennwort** wählen. Die Erweiterung bittet, zu Kennwort zu
+   wechseln; dort entsperren, den Eintrag wählen und über den Pfeil oben links zurückspringen.
+   Benutzername und Passwort stehen dann im Formular. **Nicht ausfüllen** bricht ab.
+
+Was die Erweiterung absichtlich nicht tut: Sie füllt nie ohne Auswahl in der App, schlägt nichts
+über der Tastatur vor (keine Einträge im Speicher von iOS) und legt keinen Schlüssel im
+Schlüsselbund ab. Passkeys kommen später.
