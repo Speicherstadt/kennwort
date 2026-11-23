@@ -190,7 +190,14 @@ export const Frame = (props: FrameProps) => {
             <SettingsPage {...settingsLinks(props)} devices={props.devices} />
           </main>
         </Match>
-        <Match when={(route().page === "members" || route().page === "team") && props.members}>
+        {/* /members and /team are separate matches, so going between them mounts the list anew
+            and it reloads: someone may have joined since */}
+        <Match when={route().page === "members" && props.members}>
+          <TeamPage nav={props.nav} tab="members">
+            {props.members?.()}
+          </TeamPage>
+        </Match>
+        <Match when={route().page === "team" && props.members}>
           <TeamPage nav={props.nav} tab="members">
             {props.members?.()}
           </TeamPage>
