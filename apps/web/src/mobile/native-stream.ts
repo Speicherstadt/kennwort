@@ -112,6 +112,6 @@ export const nativeStream =
     return new Response(body, { status: 200, headers: { "content-type": "text/event-stream" } });
   };
 
-/** Pause before the next try: doubling from 2 s up to `max`, from the start again after a "ready" */
+/** Pause before the next try: doubling from 2 s up to `max`; the caller says when to start over */
 export const reconnectDelay = (failures: number, max: number) =>
   Math.min(max, 2000 * 2 ** Math.max(0, failures));
