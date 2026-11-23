@@ -57,8 +57,8 @@ Nein, erst nach deinem Klick, nur auf dem exakten Host und nie in fremde iFrames
 ## Gibt es eine App fürs Handy?
 
 Die Web-App lässt sich heute schon installieren. Die App für Android verbindet sich mit deinem
-Server, synchronisiert live und füllt in anderen Apps aus, ist aber eine Alpha ohne Release; die
-iOS-App fehlt noch ([Handy und App](handy.md)).
+Server, synchronisiert live und füllt in anderen Apps aus, ist aber noch auf keinem Gerät
+erprobt; der Code für iOS liegt bereit und wird auf einem Mac gebaut ([Handy und App](handy.md)).
 
 ## Kann ich Kennwort ausprobieren, ohne etwas zu installieren?
 

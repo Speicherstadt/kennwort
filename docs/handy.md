@@ -2,7 +2,7 @@
 title: Handy und App
 description: >-
   Kennwort am Handy: die Web-App zum Installieren (PWA), die Extension in Firefox für Android und
-  die App für Android (Alpha, noch ohne Release) mit systemweitem Ausfüllen; iOS folgt.
+  die App für Android (noch auf keinem Gerät erprobt) mit systemweitem Ausfüllen; der Code für iOS liegt bereit.
 ---
 
 # Handy und App

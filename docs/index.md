@@ -28,10 +28,12 @@ Server speichert nur Geheimtext.</p>
 
 </div>
 
-!!! warning "Noch nicht veröffentlicht"
-    Kennwort ist gebaut, aber noch ohne externes Audit; die App für Android ist eine Alpha ohne
-    Release, die iOS-App fehlt noch. Bitte noch keine echten Passwörter damit verwalten. Die Demo
-    läuft ganz im Browser mit Testdaten; die Passphrase ist `weber-haustechnik`.
+!!! warning "Version 0.1: zum Ausprobieren, noch nicht extern geprüft"
+    Die Kryptografie folgt offenen Standards, die Angriffe der ETH-Studie laufen als Tests – ein
+    externer Audit fehlt aber noch, und Tests finden nicht jede Schwachstelle. Wer Kennwort schon
+    nutzt, behält bitte eine zweite Kopie seiner Passwörter. Die App für Android wird gebaut, ist aber
+    noch auf keinem Gerät erprobt; der Code für iOS liegt bereit. Die Demo läuft ganz im Browser mit
+    Testdaten; die Passphrase ist `weber-haustechnik`.
 
 <!-- On a phone the phone's own screen, so nothing has to be read at a quarter of its size. -->
 <div class="showcase-shot showcase-cover" markdown>
@@ -137,7 +139,7 @@ eine Warnung, wenn du ein gespeichertes Passwort auf einer Seite eintippst, die 
 ## Am Handy ein Bildschirm nach dem anderen
 
 Die Web-App lässt sich installieren, mit Tab-Leiste unten. Die App für Android füllt in anderen
-Apps aus (Alpha); iOS folgt.
+Apps aus (noch auf keinem Gerät erprobt); der Code für iOS liegt bereit.
 
 <div class="showcase-phones" markdown>
 ![Liste der Einträge am Handy](assets/screenshots/entries-phone-light.webp#only-light){ width="824" height="1678" loading="lazy" }
