@@ -114,6 +114,12 @@ const server = (options: { tamper?: boolean; failPut?: boolean; failState?: bool
       return { status: 200, json: { removed: true } };
     }
     if (path === "/api/account/keys") return { status: 200, json: wire() };
+    if (path === "/api/devices" && method === "GET")
+      return {
+        status: 200,
+        json: { devices: [{ id: "s-1", name: "Browser", createdAt: 1, lastUsedAt: 1, current: true }] },
+      };
+    if (path === "/api/devices/s-1" && method === "DELETE") return { status: 200, json: {} };
     if (path === "/api/account/state") {
       if (options.failState) return { status: 500, json: undefined };
       const next = body as { state: string; stateCounter: number };
@@ -313,6 +319,22 @@ describe("unlocking with the passkey (K-707)", () => {
   it("opens nothing when the server tampers with the sealed AK", async () => {
     const { unlocked } = await unlockAfterSetUp({ tamper: true });
     expect(unlocked).toEqual({ ok: false, error: "wrong-passkey" });
+  });
+
+  it("signs the new session out when the unlock fails", async () => {
+    const { s, unlocked } = await unlockAfterSetUp({ tamper: true });
+    expect(unlocked.ok).toBe(false);
+    expect(
+      s.sent.some(
+        (c) => c.method === "DELETE" && c.path === "/api/devices/s-1" && c.token === "passkey-token",
+      ),
+    ).toBe(true);
+  });
+
+  it("keeps the new session when the unlock succeeds", async () => {
+    const { s, unlocked } = await unlockAfterSetUp();
+    expect(unlocked.ok).toBe(true);
+    expect(s.sent.some((c) => c.path.startsWith("/api/devices"))).toBe(false);
   });
 
   it("refuses a passkey that gives no PRF output", async () => {
