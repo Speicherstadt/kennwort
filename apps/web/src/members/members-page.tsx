@@ -9,6 +9,7 @@ import { encodeBytes } from "@kennwort/core";
 import {
   Badge,
   Button,
+  cn,
   Icon,
   introClass,
   m,
@@ -114,11 +115,11 @@ const Role = (props: {
 }) => (
   <Show
     when={props.editable}
-    fallback={<p class="text-xs text-muted-foreground">{roleText(props.view.role)}</p>}
+    fallback={<p class="px-3 text-[13px] text-muted-foreground">{roleText(props.view.role)}</p>}
   >
     <select
       aria-label={m.members_role_of({ name: props.name })}
-      class={selectClass}
+      class={cn(selectClass, "w-full")}
       disabled={props.busy}
       value={props.view.role}
       onChange={(event) => props.onRole(event.currentTarget.value as MemberView["role"])}
@@ -151,28 +152,21 @@ const MemberRow = (props: {
 }) => {
   const name = () => props.view.name ?? (props.isMe ? m.members_you() : m.members_unnamed());
   return (
-    <li class="flex items-start gap-3 px-4 py-3">
+    <li class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
       <span
         aria-hidden="true"
         class="grid size-9 shrink-0 place-items-center rounded-full bg-accent text-[13px] font-medium"
       >
         {name().slice(0, 1).toUpperCase()}
       </span>
-      <div class="grid min-w-0 flex-1 gap-1.5">
+      <div class="grid min-w-0 flex-1 gap-1">
         <p class="truncate font-medium">
           {name()}
           <Show when={props.isMe && props.view.name}>
             <span class="ml-2 text-xs font-normal text-muted-foreground">{m.members_you()}</span>
           </Show>
         </p>
-        <div class="flex flex-wrap items-center gap-2">
-          <Role
-            view={props.view}
-            name={name()}
-            editable={props.canChangeRole && !props.isMe && props.view.status === "certified"}
-            busy={props.busy}
-            onRole={props.onRole}
-          />
+        <div class="flex flex-wrap items-center gap-2 empty:hidden">
           <Show when={props.view.leftAt != null} fallback={<Status {...props} />}>
             <Badge>{m.members_left()}</Badge>
             <Show when={props.reportable}>
@@ -188,7 +182,20 @@ const MemberRow = (props: {
           </Show>
         </div>
       </div>
-      <Show when={props.canRemove}>
+      {/* One column for the role, so every row lines up whether it is editable or not */}
+      <div class="w-36 shrink-0">
+        <Role
+          view={props.view}
+          name={name()}
+          editable={props.canChangeRole && !props.isMe && props.view.status === "certified"}
+          busy={props.busy}
+          onRole={props.onRole}
+        />
+      </div>
+      <Show
+        when={props.canRemove}
+        fallback={<span aria-hidden="true" class="size-11 shrink-0 md:size-8" />}
+      >
         <TooltipIconButton
           label={m.members_leave_of({ name: name() })}
           class="size-11 shrink-0 text-muted-foreground hover:text-danger md:size-8"

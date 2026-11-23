@@ -184,7 +184,7 @@ export const GroupsPage = (props: {
   };
   const { api, session } = props;
   return (
-    <section aria-labelledby="page-title" class={pageClass()}>
+    <section aria-labelledby="page-title" class={pageClass("wide")}>
       <h1 id="page-title" class="mb-2 text-[28px] font-semibold md:text-lg">
         {m.nav_groups()}
       </h1>
