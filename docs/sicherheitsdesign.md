@@ -46,9 +46,7 @@ schwächere Verfahren erzwingt.
 Kennwort führt daraus einen eigenen Katalog mit 27 Angriffen, ergänzt um die Angriffe, die erst
 durch Kennworts Funktionen möglich werden (Geräte-Freigabe, Einmal-Links, OIDC-Gruppen). Jedes
 Protokoll unten nennt, welche es abwehrt; der bösartige Testserver (K-206, K-701) spielt jeden als
-Test nach. Die Zuordnung zur Nummerierung der Studie trägt K-701 nach, sobald die Studie in der
-Umgebung des Loops lesbar ist; die Klassen und Mechanismen hier folgen den veröffentlichten
-Zusammenfassungen.
+Test nach. Die Klassen und Mechanismen folgen den veröffentlichten Zusammenfassungen der Studie.
 
 | Nr. | Klasse | Angriff des Servers |
 | --- | --- | --- |
@@ -122,41 +120,47 @@ Ein Testserver, der gezielt lügt (`packages/core/src/adversary/`), spielt die A
 legt sich um einen ehrlichen Server oder um `fetch` und ändert, was dieser antwortet. Jeder Test
 nennt seinen Angriff, und der Client muss ihn ablehnen und sagen, warum.
 
-| Angriff | Wo | Was der Client meldet |
-| --- | --- | --- |
-| E-02 eigenes Konto über eine Einladung eingeschrieben | `adversary/eth.test.ts`, `membership/invitation.test.ts` | MAC passt nicht |
-| E-05 fremder Schlüssel unter einem Mitglied | `adversary/eth.test.ts` | nicht zertifizierter Autor |
-| E-06 Mitglied eingeschmuggelt | `adversary/eth.test.ts`, `membership/verify-log.test.ts` | kein Verwalter, falsche Signatur |
-| E-07 Log gekürzt, umsortiert, zurückgespielt | `adversary/eth.test.ts`, `membership/verify-log.test.ts`; älterer Kontozustand nach der Offline-Kopie: `apps/web/src/session/offline-unlock.test.ts` | Lücke, Rückfall |
-| E-08 Gabelung | `membership/verify-log.test.ts` | Gabelung |
-| E-10 anderer Wurzelschlüssel | `adversary/eth.test.ts` | nicht zertifizierter Unterzeichner |
-| E-12 Geheimtexte vertauscht oder verschoben | `adversary/eth.test.ts`, `apps/server/src/adversary/` | falsche Signatur, anderer Tresor |
-| E-13 alte Version | `adversary/eth.test.ts`, `apps/server/src/adversary/`, gegen die Offline-Kopie `apps/web/src/entries/entry-store-offline.test.ts` | Rückfall |
-| E-15 Eintrag verborgen | `adversary/eth.test.ts`, `apps/server/src/adversary/`, gegen die Offline-Kopie `apps/web/src/entries/entry-store-offline.test.ts` | fehlt |
-| E-16 untergeschobener Eintrags-Schlüssel | `adversary/eth.test.ts` | falsche Signatur |
-| E-17, E-19 altes Format, alte Signatur | `adversary/eth.test.ts` | falsche Signatur |
-| E-23 Audit-Log gefälscht oder gekürzt | `audit/chain.test.ts`, `apps/server/src/audit/` | siehe [P-20](#p-20-audit-log) |
-| E-22 manipulierte Web-App ausgeliefert | `apps/web/src/sw/worker.test.ts`, `worker.review.test.ts`, `server-paths.test.ts`, `e2e/pwa.spec.ts` | falscher Hash, falsche Signatur, fehlende Datei, älteres Release; fremde Seite unter `/api` nur als Text |
-| E-24 Passphrase abgegriffen | `apps/server/src/auth/` | – (der Server bekommt sie nie) |
-| E-26 Schlüsselwechsel zurückgehalten (Log ohne Wechsel, neuer Schlüssel fehlt) | `adversary/exit.test.ts`, `membership/rotation.test.ts` | Wechsel steht aus, Schlüssel zurückgehalten, neuere Epoche, alter Schlüssel |
-| E-26 alter Schlüssel für das ausgetretene Mitglied | `adversary/exit.test.ts`, `apps/server/src/sync/rotation-routes.test.ts` | neuere Epoche, falsche Epoche, kein Bearbeiter |
-| E-16 alter Tresor-Schlüssel als neuer ausgegeben | `adversary/exit.test.ts` | Bindung passt nicht |
-| E-07 Log auf vor den Austritt zurückgespielt | `adversary/exit.test.ts` | Rückfall, neuere Epoche, unbekannte Epoche |
-| E-04 Notfall-Pakete vor der Wartezeit oder nach einem Widerspruch herausgegeben | `adversary/emergency.test.ts`, `packages/client/src/emergency/emergency.test.ts` | Wartezeit läuft, widersprochen, nicht die eigene Anfrage |
-| E-05 vertauschter Schlüssel der Vertrauensperson | `adversary/emergency.test.ts`, `apps/server/src/account/emergency.test.ts` | nicht für mich |
-| E-16 gefälschte Bindung, Schlüssel ohne Bindung im Log | `adversary/emergency.test.ts`, `membership/emergency-open.test.ts` | falsche Signatur, nicht im Log, Bindung passt nicht |
-| E-04 alte Freigabe nach einer Rücknahme zurückgespielt | `adversary/emergency.test.ts`, `packages/client/src/emergency/emergency.test.ts` | wiederholt |
-| E-08, E-26 Mitglied vom Wechsel ferngehalten, seine Versionen unter dem alten Schlüssel nach dem Wechsel ausgeliefert | `adversary/epoch-order.test.ts`, gegen die Offline-Kopie `apps/web/src/offline/local-copy.test.ts` | ältere Epoche, kein Bearbeiter |
-| E-10 Wurzelschlüssel gegabelt (zweiter Wechsel vom alten Schlüssel), Wechsel wiederholt oder in eine andere Firma getragen, alter Wurzelschlüssel weiter ausgeliefert, nach dem Wechsel ausgestelltes Zertifikat des alten | `apps/server/src/adversary/root-attacks.test.ts`, `membership/root-change.test.ts`, `membership/verify-log.root.test.ts`, `apps/server/src/account/root.test.ts` | Gabelung, ersetzter Wurzelschlüssel, passt nicht, ungültig, nicht zertifizierter Unterzeichner |
-| E-20 Einmal-Link mitgelesen, fremder Geheimtext untergeschoben, Passphrase abgestreift, öfter ausgeliefert als erlaubt | `apps/server/src/adversary/link-attacks.test.ts`, `packages/crypto/src/one-time-link.test.ts`, `apps/server/src/links/links.test.ts` | Schlüssel und Inhalt nie beim Server; passt nicht (falscher Schlüssel); öfter ausgeliefert öffnet weiter – Restrisiko, siehe [P-18](#p-18-einmal-links) |
-| E-27 Gruppe beim Anmeldedienst gemeldet, E-03 Anmeldedienst gibt sich als Schlüsseldienst aus, E-02 Konto über den Anmeldedienst eingeschrieben | `apps/server/src/adversary/oidc-attacks.test.ts`, `apps/server/src/oidc/groups.test.ts`, `membership/members.enrolled.test.ts`, `e2e/oidc.spec.ts` | nur Anfrage, kein Tresor; keine Sitzung, kein Schlüssel; ohne Zertifikat bis zum Codevergleich |
-| E-01, E-05 nach einem Kit in fremden Händen: altes Bündel weiter ausgeliefert, neues Zertifikat zurückgehalten, altes Kit nach dem Wechsel, Tresor ohne Erneuerung oder Wechsel | `adversary/rekey.test.ts`, `membership/verify-log.rekey.test.ts`, `apps/server/src/account/rekey.test.ts` | ungültig, nicht zertifiziert, Wechsel steht aus, falsche Signatur, Rückfall, neuere Epoche |
-| E-06, E-07 beim Löschen eines Kontos: Austritt im Namen eines anderen erfunden oder mit falscher Signatur, das gelöschte Konto nimmt sich wieder auf, Log auf vor das Löschen zurückgespielt; Lösch-Challenge als Anmeldung, fremde Challenge, falsche Passphrase | `adversary/account-deletion.test.ts`, `apps/server/src/account/deletion.test.ts` | kein Verwalter, falsche Signatur, Rückfall; 401 |
-| E-06, E-07, E-08 nach einer Übergabe: der Handwerker macht sich selbst wieder zum Verwalter, das Log auf vor seine Herabstufung zurückgespielt oder gegabelt; Daten einer Firma in der Sitzung der anderen Firma derselben Person | `adversary/handover.test.ts`, `apps/server/src/tenancy/linked-accounts.test.ts`, `apps/server/src/oidc/oidc-companies.test.ts` | kein Verwalter, Rückfall, Gabelung; 404 |
+Die Tabelle nennt für jeden der 27 Angriffe die Tests mit ihrem Pfad im Repository;
+`scripts/security-design.test.ts` schlägt fehl, wenn ein Angriff fehlt oder ein genannter Pfad
+nicht existiert.
 
-Die übrigen folgen mit den Funktionen, die sie betreffen (Konto-Recovery, Teilen, Geräte, Austritt,
-Einmal-Links, Import und Export, ausgelieferter Code); K-701 schließt den Katalog. Beim Bau des
-Testservers fiel auf, dass der Client das Zertifikat eines Autors nicht gegen den
+| Nr. | Tests | Was der Client meldet |
+| --- | --- | --- |
+| E-01 | `packages/core/src/adversary/rekey.test.ts`, `packages/core/src/membership/verify-log.rekey.test.ts`, `apps/server/src/account/rekey.test.ts`, `apps/server/src/adversary/recovery-attacks.test.ts` | nach einem Kit in fremden Händen: ungültig, nicht zertifiziert, Wechsel steht aus, Rückfall; ein Recovery-Schlüssel, den der Server unterschiebt, bekommt kein Depot; ein vom Server verpacktes AK öffnet nicht |
+| E-02 | `packages/core/src/adversary/eth.test.ts`, `packages/core/src/membership/invitation.test.ts`, `packages/core/src/membership/members.enrolled.test.ts`, `apps/server/src/adversary/oidc-attacks.test.ts` | MAC passt nicht; über den Anmeldedienst nur ein Konto ohne Zertifikat bis zum Codevergleich |
+| E-03 | `apps/server/src/adversary/oidc-attacks.test.ts`, `e2e/oidc.spec.ts` | keine Sitzung, kein Schlüssel: der Anmeldedienst ist kein Schlüsseldienst |
+| E-04 | `packages/core/src/adversary/emergency.test.ts`, `packages/client/src/emergency/emergency.test.ts` | Wartezeit läuft, widersprochen, nicht die eigene Anfrage, wiederholt |
+| E-05 | `packages/core/src/adversary/eth.test.ts`, `packages/core/src/adversary/root-check.test.ts`, `packages/core/src/adversary/emergency.test.ts`, `apps/server/src/account/emergency.test.ts` | nicht zertifizierter Autor, nicht für mich |
+| E-06 | `packages/core/src/adversary/eth.test.ts`, `packages/core/src/membership/verify-log.test.ts`, `packages/core/src/adversary/account-deletion.test.ts`, `packages/core/src/adversary/handover.test.ts` | kein Verwalter, falsche Signatur |
+| E-07 | `packages/core/src/adversary/eth.test.ts`, `packages/core/src/membership/verify-log.test.ts`, `packages/core/src/adversary/exit.test.ts`, `packages/core/src/adversary/account-deletion.test.ts`, `packages/core/src/adversary/handover.test.ts`, `apps/web/src/session/offline-unlock.test.ts` | Lücke, Rückfall, neuere oder unbekannte Epoche |
+| E-08 | `packages/core/src/membership/verify-log.test.ts`, `packages/core/src/adversary/epoch-order.test.ts`, `packages/core/src/adversary/handover.test.ts`, `packages/core/src/account/merge-fork.test.ts` | Gabelung, ältere Epoche, kein Bearbeiter |
+| E-09 | `packages/core/src/adversary/catalog.test.ts`, `apps/web/src/pairing/pairing.test.ts`, `apps/server/src/auth/pairing.test.ts` | ein Gerät des Servers bekommt kein AK: Fingerabdruck aus dem QR-Code passt nicht, Paket öffnet nicht ohne das Kopplungs-Geheimnis. Kennwort hat keine Geräteschlüssel, an die geteilt würde; geteilt wird nur an zertifizierte Kontoschlüssel (E-05) |
+| E-10 | `packages/core/src/adversary/eth.test.ts`, `apps/server/src/adversary/root-attacks.test.ts`, `packages/core/src/membership/root-change.test.ts`, `packages/core/src/membership/verify-log.root.test.ts`, `apps/server/src/account/root.test.ts` | nicht zertifizierter Unterzeichner, Gabelung, ersetzter Wurzelschlüssel |
+| E-11 | `packages/core/src/adversary/catalog.test.ts` | falsche Signatur: alle Felder liegen in einem Geheimtext, es gibt kein Feld zum Vertauschen |
+| E-12 | `packages/core/src/adversary/eth.test.ts`, `apps/server/src/adversary/http-attacks.test.ts` | falsche Signatur, anderer Tresor |
+| E-13 | `packages/core/src/adversary/eth.test.ts`, `apps/server/src/adversary/http-attacks.test.ts`, `apps/web/src/entries/entry-store-offline.test.ts`, `packages/core/src/sync/share.test.ts` | Rückfall |
+| E-14 | `packages/core/src/adversary/catalog.test.ts`, `apps/extension/src/page/matches.test.ts` | auf dem Draht kein Titel, keine URL, kein Name; eine geänderte URL: falsche Signatur; ausgefüllt wird nur nach der URL aus dem entschlüsselten Inhalt |
+| E-15 | `packages/core/src/adversary/eth.test.ts`, `apps/server/src/adversary/http-attacks.test.ts`, `apps/web/src/entries/entry-store-offline.test.ts` | fehlt |
+| E-16 | `packages/core/src/adversary/eth.test.ts`, `packages/core/src/adversary/exit.test.ts`, `packages/core/src/adversary/emergency.test.ts`, `packages/core/src/membership/emergency-open.test.ts` | falsche Signatur, Bindung passt nicht, nicht im Log |
+| E-17 | `packages/core/src/adversary/eth.test.ts`, `packages/core/src/import/bitwarden-protected.test.ts` | falsche Signatur bei anderem Versions-Byte; Bitwarden-EncString ohne HMAC: nicht unterstützt |
+| E-18 | `packages/core/src/adversary/catalog.test.ts`, `packages/crypto/src/passphrase.test.ts` | – die Parameter gehören zur Formatversion; was der Server dazu sagt, liest der Client nicht |
+| E-19 | `packages/core/src/adversary/eth.test.ts` | falsche Signatur |
+| E-20 | `apps/server/src/adversary/link-attacks.test.ts`, `packages/crypto/src/one-time-link.test.ts`, `apps/server/src/links/links.test.ts` | Schlüssel und Inhalt nie beim Server; passt nicht; öfter ausgeliefert öffnet weiter – Restrisiko, siehe [P-18](#p-18-einmal-links) |
+| E-21 | `packages/core/src/adversary/catalog.test.ts`, `apps/web/src/export/export.test.ts` | ein untergeschobener Eintrag ist nicht zertifiziert und landet nicht im Export; Import und Export laufen nur im Client, zum Server geht nur das Audit-Ereignis |
+| E-22 | `apps/web/src/sw/worker.test.ts`, `apps/web/src/sw/worker.review.test.ts`, `apps/web/src/sw/server-paths.test.ts`, `e2e/pwa.spec.ts` | falscher Hash, falsche Signatur, fehlende Datei, älteres Release |
+| E-23 | `packages/core/src/audit/chain.test.ts`, `apps/server/src/audit/audit.test.ts` | siehe [P-20](#p-20-audit-log) |
+| E-24 | `packages/core/src/adversary/catalog.test.ts`, `apps/server/src/auth/auth.test.ts` | – der Server bekommt nur Konto-ID und eine Signatur, nie Passphrase, Secret Key oder einen Schlüssel daraus |
+| E-25 | `packages/core/src/adversary/catalog.test.ts`, `packages/core/src/account/pairing.test.ts`, `apps/web/src/pairing/pairing.test.ts` | nicht authentisch, anderer Kontozustand, anderes Konto |
+| E-26 | `packages/core/src/adversary/exit.test.ts`, `packages/core/src/adversary/epoch-order.test.ts`, `packages/core/src/membership/rotation.test.ts`, `apps/server/src/sync/rotation-routes.test.ts`, `apps/web/src/offline/local-copy.test.ts` | Wechsel steht aus, Schlüssel zurückgehalten, neuere Epoche, kein Bearbeiter |
+| E-27 | `apps/server/src/adversary/oidc-attacks.test.ts`, `apps/server/src/oidc/groups.test.ts` | nur Anfrage, kein Tresor |
+
+Keiner der 27 fällt weg: Funktionen, die Kennwort anders baut als die untersuchten Produkte (keine
+Geräteschlüssel, kein SSO-Schlüsseldienst, keine Iterationszahl vom Server), haben einen Test, der
+zeigt, dass der Angriff ins Leere geht. Die Studie nummeriert ihre Angriffe nach Hersteller; die
+Zuordnung zu diesem Katalog folgt den veröffentlichten Zusammenfassungen, weil das Papier in der
+Umgebung des Loops nicht abrufbar war.
+
+Beim Bau des Testservers fiel auf, dass der Client das Zertifikat eines Autors nicht gegen den
 Firmen-Wurzelschlüssel und das Log prüfte; das ist behoben (E-05).
 
 ## Bausteine

@@ -45,3 +45,9 @@ export const protocols = (markdown: string): Protocol[] =>
       id: part.match(/^(P-\d+)/)?.[1] ?? "",
       stops: (part.match(/^\*\*Wehrt ab:\*\* (.+)$/m)?.[1] ?? "").match(/E-\d+/g) ?? [],
     }));
+
+/** The repository paths a cell names in backticks: anything with a slash and a file extension */
+export const namedPaths = (cell: string): string[] =>
+  (cell.match(/`[^`]+`/g) ?? [])
+    .map((code) => code.slice(1, -1))
+    .filter((code) => code.includes("/") && /\.[a-z]+$/.test(code));
