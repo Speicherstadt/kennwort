@@ -31,6 +31,7 @@ const simplePages = [
   "notifications",
   "security",
   "renew",
+  "companies",
   "setup",
   "unlock",
   "recover",

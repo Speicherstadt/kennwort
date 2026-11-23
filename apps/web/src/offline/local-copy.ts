@@ -151,6 +151,7 @@ export const createLocalCopy = (store: KeyValue, now: () => number = Date.now) =
     useAccount: scope.useAccount,
     forget: scope.forget,
     settled: scope.settled,
+    suspend: scope.suspend,
     ...accountPart(store, scope),
     ...recordsPart(store, scope),
   };

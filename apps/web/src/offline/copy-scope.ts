@@ -17,6 +17,10 @@ export const createCopyScope = (store: KeyValue, now: () => number) => {
   };
   let account: string | undefined;
   let loaded = false;
+  // Another company of the account on screen (K-605): its answers are no part of this copy
+  let suspended = false;
+  // Counts every switch between companies: an answer asked for before one is no answer for now
+  let turn = 0;
   const load = async () => {
     if (loaded) return;
     loaded = true;
@@ -36,7 +40,7 @@ export const createCopyScope = (store: KeyValue, now: () => number) => {
     forCurrent: <T>(task: () => Promise<T>, otherwise: T) =>
       serial(async () => {
         await load();
-        return account === undefined ? otherwise : task();
+        return account === undefined || suspended ? otherwise : task();
       }),
     /** Inside a task: the server's vault list just came, so this is the last sync */
     synced: async () => {
@@ -54,6 +58,16 @@ export const createCopyScope = (store: KeyValue, now: () => number) => {
         account = id;
         setSyncedAt(undefined);
       }),
+    /**
+     * While another company of the account is on screen (K-605, P-27) the copy keeps and serves
+     * nothing of the account it holds: that company's reads and records would mix into it
+     */
+    suspend: (on: boolean) => {
+      if (suspended !== on) turn += 1;
+      suspended = on;
+    },
+    /** Which company turn it is; a read compares it before and after its answer (copy-fetch.ts) */
+    turn: () => turn,
     /** Resolves once every operation asked for so far is done */
     settled: () => serial(async () => {}),
     /** Logout: the whole copy is gone */

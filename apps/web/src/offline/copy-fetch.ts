@@ -44,8 +44,10 @@ const withoutNames = (path: string, text: string) => {
 
 export const createCopyFetch = (store: KeyValue, scope: CopyScope) => {
   const [reachable, setReachable] = createSignal(true);
-  const keep = (path: string, text: string) =>
+  // A read asked for while another company was on screen keeps nothing, even if the home is back
+  const keep = (path: string, text: string, asked: number) =>
     scope.forCurrent(async () => {
+      if (scope.turn() !== asked) return;
       const kept = withoutNames(path, text);
       if (kept === undefined) return;
       await store.set(`read:${path}`, kept);
@@ -57,6 +59,7 @@ export const createCopyFetch = (store: KeyValue, scope: CopyScope) => {
     async (input, init) => {
       const path = pathOf(input);
       const readable = methodOf(input, init) === "GET" && READS.some((r) => r.test(path));
+      const asked = scope.turn();
       let response: Response;
       try {
         response = await send(input, init);
@@ -67,7 +70,8 @@ export const createCopyFetch = (store: KeyValue, scope: CopyScope) => {
         return new Response(copy, { headers: { "content-type": "application/json" } });
       }
       setReachable(true);
-      if (readable && response.status === 200) await keep(path, await response.clone().text());
+      if (readable && response.status === 200)
+        await keep(path, await response.clone().text(), asked);
       return response;
     };
   return { reachable, fetch: wrap };

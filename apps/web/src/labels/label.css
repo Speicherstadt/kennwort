@@ -1,0 +1,86 @@
+/*
+ * QR labels (K-605): the label in millimetres, black on white whatever the theme, and in print
+ * the label alone on a page of its own size (CSS named pages, one per size of label.ts)
+ */
+.kennwort-label {
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 2mm;
+  padding: 2mm;
+  overflow: hidden;
+  background: #fff;
+  color: #000;
+  font-family: inherit;
+}
+.kennwort-label svg {
+  flex: none;
+  height: 100%;
+  aspect-ratio: 1;
+}
+.kennwort-label-text {
+  display: grid;
+  min-width: 0;
+  gap: 1mm;
+  overflow-wrap: anywhere;
+}
+.kennwort-label-text strong {
+  font-size: 3.6mm;
+  line-height: 1.15;
+}
+.kennwort-label-text span {
+  font-size: 2.4mm;
+}
+.label-62x29 {
+  width: 62mm;
+  height: 29mm;
+}
+.label-89x36 {
+  width: 89mm;
+  height: 36mm;
+}
+.label-50x50 {
+  flex-direction: column;
+  width: 50mm;
+  height: 50mm;
+  text-align: center;
+}
+.label-50x50 svg {
+  height: 34mm;
+}
+
+/* Off the screen; only the printer sees it */
+.kennwort-print {
+  display: none;
+}
+
+@page label-62x29 {
+  size: 62mm 29mm;
+  margin: 0;
+}
+@page label-89x36 {
+  size: 89mm 36mm;
+  margin: 0;
+}
+@page label-50x50 {
+  size: 50mm 50mm;
+  margin: 0;
+}
+
+@media print {
+  body > :not(.kennwort-print, :has(.kennwort-print)) {
+    display: none;
+  }
+  .kennwort-print {
+    display: block;
+  }
+  .kennwort-print .label-62x29 {
+    page: label-62x29;
+  }
+  .kennwort-print .label-89x36 {
+    page: label-89x36;
+  }
+  .kennwort-print .label-50x50 {
+    page: label-50x50;
+  }
+}

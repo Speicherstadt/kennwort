@@ -14,7 +14,7 @@ import type { Saved } from "./entry-detail-parts.tsx";
 import { EntryList, type ShownVault } from "./entry-list.tsx";
 import { GeneratorPage, GroupsPage, NotFoundPage, SettingsPage } from "./pages.tsx";
 import { Rail } from "./rail.tsx";
-import { Sidebar } from "./sidebar.tsx";
+import { type CompanySwitch, Sidebar } from "./sidebar.tsx";
 import { TabBar } from "./tab-bar.tsx";
 
 export const Frame = (props: {
@@ -48,6 +48,12 @@ export const Frame = (props: {
   onShareEntry?: ((entry: ShownEntry) => void) | undefined;
   /** A one-time link to an entry for someone without an account (K-601) */
   onLinkEntry?: ((entry: ShownEntry) => void) | undefined;
+  /** A QR label for the device an entry is for (K-605) */
+  onLabelEntry?: ((entry: ShownEntry) => void) | undefined;
+  /** The companies of the account and the switch between them (K-605), for the sidebar */
+  companies?: CompanySwitch | undefined;
+  /** Einstellungen → „Firmen“ (K-605) */
+  companiesPage?: (() => JSX.Element) | undefined;
   /** Einstellungen → „Einmal-Links“ (K-601): a link for a free text and the account's links */
   linksPage?: (() => JSX.Element) | undefined;
   /** „Sicherheit“ (K-603): weak, reused and leaked passwords and the monthly report */
@@ -87,6 +93,7 @@ export const Frame = (props: {
                     vaults={props.vaults?.()}
                     entries={props.entries?.()}
                     security={Boolean(props.securityPage)}
+                    companies={props.companies}
                   />
                   <main class="flex min-h-0 flex-1">
                     <EntryList
@@ -103,6 +110,7 @@ export const Frame = (props: {
                       onEdit={props.onEditEntry}
                       onShare={props.onShareEntry}
                       onLink={props.onLinkEntry}
+                      onLabel={props.onLabelEntry}
                       onFavorite={props.onFavoriteEntry}
                       nav={props.nav}
                       filter={entries().filter}
@@ -115,7 +123,12 @@ export const Frame = (props: {
             >
               {(shown) => (
                 <>
-                  <Sidebar nav={props.nav} vaults={props.vaults?.()} entries={props.entries?.()} />
+                  <Sidebar
+                    nav={props.nav}
+                    vaults={props.vaults?.()}
+                    entries={props.entries?.()}
+                    companies={props.companies}
+                  />
                   <main class="flex min-h-0 flex-1">{shown()}</main>
                 </>
               )}
@@ -148,6 +161,7 @@ export const Frame = (props: {
               onLinks={props.linksPage ? () => props.nav.go("/links") : undefined}
               onSecurity={props.securityPage ? () => props.nav.go("/security") : undefined}
               onRenew={props.renewPage ? () => props.nav.go("/renew") : undefined}
+              onCompanies={props.companiesPage ? () => props.nav.go("/companies") : undefined}
               devices={props.devices}
             />
           </main>
@@ -175,6 +189,9 @@ export const Frame = (props: {
         </Match>
         <Match when={route().page === "security" && props.securityPage}>
           <main class="flex min-h-0 flex-1">{props.securityPage?.()}</main>
+        </Match>
+        <Match when={route().page === "companies" && props.companiesPage}>
+          <main class="flex min-h-0 flex-1">{props.companiesPage?.()}</main>
         </Match>
         <Match when={route().page === "renew" && props.renewPage}>
           <main class="flex min-h-0 flex-1">{props.renewPage?.()}</main>

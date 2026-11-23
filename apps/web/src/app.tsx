@@ -4,43 +4,32 @@
  * Another language renders everything anew instead of reloading the page, which would lock it.
  */
 
-import { httpServerFor } from "@kennwort/client/entries/entry-store.ts";
-import type { AccountApi, Api } from "@kennwort/client/session/api.ts";
-import type { DevicesApi } from "@kennwort/client/session/devices-api.ts";
-import type { EmergencyApi } from "@kennwort/client/session/emergency-api.ts";
-import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
 import type { LinkApi } from "@kennwort/client/session/links-api.ts";
-import type { NotificationApi } from "@kennwort/client/session/notifications-api.ts";
-import type { OidcApi } from "@kennwort/client/session/oidc-api.ts";
-import type { PwnedApi } from "@kennwort/client/session/pwned-api.ts";
-import type { ShareApi } from "@kennwort/client/session/shares-api.ts";
-import type { VaultApi } from "@kennwort/client/session/vaults-api.ts";
 import { exitReport } from "@kennwort/core";
 import { getLocale, type Locale, setLocale } from "@kennwort/ui";
 import { QueryClientProvider } from "@tanstack/solid-query";
 import { createMemo, createSignal, Match, onSettled, Show, Switch, untrack } from "solid-js";
 import { AddDevicePage } from "./account/add-device-page.tsx";
 import { InvitePage } from "./account/invite-page.tsx";
-import { type PairDeps, PairPage } from "./account/pair-page.tsx";
+import { PairPage } from "./account/pair-page.tsx";
 import { RecoverCompanyPage } from "./account/recover-company-page.tsx";
 import { RecoverPage } from "./account/recover-page.tsx";
 import { renewPage } from "./account/renew-route.tsx";
 import { SetupPage } from "./account/setup-page.tsx";
 import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
-import { emergencyPage, importPage, noAccessFor, OpenLink } from "./app-pages.tsx";
-import { renewEmergency } from "./emergency/emergency.ts";
+import { devicesFor, emergencyPage, importPage, noAccessFor, OpenLink } from "./app-pages.tsx";
+import { type AppApi, createStores } from "./app-stores.ts";
+import { CompaniesPage } from "./companies/companies-page.tsx";
+import { type CompanySwitcher, createCompanySwitch } from "./companies/company-switch.ts";
 import { EmergencyNotice } from "./emergency/emergency-notice.tsx";
-import { createEntries } from "./entries/entries-wiring.tsx";
 import { markToChange } from "./entries/to-change.ts";
 import { ExportPage } from "./export/export-page.tsx";
-import { exportDeps } from "./export/export-wiring.ts";
-import { DevicesSection } from "./frame/devices-section.tsx";
 import { Frame } from "./frame/frame.tsx";
 import { GroupsPage } from "./groups/groups-page.tsx";
-import { createLinks } from "./links/links-wiring.tsx";
+import { createHandover } from "./handover/handover-wiring.tsx";
+import { createLabels } from "./labels/label-wiring.tsx";
 import { SecretPage } from "./links/secret-page.tsx";
 import type { MemberExits } from "./members/member-exit.tsx";
-import type { MembersDeps } from "./members/members.ts";
 import { MembersPage } from "./members/members-page.tsx";
 import type { Navigation, TakenFragment } from "./navigation.ts";
 import { createNotifications } from "./notifications/notifications-wiring.tsx";
@@ -48,57 +37,14 @@ import type { LocalCopy } from "./offline/local-copy.ts";
 import { OfflineNotice } from "./offline/offline-notice.tsx";
 import { createOfflineView } from "./offline/offline-view.ts";
 import { OidcPage } from "./oidc/oidc-page.tsx";
-import { OidcSection } from "./oidc/oidc-section.tsx";
 import { createOidcName } from "./oidc/sign-in-button.tsx";
 import { ApplyPolicy } from "./policy/policy-section.tsx";
 import { createAccountQueries } from "./queries.ts";
 import { createSecurity } from "./security/security-wiring.tsx";
 import type { Session } from "./session/session.ts";
-import { createSharing } from "./shares/shares-wiring.tsx";
-import { createExits } from "./vaults/exit.ts";
 import { RotationNotice } from "./vaults/rotation-notice.tsx";
-import { createVaultStore, type VaultStore } from "./vaults/vault-store.ts";
 import { namedMarks, peopleOf, vaultViews } from "./vaults/vault-views.ts";
 import { VaultsPage } from "./vaults/vaults-page.tsx";
-
-export type AppApi = PairDeps &
-  DevicesApi &
-  MembersDeps &
-  VaultApi &
-  GroupApi &
-  ShareApi &
-  EmergencyApi &
-  LinkApi &
-  NotificationApi &
-  PwnedApi &
-  OidcApi &
-  Pick<AccountApi, "replaceUnlock"> &
-  Pick<Api, "rekey"> & { syncFetch: typeof fetch };
-
-/**
- * The stores of an open account: the vaults, their entries, the shares, the exits and the export.
- * Every load of the vaults loads their entries and shares; then a manager's client catches up on
- * what its vaults owe since someone left (K-307, P-11), without holding up the load.
- */
-const createStores = (props: { session: Session; api: AppApi; copy: LocalCopy | undefined }) => {
-  const entries = createEntries(httpServerFor(props.api.syncFetch), props.session, props.copy);
-  const sharing = createSharing(props.api, props.session, entries.keys);
-  const exits = createExits(
-    { api: props.api, session: props.session },
-    { reload: () => store.reload(), rotate: entries.rotate, behind: entries.behind },
-  );
-  const store: VaultStore = createVaultStore(props.api, props.session, async (loaded) => {
-    await Promise.all([entries.load(loaded.vaults, loaded.trust), sharing.load(loaded)]);
-    // Not awaited: the catch-up reloads itself, and waits for an exit that runs (createExits)
-    void exits.catchUp(loaded);
-    // Emergency grants behind a key rotation are made anew with the current keys (P-14)
-    void renewEmergency(props.api, props.session, loaded);
-  });
-  // The export (K-504) reads the vaults and their entries' content as loaded
-  const exporting = exportDeps(props.api, props.session, store, entries.stored);
-  const links = createLinks(props.api, props.session);
-  return { entries, sharing, exits, store, exporting, links };
-};
 
 /**
  * The vaults while the account is open: loaded when it opens, gone when it locks. So is the cache
@@ -113,6 +59,7 @@ const OpenedFrame = (props: {
   api: AppApi;
   copy: LocalCopy | undefined;
   onLocale: (next: Locale) => void;
+  switcher: CompanySwitcher;
 }) => {
   const queries = createAccountQueries();
   const { entries, sharing, exits, store, exporting, links } = createStores(props);
@@ -135,6 +82,12 @@ const OpenedFrame = (props: {
   const Editor = entries.editor;
   const ShareDialog = sharing.dialog;
   const notifications = createNotifications(props, store);
+  const handover = createHandover(props, {
+    store,
+    stored: entries.stored,
+    saveImport: entries.saveImport,
+  });
+  const labels = createLabels();
   return (
     <QueryClientProvider client={queries}>
       <Frame
@@ -158,6 +111,11 @@ const OpenedFrame = (props: {
         onFavoriteEntry={online(entries.toggleFavorite)}
         onShareEntry={online(sharing.start)}
         onLinkEntry={online(links.start)}
+        onLabelEntry={labels.start}
+        companies={props.switcher}
+        companiesPage={() => (
+          <CompaniesPage session={props.session} api={props.api} switcher={props.switcher} />
+        )}
         linksPage={links.page}
         securityPage={security.page}
         noAccess={noAccessFor(props, store)}
@@ -179,6 +137,7 @@ const OpenedFrame = (props: {
             api={props.api}
             session={props.session}
             onRemove={exits.remove}
+            onHandOver={handover.possible() ? handover.open : undefined}
           />
         )}
         importPage={importPage(props.nav, store, allEntries, () => online(entries.saveImport))}
@@ -186,27 +145,14 @@ const OpenedFrame = (props: {
         canExport={exporting.allowed()}
         emergencyPage={emergencyPage(props, shownVaults)}
         renewPage={renewPage(props, store, reload)}
-        devices={() => (
-          <Show when={props.session.opened()?.token}>
-            {(token) => (
-              <>
-                <OidcSection token={token()} api={props.api} />
-                <DevicesSection
-                  token={token()}
-                  api={props.api}
-                  onSignedOut={() => {
-                    props.session.forget();
-                    props.nav.replace("/entries");
-                  }}
-                />
-              </>
-            )}
-          </Show>
-        )}
+        devices={devicesFor(props)}
       />
       <Editor nav={props.nav} vaults={store} />
       <ShareDialog vaults={store} />
       {links.dialog()}
+      {handover.startDialog()}
+      {handover.finishDialog()}
+      {labels.dialog()}
       <OfflineNotice offline={offline()} syncedAt={props.copy?.syncedAt()} />
       <RotationNotice vaults={shownVaults()} />
       <EmergencyNotice api={props.api} session={props.session} nav={props.nav} />
@@ -279,6 +225,8 @@ export const App = (props: {
     const r = route();
     return r.page === "secret" ? r : undefined;
   };
+  // The switch between the companies of the account (K-605): outside the frame, which it rebuilds
+  const switcher = createCompanySwitch(props.session.companies, props.nav);
   // The identity provider's name for the sign-in button (K-604), none without one
   const oidc = createOidcName(props.api);
   return (
@@ -367,14 +315,29 @@ export const App = (props: {
             </Show>
           </Match>
           <Match when={props.session.opened()}>
-            <ApplyPolicy session={props.session} api={props.api} />
-            <OpenedFrame
-              nav={props.nav}
-              session={props.session}
-              api={props.api}
-              copy={props.copy}
-              onLocale={changeLocale}
-            />
+            {/* Anew for each company on screen (K-605): its own stores, cache and policy; the
+                offline copy is the home's only */}
+            <Show when={props.session.companies.activeId()} keyed>
+              {(_active) => {
+                // Read once per company on screen: the frame is built anew for the next one
+                const copy = untrack(() =>
+                  props.session.companies.atHome() ? props.copy : undefined,
+                );
+                return (
+                  <>
+                    <ApplyPolicy session={props.session} api={props.api} />
+                    <OpenedFrame
+                      nav={props.nav}
+                      session={props.session}
+                      api={props.api}
+                      copy={copy}
+                      onLocale={changeLocale}
+                      switcher={switcher}
+                    />
+                  </>
+                );
+              }}
+            </Show>
           </Match>
         </Switch>
       )}

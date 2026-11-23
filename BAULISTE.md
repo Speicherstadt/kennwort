@@ -533,8 +533,35 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   bestätigt sie erst nach dem Codevergleich, eine später gemeldete Gruppe erscheint bei Jonas als
   Anfrage, und ein Deep Link öffnet einen Tresor erst nach dem Entsperren. SCIM ist zurückgestellt
   (unten).
-- [ ] **K-605 Handwerk und IT-Dienstleister** – QR-Etiketten, Übergabe an den Kunden, mehrere Firmen
+- [x] **K-605 Handwerk und IT-Dienstleister** – QR-Etiketten, Übergabe an den Kunden, mehrere Firmen
   in einem Konto.
+  Fertig, wenn: ein Eintrag unter „Etikett“ ein QR-Etikett mit frei wählbarer Beschriftung in
+  62 × 29, 89 × 36 oder 50 × 50 mm druckt, nur das Etikett auf einer Seite seiner Größe (benannte
+  `@page`), dessen Code auf dem Gerät mit `uqr` entsteht und nur die https-Adresse
+  `/vaults/<tresor>/<eintrag>` mit zwei IDs trägt, nie Passwort, Benutzername oder Titel (Vitest mit
+  jsQR, der den Code zurückliest), und den Eintrag erst nach dem Entsperren öffnet (P-26); ein Konto
+  mehrere Firmen hat, je Firma ein eigenes Konto mit eigenem AK, Schlüsseln, Zertifikat und Logs,
+  deren Zugänge (Konto-ID, Secret Key, eine nie gezeigte Passphrase aus 32 Zufallsbyte) versiegelt im
+  Kontozustand des Stammkontos liegen (`linked`, Grabstein beim Entfernen gewinnt beim
+  Zusammenführen, Mutation-Tests von `linked.ts` und `state.ts` bei 100 %), beigetreten per
+  Einladungslink (MAC und Wurzel-Fingerabdruck wie P-08) oder angelegt mit dem Einrichtungs-Code, nur
+  vom Stammkonto aus und den Zugang vor dem Konto geschrieben (und bei einem Fehler wieder entfernt);
+  „Einstellungen → Firmen“ und die Seitenleiste wechseln, das Stammkonto bleibt im Speicher, das
+  Sperren überschreibt beide, die Offline-Kopie hält nichts aus einer anderen Firma (Vitest); der
+  Server keine Daten einer Firma in die Sitzung der anderen Firma derselben Person gibt und eine
+  Anmeldung von einem Gerät die Sitzung des anderen Kontos nicht beendet (Mandanten-Test mit echter
+  Anmeldung), und eine über OpenID Connect bekannte Person über den Link einer anderen Firma nur ihr
+  Konto genannt bekommt, keine Aufnahme (Server-Test); eine Übergabe den Tresor auf dem Gerät
+  entschlüsselt, in der Firma des Kunden einen neuen Tresor anlegt, jeden Eintrag neu verschlüsselt
+  und signiert, die Person des Kunden nach dem gemerkten Wurzelschlüssel als Verwalter aufnimmt und den
+  Handwerker auf „bearbeiten“ setzt (nicht „lesen“, sonst gälten seine Einträge nicht mehr, P-09), der
+  Server dabei nur bekommt, was jeder neue Tresor bringt, und ein Test des bösartigen Servers zeigt,
+  dass sich der Handwerker danach nicht selbst zum Verwalter macht und ein zurückgespieltes oder
+  gegabeltes Log auffällt; Texte de/en, P-27 im Sicherheitsdesign, Entscheidungen im Projektplan,
+  eine Seite für Nutzer und das README; Playwright desktop und `@phone`: Jonas druckt ein Etikett für
+  den Router der Heizung, dessen Adresse erst nach dem Entsperren öffnet, tritt Müller Elektro mit
+  seinem Konto bei, wechselt die Firmen, übergibt den Tresor „Heizung Müller“ an Max, der ihn
+  verwaltet, den Eintrag sieht und Jonas danach entfernt.
 - [x] **K-606 CLI** – Anmelden, Suchen, Lesen per Bestätigung, `bun build --compile`.
   Fertig, wenn: `apps/cli` mit `bun build --compile` ein Programm `kennwort` baut (Teil von
   `bun run build` und des Vergleichs der reproduzierbaren Builds); `login` Server und Konto-ID

@@ -3,6 +3,7 @@ import { Button, getLocale, Icon, type Locale, locales, m, type Toasts } from "@
 import { GeneratorPanel } from "@kennwort/ui/generator/generator-panel.tsx";
 import {
   Archive,
+  Building2,
   Download,
   Import,
   LifeBuoy,
@@ -92,6 +93,7 @@ export const SettingsPage = (props: {
   onLinks?: (() => void) | undefined;
   onSecurity?: (() => void) | undefined;
   onRenew?: (() => void) | undefined;
+  onCompanies?: (() => void) | undefined;
   devices?: (() => JSX.Element) | undefined;
 }) => {
   const [theme, setTheme] = createSignal<Theme>(readTheme(globalThis.localStorage));
@@ -121,6 +123,13 @@ export const SettingsPage = (props: {
           onChange={(locale) => props.onLocale(locale)}
           options={locales.map((locale) => ({ value: locale, label: languages[locale] }))}
         />
+        <Show when={props.onCompanies}>
+          {(open) => (
+            <Button class="w-fit" onClick={() => open()()}>
+              <Icon icon={Building2} /> {m.settings_companies()}
+            </Button>
+          )}
+        </Show>
         <Show when={props.onMembers}>
           {(open) => (
             <Button class="w-fit" onClick={() => open()()}>

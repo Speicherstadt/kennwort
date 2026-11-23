@@ -24,7 +24,9 @@ import {
 } from "@kennwort/core";
 import { rootFingerprint } from "@kennwort/crypto";
 import { createSignal } from "solid-js";
+import { createCompanies } from "./companies.ts";
 import { type DeviceAccount, forgetDevice, readDevice, rememberDevice } from "./device.ts";
+import { createLock } from "./lock.ts";
 import {
   type AccountCopy,
   keepAccount,
@@ -123,60 +125,6 @@ const invitedAccount = (
   };
 };
 
-/**
- * The open account in memory and the automatic lock (P-03). The lock keeps its own copy of what is
- * open: a signal read right after its write still gives the old value until the next flush, and
- * the timer must start the moment an account opens (review of K-304)
- */
-const createLock = (deps: SessionDeps) => {
-  const [opened, setOpenedSignal] = createSignal<Opened>();
-  const schedule = deps.schedule ?? ((run, ms) => setTimeout(run, ms));
-  const cancel = deps.cancel ?? ((timer) => clearTimeout(timer as number));
-  const now = deps.now ?? Date.now;
-  let timer: unknown;
-  let lastUse = 0;
-  let current: Opened | undefined;
-  let lockAfter = deps.lockAfterMs ?? LOCK_AFTER_MS;
-  const setOpened = (value: Opened | undefined) => {
-    current = value;
-    setOpenedSignal(value);
-  };
-  const lock = () => {
-    cancel(timer);
-    current?.accountKey.fill(0);
-    current?.loginKey?.fill(0);
-    setOpened(undefined);
-  };
-  // Clamped to the lock time: Date.now follows the wall clock, and one set back would otherwise
-  // put the last use in the future and keep the account open longer
-  const scheduleLock = () => {
-    cancel(timer);
-    timer = schedule(lock, Math.min(lockAfter, Math.max(0, lastUse + lockAfter - now())));
-  };
-  /** Any use of the app pushes the automatic lock back */
-  const touch = () => {
-    if (!current) return;
-    lastUse = now();
-    scheduleLock();
-  };
-  /**
-   * The company policy's lock time (K-304). It counts from the last use: the policy arrives a
-   * moment after unlocking, and its arrival is no use of the app (a slow server would otherwise
-   * keep an idle account open longer); an account idle for longer than the new time locks at once
-   */
-  const setLockAfter = (ms: number) => {
-    lockAfter = ms;
-    if (current) scheduleLock();
-  };
-  // Another account opened while one is unlocked (setup or invitation) drops the first one properly
-  const open = (value: Opened) => {
-    lock();
-    setOpened(value);
-    touch();
-  };
-  return { opened, setOpened, lock, touch, open, setLockAfter };
-};
-
 const reconnect = async (
   deps: SessionDeps,
   opened: () => Opened | undefined,
@@ -264,8 +212,31 @@ const unlockWith =
     return { ok: true, value: true };
   };
 
+/**
+ * The lock with the home account and the further companies of the account (K-605), dropped
+ * together: with every lock goes a vault on its way to another company, which holds decrypted
+ * contents, and the offline copy is the home's again
+ */
+const accountsInMemory = (deps: SessionDeps) => {
+  let reset = () => {};
+  const lock = createLock(deps, () => reset());
+  const updateState = stateUpdater(lock.opened, lock.setOpened, deps.copy);
+  const companies = createCompanies(deps, lock, updateState);
+  reset = companies.reset;
+  return { ...lock, updateState, companies };
+};
+
+/** The identity provider's answer as a sign-up's: an unknown ticket is a broken invitation */
+const oidcOutcome = (
+  token: Awaited<ReturnType<AccountApi["enrolOidc"]>>,
+): Outcome<string> | { ok: false; error: SessionError } =>
+  token.ok
+    ? token
+    : { ok: false, error: token.error === "invalid-ticket" ? "invalid-invitation" : token.error };
+
 export const createSession = (deps: SessionDeps) => {
-  const { opened, setOpened, lock, touch, open, setLockAfter } = createLock(deps);
+  const { opened, setOpened, lock, touch, open, setLockAfter, updateState, companies } =
+    accountsInMemory(deps);
   const { device, setDevice, remember } = deviceMemory(deps);
   /** Opened with a token from the server: its ciphertexts are kept for unlocking offline */
   const openAndKeep = (value: Opened) => {
@@ -328,14 +299,8 @@ export const createSession = (deps: SessionDeps) => {
         emptyState(rootFingerprint(rootPublicKey)),
         deps.derive ? { derive: deps.derive } : {},
       );
-      const token = await deps.api.enrolOidc(ticket, account.upload);
-      const asSession = token.ok
-        ? token
-        : {
-            ok: false as const,
-            error: token.error === "invalid-ticket" ? ("invalid-invitation" as const) : token.error,
-          };
-      return enrolled(account, asSession, (t) => deps.api.uploadKeys(t, account.upload));
+      const token = oidcOutcome(await deps.api.enrolOidc(ticket, account.upload));
+      return enrolled(account, token, (t) => deps.api.uploadKeys(t, account.upload));
     },
     unlock: unlockWith(deps, device, remember, open),
     /** The passphrase is forgotten: the Recovery Key opens the account and is renewed (recover.ts) */
@@ -364,7 +329,9 @@ export const createSession = (deps: SessionDeps) => {
      */
     reconnect: () => reconnect(deps, opened, setOpened),
     /** Changes the account state and writes it back merged with the server's (state-sync.ts) */
-    updateState: stateUpdater(opened, setOpened, deps.copy),
+    updateState,
+    /** Several companies in one account (K-605): the home's, the further ones and the switch */
+    companies,
     /**
      * This device signed out (K-303, device list): locked, it no longer knows the account, and its
      * offline copy is gone (K-308 part b)

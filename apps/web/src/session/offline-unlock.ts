@@ -24,7 +24,7 @@ import type { Opened, Outcome } from "./session.ts";
 /** What the session uses of the copy */
 export type AccountCopy = Pick<
   LocalCopy,
-  "useAccount" | "forget" | "keys" | "keepKeys" | "state" | "keepState"
+  "useAccount" | "forget" | "keys" | "keepKeys" | "state" | "keepState" | "suspend"
 >;
 
 /** The state the server served, with what this device kept merged into it */

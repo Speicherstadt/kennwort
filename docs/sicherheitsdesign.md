@@ -151,6 +151,7 @@ nennt seinen Angriff, und der Client muss ihn ablehnen und sagen, warum.
 | E-20 Einmal-Link mitgelesen, fremder Geheimtext untergeschoben, Passphrase abgestreift, öfter ausgeliefert als erlaubt | `apps/server/src/adversary/link-attacks.test.ts`, `packages/crypto/src/one-time-link.test.ts`, `apps/server/src/links/links.test.ts` | Schlüssel und Inhalt nie beim Server; passt nicht (falscher Schlüssel); öfter ausgeliefert öffnet weiter – Restrisiko, siehe [P-18](#p-18-einmal-links) |
 | E-27 Gruppe beim Anmeldedienst gemeldet, E-03 Anmeldedienst gibt sich als Schlüsseldienst aus, E-02 Konto über den Anmeldedienst eingeschrieben | `apps/server/src/adversary/oidc-attacks.test.ts`, `apps/server/src/oidc/groups.test.ts`, `membership/members.enrolled.test.ts`, `e2e/oidc.spec.ts` | nur Anfrage, kein Tresor; keine Sitzung, kein Schlüssel; ohne Zertifikat bis zum Codevergleich |
 | E-01, E-05 nach einem Kit in fremden Händen: altes Bündel weiter ausgeliefert, neues Zertifikat zurückgehalten, altes Kit nach dem Wechsel, Tresor ohne Erneuerung oder Wechsel | `adversary/rekey.test.ts`, `membership/verify-log.rekey.test.ts`, `apps/server/src/account/rekey.test.ts` | ungültig, nicht zertifiziert, Wechsel steht aus, falsche Signatur, Rückfall, neuere Epoche |
+| E-06, E-07, E-08 nach einer Übergabe: der Handwerker macht sich selbst wieder zum Verwalter, das Log auf vor seine Herabstufung zurückgespielt oder gegabelt; Daten einer Firma in der Sitzung der anderen Firma derselben Person | `adversary/handover.test.ts`, `apps/server/src/tenancy/linked-accounts.test.ts`, `apps/server/src/oidc/oidc-companies.test.ts` | kein Verwalter, Rückfall, Gabelung; 404 |
 
 Die übrigen folgen mit den Funktionen, die sie betreffen (Konto-Recovery, Teilen, Geräte, Austritt,
 Einmal-Links, Import und Export, ausgelieferter Code); K-701 schließt den Katalog. Beim Bau des
@@ -529,7 +530,8 @@ Firmen-Wurzelschlüssels, bekannte Schlüsselbündel, der letzte Stand jedes Mit
 die höchste Version jedes Eintrags, die Einladungen, die das Konto zertifiziert hat, mit dem Konto
 dazu, je Konto das Ausstellungsdatum des neuesten Zertifikats, das es gesehen hat, und die
 höchste Version der Firmen-Richtlinie mit ihrer Sperrzeit und die bestätigten Wechsel des
-Wurzelschlüssels (`retiredRoots`, P-07); dazu, keine Prüfung, sondern eine
+Wurzelschlüssels (`retiredRoots`, P-07); dazu die Zugänge zu den weiteren Firmen des Kontos
+(`linked`, [P-27](#p-27-mehrere-firmen-ubergabe-an-den-kunden-und-qr-etiketten)); dazu, keine Prüfung, sondern eine
 Einstellung, die auf keinem Gerät auf die Festplatte soll: die Hosts, für die die Extension nie das
 Speichern anbietet (K-404, P-17). Er ist ein F-01-Geheimtext unter AK (Zweck `account-state`,
 Kontext Konto-ID und ein Zähler) auf dem Server; jedes Gerät lädt ihn beim Entsperren, führt ihn
@@ -1773,6 +1775,7 @@ Restrisiken:
 | Audit-Ereignisse (wer, was, wann) | Inhalte der Ereignisse, die Einträge betreffen |
 | mit OpenID Connect: Issuer, `sub` und Name der Person beim Anmeldedienst, die Gruppennamen ihres Claims bei der Anmeldung ([P-25](#p-25-anmeldung-uber-openid-connect-und-gruppen)) | Token des Anmeldedienstes (nicht gespeichert); einen Schlüssel gibt der Anmeldedienst nie |
 | Mitteilungen: Art, IDs, Zeit, gelesen; Push-Adressen der Geräte ([P-24](#p-24-mitteilungen-und-web-push)) | Namen von Tresoren und Einträgen in Mitteilungen; einen Inhalt in Pushes gibt es nicht |
+| mehrere Firmen in einem Konto: je Firma ein eigenes Konto; dass sie einer Person gehören, nur aus Geräte-ID, Adresse und Zeit ([P-27](#p-27-mehrere-firmen-ubergabe-an-den-kunden-und-qr-etiketten)) | die Zugänge zu den weiteren Konten (versiegelt im Kontozustand des Stammkontos), die Namen der Firmen |
 | nur bei eingeschalteter Datenleck-Prüfung: die ersten 5 Hex-Zeichen von SHA-1 je Passwort, von welchem Konto ([P-23](#p-23-sicherheits-ubersicht-und-datenleck-prufung)) | Passwörter, ihre vollen Hashes, Treffer; die Wahl selbst steht versiegelt im Kontozustand (er sieht nur, ob Anfragen kommen) |
 
 Ein Server kann viele Firmen tragen (Projektplan, Entscheidungen). Sie sind dort strikt getrennt:
@@ -2963,3 +2966,94 @@ und danach nur, was das Konto lesen darf.
 Umgesetzt in `apps/web/src/deep-link.ts` und `apps/web/public/manifest.webmanifest`.
 
 **Wehrt ab:** E-14.
+
+### P-27 Mehrere Firmen, Übergabe an den Kunden und QR-Etiketten
+
+Für Handwerk und IT-Dienstleister (K-605): eine Person in mehreren Firmen, ein Tresor, der an den
+Kunden geht, und ein Etikett am Gerät, das zum Eintrag führt.
+
+**Mehrere Firmen in einem Konto.** Jede Firma behält ihr eigenes Konto auf dem Server: eigene
+Konto-ID, eigener AK, eigene Schlüssel, eigenes Zertifikat ihres Wurzelschlüssels, eigene Logs. Der
+Server trennt sie wie zwei beliebige Konten ([P-15](#p-15-was-der-server-sieht)); an seinem
+Datenmodell (ein Konto, eine Firma) ändert sich nichts. Was sie zu einem Konto macht, liegt im
+Kontozustand des Kontos, das die Person mit ihrer Passphrase entsperrt (Stammkonto): je weiterer
+Firma deren Konto-ID, ihr Secret Key und eine Passphrase, die das Gerät aus 32 Zufallsbyte macht und
+nie zeigt, dazu der Name, den die Person der Firma gibt (`linked` im Kontozustand, F-01 unter AK).
+
+```text
+linked[konto-ID] = { name, at, credentials?: { secretKey (16 Byte), passphrase (32 Byte base64url) } }
+```
+
+- **Beitreten** mit einem Einladungslink ([P-08](#p-08-einladung)) oder **anlegen** mit dem
+  Einrichtungs-Code ([P-01](#p-01-konto-anlegen)) geht nur vom Stammkonto aus: Das Gerät legt das
+  neue Konto genau wie für eine neue Person an, mit dem Wurzel-Fingerabdruck aus dem Link und dem
+  MAC über das Bündel; der Admin der anderen Firma bestätigt es wie jedes andere. Der Zugang wird
+  zuerst in den Kontozustand geschrieben und erst danach das Konto beim Server angelegt: Ein Konto,
+  das das Stammkonto nicht wieder erreicht, wäre für immer verloren; ein Zugang zu einem Konto, das
+  nie entstand, wird wieder entfernt. Ein eigenes Recovery-Kit bekommt das weitere Konto nicht; es
+  hängt am Kit des Stammkontos (und an der Firmen-Recovery seiner Firma, [P-13](#p-13-firmen-recovery)).
+- **Wechseln** meldet das Gerät beim weiteren Konto an ([P-02](#p-02-anmelden), mit der
+  gespeicherten Passphrase und dem Secret Key) und öffnet es ([P-03](#p-03-entsperren)); das
+  Stammkonto bleibt im Speicher offen. Zurück geht es ohne Anmeldung, und das weitere Konto wird dabei
+  im Speicher überschrieben. Das Sperren überschreibt beide. Die Offline-Kopie
+  ([P-22](#p-22-offline-kopie)) gehört dem Stammkonto: Solange eine andere Firma offen ist, hält und
+  liefert sie nichts, sonst mischten sich deren Antworten hinein.
+- **Entfernen** nimmt den Zugang aus dem Kontozustand und lässt einen Grabstein mit Name und Zeit:
+  Beim Zusammenführen gewinnt die Entfernung, damit ein Gerät, das sie noch nicht kennt, den Zugang
+  nicht zurückbringt. Das Konto in der anderen Firma bleibt; aus der Firma nimmt es deren Inhaber
+  ([P-11](#p-11-austritt-und-schlusselwechsel)).
+- Über OpenID Connect bleibt eine Person ein Konto in einer Firma ([P-25](#p-25-anmeldung-uber-openid-connect-und-gruppen)):
+  Wer schon verknüpft ist und dem Link zum Beitreten einer anderen Firma folgt, bekommt nur sein
+  bestehendes Konto genannt, keine Aufnahme dort; weitere Firmen kommen über Einladungen.
+
+Die Web-App baut für jede Firma auf dem Bildschirm alles neu auf (Tresore, Einträge, Cache,
+Richtlinie, Sperrzeit). Die Extension kennt weiter nur das Konto, das in ihr eingegeben wurde.
+
+**Übergabe an den Kunden.** Ein Tresor geht an eine andere Firma des Kontos, in der Regel die des
+Kunden, in der der Handwerker ein bestätigtes Konto hat. Der Server bekommt dabei nichts, was ein
+neuer Tresor nicht ohnehin bringt:
+
+1. In der eigenen Firma entschlüsselt das Gerät die Einträge des Tresors; sie bleiben bis zum Ende,
+   bis zum Abbrechen oder bis zum Sperren im Speicher. Markierungen „Zum Ändern“ fallen weg, sie
+   nennen Konten der eigenen Firma.
+2. Es wechselt in die Firma des Kunden und legt dort einen neuen Tresor an
+   ([P-05](#p-05-tresor-anlegen-und-mitglieder-aufnehmen), Genesis vom Konto des Handwerkers), schreibt
+   jeden Eintrag über den normalen Weg neu ([P-09](#p-09-eintrage-speichern-und-lesen): neue
+   Eintrags-Schlüssel, AAD mit neuem Tresor, signiert) und nimmt die Person, die der Kunde ist, als
+   Verwalter auf – nur, wenn der gemerkte Wurzelschlüssel dieser Firma sie bestätigt.
+3. Danach signiert der Handwerker, solange er noch Verwalter ist, für sich selbst `rolle` mit
+   „bearbeiten“. Nicht „lesen“: Ein Datensatz gilt nur, solange sein Autor nach dem Log, wie es jetzt
+   steht, bearbeiten darf (P-09); die Einträge, die er gerade geschrieben hat, ließen sich sonst nicht
+   mehr öffnen.
+
+Ab dann entscheidet der Kunde: Er ist der einzige Verwalter. Entfernt er den Handwerker, wechselt
+sein Client den Schlüssel und schreibt jeden Eintrag unter seiner eigenen Signatur neu
+([P-11](#p-11-austritt-und-schlusselwechsel)). Einen Log-Eintrag, mit dem sich der Handwerker selbst
+wieder zum Verwalter macht, nimmt kein Client (kein Verwalter); ein Log, das der Server auf vor die
+Herabstufung zurückspielt oder gabelt, ist ein Rückfall bzw. eine Gabelung. Der Tresor in der
+eigenen Firma bleibt unverändert; Kennwort löscht keine Tresore.
+
+**QR-Etiketten.** Ein Etikett für das Gerät oder die Anlage eines Eintrags trägt im QR-Code nur
+dessen Adresse in der App, `https://<server>/vaults/<tresor-ID>/<eintrag-ID>` ([P-26](#p-26-deep-links)),
+nie ein Passwort, einen Benutzernamen oder einen Titel; die Beschriftung daneben wählt die Person.
+Wer das Etikett fotografiert, kennt zwei IDs; geöffnet wird der Eintrag erst nach dem Entsperren und
+nur für ein Konto, das ihn lesen darf. Den Code erzeugt das Gerät (`uqr`), gedruckt wird über den
+Druckdialog des Browsers auf einer Seite in der Größe des Etiketts; zum Server geht nichts.
+
+Restrisiken:
+
+- Der Server kann die Konten einer Person über Geräte-ID, Adresse und Zeit verbinden und erfährt so,
+  dass dieselbe Person in beiden Firmen ist, aber nichts aus deren Daten.
+- Wer das Stammkonto entsperrt, öffnet alle Firmen; ein verlorenes Stammkonto ohne Recovery-Kit
+  nimmt die Zugänge mit (die Firmen-Recovery der anderen Firmen bleibt).
+- Was der Handwerker vor der Übergabe kannte, kennt er weiter; der Schlüsselwechsel schützt nur, was
+  danach kommt. Der Kunde ändert Passwörter, die er nicht teilen will.
+
+Umgesetzt in `packages/core/src/account/linked.ts` (Zugänge, Zusammenführen, Grabsteine; wie
+`packages/crypto` mit Mutation-Tests bei 100 %), `apps/web/src/session/companies.ts` und
+`lock.ts` (Beitreten, Anlegen, Wechseln, Sperren), `apps/web/src/companies/`,
+`apps/web/src/handover/` und `apps/web/src/labels/`; getestet in
+`packages/core/src/adversary/handover.test.ts`, `apps/server/src/tenancy/linked-accounts.test.ts`,
+`apps/server/src/oidc/oidc-companies.test.ts` und `e2e/handwerk.spec.ts`.
+
+**Wehrt ab:** E-06, E-07, E-08, E-10, E-14.

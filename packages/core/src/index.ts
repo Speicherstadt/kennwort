@@ -18,6 +18,16 @@ export {
 } from "./account/emergency-seen.ts";
 export { KEY_BLOCK_PURPOSE, keyBlockFields, proveKeyBlock } from "./account/key-block-proof.ts";
 export {
+  type ActiveLink,
+  activeLinks,
+  LinkedCompanies,
+  LinkedCompany,
+  linkCompany,
+  mergeLinked,
+  newLinkPassphrase,
+  unlinkCompany,
+} from "./account/linked.ts";
+export {
   type DevicePackage,
   openDevicePackage,
   openRecoveryPackage,
