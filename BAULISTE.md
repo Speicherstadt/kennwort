@@ -250,6 +250,19 @@ und die Schritte für Menschen am Ende erledigt sind.
     `@phone`) laufen, ein Test IndexedDB nach den bekannten Klartexten und der Passphrase durchsucht
     und nichts findet, Abmelden die Kopie löscht und ein Server, der eine ältere Version, ein
     älteres Log oder einen älteren Kontozustand liefert, das Gerät nicht zurückwirft (Vitest).
+- [x] **K-309 CSP und Sicherheits-Kopfzeilen** – strenge Content Security Policy und die übrigen
+  Kopfzeilen für die Web-App, das CI-Gate „CSP“ aus dem Projektplan (nachgetragen).
+  nach: K-308. Fertig, wenn: der Server die gebaute Web-App auf Wunsch selbst ausliefert
+  (`KENNWORT_WEB_ROOT`) und jede Seite (`/`, tiefe Pfade, `/s/<id>`) und jede Datei des Builds die
+  Policy ab `default-src 'none'` samt `nosniff`, `no-referrer`, COOP, CORP, `X-Frame-Options`,
+  Permissions-Policy und, hinter https, HSTS und `upgrade-insecure-requests` trägt, seine eigenen
+  Antworten dieselben Kopfzeilen mit einer Sandbox-Policy (Server-Test je Kopfzeile); der Service
+  Worker dieselben Kopfzeilen auf jede Antwort aus seinen Caches setzt (Vitest und Playwright);
+  `e2e/csp.spec.ts` (desktop und `@phone`) Einrichten, Eintrag, Entsperren und Einmal-Link ohne
+  einen einzigen Verstoß oder Konsolenfehler durchläuft und ein eingeschleustes Inline-Skript
+  blockiert sieht; alle E2E-Tests gegen den Server mit Build laufen; jede Direktive mit Grund und
+  die Hinweise für Betreiber in `docs/sicherheitsdesign.md` (P-16) und eine Zeile in `docs/plan.md`
+  stehen. Die Extension bleibt unverändert (eigene CSP).
 
 Für K-303 bis K-307 gilt: Fertig, wenn jeder Ablauf als Playwright-Test (desktop und `@phone`) läuft,
 die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.

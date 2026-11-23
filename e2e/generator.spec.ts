@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { setUpCompany, test } from "./account.ts";
+import { readClipboard } from "./clipboard.ts";
 import { goInApp } from "./entries.ts";
 
 // K-306 part 3: the generator makes passwords and passphrases on the device; the entry editor fills
@@ -36,7 +37,7 @@ test.describe("generator", { tag: "@phone" }, () => {
 
     await page.getByRole("button", { name: "Passphrase kopieren" }).click();
     await expect(page.getByText("Passphrase kopiert")).toBeVisible();
-    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    const copied = await readClipboard(context, page.url());
     await expect(result(page)).toHaveText(copied);
 
     // Remembered on this device: the page opens with the passphrase again

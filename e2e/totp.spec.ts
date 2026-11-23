@@ -1,6 +1,7 @@
 import { createHmac } from "node:crypto";
 import { expect } from "@playwright/test";
 import { setUpCompany, test } from "./account.ts";
+import { readClipboard } from "./clipboard.ts";
 
 // K-306 part 4: a login keeps its one-time code key; the detail shows the code, never the key
 test.use({ locale: "de-DE" });
@@ -51,6 +52,6 @@ test.describe("one-time codes", { tag: "@phone" }, () => {
 
     await page.getByRole("button", { name: "Einmalcode kopieren" }).click();
     await expect(page.getByText("Einmalcode kopiert")).toBeVisible();
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(code);
+    expect(await readClipboard(context, page.url())).toBe(code);
   });
 });

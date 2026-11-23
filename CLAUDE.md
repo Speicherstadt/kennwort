@@ -104,7 +104,7 @@ zensical build --strict    # when docs/ or mkdocs.yml changed
 
 - Commands as root (`sudo`, `pkexec`) are run by the user; don't work around that.
 - The user's running processes are not stopped; use other ports for tests (dev: server 18100,
-  Vite 5175; e2e: server 28100, Vite 5176).
+  Vite 5175; e2e: the server with the web build on 5176, engines 28110/5177/5178).
 - Language: code, comments and commits in English; `README.md` and the docs in German only; the app
   in German and English through Paraglide (`messages/de.json`, `messages/en.json`) for every text
   of every interface, the extension and the mobile app included, as they share `packages/ui`;
