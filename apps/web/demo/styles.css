@@ -1,0 +1,32 @@
+/*
+ * The demo's layout (K-706): the banner on top, the app below it in the rest of the screen. The
+ * app's own pages fill the whole viewport (h-dvh, min-h-dvh); here they fill the space left.
+ * The demo's Vite root is apps/web/demo, so Tailwind is told where the app's classes are.
+ */
+@import "@kennwort/ui/styles.css";
+@source "../src";
+
+html,
+body {
+  height: 100%;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+.demo-app {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.demo-app .h-dvh {
+  height: 100%;
+}
+
+.demo-app .min-h-dvh {
+  min-height: 100%;
+}

@@ -38,6 +38,8 @@ deinem eigenen Server betreibst.
 
 ## Funktionen
 
+Ausprobieren ohne Installation: die [Demo](https://kennwort.app/demo/) mit der Beispielfirma „Weber Haustechnik“, ganz im Browser und ohne Server.
+
 | Bereich | Was Kennwort kann |
 |---|---|
 | 🔑 Konto | Firma mit Einrichtungs-Code anlegen, Mitglieder per Einladungslink einladen und bestätigen, Rollen (Inhaber, Admin, Mitarbeiter), signierte Firmen-Richtlinien (Sperrzeit), Recovery-Kit als PDF, Entsperren mit Passphrase, Passphrase vergessen mit dem Recovery Key, alle Schlüssel erneuern, wenn das Recovery-Kit in fremde Hände geraten ist (neues Kit, Bestätigung per Vergleichscode, neue Tresor-Schlüssel), Firmen-Recovery (Zugang über einen Inhaber wiederherstellen), Notfallzugriff mit Wartezeit für eine Person des Vertrauens (Ansehen ausgewählter Tresore oder Vollzugriff, Widerspruch bis zum Ende der Wartezeit), neues Gerät per QR-Code, Geräteliste und Gerät abmelden, automatisches Sperren, gespeicherte Daten als JSON herunterladen und Konto löschen mit der Passphrase ([Datenschutz](https://kennwort.app/datenschutz.html)) |

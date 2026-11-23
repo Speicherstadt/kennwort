@@ -1187,5 +1187,10 @@
   "privacy_error_sole_manager": "Du bist der einzige Verwalter eines geteilten Tresors. Mach zuerst jemand anderen zum Verwalter.",
   "privacy_error_linked": "Eine verknüpfte Firma ist gerade nicht erreichbar. Es wurde nichts gelöscht.",
   "privacy_error_failed": "Das hat nicht geklappt. Versuch es noch einmal.",
-  "privacy_error_in_company": "{company}: {text}"
+  "privacy_error_in_company": "{company}: {text}",
+  "demo_badge": "Demo",
+  "demo_notice": "Läuft nur in deinem Browser, ohne Server. Gib keine echten Passwörter ein; beim Neuladen beginnt alles von vorn.",
+  "demo_passphrase": "Passphrase:",
+  "demo_preparing": "Die Demo-Firma Weber Haustechnik wird angelegt …",
+  "demo_failed": "Die Demo konnte nicht starten. Lade die Seite neu."
 }
