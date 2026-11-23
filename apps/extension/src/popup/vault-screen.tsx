@@ -3,7 +3,7 @@
  * page in the active tab, all entries or the favorites, the generator, and a footer with the lock
  * time and a link to the web app. Vaults and entries load as account/load-entries.ts describes.
  */
-import { Button, badgeVariants, Icon, m, SearchInput, type Toasts } from "@kennwort/ui";
+import { Button, Icon, m, SearchInput, type Toasts, toggleVariants } from "@kennwort/ui";
 import { GeneratorPanel } from "@kennwort/ui/generator/generator-panel.tsx";
 import { WandSparkles } from "@kennwort/ui/icons";
 import { createMemo, createSignal, Match, onSettled, Show, Switch } from "solid-js";
@@ -17,11 +17,7 @@ const Chip = (props: { pressed: boolean; onClick: () => void; children: string }
   <button
     type="button"
     aria-pressed={props.pressed ? "true" : "false"}
-    class={[
-      badgeVariants({ variant: props.pressed ? "default" : "outline" }),
-      "h-7 cursor-pointer hover:bg-accent data-[pressed=true]:hover:bg-primary/90",
-    ]}
-    data-pressed={props.pressed ? "true" : "false"}
+    class={toggleVariants()}
     onClick={() => props.onClick()}
   >
     {props.children}

@@ -8,13 +8,13 @@ import { entryIcon } from "@kennwort/client/entries/entry-icon.ts";
 import {
   Badge,
   Button,
-  badgeVariants,
   buttonClass,
   cn,
   Icon,
   List,
   m,
   SearchInput,
+  toggleVariants,
 } from "@kennwort/ui";
 import { Plus, Users } from "@kennwort/ui/icons";
 import { createMemo, createSignal, For, Show } from "solid-js";
@@ -156,12 +156,8 @@ export const EntryList = (props: {
                 class="flex min-h-11 items-center"
               >
                 <span
-                  class={cn(
-                    badgeVariants({
-                      variant: props.filter.kind === chip.kind ? "default" : "outline",
-                    }),
-                    "px-3 py-1 text-[13px]",
-                  )}
+                  class={toggleVariants()}
+                  data-state={props.filter.kind === chip.kind ? "on" : "off"}
                 >
                   {chip.label}
                 </span>

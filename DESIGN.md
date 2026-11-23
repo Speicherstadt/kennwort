@@ -50,7 +50,7 @@ einziges Merkmal: dazu immer Text oder Icon.
   Einmalcode 18 px (Desktop) bzw. 22 px (Handy) in Geist Mono.
 - Abstände im 4-px-Raster; Zeilen in Listen 8 px innen, Karten 12–14 px innen.
 - Radien: 6 px Knöpfe und Zeilen, 7–8 px Eingabefelder und Icons, 10–12 px Karten und Menüs,
-  rund für Avatare; Badges und Filter-Chips 6 px (`rounded-md`, wie shadcn).
+  rund nur für Avatare und den Zähler an der Glocke; Badges und Filter-Chips 6 px (`rounded-md`, wie shadcn).
 - Icons: lucide (die Daten aus `lucide`, gezeichnet von `Icon` in `packages/ui`, weil `lucide-solid` Solid 1 braucht), 16 px am Desktop, 18–22 px am Handy, Strich 2; neue Icons kommen über `@kennwort/ui/icons`.
 
 ## Aufbau
@@ -199,7 +199,9 @@ Eigene Komponenten in `packages/ui`, ohne Bibliothek, auf nativen Elementen:
 | Menü, Popover, Tooltip | Popover-API, CSS Anchor Positioning | Tastatur selbst: Pfeile, Home/End, Esc |
 | Combobox | `<input>` + Popover | Rolle `combobox`, `aria-activedescendant` |
 | Toast | eigener Bereich mit `aria-live="polite"` | verschwindet nicht, solange Fokus darin ist |
-| Badge | `<span>` mit `badgeVariants` | wie shadcn: `rounded-md`, `px-2.5 py-0.5`, 12 px halbfett; `default`, `secondary`, `outline`, `destructive`, dazu `warning` („ändern“) und `success` („Bestätigt“). Jeder Chip, jedes Etikett, jede Rolle und jeder Status nutzt sie, auch die Filter-Chips (dort im 44-px-Link) |
+| Badge | `<span>` mit `badgeVariants` | wie shadcn: `rounded-md`, `px-2.5 py-0.5`, 12 px halbfett; `default`, `secondary`, `outline`, `destructive`, dazu `warning` („ändern“: dezent umrandet mit einem Punkt in `--warning`, keine gefüllte Pille) und `success` („Bestätigt“). Jedes Etikett, jede Rolle, jeder Status und jeder Zähler (in der Seitenleiste `outline`) nutzt sie |
+| Filter-Chip | `toggleVariants` (wie shadcn Toggle/ToggleGroup) | `h-8`, `rounded-md`, Rahmen, `px-3`, 14 px; ausgewählt `bg-accent`, gelesen aus `aria-pressed` (Knopf), `aria-current="page"` (Link) oder `data-state="on"`. Am Handy im 44-px-Link, im Popup als Knopf mit `aria-pressed` |
+| Zähler an der Glocke | `CountDot` | kleiner runder Punkt in `--primary`, „99+“ ab 100; nur Anzeige, den Namen trägt der Link |
 | Geheimnisfeld | Text + Aufdecken + Kopieren | Punkte in Geist Mono, Stärke als vier Balken |
 | Einmalcode | Geist Mono + Kreis-Countdown | Countdown mit `aria-label` „noch N Sekunden“ |
 
