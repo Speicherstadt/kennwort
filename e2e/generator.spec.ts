@@ -23,7 +23,7 @@ test.describe("generator", { tag: "@phone" }, () => {
     await expect(page.getByText("Stark · 124 Bit")).toBeVisible();
 
     await page.getByLabel("Länge: 20 Zeichen").fill("32");
-    await page.getByLabel("Sonderzeichen").uncheck();
+    await page.getByLabel("Sonderzeichen", { exact: true }).uncheck();
     await expect(result(page)).toHaveText(/^[a-zA-Z0-9]{32}$/);
     await expect(page.getByText("Länge: 32 Zeichen")).toBeVisible();
 
