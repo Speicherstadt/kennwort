@@ -13,6 +13,7 @@ import {
   pageClass,
   panelClass,
   panelTitleClass,
+  Switch as Toggle,
 } from "@kennwort/ui";
 import { createEffect, createMemo, createSignal, Match, Show, Switch } from "solid-js";
 import type { Navigation } from "../navigation.ts";
@@ -62,14 +63,13 @@ const LeakSwitch = (props: { deps: SecurityDeps }) => {
       <h2 id="security-leak" class={panelTitleClass}>
         {m.security_leak_title()}
       </h2>
-      <label class="flex min-h-11 items-center gap-2 md:min-h-0">
-        <input
-          type="checkbox"
+      <label class="flex min-h-11 items-center justify-between gap-4 rounded-lg border border-border px-3 py-2.5 text-[13px] font-medium">
+        {m.security_leak_toggle()}
+        <Toggle
           checked={pending() ?? props.deps.leakCheckOn()}
           disabled={pending() !== undefined}
           onChange={(event) => void toggle(event.currentTarget.checked)}
         />
-        {m.security_leak_toggle()}
       </label>
       <p class="max-w-prose text-[13px] text-muted-foreground">{m.security_leak_explain()}</p>
       <p role="status" class="text-[13px]">

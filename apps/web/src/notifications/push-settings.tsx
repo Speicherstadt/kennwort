@@ -4,9 +4,9 @@
  * account's, stored on the server; in the app every kind always shows.
  */
 import { NOTIFICATION_KINDS, type NotificationKind, type NotificationPrefs } from "@kennwort/core";
-import { Button, m, panelClass, panelTitleClass } from "@kennwort/ui";
+import { Button, m, panelClass, panelTitleClass, Switch } from "@kennwort/ui";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
-import { createSignal, For, Loading, onSettled, Show } from "solid-js";
+import { createSignal, createUniqueId, For, Loading, onSettled, Show } from "solid-js";
 import { queryKeys } from "../queries.ts";
 import { kindLabels } from "./notification-text.ts";
 import { type NotificationsDeps, prefsQuery, tokenOf } from "./notifications-query.ts";
@@ -18,6 +18,7 @@ import {
   type PushOutcome,
   pushState,
 } from "./push.ts";
+import { groupTitles, kindDescriptions, kindsIn, PUSH_GROUPS } from "./push-groups.ts";
 
 const stateText: Record<Exclude<PushOutcome, "off">, () => string> = {
   on: () => m.push_on(),
@@ -29,6 +30,33 @@ const stateText: Record<Exclude<PushOutcome, "off">, () => string> = {
 const toggled = (prefs: NotificationPrefs, kind: NotificationKind, on: boolean) => ({
   push: on ? [...prefs.push, kind] : prefs.push.filter((k) => k !== kind),
 });
+
+/** One kind: name and description on the left, its switch on the right */
+const KindRow = (props: {
+  kind: NotificationKind;
+  on: boolean;
+  onChange: (on: boolean) => void;
+}) => {
+  const id = createUniqueId();
+  return (
+    <li class="flex min-h-14 items-center justify-between gap-4 px-3 py-2.5">
+      <div class="grid gap-0.5">
+        <label for={id} class="cursor-pointer text-[13px] font-medium">
+          {kindLabels[props.kind]()}
+        </label>
+        <p id={`${id}-desc`} class="text-xs text-muted-foreground">
+          {kindDescriptions[props.kind]()}
+        </p>
+      </div>
+      <Switch
+        id={id}
+        aria-describedby={`${id}-desc`}
+        checked={props.on}
+        onChange={(event) => props.onChange(event.currentTarget.checked)}
+      />
+    </li>
+  );
+};
 
 const KindChoice = (props: { deps: NotificationsDeps }) => {
   const client = useQueryClient();
@@ -43,20 +71,26 @@ const KindChoice = (props: { deps: NotificationsDeps }) => {
     <Loading>
       <Show when={prefs.data}>
         {(loaded) => (
-          <fieldset class="grid gap-1.5">
-            <legend class="mb-1 text-xs font-medium">{m.push_kinds()}</legend>
-            <For each={NOTIFICATION_KINDS}>
-              {(kind) => (
-                <label class="flex min-h-11 items-center gap-2 text-[13px] md:min-h-0">
-                  <input
-                    type="checkbox"
-                    checked={loaded().push.includes(kind)}
-                    onChange={(event) =>
-                      void save(toggled(loaded(), kind, event.currentTarget.checked))
-                    }
-                  />
-                  {kindLabels[kind]()}
-                </label>
+          <fieldset class="grid gap-4">
+            <legend class="mb-2 text-xs font-medium">{m.push_kinds()}</legend>
+            <For each={PUSH_GROUPS}>
+              {(group) => (
+                <div class="grid gap-1.5">
+                  <h3 class="text-[11px] font-medium tracking-[.04em] text-muted-foreground uppercase">
+                    {groupTitles[group]()}
+                  </h3>
+                  <ul class="divide-y divide-border rounded-lg border border-border">
+                    <For each={kindsIn(NOTIFICATION_KINDS, group)}>
+                      {(kind) => (
+                        <KindRow
+                          kind={kind}
+                          on={loaded().push.includes(kind)}
+                          onChange={(on) => void save(toggled(loaded(), kind, on))}
+                        />
+                      )}
+                    </For>
+                  </ul>
+                </div>
               )}
             </For>
           </fieldset>

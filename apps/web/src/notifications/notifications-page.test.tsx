@@ -143,6 +143,7 @@ describe("NotificationsPage", () => {
     expect(root.textContent).toContain("Keine Mitteilungen.");
     const boxes = [...root.querySelectorAll<HTMLInputElement>("input[type=checkbox]")];
     expect(boxes).toHaveLength(15);
+    expect(boxes.every((b) => b.getAttribute("role") === "switch")).toBe(true);
     expect(boxes.filter((b) => b.checked)).toHaveLength(1);
     expect(root.textContent).toContain("Neuer Firmenschlüssel");
   });

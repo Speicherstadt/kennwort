@@ -6,7 +6,7 @@
  * never offered, one with this code makes the row a duplicate.
  */
 import { typeLabel } from "@kennwort/client/entries/entry-types.ts";
-import { Badge, badgeVariants, m } from "@kennwort/ui";
+import { Badge, badgeVariants, Checkbox, m } from "@kennwort/ui";
 import { createUniqueId, For, Show } from "solid-js";
 import type { CodeTarget, PreviewRow } from "./preview.ts";
 
@@ -104,8 +104,7 @@ export const Row = (props: {
     </Show>
     <Show when={props.row.duplicate}>
       <label class="flex min-h-11 items-center gap-2 text-xs md:min-h-0">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={props.taken}
           aria-label={m.import_take_anyway({ title: untitled(props.row.title) })}
           onChange={(event) => props.onTake(event.currentTarget.checked)}

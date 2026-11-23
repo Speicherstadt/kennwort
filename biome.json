@@ -16,6 +16,12 @@
   "linter": {
     "rules": {
       "preset": "recommended",
+      "a11y": {
+        "noLabelWithoutControl": {
+          "level": "error",
+          "options": { "inputComponents": ["Checkbox", "Switch", "Toggle"] }
+        }
+      },
       "complexity": {
         "noExcessiveLinesPerFunction": {
           "level": "info",
