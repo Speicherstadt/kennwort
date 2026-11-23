@@ -16,7 +16,8 @@ if (!config.ok) {
   console.error(JSON.stringify(failure));
   process.exit(1);
 }
-const { port, database, logLevel, publicUrl, authSecret, behindProxy, setupCode } = config.value;
+const { port, database, logLevel, publicUrl, authSecret, behindProxy, setupCode, webRoot, secure } =
+  config.value;
 const log = createLog(logLevel, (line) => console.log(line));
 
 if (database !== ":memory:") mkdirSync(dirname(database), { recursive: true });
@@ -38,7 +39,14 @@ const signIn = {
   address: clientAddress(behindProxy),
   setupCode,
 };
-const app = createApp({ db, log, authenticate: authenticateWith(auth), signIn });
+const app = createApp({
+  db,
+  log,
+  authenticate: authenticateWith(auth),
+  signIn,
+  webRoot,
+  secure,
+});
 // The peer address goes to the app as its environment; the rate limits count it
 const server = Bun.serve({
   port,

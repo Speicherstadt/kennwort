@@ -30,6 +30,8 @@ import { shareRoutes } from "./sync/share-routes.ts";
 import { companyRoutes, type TenantEnv } from "./tenancy/routes.ts";
 import { companyScope } from "./tenancy/scope.ts";
 import type { Authenticate } from "./tenancy/session.ts";
+import { securityHeaders } from "./web/security-headers.ts";
+import { webFiles } from "./web/static-files.ts";
 
 /** Sign-in: Better Auth, the sign-in key routes and invitations (K-203); absent in tests of other parts */
 export type SignIn = {
@@ -50,6 +52,10 @@ export type Deps = {
   hub?: Hub;
   now?: () => number;
   keepAliveMs?: number;
+  /** The built web app to serve (KENNWORT_WEB_ROOT); without it the server answers only its API */
+  webRoot?: string | undefined;
+  /** Whether people reach the server over https (KENNWORT_PUBLIC_URL): HSTS and upgrades */
+  secure?: boolean;
 };
 
 const hasLeft = (db: Db, accountId: string) =>
@@ -73,6 +79,8 @@ export const createApp = ({
   hub = createHub(),
   now = Date.now,
   keepAliveMs,
+  webRoot,
+  secure = false,
 }: Deps) => {
   const app = new Hono();
 
@@ -87,6 +95,9 @@ export const createApp = ({
       ms: Math.round(performance.now() - started),
     });
   });
+
+  // The CSP and the other security headers on every answer, error pages included
+  app.use(securityHeaders(secure));
 
   // The extension's popup calls the API from its own origin (K-402); before the session check,
   // which a preflight without a token would fail
@@ -149,6 +160,7 @@ export const createApp = ({
     });
   }
   app.route("/api", api);
+  if (webRoot) app.on(["GET", "HEAD"], "*", webFiles(webRoot, secure));
 
   // Every answer is JSON, unknown routes too; clients and the stand-in (K-207) rely on it
   app.notFound((c) => c.json({ error: "not-found" }, 404));

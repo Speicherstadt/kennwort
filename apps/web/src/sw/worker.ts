@@ -5,6 +5,7 @@
  * handles comes from the network unchecked: what no verified cache has gets an error instead.
  * sw.ts wires these to the browser's events.
  */
+import { appHeaders } from "@kennwort/core/headers";
 import { cachedFile, releaseCaches, storeRelease } from "./cache-store.ts";
 import {
   type Fetch,
@@ -148,11 +149,31 @@ const file = async (deps: WorkerDeps, path: string): Promise<Response | null> =>
 };
 
 /**
+ * The app's CSP and security headers on an answer of the worker: the caches hold verified bytes,
+ * not the network's headers, so without these a page served from here would run with no policy.
+ * No HSTS, which browsers take only from the network.
+ */
+const withAppHeaders = (origin: string, response: Response) => {
+  const headers = new Headers(response.headers);
+  const secure = new URL(origin).protocol === "https:";
+  for (const [name, value] of Object.entries(appHeaders({ secure, hsts: false }))) {
+    headers.set(name, value);
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+};
+
+/**
  * The verified answer to a request, or null for the network: what the worker does not handle, and
  * everything before a version is held (the first install, P-16 residual risk)
  */
 export const respond = async (deps: WorkerDeps, asked: Asked): Promise<Response | null> => {
   if (!handles(deps.origin, asked)) return null;
   const { pathname } = new URL(asked.url);
-  return asked.mode === "navigate" ? navigate(deps, pathname) : file(deps, pathname);
+  const answer =
+    asked.mode === "navigate" ? await navigate(deps, pathname) : await file(deps, pathname);
+  return answer && withAppHeaders(deps.origin, answer);
 };

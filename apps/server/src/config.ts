@@ -19,6 +19,9 @@ const Config = z.object({
   // Lets the first owner create the company (POST /auth/setup); chosen by the admin, at least 16
   // characters, and never written to a log. Without it the server cannot be set up from outside.
   KENNWORT_SETUP_CODE: z.string().min(16).optional(),
+  // The built web app (apps/web/dist) the server serves with its security headers; without it a
+  // reverse proxy serves the app and must send the same headers (docs/sicherheitsdesign.md, P-16)
+  KENNWORT_WEB_ROOT: z.string().min(1).optional(),
 });
 
 export type Config = {
@@ -29,6 +32,9 @@ export type Config = {
   authSecret: string;
   behindProxy: boolean;
   setupCode: string | undefined;
+  webRoot: string | undefined;
+  /** People reach the server over https: HSTS and upgrade-insecure-requests */
+  secure: boolean;
 };
 
 export const readConfig = (env: Record<string, string | undefined>) => {
@@ -44,6 +50,8 @@ export const readConfig = (env: Record<string, string | undefined>) => {
     authSecret: data.KENNWORT_AUTH_SECRET,
     behindProxy: data.KENNWORT_BEHIND_PROXY === "true",
     setupCode: data.KENNWORT_SETUP_CODE,
+    webRoot: data.KENNWORT_WEB_ROOT,
+    secure: new URL(data.KENNWORT_PUBLIC_URL).protocol === "https:",
   };
   return { ok: true as const, value };
 };

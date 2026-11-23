@@ -15,6 +15,7 @@ describe("readConfig", () => {
         publicUrl: "http://localhost:8100",
         authSecret: SECRET,
         behindProxy: false,
+        secure: false,
       },
     });
   });
@@ -37,8 +38,28 @@ describe("readConfig", () => {
         publicUrl: "https://kennwort.weber-haustechnik.test",
         authSecret: SECRET,
         behindProxy: true,
+        secure: true,
       },
     });
+  });
+
+  it("serves the web build from KENNWORT_WEB_ROOT, and only then", () => {
+    const read = readConfig({ ...base, KENNWORT_WEB_ROOT: "/srv/kennwort/web" });
+    expect(read.ok && read.value.webRoot).toBe("/srv/kennwort/web");
+    expect(readConfig(base)).toMatchObject({ ok: true, value: { webRoot: undefined } });
+    expect(readConfig({ ...base, KENNWORT_WEB_ROOT: "" })).toEqual({
+      ok: false,
+      error: ["KENNWORT_WEB_ROOT"],
+    });
+  });
+
+  it("counts as secure only behind an https public address", () => {
+    const at = (url: string) => {
+      const read = readConfig({ ...base, KENNWORT_PUBLIC_URL: url });
+      return read.ok && read.value.secure;
+    };
+    expect(at("https://kennwort.weber-haustechnik.test")).toBe(true);
+    expect(at("http://localhost:8100")).toBe(false);
   });
 
   it("takes only true or false for being behind a proxy", () => {

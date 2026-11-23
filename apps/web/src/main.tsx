@@ -1,3 +1,5 @@
+// First of all: Zod decides at each schema's definition whether to compile it with eval (P-16, CSP)
+import "./without-eval.ts";
 import "@kennwort/ui/styles.css";
 import { callerOf, createApi } from "@kennwort/client/session/api.ts";
 import { deviceIdentity } from "@kennwort/client/session/device-identity.ts";

@@ -1,3 +1,4 @@
+import { appHeaders, appPolicy } from "@kennwort/core/headers";
 import { describe, expect, it } from "vitest";
 import { loadState } from "./cache-store.ts";
 import {
@@ -203,5 +204,39 @@ describe("respond", () => {
     const { deps } = setUp();
     expect(await navigate(deps)).toBeNull();
     expect(await asset(deps, "/assets/index-v1.js")).toBeNull();
+  });
+});
+
+describe("security headers (P-16, CSP)", () => {
+  const expectHeaders = (response: Response | null) => {
+    for (const [name, value] of Object.entries(appHeaders({ secure: true, hsts: false }))) {
+      expect([name, response?.headers.get(name)]).toEqual([name, value]);
+    }
+    expect(response?.headers.get("strict-transport-security")).toBeNull();
+  };
+
+  it("puts the app's policy on every page and file it serves from its caches", async () => {
+    const { deps } = await installedV1();
+    for (const path of ["/", "/entries/abc", "/s/Zm9vYmFy"]) {
+      const answer = await navigate(deps, path);
+      expectHeaders(answer);
+      expect(await answer?.text()).toContain("<title>v1</title>");
+    }
+    const script = await asset(deps, "/assets/index-v1.js");
+    expectHeaders(script);
+    expect(script?.headers.get("content-type")).toBe("text/plain");
+    expect(await script?.text()).toBe('console.log("v1")');
+    expectHeaders(await asset(deps, "/assets/unknown.js"));
+  });
+
+  it("upgrades insecure requests only on an https origin", async () => {
+    const { deps } = await installedV1();
+    const local = { ...deps, origin: "http://localhost:5176" };
+    const answer = await respond(local, {
+      url: "http://localhost:5176/assets/index-v1.js",
+      method: "GET",
+      mode: "cors",
+    });
+    expect(answer?.headers.get("content-security-policy")).toBe(appPolicy({ secure: false }));
   });
 });

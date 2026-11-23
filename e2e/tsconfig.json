@@ -1,5 +1,15 @@
 {
   "extends": "../tsconfig.base.json",
-  "compilerOptions": { "outDir": "../node_modules/.tsbuild/e2e", "types": ["bun"] },
-  "include": ["**/*.ts", "fixtures/*.json"]
+  "compilerOptions": {
+    "outDir": "../node_modules/.tsbuild/e2e",
+    "rootDir": "..",
+    "types": ["bun"]
+  },
+  // The security headers the server sends, checked against the same table (e2e/csp.spec.ts)
+  "include": [
+    "**/*.ts",
+    "fixtures/*.json",
+    "../apps/extension/src/popup/popup.test-data.json",
+    "../packages/core/src/headers/security-headers.ts"
+  ]
 }
