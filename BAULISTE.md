@@ -562,7 +562,27 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   den Router der Heizung, dessen Adresse erst nach dem Entsperren öffnet, tritt Müller Elektro mit
   seinem Konto bei, wechselt die Firmen, übergibt den Tresor „Heizung Müller“ an Max, der ihn
   verwaltet, den Eintrag sieht und Jonas danach entfernt.
-- [ ] **K-606 CLI** – Anmelden, Suchen, Lesen per Bestätigung, `bun build --compile`.
+- [x] **K-606 CLI** – Anmelden, Suchen, Lesen per Bestätigung, `bun build --compile`.
+  Fertig, wenn: `apps/cli` mit `bun build --compile` ein Programm `kennwort` baut (Teil von
+  `bun run build` und des Vergleichs der reproduzierbaren Builds); `login` Server und Konto-ID
+  (Option oder Frage), Secret Key und Passphrase ohne Echo vom Terminal nimmt (Passphrase sonst nur
+  mit `--passphrase-stdin`, nie als Argument oder Umgebungsvariable), mit `signInAndUnlock`,
+  `loadVaults` und dem Eintrags-Speicher aus `packages/client` anmeldet, entsperrt und prüft und erst
+  danach Server, Konto-ID, Secret Key und Geräte-ID in `$XDG_CONFIG_HOME/kennwort/device.json`
+  ablegt (0600, Ordner 0700, eine lesbare Datei wird verweigert); der Kontozustand unter AK
+  versiegelt daneben liegt und in jeden vom Server gelieferten eingeführt wird wie in Web-App und
+  Extension (`kept-state.ts`, dorthin aus beiden verschoben); jeder Befehl je Aufruf entsperrt, am
+  Ende die Sitzung beim Server abmeldet und AK überschreibt (`unlock` prüft nur, `lock` hat nichts
+  zu tun, Entscheidung im Projektplan); `search` nur Titel, Benutzernamen und Adressen liest und
+  ausgibt; `get` ein Feld (ohne `--field` das Passwort, für TOTP den Code, nie den Schlüssel) erst
+  nach einem am Terminal getippten „j“ oder mit `--yes` ausgibt, ohne Terminal nichts; Steuerzeichen
+  aus Einträgen als U+FFFD erscheinen; `logout` beide Dateien löscht; Fehler Werte mit festen
+  Rückgabewerten sind und keine Meldung eine Passphrase oder einen Wert nennt; alle Texte über
+  Paraglide auf Deutsch und Englisch nach `LC_ALL`/`LC_MESSAGES`/`LANG`; Vitest neben dem Code und ein
+  Integrationstest das kompilierte Programm gegen den echten Server (Port 28320) mit Weber
+  Haustechnik laufen lässt: `--help`, `login` auf einem Pseudo-Terminal ohne Echo von Secret Key und
+  Passphrase, `search` ohne Geheimnisse, `get` mit Bestätigung, eine abgelehnte Bestätigung ohne
+  Geheimnis in der Ausgabe, keine Sitzung der CLI bleibt auf dem Server; `docs/cli.md` und README.
 - [ ] **K-607 DSGVO** – Konto löschen, Daten exportieren, Datenschutz-Seite.
 
 ## Phase 7 – Härtung

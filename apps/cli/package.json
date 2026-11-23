@@ -1,0 +1,15 @@
+{
+  "name": "@kennwort/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build --compile --minify src/main.ts --outfile dist/kennwort"
+  },
+  "dependencies": {
+    "@kennwort/client": "workspace:*",
+    "@kennwort/core": "workspace:*",
+    "@kennwort/crypto": "workspace:*",
+    "@kennwort/ui": "workspace:*"
+  }
+}

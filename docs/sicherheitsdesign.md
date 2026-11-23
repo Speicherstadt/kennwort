@@ -652,6 +652,14 @@ gesehen oder geschrieben hat, hält sie unter AK versiegelt ebenfalls in `chrome
 zurückspielt, wirft sie nicht zurück (E-07, E-13). Beim Sperren überschreibt das Popup AK im Speicher.
 Entsperrt wird mit demselben Code wie in der Web-App (`packages/client/src/session/unlock.ts`).
 
+Die Kommandozeile (K-606) entsperrt je Befehl und hält keinen Schlüssel zwischen zwei Aufrufen:
+Jeder Befehl meldet sich an, entsperrt, prüft, meldet die Sitzung am Ende ab und überschreibt AK.
+Auf der Platte liegen nur Server, Konto-ID, Secret Key und Geräte-ID (`device.json`) und der
+Kontozustand unter AK versiegelt (`state.json`), beide nur für den Besitzer lesbar (0600); den
+Kontozustand führt sie wie Web-App und Extension in jeden ein, den der Server liefert
+(`packages/client/src/session/kept-state.ts`). Die Passphrase kommt vom Terminal ohne Echo oder mit
+`--passphrase-stdin` aus stdin, nie aus einem Argument oder einer Umgebungsvariablen.
+
 **Wehrt ab:** E-01, E-03, E-18.
 
 ### P-04 Neues Gerät
