@@ -916,7 +916,6 @@
   "notifications_mark_read": "Gelesen",
   "notifications_unread": "Ungelesen",
   "notifications_delete": "Mitteilung löschen",
-  "notifications_open": "Öffnen",
   "notifications_hint": "Mitteilungen sagt der Server an. Was sie nennen, prüft Kennwort dort, wo du es öffnest.",
   "notifications_someone": "Jemand",
   "notifications_a_vault": "einen Tresor",

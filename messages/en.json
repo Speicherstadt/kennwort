@@ -916,7 +916,6 @@
   "notifications_mark_read": "Mark read",
   "notifications_unread": "Unread",
   "notifications_delete": "Delete notification",
-  "notifications_open": "Open",
   "notifications_hint": "The server announces notifications. Kennwort checks what they name where you open it.",
   "notifications_someone": "Someone",
   "notifications_a_vault": "a vault",
