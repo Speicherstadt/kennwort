@@ -63,19 +63,22 @@ export const RootChangeNotice = (props: {
 };
 
 const ReplaceDialog = (props: { busy: boolean; onConfirm: () => void; onClose: () => void }) => (
-  <Dialog open onClose={props.onClose} title={m.root_replace()}>
-    <div class="grid gap-4">
-      <p class="text-[13px]">{m.root_replace_text()}</p>
-      <Button
-        variant="primary"
-        class="h-11 w-fit md:h-8"
-        disabled={props.busy}
-        onClick={() => props.onConfirm()}
-      >
-        {props.busy ? m.working() : m.root_replace_confirm()}
-      </Button>
-    </div>
-  </Dialog>
+  <Dialog
+    open
+    onClose={props.onClose}
+    title={m.root_replace()}
+    description={m.root_replace_text()}
+    variant="destructive"
+    size="sm"
+    footer={
+      <>
+        <Button onClick={() => props.onClose()}>{m.ui_cancel()}</Button>
+        <Button variant="danger" disabled={props.busy} onClick={() => props.onConfirm()}>
+          {props.busy ? m.working() : m.root_replace_confirm()}
+        </Button>
+      </>
+    }
+  />
 );
 
 /** The pinned root's code for everyone; for an owner with the root key, replacing it */

@@ -3,7 +3,7 @@
  * share: how long and how often, an optional passphrase, and the address once it is made.
  */
 import { LINK_EXPIRIES, LINK_LIMITS } from "@kennwort/core";
-import { Button, getLocale, Icon, Input, m, selectClass } from "@kennwort/ui";
+import { Button, DialogFooter, getLocale, Icon, Input, m, selectClass } from "@kennwort/ui";
 import { Copy } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { createSignal, createUniqueId, For, Show } from "solid-js";
@@ -96,9 +96,11 @@ export const LinkOptionsForm = (props: {
         value={passphrase()}
         onInput={(event) => setPassphrase(event.currentTarget.value)}
       />
-      <Button type="submit" variant="primary" disabled={props.busy}>
-        {props.busy ? m.working() : m.link_create()}
-      </Button>
+      <DialogFooter>
+        <Button type="submit" variant="primary" disabled={props.busy}>
+          {props.busy ? m.working() : m.link_create()}
+        </Button>
+      </DialogFooter>
     </form>
   );
 };
@@ -131,12 +133,12 @@ export const MadeLinkView = (props: { made: MadeLink; onDone: () => void }) => {
           {m.link_copied()}
         </p>
       </Show>
-      <div class="flex gap-2">
+      <DialogFooter>
+        <Button onClick={() => props.onDone()}>{m.link_done()}</Button>
         <Button variant="primary" onClick={() => void copy()}>
           <Icon icon={Copy} /> {m.link_copy()}
         </Button>
-        <Button onClick={() => props.onDone()}>{m.link_done()}</Button>
-      </div>
+      </DialogFooter>
     </div>
   );
 };

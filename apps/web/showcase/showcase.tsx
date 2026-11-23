@@ -78,14 +78,17 @@ const Showcase = () => {
           onClose={() => setDialogOpen(false)}
           title="Eintrag löschen?"
           description="Sparkasse wird für alle im Tresor Büro gelöscht."
-        >
-          <div class="flex justify-end gap-2">
-            <Button onClick={() => setDialogOpen(false)}>Abbrechen</Button>
-            <Button variant="danger" onClick={() => setDialogOpen(false)}>
-              Löschen
-            </Button>
-          </div>
-        </Dialog>
+          variant="destructive"
+          size="sm"
+          footer={
+            <>
+              <Button onClick={() => setDialogOpen(false)}>Abbrechen</Button>
+              <Button variant="danger" onClick={() => setDialogOpen(false)}>
+                Löschen
+              </Button>
+            </>
+          }
+        />
         <Menu
           label="Aktionen"
           trigger={<Icon icon={Ellipsis} />}

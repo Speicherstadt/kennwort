@@ -181,7 +181,7 @@ Eigene Komponenten in `packages/ui`, ohne Bibliothek, auf nativen Elementen:
 | Eingabe, Suche | `<input>` mit `<label>` | Suche mit Lupe und Kürzel |
 | Checkbox | `<input type="checkbox">`, `appearance-none` | 16 px, Radius 4 px, gefüllt in `--primary` mit Haken; für Auswahl in Formularen, die erst mit dem Absenden gilt. Nie eine native Checkbox |
 | Switch | `<input type="checkbox" role="switch">` | 32 × 18 px, Daumen rutscht nach rechts; für Einstellungen, die sofort gelten. In Einstellungslisten als Zeile: links Name (fett) und ein Satz in `--muted-foreground`, rechts der Switch |
-| Dialog | `<dialog>` mit `showModal()` | Fokusfalle und Esc vom Browser |
+| Dialog | `<dialog>` mit `showModal()` | Eine Hülle für alle Dialoge: Hintergrund `black/50` mit Unschärfe; Karte mittig, `rounded-lg`, Schatten, Breiten `sm` (384 px, Bestätigungen), `md` (512 px, Standard), `lg` (672 px, Teilen, Etikett, Tresor-Mitglieder); Kopf mit Titel (16 px halbfett), Beschreibung und ×; dann Inhalt und Fußzeile (`footer` oder `DialogFooter` in einem Formular) mit den Knöpfen rechts, Abbrechen vor der Hauptaktion. `variant="destructive"` zeigt ein Warnzeichen in `--danger` neben dem Titel, die Hauptaktion ist dann `danger`. Am Handy ein Bottom Sheet: volle Breite, unten, oben gerundet, Knöpfe 44 px untereinander mit der Hauptaktion oben. Fokusfalle und Esc vom Browser |
 | Menü, Popover, Tooltip | Popover-API, CSS Anchor Positioning | Tastatur selbst: Pfeile, Home/End, Esc |
 | Combobox | `<input>` + Popover | Rolle `combobox`, `aria-activedescendant` |
 | Toast | eigener Bereich mit `aria-live="polite"` | verschwindet nicht, solange Fokus darin ist |

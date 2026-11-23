@@ -113,9 +113,8 @@ export const QrScanDialog = (props: {
     };
   });
   return (
-    <Dialog open onClose={props.onClose} title={m.qr_scan()}>
-      <div class="grid gap-3 p-4 pt-2">
-        <p class="text-[13px] text-muted-foreground">{kind().intro()}</p>
+    <Dialog open onClose={props.onClose} title={m.qr_scan()} description={kind().intro()} size="sm">
+      <div class="grid gap-3">
         <video
           ref={(el) => {
             video = el;

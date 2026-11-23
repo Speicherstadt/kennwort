@@ -15,14 +15,17 @@ export const DiscardDialog = (props: {
     onClose={() => props.onKeep()}
     title={m.entry_editor_discard_title()}
     description={m.entry_editor_discard_text()}
-  >
-    <div class="flex flex-wrap justify-end gap-2 pt-2">
-      <Button class="h-11 md:h-8" autofocus onClick={() => props.onKeep()}>
-        {m.entry_editor_keep()}
-      </Button>
-      <Button variant="danger" class="h-11 md:h-8" onClick={() => props.onDiscard()}>
-        {m.entry_editor_discard()}
-      </Button>
-    </div>
-  </Dialog>
+    variant="destructive"
+    size="sm"
+    footer={
+      <>
+        <Button autofocus onClick={() => props.onKeep()}>
+          {m.entry_editor_keep()}
+        </Button>
+        <Button variant="danger" onClick={() => props.onDiscard()}>
+          {m.entry_editor_discard()}
+        </Button>
+      </>
+    }
+  />
 );

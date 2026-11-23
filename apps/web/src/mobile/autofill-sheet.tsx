@@ -54,7 +54,7 @@ export const AutofillSheet = (props: {
           title={m.mobile_autofill_title({ target: targetName(shown) })}
           description={m.mobile_autofill_text()}
         >
-          <div class="grid gap-2 p-4 pt-2">
+          <div class="grid gap-2">
             <For
               each={candidates(shown, props.entries())}
               fallback={
