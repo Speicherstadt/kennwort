@@ -362,7 +362,11 @@ alles auf GitHub Pages.
   Handy und App, Verwaltung, FAQ, Datenschutz.
 - **Screenshots**: Workflow „Update screenshots“ mit Playwright für Web-App, Extension-Popup,
   Inline-Menü und Handy, hell und dunkel; nach jeder Änderung am Aussehen schaut sich der Agent die
-  neuen Bilder an.
+  neuen Bilder an. Der Workflow läuft nur von Hand, nie in CI: Er nimmt die Bilder gegen die Server
+  der e2e-Tests mit den Testdaten auf (Rechner und Handy bei Skalierung 2, Popup 360 × 600),
+  speichert sie als WebP unter `docs/assets/screenshots/` und committet sie auf den Zweig
+  `screenshots/update` mit einem Pull Request über `GITHUB_TOKEN`, nie auf `main`; ein Mensch oder
+  der Agent sieht sich die Bilder vor dem Merge an. Die Bilder hängen zusätzlich als Artefakt am Lauf.
 - **Demo ohne Server**: die Web-App unter `/demo/` der Doku-Seite mit einem Server-Ersatz im
   Browser, der verschlüsselte Daten nur im Speicher hält; derselbe Ersatz dient den Tests.
   Testdaten „Weber Haustechnik“, deutlicher Hinweis, keine echten Passwörter einzugeben. Niedrige

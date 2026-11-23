@@ -15,7 +15,8 @@ const launchOptions = executablePath ? { executablePath } : {};
 export default defineConfig({
   testDir: "e2e",
   // e2e/engines runs in Firefox and WebKit under playwright.engines.config.ts (K-407)
-  testIgnore: "engines/**",
+  // e2e/screenshots runs only under playwright.screenshots.config.ts (K-705)
+  testIgnore: ["engines/**", "screenshots/**"],
   forbidOnly: Boolean(process.env.CI),
   // Every test sets up its own company (e2e/account.ts), so tests of one file may run side by side;
   // in CI four workers, as many cores as the runner has, elsewhere Playwright's default of half the cores

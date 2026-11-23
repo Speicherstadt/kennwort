@@ -54,6 +54,49 @@ Handy einen Bildschirm nach dem anderen mit der Tab-Leiste unten ([Handy und App
 Extension öffnet ein Popup mit den Treffern der Seite und legt ein Menü unter Login-Felder. Am
 schnellsten siehst du es in der <a href="/demo/">Demo</a>.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/entry-desktop-dark.webp">
+  <img src="assets/screenshots/entry-desktop-light.webp" alt="Weber Haustechnik in Kennwort: Liste der Einträge, daneben der Eintrag Sparkasse" width="800">
+</picture>
+
+Die Tresore, die Mitglieder, die Sicherheit und die Mitteilungen der Firma:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/vaults-desktop-dark.webp">
+  <img src="assets/screenshots/vaults-desktop-light.webp" alt="Die Tresore der Firma" width="400">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/members-desktop-dark.webp">
+  <img src="assets/screenshots/members-desktop-light.webp" alt="Mitglieder mit Rollen und bestätigten Schlüsseln" width="400">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/security-desktop-dark.webp">
+  <img src="assets/screenshots/security-desktop-light.webp" alt="Sicherheit: schwache und mehrfach verwendete Passwörter" width="400">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/notifications-desktop-dark.webp">
+  <img src="assets/screenshots/notifications-desktop-light.webp" alt="Mitteilungen" width="400">
+</picture>
+
+Am Handy und im Popup der Extension (360 × 600):
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/entries-phone-dark.webp">
+  <img src="assets/screenshots/entries-phone-light.webp" alt="Liste der Einträge am Handy" width="200">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/entry-phone-dark.webp">
+  <img src="assets/screenshots/entry-phone-light.webp" alt="Ein Eintrag am Handy" width="200">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/security-phone-dark.webp">
+  <img src="assets/screenshots/security-phone-light.webp" alt="Sicherheit am Handy" width="200">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/popup-extension-dark.webp">
+  <img src="assets/screenshots/popup-extension-light.webp" alt="Das Popup der Extension mit dem Login für die Seite" width="200">
+</picture>
+
 ## Was Kennwort verspricht
 
 Kennwort ist gegen einen Server gebaut, der selbst angegriffen wird:

@@ -15,6 +15,7 @@ export const launchExtension = async (
   locale: string,
   colorScheme: "light" | "dark",
   build: "chrome" | "e2e" = "chrome",
+  deviceScaleFactor = 1,
 ) => {
   const extension = join(dist, build);
   const userDataDir = mkdtempSync(join(tmpdir(), "kennwort-extension-"));
@@ -25,6 +26,7 @@ export const launchExtension = async (
     locale,
     colorScheme,
     viewport: { width: 360, height: 600 },
+    deviceScaleFactor,
     args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
   });
   return {

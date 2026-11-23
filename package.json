@@ -19,6 +19,7 @@
     "build": "bun scripts/build-all.ts",
     "reproducible": "bun scripts/reproducible.ts",
     "e2e": "playwright test",
+    "screenshots": "playwright test -c playwright.screenshots.config.ts",
     "e2e:engines": "playwright test -c playwright.engines.config.ts",
     "check": "bun run typecheck && bun run lint && bun run test && bun run build",
     "mutation": "bun run --cwd packages/crypto mutation && bun run --cwd packages/core mutation"
