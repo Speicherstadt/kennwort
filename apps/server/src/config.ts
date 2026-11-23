@@ -22,6 +22,18 @@ const Config = z.object({
   // The built web app (apps/web/dist) the server serves with its security headers; without it a
   // reverse proxy serves the app and must send the same headers (docs/sicherheitsdesign.md, P-16)
   KENNWORT_WEB_ROOT: z.string().min(1).optional(),
+  // Web Push (K-602): on by default; the pushes are empty, a push service learns only when
+  KENNWORT_PUSH: z.enum(["true", "false"]).default("true"),
+  // Who sends, for the push services (RFC 8292 `sub`): a mailto: or https address, else the public one
+  KENNWORT_PUSH_SUBJECT: z
+    .string()
+    .regex(/^(mailto:[^\s@]+@[^\s@]+|https:\/\/\S+)$/)
+    .optional(),
+  // More push services besides those of the common browsers, as host names separated by commas
+  KENNWORT_PUSH_HOSTS: z
+    .string()
+    .regex(/^[a-z0-9.-]+(,[a-z0-9.-]+)*$/)
+    .optional(),
   // Where the leak check (K-603) gets its ranges: the address up to the prefix, ending in "/",
   // such as a mirror of Pwned Passwords; "off" turns the check off for everyone on this server
   KENNWORT_PWNED_URL: z
@@ -40,6 +52,8 @@ export type Config = {
   webRoot: string | undefined;
   /** People reach the server over https: HSTS and upgrade-insecure-requests */
   secure: boolean;
+  /** Web Push (K-602): undefined when turned off */
+  push: { subject: string; extraHosts: string[] } | undefined;
   /** The leak check's range address, or undefined when the operator turned it off */
   pwnedUrl: string | undefined;
 };
@@ -63,6 +77,13 @@ export const readConfig = (env: Record<string, string | undefined>) => {
     setupCode: data.KENNWORT_SETUP_CODE,
     webRoot: data.KENNWORT_WEB_ROOT,
     secure: new URL(data.KENNWORT_PUBLIC_URL).protocol === "https:",
+    push:
+      data.KENNWORT_PUSH === "true"
+        ? {
+            subject: data.KENNWORT_PUSH_SUBJECT ?? data.KENNWORT_PUBLIC_URL,
+            extraHosts: data.KENNWORT_PUSH_HOSTS?.split(",") ?? [],
+          }
+        : undefined,
     pwnedUrl: data.KENNWORT_PWNED_URL === "off" ? undefined : data.KENNWORT_PWNED_URL,
   };
   return { ok: true as const, value };

@@ -7,6 +7,7 @@ import { rateLimiter } from "../auth/limits.ts";
 import { migrate, openDatabase } from "../db/database.ts";
 import { accounts, companies } from "../db/schema.ts";
 import { createLog, type Log } from "../log.ts";
+import type { PushDeps } from "../notifications/push.ts";
 
 export const SECRET = "test-secret-of-at-least-thirty-two-chars";
 
@@ -27,6 +28,8 @@ export const signInSetup = async (
     apiClock?: boolean;
     /** Where the server's log lines go; none are kept by default */
     log?: Log;
+    /** Web Push with a fake push service (K-602) */
+    push?: PushDeps;
   } = {},
 ) => {
   const db = openDatabase(":memory:");
@@ -49,6 +52,7 @@ export const signInSetup = async (
     log: options.log ?? createLog("error", () => {}),
     authenticate: authenticateWith(auth),
     signIn,
+    push: options.push,
     ...(options.apiClock ? { now: clock.now } : {}),
   });
   // A fresh server for the first owner's setup has no company yet

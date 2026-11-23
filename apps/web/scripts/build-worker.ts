@@ -6,6 +6,9 @@
  *   bun scripts/build-worker.ts dist
  */
 import { join } from "node:path";
+import de from "../../../messages/de.json";
+import en from "../../../messages/en.json";
+import { pushTextsOf } from "../src/sw/push.ts";
 import { toHex } from "../src/sw/release.ts";
 import { trustedKey } from "./release-build.ts";
 
@@ -21,7 +24,11 @@ const result = await Bun.build({
   target: "browser",
   format: "iife",
   minify: true,
-  define: { KENNWORT_RELEASE_PUBLIC_KEY: JSON.stringify(toHex(key.value)) },
+  define: {
+    KENNWORT_RELEASE_PUBLIC_KEY: JSON.stringify(toHex(key.value)),
+    // The two texts of an empty push (K-602), from the message files Paraglide compiles
+    KENNWORT_PUSH_TEXTS: JSON.stringify(pushTextsOf({ de, en })),
+  },
 });
 const [output] = result.outputs;
 if (!result.success || !output) {
