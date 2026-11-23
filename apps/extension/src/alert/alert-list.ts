@@ -8,8 +8,9 @@
  * As in Google's Password Alert (google/password-alert, service_worker.js: a salted, partial hash
  * of the password, 37 bits), only a short tag is kept, here four bytes of Argon2id (F-10).
  */
+
+import { entryHosts } from "@kennwort/client/autofill/matches.ts";
 import { type StoredEntry, shown } from "@kennwort/client/entries/entries.ts";
-import { entryHosts } from "../page/matches.ts";
 import { hex } from "./hex.ts";
 
 /** A saved password the list covers, with the hosts it belongs to */

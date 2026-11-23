@@ -105,6 +105,7 @@
         "@kennwort/crypto": "workspace:*",
         "@kennwort/ui": "workspace:*",
         "solid-js": "2.0.3",
+        "tldts": "7.4.19",
       },
     },
     "packages/core": {

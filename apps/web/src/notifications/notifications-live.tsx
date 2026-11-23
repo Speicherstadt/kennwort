@@ -1,11 +1,14 @@
 /**
  * The notifications' live channel while the account is open (K-602): each event only says that
  * something is new, and the list loads anew over the session. A stream that ends (server restart,
- * offline) is opened again after a pause; it stops with the frame, at the lock.
+ * offline, the app's limits in K-708) is opened again after a pause that doubles up to 30 s and
+ * starts over once a stream stayed open that long after its "ready" (a server that ends each stream
+ * right after it, or floods it into the app's limit, gets the long pause); it stops with the frame, at the lock and the logout.
  */
 import { watchNotifications } from "@kennwort/client/session/notifications-api.ts";
 import { useQueryClient } from "@tanstack/solid-query";
 import { onSettled } from "solid-js";
+import { reconnectDelay } from "../mobile/native-stream.ts";
 import { queryKeys } from "../queries.ts";
 import { type NotificationsDeps, tokenOf } from "./notifications-query.ts";
 
@@ -25,12 +28,20 @@ export const NotificationsLive = (props: { deps: NotificationsDeps; send: typeof
   const client = useQueryClient();
   onSettled(() => {
     const stop = new AbortController();
-    const onEvent = () => void client.invalidateQueries({ queryKey: queryKeys.notifications });
+    let failures = 0;
+    let readyAt: number | undefined;
+    const onEvent = (event: string) => {
+      if (event === "ready") readyAt = Date.now();
+      void client.invalidateQueries({ queryKey: queryKeys.notifications });
+    };
     void (async () => {
       while (!stop.signal.aborted) {
         const token = tokenOf(props.deps.session);
+        readyAt = undefined;
         if (token) await watchNotifications(props.send, token, onEvent, stop.signal);
-        await pause(RECONNECT_MS, stop.signal);
+        if (readyAt !== undefined && Date.now() - readyAt >= RECONNECT_MS) failures = 0;
+        await pause(reconnectDelay(failures, RECONNECT_MS), stop.signal);
+        failures += 1;
       }
     })();
     return () => stop.abort();

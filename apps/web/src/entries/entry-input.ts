@@ -4,6 +4,7 @@
  * back into it; the favorite rides along, and a replaced secret goes into the history.
  */
 
+import type { LoginInput } from "@kennwort/client/entries/entries.ts";
 import { historyAfter } from "@kennwort/client/entries/entry-history.ts";
 import { type EntryType, TEMPLATES, templateField } from "@kennwort/client/entries/entry-types.ts";
 import type { EntryContent } from "@kennwort/core";
@@ -34,6 +35,18 @@ export const newInput = (type: EntryType): EntryInput => ({
   fields: fromTemplate(type, () => undefined),
   tags: [],
 });
+
+/** A new login started from what someone typed elsewhere (K-802, saving from Android's autofill) */
+export const loginInput = (login: LoginInput): EntryInput => {
+  const values: Record<string, string> = {
+    username: login.username,
+    password: login.password,
+    website: login.website,
+  };
+  // The template's names and kinds stay: a given value only fills the field in
+  const fields = newInput("login").fields.map((f) => ({ ...f, value: values[f.id] ?? f.value }));
+  return { type: "login", title: login.title, fields, tags: [] };
+};
 
 export const inputOf = (content: EntryContent): EntryInput => {
   const stored = (id: string) => content.fields.find((f) => f.id === id);

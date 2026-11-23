@@ -1,7 +1,7 @@
 import type { EntryContent } from "@kennwort/core";
 import { setLocale } from "@kennwort/ui";
 import { beforeEach, describe, expect, it } from "vitest";
-import { contentOf, inputOf, newInput, withTag, withType } from "./entry-input.ts";
+import { contentOf, inputOf, loginInput, newInput, withTag, withType } from "./entry-input.ts";
 
 // K-306 part 2: every type with its fields, and fields of the owner's own
 beforeEach(() => setLocale("de", { reload: false }));
@@ -178,5 +178,23 @@ describe("tags and earlier passwords", () => {
     ]);
     // Saved unchanged, nothing is added
     expect(contentOf(input, wifi, 1_800_000_000).history).toEqual(wifi.history);
+  });
+});
+
+describe("loginInput (K-802)", () => {
+  it("starts a new login with what was typed elsewhere, in the login's own fields", () => {
+    const input = loginInput({
+      title: "com.heizungsapp.monteur",
+      username: "max",
+      password: "M0nteur-App",
+      website: "android://com.heizungsapp.monteur",
+    });
+    expect(input.title).toBe("com.heizungsapp.monteur");
+    expect(input.fields.map((f) => [f.id, f.value, f.kind])).toEqual([
+      ["username", "max", "text"],
+      ["password", "M0nteur-App", "secret"],
+      ["website", "android://com.heizungsapp.monteur", "url"],
+      ["totp", "", "totp"],
+    ]);
   });
 });

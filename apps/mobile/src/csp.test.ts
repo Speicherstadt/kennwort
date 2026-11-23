@@ -25,6 +25,14 @@ describe("the mobile app's CSP", () => {
     expect(weakerThan(web, security.csp ?? "")).toEqual([]);
   });
 
+  it("reaches the server without connect-src: only 'self' and the IPC (Rust sends, server.rs)", () => {
+    expect(parsePolicy(security.csp ?? "").get("connect-src")).toEqual([
+      "'self'",
+      "ipc:",
+      "http://ipc.localhost",
+    ]);
+  });
+
   it("has every directive of the web app's", () => {
     expect([...parsePolicy(security.csp ?? "").keys()]).toEqual(
       expect.arrayContaining([...parsePolicy(web).keys()]),

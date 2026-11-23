@@ -8,7 +8,7 @@
  * the entry's stored addresses once more (page/matches.ts). It keeps nothing between requests: a
  * worker the browser stopped and woke again answers the same.
  */
-import { fillAllowed, pageHost } from "../page/matches.ts";
+import { fillAllowed, pageHost } from "@kennwort/client/autofill/matches.ts";
 import { type FillTarget, type FrameInfo, fillTarget, webFrames } from "./frames.ts";
 import { type ContentMessage, type MenuAnswer, type MenuRequest, menuRequest } from "./messages.ts";
 

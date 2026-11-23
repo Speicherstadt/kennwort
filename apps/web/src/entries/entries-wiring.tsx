@@ -5,7 +5,7 @@
  * marks an entry as a favorite.
  */
 
-import { type ShownEntry, shown } from "@kennwort/client/entries/entries.ts";
+import { type LoginInput, type ShownEntry, shown } from "@kennwort/client/entries/entries.ts";
 import {
   createEntryStore,
   type EntryCopy,
@@ -17,7 +17,7 @@ import type { Navigation } from "../navigation.ts";
 import type { Session } from "../session/session.ts";
 import type { VaultStore } from "../vaults/vault-store.ts";
 import { EntryEditor } from "./entry-editor.tsx";
-import { contentOf, type EntryInput, inputOf, newInput } from "./entry-input.ts";
+import { contentOf, type EntryInput, inputOf, loginInput, newInput } from "./entry-input.ts";
 
 /** What the editor opened with: the form starts from it, a sync while editing leaves it be */
 type Editing =
@@ -86,6 +86,8 @@ export const createEntries = (serverFor: ServerFor, session: Session, copy?: Ent
     /** New entries and codes for logins from an import, a batch in one sync (K-501, K-503) */
     saveImport: store.saveImport,
     startNew: () => setEditing({ kind: "new", initial: newInput("login") }),
+    /** A login to save from the mobile app's autofill (K-802): saved only from the editor */
+    startNewLogin: (login: LoginInput) => setEditing({ kind: "new", initial: loginInput(login) }),
     /** The entry as stored when "Ändern" was pressed is what the form starts from */
     startChange: (entry: ShownEntry) => {
       const before = storedOf(entry.id);

@@ -3,10 +3,11 @@
  * follows the account in the session area (account/popup-account.ts); the page's host comes from
  * the active tab once the popup is open (page/current-page.ts).
  */
+
+import { pageHost } from "@kennwort/client/autofill/matches.ts";
 import { createToasts } from "@kennwort/ui";
 import { createSignal, Match, onSettled, Show, Switch } from "solid-js";
 import type { PopupAccount } from "../account/popup-account.ts";
-import { pageHost } from "../page/matches.ts";
 import { ConnectScreen } from "./connect-screen.tsx";
 import { LockedScreen } from "./locked-screen.tsx";
 import { Shell } from "./shell.tsx";

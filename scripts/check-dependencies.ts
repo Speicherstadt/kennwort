@@ -5,6 +5,8 @@ import {
   type Allowlist,
   type Crate,
   crateViolations,
+  type LockedCrate,
+  lockViolations,
   manifestCrates,
   overrideViolations,
   violations,
@@ -36,7 +38,16 @@ const crates: Crate[] = workspaceDirs(root)
     return { dir, dependencies: manifestCrates(manifest as Record<string, unknown>) };
   });
 const allowlist = readJson("allowed-dependencies.json") as Allowlist;
+// And every crate the build resolved, from the lockfile beside the manifest (K-802)
+const TAURI_LOCK = "/src-tauri/Cargo.lock";
+const lockProblems = crates.flatMap(({ dir }) => {
+  const lock = Bun.TOML.parse(readFileSync(join(root, dir + TAURI_LOCK), "utf8")) as {
+    package?: LockedCrate[];
+  };
+  return lockViolations(allowlist, dir, lock.package ?? []);
+});
 const problems = [
+  ...lockProblems,
   ...violations(allowlist, workspaces),
   ...crateViolations(allowlist, crates),
   ...overrideViolations(readJson("package.json") as Record<string, unknown>),
