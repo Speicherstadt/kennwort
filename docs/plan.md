@@ -181,7 +181,7 @@ stehen im CLAUDE.md.
 | Kein TanStack Start / SSR | statischer Build mit Hashes im Dateinamen | **Abweichung**: nur ein statischer Build lässt sich signieren und im Service Worker prüfen |
 | Routing, Server-Daten | `@tanstack/solid-router` 2.0.0-rc.11 und `@tanstack/solid-query` 6.0.0-rc.6, beide Release Candidates (siehe Entscheidungen) | lokaler entschlüsselter Zustand ist die Quelle, nicht der Server-Cache; Query lädt nur, was die Seiten vom Server zeigen |
 | UI | shadcn-Stil **ohne Abhängigkeiten**: `<dialog>`, Popover-API, CSS Anchor Positioning, eigene `cn()` und `variants()`, Tailwind 4, lucide-Icons (`lucide` statt `lucide-solid`, siehe Entscheidungen), Geist, Zinc-Tokens (siehe DESIGN.md) | jedes Laufzeitpaket läuft dort, wo Klartext liegt |
-| Krypto | `@noble/ciphers`, `@noble/curves`, `@noble/hashes`, `@noble/post-quantum` | auditiert, reines TS, ohne eigene Abhängigkeiten |
+| Krypto | `@noble/ciphers`, `@noble/curves`, `@noble/hashes`, `@noble/post-quantum` | reines TS, ohne eigene Abhängigkeiten; `ciphers`, `curves` und `hashes` extern auditiert (Argon2 außerhalb des Umfangs), `post-quantum` noch nicht, darum ML-KEM nur zusammen mit X25519 (X-Wing) |
 | Sonstiges | `tldts` (Public Suffix List), `zod` | |
 | Mobile-App | Tauri 3 mit der Solid-UI aus `packages/ui`; native Autofill-Plugins: Android `AutofillService` (Kotlin), iOS AutoFill Credential Provider (Swift) | **Abweichung von Tauri 2**: Tauri 3 ist zur Zeit der Mobile-Phase voraussichtlich stabil; als letzte Phase gebaut, Rückfall auf 2.x |
 
@@ -365,7 +365,7 @@ alles auf GitHub Pages.
 - **Doku**: Zensical in `docs/`, auf GitHub Pages unter kennwort.app, nur Deutsch;
   `zensical build --strict` gehört zu den Checks, wenn sich `docs/` ändert. Die Startseite ist
   zugleich die Produkt-Website (Hero, Rundgang in Screenshots, Vertrauen, Umstieg), wie bei
-  kontext.email. Seiten: Überblick, Installation, Sicherheitsdesign, Import und Export, Extension,
+  kontext.email. Seiten: Überblick, Installation, Kryptografie, Sicherheitsdesign, Import und Export, Extension,
   Handy und App, Verwaltung, FAQ, Datenschutz.
 - **Screenshots**: Workflow „Update screenshots“ mit Playwright für Web-App, Extension-Popup,
   Inline-Menü und Handy, hell und dunkel; nach jeder Änderung am Aussehen schaut sich der Agent die

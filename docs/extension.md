@@ -87,7 +87,7 @@ Anmelde-Schlüssel und ohne Cookies: Jede Anfrage trägt ihr Sitzungs-Token selb
 Server, Konto-ID und Secret Key merkt sich die Extension, bis du den Browser schließt; danach fragt
 sie wieder danach. Die Web-App merkt sich Konto-ID und Secret Key im `localStorage`, die Extension
 hat keinen Speicher auf der Festplatte (unten). Mit **Anderes Konto** vergisst sie alle drei sofort.
-Entsperren mit Passkey kommt, sobald es das in Kennwort gibt; bis dahin ist die Passphrase der Weg.
+Entsperren mit Passkey gibt es bisher nur in der Web-App ([Konto und Entsperren](konto.md)); in der Extension ist die Passphrase der Weg.
 
 ## Das Popup
 
