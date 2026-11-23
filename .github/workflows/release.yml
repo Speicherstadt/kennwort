@@ -140,18 +140,10 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      # Docker Hub as in every project (firsttris/workflows docker-release.yml, Haben: tristanteu/haben):
-      # the same manifest under a second name, copied from ghcr.io by imagetools
-      - uses: docker/login-action@v4
-        with:
-          username: tristanteu
-          password: ${{ secrets.DOCKER_PAT }}
       - id: meta
         uses: docker/metadata-action@v6
         with:
-          images: |
-            ${{ needs.prepare.outputs.image }}
-            docker.io/tristanteu/kennwort
+          images: ${{ needs.prepare.outputs.image }}
       # The web build in the image must be the published one, byte for byte
       - name: Web build of the image
         uses: docker/build-push-action@v7
@@ -221,10 +213,18 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      # Docker Hub as in every project (firsttris/workflows docker-release.yml, Haben: tristanteu/haben):
+      # the same manifest under a second name, copied from ghcr.io by imagetools
+      - uses: docker/login-action@v4
+        with:
+          username: tristanteu
+          password: ${{ secrets.DOCKER_PAT }}
       - id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ needs.prepare.outputs.image }}
+          images: |
+            ${{ needs.prepare.outputs.image }}
+            docker.io/tristanteu/kennwort
           tags: |
             type=semver,pattern={{version}},value=${{ needs.prepare.outputs.version }}
             type=semver,pattern={{major}}.{{minor}},value=${{ needs.prepare.outputs.version }},enable=${{ needs.prepare.outputs.prerelease == 'false' }}
