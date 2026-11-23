@@ -39,12 +39,20 @@ import { createOfflineView } from "./offline/offline-view.ts";
 import { OidcPage } from "./oidc/oidc-page.tsx";
 import { createOidcName } from "./oidc/sign-in-button.tsx";
 import { ApplyPolicy } from "./policy/policy-section.tsx";
+import { privacyPage } from "./privacy/privacy-wiring.tsx";
 import { createAccountQueries } from "./queries.ts";
 import { createSecurity } from "./security/security-wiring.tsx";
 import type { Session } from "./session/session.ts";
 import { RotationNotice } from "./vaults/rotation-notice.tsx";
+import type { VaultStore } from "./vaults/vault-store.ts";
 import { namedMarks, peopleOf, vaultViews } from "./vaults/vault-views.ts";
 import { VaultsPage } from "./vaults/vaults-page.tsx";
+
+/** The people of the company as the vaults' load confirmed them, once loaded */
+const readyPeople = (store: VaultStore) => {
+  const shown = store.shown();
+  return shown.state === "ready" ? shown.people : undefined;
+};
 
 /**
  * The vaults while the account is open: loaded when it opens, gone when it locks. So is the cache
@@ -121,14 +129,7 @@ const OpenedFrame = (props: {
         noAccess={noAccessFor(props, store)}
         notifications={notifications}
         groupsPage={() => (
-          <GroupsPage
-            api={props.api}
-            session={props.session}
-            people={() => {
-              const shown = store.shown();
-              return shown.state === "ready" ? shown.people : undefined;
-            }}
-          />
+          <GroupsPage api={props.api} session={props.session} people={() => readyPeople(store)} />
         )}
         vaultsPage={() => (
           <VaultsPage
@@ -143,6 +144,7 @@ const OpenedFrame = (props: {
         importPage={importPage(props.nav, store, allEntries, () => online(entries.saveImport))}
         exportPage={() => <ExportPage deps={exporting} />}
         canExport={exporting.allowed()}
+        privacyPage={privacyPage(props, store, exporting.allowed)}
         emergencyPage={emergencyPage(props, shownVaults)}
         renewPage={renewPage(props, store, reload)}
         devices={devicesFor(props)}

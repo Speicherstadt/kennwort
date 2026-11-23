@@ -2,6 +2,7 @@
 import { eq, sql } from "drizzle-orm";
 import { Hono, type MiddlewareHandler } from "hono";
 import { companyRecoveryRoutes } from "./account/company-recovery.ts";
+import { deletionRoutes } from "./account/deletion.ts";
 import { emergencyRoutes } from "./account/emergency.ts";
 import { memberRoutes } from "./account/members.ts";
 import { policyRoutes } from "./account/policy.ts";
@@ -177,9 +178,9 @@ export const createApp = ({
   );
   if (signIn) {
     const deps = { db, ...signIn, notify };
-    api.route("/", createInvitationRoute(deps));
-    api.route("/", pairingApiRoutes(deps));
-    api.route("/", linkApiRoutes(deps));
+    // Invitations, pairing, one-time links, deleting the account and its data export (K-607)
+    for (const routes of [createInvitationRoute, pairingApiRoutes, linkApiRoutes, deletionRoutes])
+      api.route("/", routes(deps));
     // Public: sign-in key, accepting an invitation, and Better Auth (passkeys, sessions) for the rest
     app.route("/auth/login-key", loginKeyRoutes(deps));
     app.route("/auth/pairings", pairingPublicRoutes(deps));

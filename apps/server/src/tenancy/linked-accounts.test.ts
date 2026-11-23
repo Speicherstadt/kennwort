@@ -4,8 +4,11 @@
 // not end the other's.
 import { describe, expect, it } from "bun:test";
 import {
+  answerDeletionChallenge,
+  bytes,
   createCompany,
   encodeBytes,
+  loginKeyPair,
   newLinkPassphrase,
   signInWithPassphrase,
   toWire,
@@ -71,7 +74,34 @@ const jonasInTwoCompanies = async () => {
     const answer = await weber.setup.request(path, { token, headers: LAPTOP });
     return { status: answer.status, json: (await answer.json()) as Record<string, unknown> };
   };
-  return { weber, mueller, weberToken, muellerToken, get };
+  return { weber, mueller, weberToken, muellerToken, get, linkPassphrase };
+};
+
+/** Müller's account deleted from its own session, confirmed with its passphrase (K-607) */
+const deleteMueller = async (two: Awaited<ReturnType<typeof jonasInTwoCompanies>>) => {
+  const { weber, mueller, muellerToken, linkPassphrase } = two;
+  const id = encodeBytes(mueller.owner.accountId);
+  const started = await weber.setup.request("/api/account/deletion/challenge", {
+    method: "POST",
+    token: muellerToken,
+    headers: LAPTOP,
+  });
+  const { challengeId, challenge } = (await started.json()) as Record<string, string>;
+  const { owner } = mueller;
+  const key = loginKeyPair(
+    linkPassphrase,
+    owner.upload.accountSalt,
+    owner.secretKey,
+    owner.accountId,
+    quick,
+  );
+  const signature = answerDeletionChallenge(key.secretKey, id, bytes(32).parse(challenge));
+  return weber.setup.request("/api/account", {
+    method: "DELETE",
+    token: muellerToken,
+    headers: LAPTOP,
+    body: { challengeId, signature: encodeBytes(signature) },
+  });
 };
 
 describe("one person in two companies", () => {
@@ -149,5 +179,31 @@ describe("one person in two companies", () => {
       });
       expect([400, 404]).toContain(role.status);
     }
+  });
+
+  it("exports to each session only its own account, never the other company's (K-607)", async () => {
+    const { weber, mueller, weberToken, muellerToken, get } = await jonasInTwoCompanies();
+    const weberExport = (await get("/api/account/export", weberToken)).json;
+    const muellerExport = (await get("/api/account/export", muellerToken)).json;
+    expect(weberExport.account).toMatchObject({ id: encodeBytes(weber.owner.accountId) });
+    expect(muellerExport.account).toMatchObject({ id: encodeBytes(mueller.owner.accountId) });
+    expect(JSON.stringify(weberExport)).not.toContain(encodeBytes(mueller.companyId));
+    expect(JSON.stringify(muellerExport)).not.toContain(encodeBytes(weber.company.companyId));
+    // No session token goes out, of either account
+    expect(JSON.stringify(weberExport)).not.toContain(weberToken);
+    expect(JSON.stringify(weberExport)).not.toContain(muellerToken);
+  });
+
+  it("deletes Müller's account and company and leaves the Weber account and its session (K-607)", async () => {
+    const two = await jonasInTwoCompanies();
+    const { weber, weberToken, muellerToken, get } = two;
+    const deleted = await deleteMueller(two);
+    expect(deleted.status).toBe(200);
+    expect(await deleted.json()).toEqual({ deleted: true, company: true });
+    expect((await get("/api/company", muellerToken)).status).toBe(401);
+    expect((await get("/api/company", weberToken)).json.id).toBe(
+      encodeBytes(weber.company.companyId),
+    );
+    expect((await get("/api/members", weberToken)).status).toBe(200);
   });
 });

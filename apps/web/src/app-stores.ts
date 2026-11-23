@@ -10,6 +10,7 @@ import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
 import type { LinkApi } from "@kennwort/client/session/links-api.ts";
 import type { NotificationApi } from "@kennwort/client/session/notifications-api.ts";
 import type { OidcApi } from "@kennwort/client/session/oidc-api.ts";
+import type { PrivacyApi } from "@kennwort/client/session/privacy-api.ts";
 import type { PwnedApi } from "@kennwort/client/session/pwned-api.ts";
 import type { ShareApi } from "@kennwort/client/session/shares-api.ts";
 import type { VaultApi } from "@kennwort/client/session/vaults-api.ts";
@@ -36,7 +37,8 @@ export type AppApi = PairDeps &
   NotificationApi &
   PwnedApi &
   OidcApi &
-  Pick<AccountApi, "replaceUnlock"> &
+  PrivacyApi &
+  Pick<AccountApi, "replaceUnlock" | "signIn" | "keys"> &
   Pick<Api, "rekey"> & { syncFetch: typeof fetch };
 
 /**

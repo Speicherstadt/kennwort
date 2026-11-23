@@ -37,6 +37,7 @@ export {
   Share2,
   ShieldCheck,
   ShieldExclamationPoint,
+  ShieldUser,
   SquareTerminal,
   Star,
   StickyNote,

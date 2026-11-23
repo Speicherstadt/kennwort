@@ -95,11 +95,14 @@ export const loginKeys = sqliteTable("login_keys", {
   createdAt: integer("created_at").notNull(),
 });
 
-/** One-time challenges for a sign-in key, valid for two minutes; `way` names which key answers */
+/**
+ * One-time challenges for a sign-in key, valid for two minutes; `way` names which key answers, or
+ * `delete` for one that confirms deleting the account (K-607) and never signs in
+ */
 export const loginChallenges = sqliteTable("login_challenges", {
   id: text("id").primaryKey(),
   accountId: text("account_id").notNull(),
-  way: text("way", { enum: ["passphrase", "recovery"] })
+  way: text("way", { enum: ["passphrase", "recovery", "delete"] })
     .notNull()
     .default("passphrase"),
   challenge: text("challenge").notNull(),
