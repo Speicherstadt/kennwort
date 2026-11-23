@@ -19,6 +19,7 @@ struct Pending {
   let request: FillRequest
   let json: String
   let recipientKey: String
+  let createdAt: TimeInterval
 }
 
 /// The webview's side of the iOS AutoFill extension (docs/plan.md, Entscheidungen "Autofill unter
@@ -38,16 +39,24 @@ class AutofillPlugin: Plugin {
     else { return nil }
     // An answer left for an earlier request has nobody waiting for it any more
     groupSlot(AppGroup.answerSlot)?.remove()
-    return Pending(request: request, json: requestJSON(request), recipientKey: handover.recipientKey)
+    return Pending(request: request, json: requestJSON(request), recipientKey: handover.recipientKey,
+      createdAt: handover.createdAt)
   }
 
   @objc public func pending(_ invoke: Invoke) {
     // A newer request replaces the one the person had not answered, as PendingFills.kt does
     if let newer = takeRequest() { pending = newer }
+    dropStale()
     invoke.resolve(Message(message: pending?.json))
   }
 
+  /// The 3-minute limit holds until the answer, not only until the request is read
+  private func dropStale() {
+    if let current = pending, now() - current.createdAt > Handover.maxAge { pending = nil }
+  }
+
   @objc public func respond(_ invoke: Invoke) {
+    dropStale()
     guard let args = try? invoke.parseArgs(RespondArgs.self), let current = pending,
       let answer = parseAnswer(args.response, for: current.request)
     else { return invoke.reject("no such request") }

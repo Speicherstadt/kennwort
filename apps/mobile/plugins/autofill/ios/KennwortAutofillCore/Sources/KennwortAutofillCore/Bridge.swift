@@ -156,7 +156,8 @@ private func fillValues(_ values: [String: String], asked: [FillField]) -> Answe
   var kept: [FillField: String] = [:]
   for (name, value) in values {
     guard let field = FillField(rawValue: name), asked.contains(field),
-      value.count <= Bridge.maxValue
+      // bridge.ts counts UTF-16 code units (String.length), not grapheme clusters
+      value.utf16.count <= Bridge.maxValue
     else { return nil }
     kept[field] = value
   }

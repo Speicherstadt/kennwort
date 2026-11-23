@@ -80,6 +80,12 @@ final class BridgeTests: XCTestCase {
     XCTAssertEqual(parseAnswer(#"{"version":1,"requestId":"8C1E-42","kind":"fill","values":{"password":"\#(atCap)"}}"#, for: request), .fill([.password: atCap]))
   }
 
+  func testCountsTheCapInUTF16LikeBridgeTs() {
+    // 2049 emoji are 2049 characters but 4098 UTF-16 code units: String.length in bridge.ts
+    let emoji = String(repeating: "\u{1F511}", count: Bridge.maxValue / 2 + 1)
+    XCTAssertNil(parseAnswer(#"{"version":1,"requestId":"8C1E-42","kind":"fill","values":{"password":"\#(emoji)"}}"#, for: request))
+  }
+
   func testRefusesAMessageOverTheCap() {
     let padding = String(repeating: " ", count: Bridge.maxMessage)
     XCTAssertNil(parseAnswer(#"{"version":1,"requestId":"8C1E-42","kind":"cancel"}"# + padding, for: request))
