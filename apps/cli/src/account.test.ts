@@ -1,3 +1,5 @@
+import { encodeBytes } from "@kennwort/core";
+import { passphraseKeysWith } from "@kennwort/crypto";
 import { describe, expect, it, vi } from "vitest";
 import { apiFor, cliDeviceName, withAccount } from "./account.ts";
 
@@ -37,5 +39,37 @@ describe("the account of one command", () => {
       ok: false,
       error: "unreachable",
     });
+  });
+
+  it("signs the session out when the server signs in but its keys do not open", async () => {
+    const quick = (p: string, salt: Uint8Array, key: Uint8Array, account: Uint8Array) =>
+      passphraseKeysWith({ m: 8, t: 1, p: 1 }, p, salt, key, account);
+    const calls: string[] = [];
+    const send = async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = new URL(String(input)).pathname;
+      calls.push(`${init?.method} ${path}`);
+      if (path === "/auth/login-key/challenge")
+        return Response.json({
+          challengeId: "c-1",
+          challenge: encodeBytes(new Uint8Array(32).fill(3)),
+          accountSalt: encodeBytes(new Uint8Array(16).fill(4)),
+        });
+      if (path === "/auth/login-key/verify") return Response.json({ token: "token-1" });
+      if (path === "/api/devices")
+        return Response.json({
+          devices: [
+            { id: "s-1", name: "CLI · Linux", signedInAt: 1, lastSeenAt: 1, current: true },
+          ],
+        });
+      return Response.json({}, { status: 500 });
+    };
+    const result = await withAccount(device, "Heizung", {
+      send,
+      platform: "linux",
+      kept: noKeeper,
+      derive: quick,
+    });
+    expect(result.ok).toBe(false);
+    expect(calls).toContain("DELETE /api/devices/s-1");
   });
 });
