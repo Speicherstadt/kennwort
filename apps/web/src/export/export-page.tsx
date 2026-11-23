@@ -7,6 +7,7 @@
 import type { ExportFormat, ExportScope } from "@kennwort/core";
 import {
   Button,
+  Checkbox,
   Input,
   introClass,
   m,
@@ -182,7 +183,7 @@ const ExportForm = (props: {
       >
         <CsvWarning />
         <label class="flex min-h-11 items-center gap-2 text-[13px] md:min-h-0">
-          <input type="checkbox" name="plain-text" />
+          <Checkbox name="plain-text" />
           {m.export_csv_confirm()}
         </label>
       </Show>

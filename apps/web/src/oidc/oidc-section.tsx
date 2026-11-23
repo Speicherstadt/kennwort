@@ -6,7 +6,7 @@
  */
 import type { OidcApi } from "@kennwort/client/session/oidc-api.ts";
 import type { OidcStatus } from "@kennwort/core";
-import { Button, m, panelClass, panelTitleClass } from "@kennwort/ui";
+import { Button, m, panelClass, panelTitleClass, Switch as Toggle } from "@kennwort/ui";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, For, Loading, Show } from "solid-js";
 import { queryKeys } from "../queries.ts";
@@ -52,9 +52,9 @@ const Groups = (props: { status: Admin }) => (
 
 const Enrolment = (props: { status: Admin; busy: boolean; onToggle: (open: boolean) => void }) => (
   <div class="grid gap-2">
-    <label class="flex items-center gap-2 text-[13px]">
-      <input
-        type="checkbox"
+    <label class="flex min-h-11 items-center justify-between gap-4 rounded-lg border border-border px-3 py-2.5 text-[13px] font-medium">
+      {m.oidc_enrolment({ name: props.status.name })}
+      <Toggle
         checked={props.status.enrolment}
         disabled={props.busy}
         onChange={(event) => {
@@ -64,7 +64,6 @@ const Enrolment = (props: { status: Admin; busy: boolean; onToggle: (open: boole
           props.onToggle(open);
         }}
       />
-      {m.oidc_enrolment({ name: props.status.name })}
     </label>
     <p class="text-xs text-muted-foreground">{m.oidc_enrolment_text()}</p>
     <Show when={props.status.enrolment}>

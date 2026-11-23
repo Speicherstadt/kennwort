@@ -69,6 +69,6 @@ test.describe("notifications", { tag: "@phone" }, () => {
     await expect(
       page.getByRole("heading", { name: "Push-Mitteilungen auf diesem Gerät" }),
     ).toBeVisible();
-    await expect(page.getByRole("checkbox", { name: "Zugriffsanfragen" })).toBeChecked();
+    await expect(page.getByRole("switch", { name: "Zugriffsanfragen" })).toBeChecked();
   });
 });

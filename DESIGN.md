@@ -118,6 +118,11 @@ Zeilen: links Name und Hilfe, rechts die Steuerung; eine Zeile, die eine eigene 
 ganz anklickbar, mit Icon und Chevron; der Knopf darin heißt nur wie die Zeile. Ab `md` steht links eine klebende Liste der Gruppen, die zu ihnen
 springt; am Handy führen die Zeilen in ihre eigenen Screens.
 
+**Push-Einstellungen** (Mitteilungen): die Arten nach Thema gruppiert – Zugriff, Sicherheit, Notfall,
+Konto, Sonstiges –, je Gruppe ein Titel in 11 px Großbuchstaben und eine Karte mit Trennlinien; jede
+Zeile hat links den Namen und einen kurzen Satz, rechts einen Switch. Ebenso einzelne Schalter wie
+der Datenleck-Abgleich und die Aufnahme über den Anmeldedienst.
+
 **Handy (unter `md`)**: ein Screen zur Zeit, über die URL gewählt; großer Titel, Suchfeld, Filter-Chips
 („Alle“, „Favoriten“, „Zum Ändern · 3“, „Mit mir geteilt“ wie in der Seitenleiste), Liste mit
 40-px-Icons; Eintrag mit Zurück-Link, großem Icon, Feldkarte; unten Tab-Leiste (Einträge,
@@ -174,6 +179,8 @@ Eigene Komponenten in `packages/ui`, ohne Bibliothek, auf nativen Elementen:
 | --- | --- | --- |
 | Button | `<button>` | Varianten `primary`, `outline`, `ghost`, `icon`; Icon-Knöpfe immer mit `aria-label` |
 | Eingabe, Suche | `<input>` mit `<label>` | Suche mit Lupe und Kürzel |
+| Checkbox | `<input type="checkbox">`, `appearance-none` | 16 px, Radius 4 px, gefüllt in `--primary` mit Haken; für Auswahl in Formularen, die erst mit dem Absenden gilt. Nie eine native Checkbox |
+| Switch | `<input type="checkbox" role="switch">` | 32 × 18 px, Daumen rutscht nach rechts; für Einstellungen, die sofort gelten. In Einstellungslisten als Zeile: links Name (fett) und ein Satz in `--muted-foreground`, rechts der Switch |
 | Dialog | `<dialog>` mit `showModal()` | Fokusfalle und Esc vom Browser |
 | Menü, Popover, Tooltip | Popover-API, CSS Anchor Positioning | Tastatur selbst: Pfeile, Home/End, Esc |
 | Combobox | `<input>` + Popover | Rolle `combobox`, `aria-activedescendant` |

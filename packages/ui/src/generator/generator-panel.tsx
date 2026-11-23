@@ -8,6 +8,7 @@
 import { PASSPHRASE_WORDS, PASSWORD_LENGTH, type Strength, strengthOf } from "@kennwort/core";
 import { createSignal, For, untrack } from "solid-js";
 import { IconButton } from "../components/button.tsx";
+import { Checkbox } from "../components/checkbox.tsx";
 import { Icon } from "../components/icon.tsx";
 import { selectClass } from "../components/select.ts";
 import { Tabs } from "../components/tabs.tsx";
@@ -33,9 +34,7 @@ const strengthText: Record<Strength, (bits: number) => string> = {
 
 const Check = (props: { label: string; checked: boolean; onChange: (on: boolean) => void }) => (
   <label class="flex min-h-11 items-center gap-2 text-[13px] md:min-h-8">
-    <input
-      type="checkbox"
-      class="size-4 accent-primary"
+    <Checkbox
       checked={props.checked}
       onChange={(event) => props.onChange(event.currentTarget.checked)}
     />

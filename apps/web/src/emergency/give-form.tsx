@@ -5,7 +5,7 @@
 import type { Terms } from "@kennwort/client/emergency/emergency.ts";
 import type { Vault } from "@kennwort/client/vaults/vaults.ts";
 import { encodeBytes, type MemberView } from "@kennwort/core";
-import { Button, m, panelClass, panelTitleClass, selectClass } from "@kennwort/ui";
+import { Button, Checkbox, m, panelClass, panelTitleClass, selectClass } from "@kennwort/ui";
 import { createSignal, For, Show } from "solid-js";
 import { DAY_SECONDS, DEFAULT_WAIT_DAYS, WAIT_DAYS } from "./emergency.ts";
 
@@ -79,8 +79,7 @@ export const GiveForm = (props: {
           <For each={props.vaults}>
             {(vault) => (
               <label class="flex min-h-11 items-center gap-2 md:min-h-0">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={chosen().includes(vault.idText)}
                   onChange={(event) => toggle(vault.idText, event.currentTarget.checked)}
                 />

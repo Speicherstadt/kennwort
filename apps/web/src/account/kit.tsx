@@ -6,7 +6,7 @@
 
 import { encodeBytes } from "@kennwort/core";
 import { formatRecoveryKey, formatSecretKey } from "@kennwort/crypto";
-import { Button, getLocale, Icon, m } from "@kennwort/ui";
+import { Button, Checkbox, getLocale, Icon, m } from "@kennwort/ui";
 import { Download } from "@kennwort/ui/icons";
 import { createSignal } from "solid-js";
 import { kitPdf } from "../kit/kit-pdf.ts";
@@ -78,11 +78,7 @@ export const KitContent = (props: { keys: NewKeys; onDone: () => void }) => {
         <Icon icon={Download} /> {m.kit_download()}
       </Button>
       <label class="flex items-start gap-2 text-[13px]">
-        <input
-          type="checkbox"
-          checked={saved()}
-          onChange={(event) => setSaved(event.currentTarget.checked)}
-        />
+        <Checkbox checked={saved()} onChange={(event) => setSaved(event.currentTarget.checked)} />
         {m.kit_saved()}
       </label>
       <Button variant="primary" disabled={!saved()} onClick={() => props.onDone()}>

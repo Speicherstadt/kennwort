@@ -9,7 +9,7 @@
 import type { ImportWrite } from "@kennwort/client/entries/entry-import.ts";
 import { typeLabel } from "@kennwort/client/entries/entry-types.ts";
 import type { ImportedEntry } from "@kennwort/core";
-import { Button, m, panelClass, panelTitleClass } from "@kennwort/ui";
+import { Button, Checkbox, m, panelClass, panelTitleClass } from "@kennwort/ui";
 import { createMemo, createSignal, createUniqueId, For, Show } from "solid-js";
 import { Choice } from "../entries/choice.tsx";
 import { Link } from "../frame/link.tsx";
@@ -85,9 +85,8 @@ export const PreviewStep = (props: {
             onChange={setVault}
           />
           <label for={`${id}-tags`} class="flex min-h-11 items-center gap-2 md:min-h-0">
-            <input
+            <Checkbox
               id={`${id}-tags`}
-              type="checkbox"
               checked={foldersAsTags()}
               onChange={(event) => setFoldersAsTags(event.currentTarget.checked)}
             />

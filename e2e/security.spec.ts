@@ -68,9 +68,7 @@ test.describe("security overview", { tag: "@phone" }, () => {
     for (const password of [shared, "sommer2019", LEAKED_PASSWORD])
       await expect(page.locator("body")).not.toContainText(password);
 
-    await page
-      .getByRole("checkbox", { name: "Passwörter gegen bekannte Datenlecks prüfen" })
-      .check();
+    await page.getByRole("switch", { name: "Passwörter gegen bekannte Datenlecks prüfen" }).check();
     await expect(list(page, "In Datenlecks").getByRole("listitem")).toHaveText([/Großhandel/]);
     await expect(list(page, "In Datenlecks")).toContainText(
       `In Datenlecks gesehen: ${LEAKED_COUNT}`,
