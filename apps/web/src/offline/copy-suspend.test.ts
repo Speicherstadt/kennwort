@@ -29,3 +29,30 @@ describe("the offline copy while another company is on screen", () => {
     expect(await (await send("/api/vaults")).json()).toEqual(weber);
   });
 });
+
+describe("a read still on its way when the home is back on screen", () => {
+  it("does not go into the home's copy", async () => {
+    const copy = createLocalCopy(memoryKeyValue(), () => 1);
+    await copy.useAccount(JONAS);
+    let up = true;
+    let answer: unknown = weber;
+    let release: () => void = () => {};
+    const send = copy.fetch(async () => {
+      if (!up) throw new TypeError("Failed to fetch");
+      const body = answer;
+      if (body === mueller) await new Promise<void>((r) => (release = r));
+      return Response.json(body);
+    });
+    await send("/api/vaults");
+    copy.suspend(true);
+    answer = mueller;
+    const late = send("/api/vaults");
+    await new Promise((r) => setTimeout(r, 0));
+    // Back home before the other company's answer came
+    copy.suspend(false);
+    release();
+    await late;
+    up = false;
+    expect(await (await send("/api/vaults")).json()).toEqual(weber);
+  });
+});
