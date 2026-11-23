@@ -33,7 +33,7 @@ test.describe("entry types", { tag: "@phone" }, () => {
     await dialog.getByLabel("Name des Felds", { exact: true }).fill("Router");
     await dialog.getByLabel("Art des Felds").selectOption({ label: "Adresse (URL)" });
     await dialog.getByLabel("Router", { exact: true }).fill("https://router.lan");
-    const { violations } = await new AxeBuilder({ page }).include("dialog").analyze();
+    const { violations } = await new AxeBuilder({ page }).include("form:has(h1)").analyze();
     expect(violations.map((v) => v.id)).toEqual([]);
     await dialog.getByRole("button", { name: "Speichern" }).click();
     await expect(dialog).toBeHidden();
