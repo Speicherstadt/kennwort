@@ -24,7 +24,7 @@ import {
 } from "@kennwort/ui";
 import { Link2 } from "@kennwort/ui/icons";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { alertClass, EmptyState } from "../blocks/empty-state.tsx";
+import { alertClass, EmptyState } from "../blocks/blocks.tsx";
 import { dateTime, LinkOptionsForm, MadeLinkView, makeErrorText } from "./link-form.tsx";
 import { type LinkOptions, type MadeLink, type MakeError, makeLink } from "./links.ts";
 

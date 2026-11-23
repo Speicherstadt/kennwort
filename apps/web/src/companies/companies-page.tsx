@@ -20,7 +20,7 @@ import { Building2 } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { createSignal, For, Show } from "solid-js";
 import { errorText } from "../account/form.tsx";
-import { alertClass } from "../blocks/empty-state.tsx";
+import { alertClass } from "../blocks/blocks.tsx";
 import type { LinkError } from "../session/companies.ts";
 import type { Session } from "../session/session.ts";
 import type { CompanySwitcher } from "./company-switch.ts";

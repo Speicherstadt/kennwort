@@ -5,11 +5,11 @@
  */
 import type { Vault } from "@kennwort/client/vaults/vaults.ts";
 import type { Certificate, MemberView } from "@kennwort/core";
-import { Button, Dialog, m } from "@kennwort/ui";
+import { Button, Dialog, Icon, m } from "@kennwort/ui";
+import { Building2, User } from "@kennwort/ui/icons";
 import { createSignal, For, Show } from "solid-js";
+import { alertClass, choiceCardClass } from "../blocks/blocks.tsx";
 import { customers, type HandoverStep } from "./handover.ts";
-
-const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
 
 const stepText = (step: HandoverStep) =>
   ({
@@ -39,26 +39,29 @@ export const HandoverStart = (props: {
     >
       <div class="grid gap-3 p-4 pt-2">
         <fieldset class="grid gap-2">
-          <legend class="mb-1 text-xs font-medium">{m.handover_target()}</legend>
+          <legend class="mb-2 text-xs font-medium">{m.handover_target()}</legend>
           <For each={props.companies}>
             {(company) => (
-              <label class="flex min-h-11 items-center gap-2 md:min-h-0">
+              <label class={choiceCardClass}>
                 <input
                   type="radio"
                   name="handover-target"
                   value={company.id}
                   onChange={() => setTarget(company.id)}
                 />
+                <Icon icon={Building2} class="text-muted-foreground" />
                 {company.name}
               </label>
             )}
           </For>
         </fieldset>
-        <p class="text-[13px]">{m.handover_count({ count: props.count })}</p>
-        <p class="text-xs text-muted-foreground">{m.handover_stays()}</p>
+        <div class="grid gap-1 rounded-lg bg-accent p-3">
+          <p class="text-[13px] font-medium">{m.handover_count({ count: props.count })}</p>
+          <p class="text-xs text-muted-foreground">{m.handover_stays()}</p>
+        </div>
         <Button
           variant="primary"
-          class="w-fit"
+          class="w-fit justify-self-end"
           disabled={!target() || props.busy}
           onClick={() => {
             const chosen = target();
@@ -109,22 +112,25 @@ export const HandoverFinish = (props: {
           }
         >
           <fieldset class="grid gap-2">
-            <legend class="mb-1 text-xs font-medium">{m.handover_customer()}</legend>
+            <legend class="mb-2 text-xs font-medium">{m.handover_customer()}</legend>
             <For each={chosen()}>
               {(person) => (
-                <label class="flex min-h-11 items-center gap-2 md:min-h-0">
+                <label class={choiceCardClass}>
                   <input
                     type="radio"
                     name="handover-customer"
                     onChange={() => setCustomer(person.certificate)}
                   />
+                  <Icon icon={User} class="text-muted-foreground" />
                   {person.name ?? m.members_unnamed()}
                 </label>
               )}
             </For>
           </fieldset>
-          <p class="text-[13px]">{m.handover_keep()}</p>
-          <p class="text-xs text-muted-foreground">{m.handover_customer_decides()}</p>
+          <div class="grid gap-1 rounded-lg bg-accent p-3">
+            <p class="text-[13px] font-medium">{m.handover_keep()}</p>
+            <p class="text-xs text-muted-foreground">{m.handover_customer_decides()}</p>
+          </div>
         </Show>
         <Show when={failed()}>
           {(step) => (
@@ -133,12 +139,12 @@ export const HandoverFinish = (props: {
             </p>
           )}
         </Show>
-        <div class="flex flex-wrap gap-2">
-          <Button variant="primary" disabled={!customer() || busy()} onClick={() => void submit()}>
-            {busy() ? m.working() : m.handover_submit()}
-          </Button>
+        <div class="flex flex-wrap justify-end gap-2">
           <Button disabled={busy()} onClick={() => props.onCancel()}>
             {m.handover_cancel()}
+          </Button>
+          <Button variant="primary" disabled={!customer() || busy()} onClick={() => void submit()}>
+            {busy() ? m.working() : m.handover_submit()}
           </Button>
         </div>
       </div>

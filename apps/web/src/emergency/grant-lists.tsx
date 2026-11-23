@@ -10,7 +10,7 @@ import { Badge, Button, m, panelTitleClass, type Toasts } from "@kennwort/ui";
 import { LifeBuoy, ShieldUser } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { For, Match, Show, Switch } from "solid-js";
-import { EmptyState } from "../blocks/empty-state.tsx";
+import { EmptyState } from "../blocks/blocks.tsx";
 import { Field } from "../frame/secret-field.tsx";
 import { dateText } from "../vaults/day.ts";
 import { DAY_SECONDS, type Phase, phaseOf } from "./emergency.ts";

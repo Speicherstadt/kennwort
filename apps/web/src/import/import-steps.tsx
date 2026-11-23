@@ -7,7 +7,7 @@ import type { Columns } from "@kennwort/core";
 import { Button, Icon, m, panelClass, panelTitleClass, selectClass } from "@kennwort/ui";
 import { ChevronRight } from "@kennwort/ui/icons";
 import { createUniqueId, For, Show } from "solid-js";
-import { alertClass } from "../blocks/empty-state.tsx";
+import { alertClass } from "../blocks/blocks.tsx";
 import { TABLE_PARTS, type TablePart } from "./read-file.ts";
 import type { VendorChoice } from "./vendors.ts";
 

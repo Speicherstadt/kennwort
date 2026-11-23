@@ -20,7 +20,7 @@ import { encodeBytes } from "@kennwort/core";
 import { introClass, m, pageClass, type Toasts } from "@kennwort/ui";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, Loading, Show } from "solid-js";
-import { alertClass } from "../blocks/empty-state.tsx";
+import { alertClass } from "../blocks/blocks.tsx";
 import { queryKeys } from "../queries.ts";
 import type { Opened, Session } from "../session/session.ts";
 import { emergencyQuery } from "./emergency.ts";
