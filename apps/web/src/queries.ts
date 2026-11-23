@@ -13,6 +13,8 @@ export const queryKeys = {
   emergency: ["emergency"],
   groups: ["groups"],
   members: ["members"],
+  notifications: ["notifications"],
+  notificationPrefs: ["notification-prefs"],
   policy: ["policy"],
   recovery: ["recovery"],
 } as const;

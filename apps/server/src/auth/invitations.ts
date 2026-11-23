@@ -12,6 +12,7 @@ import { z } from "zod";
 import { recordAudit } from "../audit/store.ts";
 import type { Db } from "../db/database.ts";
 import { accounts, invitations } from "../db/schema.ts";
+import { type Notify, noNotify } from "../notifications/notify.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 import type { Auth } from "./better-auth.ts";
 import type { ClientAddress, ClientEnv } from "./client-address.ts";
@@ -53,7 +54,11 @@ export type InvitationDeps = {
   random: (length: number) => Uint8Array;
 };
 
-type AcceptDeps = InvitationDeps & { allow: (key: string) => boolean; address: ClientAddress };
+type AcceptDeps = InvitationDeps & {
+  allow: (key: string) => boolean;
+  address: ClientAddress;
+  notify?: Notify;
+};
 
 /** POST /api/invitations: for owners and admins of the session's company */
 export const createInvitationRoute = ({ db, now, random }: InvitationDeps) =>
@@ -92,7 +97,14 @@ export const createInvitationRoute = ({ db, now, random }: InvitationDeps) =>
   });
 
 /** POST /auth/invitations/:id/accept: public, the token is the proof */
-export const acceptInvitationRoute = ({ db, auth, now, allow, address }: AcceptDeps) =>
+export const acceptInvitationRoute = ({
+  db,
+  auth,
+  now,
+  allow,
+  address,
+  notify = noNotify,
+}: AcceptDeps) =>
   new Hono().post("/invitations/:id/accept", async (c) => {
     if (!allow(`accept:${address(c.req.raw, c.env as ClientEnv)}`))
       return c.json({ error: "too-many-requests" }, 429);
@@ -139,6 +151,14 @@ export const acceptInvitationRoute = ({ db, auth, now, allow, address }: AcceptD
       action: "invitation-accepted",
       subject: open.id,
       signature: new Uint8Array(),
+    });
+    // Its creator checks the new member's keys and certifies them (P-08): it hears of it
+    notify({
+      companyId: open.companyId,
+      recipients: [open.createdBy],
+      kind: "invitation-accepted",
+      subject: open.id,
+      actor: user.id,
     });
     const session = await startSession(db, auth, user.id, c.req.raw);
     return session

@@ -11,6 +11,7 @@ import type { DevicesApi } from "@kennwort/client/session/devices-api.ts";
 import type { EmergencyApi } from "@kennwort/client/session/emergency-api.ts";
 import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
 import type { LinkApi } from "@kennwort/client/session/links-api.ts";
+import type { NotificationApi } from "@kennwort/client/session/notifications-api.ts";
 import type { ShareApi } from "@kennwort/client/session/shares-api.ts";
 import type { VaultApi } from "@kennwort/client/session/vaults-api.ts";
 import type { Vault } from "@kennwort/client/vaults/vaults.ts";
@@ -43,6 +44,7 @@ import type { MemberExits } from "./members/member-exit.tsx";
 import type { MembersDeps } from "./members/members.ts";
 import { MembersPage } from "./members/members-page.tsx";
 import type { Navigation, TakenFragment } from "./navigation.ts";
+import { createNotifications } from "./notifications/notifications-wiring.tsx";
 import type { LocalCopy } from "./offline/local-copy.ts";
 import { OfflineNotice } from "./offline/offline-notice.tsx";
 import { createOfflineView } from "./offline/offline-view.ts";
@@ -66,6 +68,7 @@ export type AppApi = PairDeps &
   ShareApi &
   EmergencyApi &
   LinkApi &
+  NotificationApi &
   Pick<AccountApi, "replaceUnlock"> &
   Pick<Api, "rekey"> & { syncFetch: typeof fetch };
 
@@ -160,6 +163,7 @@ const OpenedFrame = (props: {
   };
   const Editor = entries.editor;
   const ShareDialog = sharing.dialog;
+  const notifications = createNotifications(props, store);
   return (
     <QueryClientProvider client={queries}>
       <Frame
@@ -185,6 +189,7 @@ const OpenedFrame = (props: {
         onLinkEntry={online(links.start)}
         linksPage={links.page}
         noAccess={noAccessFor(props, store)}
+        notifications={notifications}
         groupsPage={() => (
           <GroupsPage
             api={props.api}
@@ -230,6 +235,7 @@ const OpenedFrame = (props: {
       <OfflineNotice offline={offline()} syncedAt={props.copy?.syncedAt()} />
       <RotationNotice vaults={shownVaults()} />
       <EmergencyNotice api={props.api} session={props.session} nav={props.nav} />
+      {notifications.live()}
     </QueryClientProvider>
   );
 };

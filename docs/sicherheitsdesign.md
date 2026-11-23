@@ -1759,6 +1759,7 @@ Restrisiken:
 | Eintrags-IDs, Versionen, Größen, Zeitpunkte, Autor | Titel, URLs, Benutzernamen, Passwörter, TOTP, Notizen, Tags, Favoriten, Anhänge |
 | öffentliche Schlüssel, Zertifikate, Fingerabdrücke | Recovery Key, Einladungsgeheimnis, Schlüssel von Einmal-Links |
 | Audit-Ereignisse (wer, was, wann) | Inhalte der Ereignisse, die Einträge betreffen |
+| Mitteilungen: Art, IDs, Zeit, gelesen; Push-Adressen der Geräte ([P-23](#p-23-mitteilungen-und-web-push)) | Namen von Tresoren und Einträgen in Mitteilungen; einen Inhalt in Pushes gibt es nicht |
 
 Ein Server kann viele Firmen tragen (Projektplan, Entscheidungen). Sie sind dort strikt getrennt:
 Jede Route unter `/api` liest nur über den Bereich der Firma, zu der die Sitzung gehört
@@ -2540,3 +2541,98 @@ erneuter Versuch), `apps/web/src/session/offline-unlock.ts`, `packages/client/sr
 und `packages/core/src/auth/sign-in.ts` (`signInWithLoginKey`, „unreachable“ für keine Antwort).
 
 **Wehrt ab:** E-07, E-13, E-15.
+
+### P-23 Mitteilungen und Web-Push
+
+Kennwort sagt Bescheid, wenn für eine Person etwas zu tun ist (K-602): in der App immer, auf Wunsch
+auch als Push auf ihre Geräte. Der Server schreibt eine Mitteilung nur aus Ereignissen, die er
+ohnehin bearbeitet, und nur mit dem, was er ohnehin weiß:
+
+| Art | Wer sie bekommt | Betreff | Ausgelöst von |
+| --- | --- | --- | --- |
+| `access-requested` | die Verwalter des Tresors (gespeichertes Log) | Tresor-ID | wer anfragt |
+| `vault-added` | wer aufgenommen wurde (Eintrag `add` im Log) | Tresor-ID | der Verwalter |
+| `share-received` | wem ein Eintrag zum ersten Mal geteilt wurde | Eintrags-ID | wer teilt |
+| `invitation-accepted` | wer die Einladung erstellt hat | Einladungs-ID | das neue Konto |
+| `member-renewed` | Inhaber und Admins (sie bestätigen die neuen Schlüssel) | Konto-ID | das Konto |
+| `root-changed` | alle Konten der Firma (sie bestätigen den Wechsel, P-07) | – | der Inhaber |
+| `emergency-requested` | der Gebende (er kann in der Wartezeit widersprechen, P-14) | – | die Vertrauensperson |
+| `emergency-answered` | die Vertrauensperson (Widerspruch oder frühere Freigabe) | – | der Gebende |
+| `emergency-granted` | die Vertrauensperson (nur bei der ersten Freigabe, nicht bei einer Erneuerung) | – | der Gebende |
+| `account-recovered` | wessen Konto ein Inhaber wiederhergestellt hat (P-13) | – | der Inhaber |
+| `link-opened` | wer den Einmal-Link erstellt hat | Link-ID (nicht die Abruf-ID) | – |
+| `security-report` | (Haken für den monatlichen Bericht, K-603) | – | – |
+
+Eine Mitteilung ist eine Zeile mit Art, Betreff-ID, Auslöser-ID, Zeit und „gelesen“. Namen von
+Tresoren und Einträgen kennt der Server nicht (sie sind verschlüsselt, P-15), und auch Namen, die er
+kennt, etwa die Bezeichnung einer Einladung, schreibt er nicht hinein. Der Client setzt die Namen aus
+dem ein, was er selbst geladen und geprüft hat; eine ID, die er nicht kennt, bleibt namenlos
+(„Jemand“, „einen Tresor“). Ein Konto, das die Firma verlassen hat, ein Konto einer anderen Firma
+und wer das Ereignis selbst ausgelöst hat, bekommen nichts. Jedes Konto behält die neuesten 200.
+„Zum Ändern“ rechnet nur das Gerät aus (K-306 Teil 5); davon erfährt der Server nichts, also auch
+keine Mitteilung.
+
+**Live**: `GET /api/notifications/events` ist ein SSE-Strom je Konto wie der Sync (P-21). Er sagt
+nur `notification`, nie was; die App lädt die Liste dann über ihre Sitzung. Ohne Strom lädt sie alle
+fünf Minuten.
+
+**Web-Push** (RFC 8030, VAPID nach RFC 8292): Ein Gerät schaltet Push nur nach einem Klick ein; erst
+dann fragt der Browser nach der Erlaubnis für Mitteilungen. Es abonniert beim Push-Dienst seines
+Browsers (Google, Mozilla, Apple, Microsoft) mit dem öffentlichen VAPID-Schlüssel des Servers und
+schickt dem Server nur die Adresse des Abos. Der Server schickt an diese Adresse einen **leeren
+Push**: keinen Inhalt, keine Art, keine ID, nur `TTL` (ein Tag), `Urgency: normal`, das feste
+`Topic: kennwort` und das VAPID-JWT (ES256, `aud` ist die Herkunft des Push-Dienstes, `exp` zwölf
+Stunden). Der Service Worker zeigt dafür immer denselben Text („Neue Mitteilung in Kennwort“, in der
+Sprache des Browsers, aus den Paraglide-Texten beim Bauen eingesetzt) und öffnet bei einem Klick die
+Mitteilungen der App. Was passiert ist, holt die App erst nach dem Entsperren über ihre Sitzung.
+
+Entscheidung: kein verschlüsselter Inhalt nach RFC 8291. Ein Push-Dienst sieht ohnehin, wann und an
+welches Gerät etwas geht; mit Inhalt sähe er dazu dessen Länge, und der Server bräuchte ECDH über
+P-256, HKDF und AES-GCM nur für ein paar Bytes, die die App ohnehin über ihre Sitzung holt. Leer
+braucht es kein Paket und keine Testvektoren. VAPID signiert WebCrypto im Server (`crypto.subtle`,
+ECDSA P-256 mit SHA-256); dessen Ausgabe r‖s ist genau die Form, die JWS verlangt.
+
+Den VAPID-Schlüssel erzeugt der Server beim ersten Start und legt ihn in seiner Datenbank ab
+(`server_keys`). Er sagt den Push-Diensten nur, welcher Server schickt; er öffnet nichts.
+
+Was ein Push-Dienst sieht: die Adresse des Geräts (die er selbst vergeben hat), die Adresse und
+den öffentlichen Schlüssel des Servers, den Absender aus `KENNWORT_PUSH_SUBJECT`, Zeitpunkt und
+Häufigkeit der Pushes. Er sieht nicht, wer etwas getan hat, was und in welchem Tresor.
+
+Der Server schickt nur an Push-Dienste der üblichen Browser (`fcm.googleapis.com`,
+`*.push.services.mozilla.com`, `*.push.apple.com`, `*.notify.windows.com`, weitere über
+`KENNWORT_PUSH_HOSTS`), nur über HTTPS auf dem Standard-Port und ohne Weiterleitungen; eine Adresse,
+die ein Client schickt, kann ihn so nicht in sein eigenes Netz rufen lassen (SSRF). Ein Konto hat
+höchstens 20 Abos. Ein Abo gehört zur Sitzung, die es gespeichert hat: Ist die Sitzung zu Ende
+(abgemeldet, ersetzt, Konto ausgetreten oder neue Schlüssel), löscht der Server das Abo beim
+nächsten Push, statt zu schicken. Antwortet der Push-Dienst mit 404 oder 410, hat er das Abo
+verworfen, und der Server löscht es auch. Welche Arten als Push gehen, wählt jede Person je Art
+(`/api/notifications/preferences`, ohne Wahl alle); in der App erscheinen immer alle.
+
+Die Content Security Policy und die Prüfung des Service Workers (P-16) bleiben, wie sie sind: Das
+Abo spricht der Browser selbst mit dem Push-Dienst ab, die Seite lädt nichts von dort. `sw.js`
+bekommt `push` und `notificationclick` dazu und bleibt reproduzierbar (K-408).
+
+**Mail** baut K-602 nicht: Der Server kennt keine Mail-Adressen (Konten haben nur IDs), sie kämen
+als neue persönliche Daten mit Bestätigung und einem SMTP-Client dazu. Steht in der Bauliste unter
+„Zurückgestellt“.
+
+Restrisiko:
+
+- Eine Mitteilung ist das Wort des Servers, kein Beweis. Ein bösartiger Server kann Mitteilungen
+  weglassen, erfinden oder zu spät schicken. Darum handelt die App nie auf eine Mitteilung hin; sie
+  führt nur zur Seite, auf der der Client selbst prüft (Mitglieder, Log, Notfall). Gerade eine Bitte
+  um Notfallzugriff kann ein bösartiger Server verschweigen, in der Mitteilung wie im Hinweis über
+  jeder Seite; das ist das Restrisiko von P-14 (die Wartezeit setzt nur der Server durch), das
+  Mitteilungen nicht größer und nicht kleiner machen.
+- Wer die Datenbank hat, hat den VAPID-Schlüssel und die Push-Adressen und kann leere Pushes an die
+  Geräte schicken: „Neue Mitteilung“ ohne Inhalt, lästig, nicht gefährlich.
+- Ein Push-Dienst lernt aus Zeitpunkt und Häufigkeit, wann in einer Firma etwas geschieht. `Topic`
+  fasst wartende Pushes für ein Gerät, das aus ist, zu einem zusammen.
+
+Umgesetzt in `packages/core/src/notifications/` (Zod-Schemas, nur IDs), `apps/server/src/notifications/`
+(Tabellen, Schreiben aus den Ereignissen, Routen, SSE, VAPID, leerer Push),
+`packages/client/src/session/notifications-api.ts`, `apps/web/src/notifications/` (Glocke, Seite,
+Push-Einstellungen) und `apps/web/src/sw/push.ts` (Text und Klick im Service Worker).
+
+**Wehrt ab:** E-14.

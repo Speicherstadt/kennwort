@@ -20,8 +20,11 @@ import {
   groups,
   invitations,
   loginKeys,
+  notificationPrefs,
+  notifications,
   oneTimeLinks,
   pairings,
+  pushSubscriptions,
   recoveryDeposits,
   recoveryGrants,
   rootGrants,
@@ -237,6 +240,40 @@ const maxLinkStays = () =>
       .filter((row) => row.companyId === "mueller")
       .map((row) => row.id),
   ).toEqual(["max-link"]);
+// Max's notification, push preference and device subscription (K-602)
+app.db
+  .insert(notifications)
+  .values({
+    id: "max-note",
+    companyId: "mueller",
+    accountId: "max",
+    kind: "link-opened",
+    subject: "max-link",
+    createdAt: 1,
+  })
+  .run();
+app.db.insert(notificationPrefs).values({ accountId: "max", prefs: '{"push":[]}' }).run();
+const maxEndpoint = "https://fcm.googleapis.com/fcm/send/max-device";
+app.db
+  .insert(pushSubscriptions)
+  .values({ endpoint: maxEndpoint, accountId: "max", sessionId: "max-session", createdAt: 1 })
+  .run();
+const maxNoteStays = () =>
+  expect(app.db.select().from(notifications).where(eq(notifications.id, "max-note")).get()).toEqual(
+    expect.objectContaining({ accountId: "max", readAt: null }),
+  );
+const maxPushStays = () => {
+  expect(app.db.select().from(notificationPrefs).all()).toEqual([
+    { accountId: "max", prefs: '{"push":[]}' },
+  ]);
+  expect(
+    app.db
+      .select()
+      .from(pushSubscriptions)
+      .all()
+      .map((row) => row.endpoint),
+  ).toEqual([maxEndpoint]);
+};
 const maxGrantStays = () =>
   expect(
     app.db
@@ -706,6 +743,65 @@ const cases: Record<string, () => Promise<void>> = {
   },
   "POST /api/vaults/:vaultId/log": async () => {
     expect((await jonasSends("POST", `/api/vaults/${muellerVault}/log`, {})).status).toBe(404);
+  },
+  "GET /api/notifications": async () => {
+    const list = await (await asJonas("/api/notifications")).json();
+    expect(JSON.stringify(list)).not.toContain("max-note");
+    maxNoteStays();
+  },
+  "POST /api/notifications/read": async () => {
+    expect((await jonasSends("POST", "/api/notifications/read", undefined)).status).toBe(200);
+    maxNoteStays();
+  },
+  "POST /api/notifications/:id/read": async () => {
+    expect((await jonasSends("POST", "/api/notifications/max-note/read", undefined)).status).toBe(
+      404,
+    );
+    maxNoteStays();
+  },
+  "DELETE /api/notifications/:id": async () => {
+    expect((await jonasSends("DELETE", "/api/notifications/max-note", undefined)).status).toBe(404);
+    maxNoteStays();
+  },
+  "GET /api/notifications/preferences": async () => {
+    const prefs = await (await asJonas("/api/notifications/preferences")).json();
+    expect(prefs.push.length).toBeGreaterThan(0);
+  },
+  "PUT /api/notifications/preferences": async () => {
+    expect(
+      (await jonasSends("PUT", "/api/notifications/preferences", { push: ["root-changed"] }))
+        .status,
+    ).toBe(200);
+    expect(
+      app.db.select().from(notificationPrefs).where(eq(notificationPrefs.accountId, "max")).get(),
+    ).toEqual({ accountId: "max", prefs: '{"push":[]}' });
+    app.db.delete(notificationPrefs).where(eq(notificationPrefs.accountId, "jonas")).run();
+  },
+  "GET /api/notifications/events": async () => {
+    const response = await asJonas("/api/notifications/events");
+    expect(response.headers.get("content-type")).toContain("text/event-stream");
+    const reader = response.body?.getReader();
+    expect(new TextDecoder().decode((await reader?.read())?.value)).toContain("event: ready");
+    // Jonas listens on his own account only
+    expect(app.notificationHub.listening("jonas")).toBe(1);
+    expect(app.notificationHub.listening("max")).toBe(0);
+    await reader?.cancel();
+  },
+  "GET /api/push/key": async () => {
+    // Without push set up there is no key; with it, the key is the installation's, the same for all
+    expect((await asJonas("/api/push/key")).status).toBe(404);
+  },
+  "PUT /api/push/subscription": async () => {
+    expect(
+      (await jonasSends("PUT", "/api/push/subscription", { endpoint: maxEndpoint })).status,
+    ).toBe(404);
+    maxPushStays();
+  },
+  "DELETE /api/push/subscription": async () => {
+    expect(
+      (await jonasSends("DELETE", "/api/push/subscription", { endpoint: maxEndpoint })).status,
+    ).toBe(200);
+    maxPushStays();
   },
 };
 

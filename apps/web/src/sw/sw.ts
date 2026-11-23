@@ -4,6 +4,7 @@
  * byte-identical across releases, so the browser never swaps it; every new version of the app comes
  * through worker.ts and its checks instead.
  */
+import { openNotifications, type PushTexts, pushNotification } from "./push.ts";
 import { fromHex } from "./release.ts";
 import { asInertDocument, isServerNavigation } from "./server-paths.ts";
 import {
@@ -19,6 +20,8 @@ import {
 
 /** Replaced by the build with the public key as hex */
 declare const KENNWORT_RELEASE_PUBLIC_KEY: string;
+/** Replaced by the build with the push texts of the message files (K-602) */
+declare const KENNWORT_PUSH_TEXTS: PushTexts;
 
 // The DOM library's types know no worker events; these are the parts used here
 type ExtendableEvent = Event & { waitUntil: (promise: Promise<unknown>) => void };
@@ -27,12 +30,29 @@ type FetchEvent = ExtendableEvent & {
   respondWith: (response: Promise<Response>) => void;
 };
 type WorkerMessage = ExtendableEvent & { data: unknown; ports: readonly MessagePort[] };
+type NotificationClick = ExtendableEvent & { notification: { close: () => void } };
+type WindowClient = Parameters<typeof openNotifications>[0] extends {
+  windows: () => Promise<readonly (infer W)[]>;
+}
+  ? W
+  : never;
 type WorkerScope = {
   location: Location;
   caches: CacheStorage;
   fetch: typeof fetch;
   skipWaiting: () => Promise<void>;
-  clients: { claim: () => Promise<void> };
+  clients: {
+    claim: () => Promise<void>;
+    matchAll: (options: {
+      type: "window";
+      includeUncontrolled: boolean;
+    }) => Promise<WindowClient[]>;
+    openWindow: (url: string) => Promise<unknown>;
+  };
+  registration: {
+    showNotification: (title: string, options: Record<string, unknown>) => Promise<void>;
+  };
+  navigator: { languages: readonly string[] };
   addEventListener: (type: string, listener: (event: never) => void) => void;
 };
 
@@ -80,6 +100,23 @@ scope.addEventListener("fetch", (event: FetchEvent) => {
   }
   if (!handles(deps.origin, asked)) return;
   event.respondWith(respond(deps, asked).then((answer) => answer ?? scope.fetch(request)));
+});
+
+// Web Push (K-602): every push is empty and shows the same text; what happened, the app loads
+scope.addEventListener("push", (event: ExtendableEvent) => {
+  const shown = pushNotification(scope.navigator.languages, KENNWORT_PUSH_TEXTS);
+  event.waitUntil(scope.registration.showNotification(shown.title, shown.options));
+});
+
+scope.addEventListener("notificationclick", (event: NotificationClick) => {
+  event.notification.close();
+  event.waitUntil(
+    openNotifications({
+      origin: deps.origin,
+      windows: () => scope.clients.matchAll({ type: "window", includeUncontrolled: true }),
+      open: (url) => scope.clients.openWindow(url),
+    }),
+  );
 });
 
 scope.addEventListener("message", (event: WorkerMessage) => {

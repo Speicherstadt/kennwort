@@ -1,27 +1,27 @@
 /**
- * Who is listening for which vault: the live sync (SSE) subscribes, a stored record publishes. In
- * memory, because one server process serves all its clients; the event names only entry and
- * version, the client fetches and checks the record itself.
+ * Who is listening for what: the live sync (SSE) subscribes per vault, a stored record publishes;
+ * the notifications (K-602) subscribe per account. In memory, because one server process serves
+ * all its clients; an event names only IDs, the client fetches and checks the rest itself.
  */
 export type Change = { entryId: string; version: number };
-type Listener = (change: Change) => void;
 
-export const createHub = () => {
+export const createHub = <T = Change>() => {
+  type Listener = (event: T) => void;
   const listeners = new Map<string, Set<Listener>>();
   return {
-    subscribe: (vaultId: string, listener: Listener) => {
-      const set = listeners.get(vaultId) ?? new Set();
-      listeners.set(vaultId, set.add(listener));
+    subscribe: (key: string, listener: Listener) => {
+      const set = listeners.get(key) ?? new Set();
+      listeners.set(key, set.add(listener));
       return () => {
         set.delete(listener);
-        if (set.size === 0) listeners.delete(vaultId);
+        if (set.size === 0) listeners.delete(key);
       };
     },
-    publish: (vaultId: string, change: Change) => {
-      for (const listener of listeners.get(vaultId) ?? []) listener(change);
+    publish: (key: string, event: T) => {
+      for (const listener of listeners.get(key) ?? []) listener(event);
     },
-    listening: (vaultId: string) => listeners.get(vaultId)?.size ?? 0,
+    listening: (key: string) => listeners.get(key)?.size ?? 0,
   };
 };
 
-export type Hub = ReturnType<typeof createHub>;
+export type Hub = ReturnType<typeof createHub<Change>>;

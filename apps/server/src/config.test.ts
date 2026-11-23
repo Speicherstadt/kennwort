@@ -15,6 +15,7 @@ describe("readConfig", () => {
         publicUrl: "http://localhost:8100",
         authSecret: SECRET,
         behindProxy: false,
+        push: { subject: "http://localhost:8100", extraHosts: [] },
       },
     });
   });
@@ -37,6 +38,7 @@ describe("readConfig", () => {
         publicUrl: "https://kennwort.weber-haustechnik.test",
         authSecret: SECRET,
         behindProxy: true,
+        push: { subject: "https://kennwort.weber-haustechnik.test", extraHosts: [] },
       },
     });
   });
@@ -91,5 +93,37 @@ describe("readConfig", () => {
       ok: false,
       error: ["KENNWORT_PUBLIC_URL"],
     });
+  });
+
+  it("reads Web Push: off, its sender and more push services (K-602)", () => {
+    expect(readConfig({ ...base, KENNWORT_PUSH: "false" })).toEqual({
+      ok: true,
+      value: expect.objectContaining({ push: undefined }),
+    });
+    const env = {
+      ...base,
+      KENNWORT_PUSH_SUBJECT: "mailto:it@weber-haustechnik.test",
+      KENNWORT_PUSH_HOSTS: "push.weber.test,autopush.example",
+    };
+    expect(readConfig(env)).toEqual({
+      ok: true,
+      value: expect.objectContaining({
+        push: {
+          subject: "mailto:it@weber-haustechnik.test",
+          extraHosts: ["push.weber.test", "autopush.example"],
+        },
+      }),
+    });
+    for (const [name, value] of [
+      ["KENNWORT_PUSH", "yes"],
+      ["KENNWORT_PUSH_SUBJECT", "http://weber.test"],
+      ["KENNWORT_PUSH_SUBJECT", "it@weber.test"],
+      ["KENNWORT_PUSH_HOSTS", "push.weber.test, other.test"],
+      ["KENNWORT_PUSH_HOSTS", "https://push.weber.test"],
+    ])
+      expect(readConfig({ ...base, [name as string]: value })).toEqual({
+        ok: false,
+        error: [name],
+      });
   });
 });

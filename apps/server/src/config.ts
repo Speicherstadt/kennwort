@@ -19,6 +19,18 @@ const Config = z.object({
   // Lets the first owner create the company (POST /auth/setup); chosen by the admin, at least 16
   // characters, and never written to a log. Without it the server cannot be set up from outside.
   KENNWORT_SETUP_CODE: z.string().min(16).optional(),
+  // Web Push (K-602): on by default; the pushes are empty, a push service learns only when
+  KENNWORT_PUSH: z.enum(["true", "false"]).default("true"),
+  // Who sends, for the push services (RFC 8292 `sub`): a mailto: or https address, else the public one
+  KENNWORT_PUSH_SUBJECT: z
+    .string()
+    .regex(/^(mailto:[^\s@]+@[^\s@]+|https:\/\/\S+)$/)
+    .optional(),
+  // More push services besides those of the common browsers, as host names separated by commas
+  KENNWORT_PUSH_HOSTS: z
+    .string()
+    .regex(/^[a-z0-9.-]+(,[a-z0-9.-]+)*$/)
+    .optional(),
 });
 
 export type Config = {
@@ -29,6 +41,8 @@ export type Config = {
   authSecret: string;
   behindProxy: boolean;
   setupCode: string | undefined;
+  /** Web Push (K-602): undefined when turned off */
+  push: { subject: string; extraHosts: string[] } | undefined;
 };
 
 export const readConfig = (env: Record<string, string | undefined>) => {
@@ -44,6 +58,13 @@ export const readConfig = (env: Record<string, string | undefined>) => {
     authSecret: data.KENNWORT_AUTH_SECRET,
     behindProxy: data.KENNWORT_BEHIND_PROXY === "true",
     setupCode: data.KENNWORT_SETUP_CODE,
+    push:
+      data.KENNWORT_PUSH === "true"
+        ? {
+            subject: data.KENNWORT_PUSH_SUBJECT ?? data.KENNWORT_PUBLIC_URL,
+            extraHosts: data.KENNWORT_PUSH_HOSTS?.split(",") ?? [],
+          }
+        : undefined,
   };
   return { ok: true as const, value };
 };

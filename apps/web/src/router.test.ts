@@ -34,6 +34,7 @@ describe("routes", () => {
       ["/link", { page: "link" }],
       ["/invite/abc%2Fd", { page: "invite", id: "abc/d" }],
       ["/links", { page: "links" }],
+      ["/notifications", { page: "notifications" }],
       ["/s/AQEBAQEBAQEBAQEBAQEBAQ", { page: "secret", id: "AQEBAQEBAQEBAQEBAQEBAQ" }],
     ];
     for (const [path, route] of cases) {
@@ -61,6 +62,7 @@ describe("routes", () => {
       "/s",
       "/s/a/b",
       "/links/x",
+      "/notifications/x",
       "/setup/x",
       "/unlock/x",
       "/recover/x",

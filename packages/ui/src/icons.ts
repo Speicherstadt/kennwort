@@ -4,6 +4,7 @@ export type { IconNode } from "lucide";
 export {
   Archive,
   ArrowLeft,
+  Bell,
   Braces,
   Camera,
   CloudOff,

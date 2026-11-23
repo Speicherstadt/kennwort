@@ -8,10 +8,11 @@ import { encodeBytes, recordToWire, Share, shareToWire } from "@kennwort/core";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import type { Db } from "../db/database.ts";
+import { type Notify, noNotify } from "../notifications/notify.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 import { roleIn } from "./routes.ts";
 
-type Deps = { db: Db; now: () => number };
+type Deps = { db: Db; now: () => number; notify?: Notify };
 type Env = Context<TenantEnv>;
 
 const notFound = { error: "not-found" } as const;
@@ -31,7 +32,7 @@ const refusal = (c: Env, share: Share, vaultId: string, entryId: string) => {
   return undefined;
 };
 
-export const shareRoutes = ({ db, now }: Deps) => {
+export const shareRoutes = ({ db, now, notify = noNotify }: Deps) => {
   const seconds = () => Math.floor(now() / 1000);
   return new Hono<TenantEnv>()
     .put("/vaults/:vaultId/entries/:entryId/shares", async (c) => {
@@ -44,7 +45,20 @@ export const shareRoutes = ({ db, now }: Deps) => {
       if (!parsed.success) return c.json({ error: "invalid" }, 400);
       const refused = refusal(c, parsed.data, vaultId, entryId);
       if (refused) return c.json(refused[0], refused[1]);
+      const recipient = encodeBytes(parsed.data.recipient);
+      // A share made anew (a new key after a rotation) is no news to its recipient (K-602)
+      const known = c.var.scope
+        .shares(vaultId, entryId)
+        .some((share) => encodeBytes(share.recipient) === recipient);
       c.var.scope.share(parsed.data, now());
+      if (!known)
+        notify({
+          companyId: c.var.session.companyId,
+          recipients: [recipient],
+          kind: "share-received",
+          subject: entryId,
+          actor: c.var.session.accountId,
+        });
       return c.json({ stored: true });
     })
     .get("/vaults/:vaultId/entries/:entryId/shares", (c) => {

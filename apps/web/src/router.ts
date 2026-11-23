@@ -28,6 +28,7 @@ const simplePages = [
   "export",
   "emergency",
   "links",
+  "notifications",
   "renew",
   "setup",
   "unlock",

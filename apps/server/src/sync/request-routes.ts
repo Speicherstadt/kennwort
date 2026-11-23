@@ -9,11 +9,18 @@ import type { Context } from "hono";
 import { Hono } from "hono";
 import type { Db } from "../db/database.ts";
 import { vaultLog, vaultRequests, vaults } from "../db/schema.ts";
+import { type Notify, noNotify } from "../notifications/notify.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 import { linkedRoles } from "./group-links.ts";
-import { isCurrent, membersOf } from "./vault-chain.ts";
+import { currentMembers, isCurrent, membersOf } from "./vault-chain.ts";
 
-type Deps = { db: Db; now: () => number };
+/** The vault's current managers by its stored log: they hear of a request (K-602) */
+const vaultManagers = (db: Db, vaultId: string, now: number) =>
+  [...currentMembers(db, vaultId, Math.floor(now / 1000))]
+    .filter(([, member]) => member.role === "manage")
+    .map(([accountId]) => accountId);
+
+type Deps = { db: Db; now: () => number; notify?: Notify };
 
 const access = (deps: Deps) => {
   const { db } = deps;
@@ -60,6 +67,14 @@ export const requestRoutes = (deps: Deps) => {
           set: { viaGroup: null },
         })
         .run();
+      // The managers hear of it (K-602): which vault and who, by ID; the client knows the names
+      (deps.notify ?? noNotify)({
+        companyId: c.var.session.companyId,
+        recipients: vaultManagers(a.db, vaultId, deps.now()),
+        kind: "access-requested",
+        subject: vaultId,
+        actor: c.var.session.accountId,
+      });
       return c.json({ ok: true }, 201);
     })
     .get("/vaults/:vaultId/requests", (c) => {

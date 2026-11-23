@@ -21,6 +21,7 @@ export type Route =
   | { page: "export" }
   | { page: "emergency" }
   | { page: "links" }
+  | { page: "notifications" }
   | { page: "renew" }
   | { page: "setup" }
   | { page: "unlock" }
