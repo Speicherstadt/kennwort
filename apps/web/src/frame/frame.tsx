@@ -46,6 +46,9 @@ type FrameProps = {
   vaultName?: ((id: string) => string) | undefined;
   onNewEntry?: (() => void) | undefined;
   onEditEntry?: ((entry: ShownEntry) => void) | undefined;
+  /** The inline editor (entries-wiring.tsx): while it is open it takes the entry pane */
+  editing?: (() => boolean) | undefined;
+  editor?: (() => JSX.Element) | undefined;
   onShareEntry?: ((entry: ShownEntry) => void) | undefined;
   /** A one-time link to an entry for someone without an account (K-601) */
   onLinkEntry?: ((entry: ShownEntry) => void) | undefined;
@@ -136,6 +139,7 @@ export const Frame = (props: FrameProps) => {
                       nav={props.nav}
                       filter={entries().filter}
                       selected={entries().entry}
+                      covered={props.editing?.() === true}
                       vaults={props.vaults?.()}
                       security={Boolean(props.securityPage)}
                     />
@@ -150,6 +154,7 @@ export const Frame = (props: FrameProps) => {
                       nav={props.nav}
                       filter={entries().filter}
                       selected={entries().entry}
+                      editor={props.editing?.() ? props.editor : undefined}
                       toasts={toasts}
                     />
                   </main>

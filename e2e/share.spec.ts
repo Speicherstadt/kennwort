@@ -31,7 +31,7 @@ const sparkasseInBuero = async (page: Page) => {
     .filter({ visible: true })
     .first()
     .click();
-  const editor = page.getByRole("dialog", { name: "Neuer Eintrag" });
+  const editor = page.getByRole("form", { name: "Neuer Eintrag" });
   await editor.getByLabel("Tresor").selectOption({ label: "Büro" });
   await editor.getByLabel("Titel").fill("Sparkasse");
   await editor.getByLabel("Benutzername").fill("jonas@weber-haustechnik.de");

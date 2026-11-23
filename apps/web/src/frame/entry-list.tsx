@@ -53,6 +53,8 @@ export const EntryList = (props: {
   /** The entries from the vaults (K-306); the demo's while the app gives none */
   entries?: ShownEntry[] | undefined;
   onNew?: (() => void) | undefined;
+  /** The editor has the screen on a phone (a new entry): the list steps aside */
+  covered?: boolean | undefined;
   /** Whether the security overview is there to link to, as a chip on the phone */
   security?: boolean | undefined;
 }) => {
@@ -80,7 +82,7 @@ export const EntryList = (props: {
       class={cn(
         "min-h-0 w-full flex-col border-border md:w-85 md:shrink-0 md:border-r",
         // One display class only: with flex and hidden both set, the CSS order decides
-        props.selected ? "hidden md:flex" : "flex",
+        props.selected || props.covered ? "hidden md:flex" : "flex",
       )}
     >
       <div class="grid gap-3 p-4 pb-2 md:p-3">

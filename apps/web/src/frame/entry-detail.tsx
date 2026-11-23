@@ -8,6 +8,7 @@ import { entryIcon } from "@kennwort/client/entries/entry-icon.ts";
 import { typeLabel } from "@kennwort/client/entries/entry-types.ts";
 import { Button, cn, getLocale, Icon, m, type Toasts } from "@kennwort/ui";
 import { ArrowLeft, Link2, Pencil, QrCode, Share2 } from "@kennwort/ui/icons";
+import type { JSX } from "@solidjs/web";
 import { For, Show } from "solid-js";
 import { entries as demoEntries, vaultName as demoVaultName } from "../demo.ts";
 import type { Navigation } from "../navigation.ts";
@@ -27,38 +28,34 @@ import { TotpField } from "./totp-field.tsx";
 const date = (time: number) =>
   new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }).format(time);
 
-/** The detail's buttons and the star; each greyed out where this account may not use it */
-const Actions = (props: {
-  entry: ShownEntry;
-  toasts: Toasts;
-  onEdit?: (() => void) | undefined;
+/**
+ * The detail's buttons: the star and „Bearbeiten“ (the one primary action) beside the title, the
+ * ways to pass the entry on in a quiet row below; each greyed out where this account may not use it
+ */
+const SecondaryActions = (props: {
   onShare?: (() => void) | undefined;
   onLink?: (() => void) | undefined;
   onLabel?: (() => void) | undefined;
-  onFavorite?: (() => Promise<Saved> | undefined) | undefined;
 }) => (
-  <div class="flex flex-wrap gap-2">
-    <FavoriteButton
-      favorite={props.entry.favorite}
-      toasts={props.toasts}
-      onToggle={props.onFavorite}
-    />
-    <Button disabled={!props.onShare} onClick={() => props.onShare?.()}>
+  <div class="flex flex-wrap gap-1.5">
+    <Button
+      size="sm"
+      class="h-11 md:h-7"
+      disabled={!props.onShare}
+      onClick={() => props.onShare?.()}
+    >
       <Icon icon={Share2} /> {m.detail_share()}
     </Button>
-    <Button disabled={!props.onLink} onClick={() => props.onLink?.()}>
+    <Button size="sm" class="h-11 md:h-7" disabled={!props.onLink} onClick={() => props.onLink?.()}>
       <Icon icon={Link2} /> {m.detail_link()}
     </Button>
     <Show when={props.onLabel}>
       {(open) => (
-        <Button onClick={() => open()()}>
+        <Button size="sm" class="h-11 md:h-7" onClick={() => open()()}>
           <Icon icon={QrCode} /> {m.detail_label()}
         </Button>
       )}
     </Show>
-    <Button variant="primary" disabled={!props.onEdit} onClick={() => props.onEdit?.()}>
-      <Icon icon={Pencil} /> {m.detail_edit()}
-    </Button>
   </div>
 );
 
@@ -72,13 +69,13 @@ const Detail = (props: {
   onLabel?: (() => void) | undefined;
   onFavorite?: (() => Promise<Saved> | undefined) | undefined;
 }) => (
-  <div class="grid gap-5 p-4 md:p-6 xl:grid-cols-[1fr_16rem]">
+  <div class="mx-auto grid w-full max-w-5xl gap-5 p-4 md:p-6 @3xl:grid-cols-[minmax(0,1fr)_16rem]">
     <div class="grid content-start gap-5">
       <div class="flex flex-wrap items-center gap-3">
         <span class="grid size-14 place-items-center rounded-xl border border-border md:size-10">
           <Icon icon={entryIcon[props.entry.type]} size={22} />
         </span>
-        <div class="grid min-w-0 flex-1">
+        <div class="grid min-w-0 flex-1 basis-48">
           <h1 class="truncate text-[28px] font-semibold md:text-lg">{props.entry.title}</h1>
           <p class="text-xs text-muted-foreground">
             {typeLabel(props.entry.type)} ·{" "}
@@ -91,8 +88,23 @@ const Detail = (props: {
             </Show>
           </p>
         </div>
-        <Actions {...props} />
+        <div class="flex items-center gap-1">
+          <FavoriteButton
+            favorite={props.entry.favorite}
+            toasts={props.toasts}
+            onToggle={props.onFavorite}
+          />
+          <Button
+            variant="primary"
+            class="h-11 md:h-8"
+            disabled={!props.onEdit}
+            onClick={() => props.onEdit?.()}
+          >
+            <Icon icon={Pencil} /> {m.detail_edit()}
+          </Button>
+        </div>
       </div>
+      <SecondaryActions onShare={props.onShare} onLink={props.onLink} onLabel={props.onLabel} />
       <TagList tags={props.entry.tags} />
       <ToChangeNote entry={props.entry} />
       <Card title={m.detail_fields()}>
@@ -147,11 +159,34 @@ export const EntryDetail = (props: {
   onLabel?: ((entry: ShownEntry) => void) | undefined;
   /** Marks an entry of a vault this account may edit as a favorite, or no longer (K-306 part 5) */
   onFavorite?: ((entry: ShownEntry) => Promise<Saved>) | undefined;
+  /** The inline editor, shown in this pane instead of the entry while it is open */
+  editor?: (() => JSX.Element) | undefined;
 }) => {
   const entry = () =>
     (props.entries ?? demoEntries).find((candidate) => candidate.id === props.selected);
   return (
-    <section class={cn("min-h-0 flex-1 overflow-auto", !props.selected && "hidden md:block")}>
+    <section
+      class={cn(
+        "@container min-h-0 flex-1 overflow-auto",
+        !props.selected && !props.editor && "hidden md:block",
+      )}
+    >
+      <Show when={props.editor} fallback={<Shown {...props} entry={entry()} />}>
+        {(editor) => editor()()}
+      </Show>
+    </section>
+  );
+};
+
+/** The entry chosen in the URL, with the phone's way back to the list */
+const Shown = (
+  props: Omit<Parameters<typeof EntryDetail>[0], "entries" | "editor"> & {
+    entry: ShownEntry | undefined;
+  },
+) => {
+  const entry = () => props.entry;
+  return (
+    <>
       <Show when={props.selected}>
         <Link
           nav={props.nav}
@@ -202,6 +237,6 @@ export const EntryDetail = (props: {
           />
         )}
       </Show>
-    </section>
+    </>
   );
 };

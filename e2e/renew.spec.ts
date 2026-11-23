@@ -30,7 +30,7 @@ const loginInBuero = async (page: Page, title: string) => {
     .filter({ visible: true })
     .first()
     .click();
-  const editor = page.getByRole("dialog", { name: "Neuer Eintrag" });
+  const editor = page.getByRole("form", { name: "Neuer Eintrag" });
   await editor.getByLabel("Tresor").selectOption({ label: "Büro" });
   await editor.getByLabel("Titel").fill(title);
   await editor.getByLabel("Passwort", { exact: true }).fill("Rohr-Ventil-Kessel-2026!");

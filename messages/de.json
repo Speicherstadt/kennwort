@@ -1243,5 +1243,14 @@
   "settings_renew_help": "Neue Schlüssel und ein neues Recovery-Kit.",
   "settings_privacy_help": "Was der Server speichert, Auskunft und Löschen.",
   "settings_add_device_help": "Ein weiteres Gerät mit diesem Konto verbinden.",
-  "settings_lock_help": "Schließt Kennwort hier; zum Öffnen brauchst du die Passphrase."
+  "settings_lock_help": "Schließt Kennwort hier; zum Öffnen brauchst du die Passphrase.",
+  "entry_editor_cancel": "Abbrechen",
+  "entry_editor_keys": "Esc bricht ab, Strg+Enter speichert.",
+  "entry_editor_basics": "Allgemein",
+  "entry_editor_fields": "Felder",
+  "entry_editor_unsaved": "Nicht gespeichert",
+  "entry_editor_discard_title": "Änderungen verwerfen?",
+  "entry_editor_discard_text": "Was du an diesem Eintrag geändert hast, geht verloren.",
+  "entry_editor_keep": "Weiter bearbeiten",
+  "entry_editor_discard": "Verwerfen"
 }
