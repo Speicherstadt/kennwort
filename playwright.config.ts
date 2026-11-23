@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { DEMO_PORT } from "./e2e/demo.ts";
 import { OIDC_CLIENT, OIDC_ISSUER, OIDC_NAME, OIDC_PORT } from "./e2e/oidc.ts";
 import { PWNED_PORT } from "./e2e/pwned.ts";
 import { SETUP_CODE } from "./e2e/setup-code.ts";
@@ -70,6 +71,12 @@ export default defineConfig({
         FAKE_IDP_CLIENT_ID: OIDC_CLIENT.id,
         FAKE_IDP_CLIENT_SECRET: OIDC_CLIENT.secret,
       },
+    },
+    {
+      // The demo without a server (K-706), its own build served statically as GitHub Pages does
+      command: "bun run --cwd apps/web build:demo && bun e2e/demo-server.ts",
+      port: DEMO_PORT,
+      reuseExistingServer: false,
     },
     {
       // The stand-in for Have I Been Pwned's Pwned Passwords (e2e/pwned.ts)

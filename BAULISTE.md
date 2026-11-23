@@ -646,7 +646,7 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
 - [ ] **K-704 Doku und Website** – alle Seiten aus dem Projektplan, Startseite als Produkt-Website,
   README aktuell.
 - [ ] **K-705 Screenshots** – Workflow „Update screenshots“, hell und dunkel.
-- [ ] **K-706 Demo ohne Server** – unter `/demo/` mit Testdaten „Weber Haustechnik“.
+- [x] **K-706 Demo ohne Server** – unter `/demo/` mit Testdaten „Weber Haustechnik“.
 
 ## Phase 8 – Mobile-App (Android)
 
