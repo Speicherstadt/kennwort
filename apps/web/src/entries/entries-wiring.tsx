@@ -74,6 +74,10 @@ export const createEntries = (serverFor: ServerFor, session: Session, copy?: Ent
     /** After someone left: every entry written anew under the vault's new key (P-11) */
     rotate: store.rotate,
     behind: store.behind,
+    /** Reducing someone to reading: their entries written anew under this device (demote.ts) */
+    resave: store.resave,
+    restore: store.restore,
+    restorable: store.restorable,
     /** The vaults and entries as this device knows them, for the exit report */
     seen: store.seen,
     /** Every entry with its decrypted content, for the export (K-504) */

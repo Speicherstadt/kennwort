@@ -142,7 +142,7 @@ export const rekey = (device: Device, entryId: Uint8Array): Device => {
 export type Pulled = { device: Device; refused: Refused[]; blocked?: "stale-key" | "rotation-due" };
 
 /** The key a record of this epoch was sealed under, if the device holds it; else the current one */
-const ringOf = (ctx: SyncContext, epoch: number) =>
+export const ringOf = (ctx: SyncContext, epoch: number) =>
   ctx.older?.find((ring) => ring.epoch === epoch) ?? ctx.ring;
 
 /**
@@ -245,6 +245,18 @@ const allRefused = (lists: Refused[][]) => {
   });
 };
 
+/**
+ * The highest version of the entry the device refused as written by someone who may not edit: a
+ * re-save goes above it, or it would stay the newest version for good (P-09)
+ */
+const refusedAbove = (refused: readonly Refused[], entryId: Uint8Array) =>
+  Math.max(
+    0,
+    ...refused
+      .filter((r) => r.error === "not-editor" && idKey(r.entryId) === idKey(entryId))
+      .map((r) => r.version),
+  );
+
 /** Pushes one change as the next version, pulling and merging again when someone was faster */
 const pushChange = async (
   start: Pulled,
@@ -257,7 +269,7 @@ const pushChange = async (
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const current = state.device.known.get(idKey(op.entryId));
     const content = contentFor(op, ctx, current);
-    const version = (current?.version ?? 0) + 1;
+    const version = Math.max(current?.version ?? 0, refusedAbove(state.refused, op.entryId)) + 1;
     const key = entryKeyFor(ctx.ring, op.rekey ? undefined : current?.key);
     const record = sealRecord(
       ctx.author,

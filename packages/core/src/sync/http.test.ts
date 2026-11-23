@@ -182,3 +182,42 @@ describe("watchVault", () => {
     await expect(watching(stream([], new Error("reset")))).rejects.toThrow("reset");
   });
 });
+
+describe("httpServer versions (P-09, re-save after a demotion)", () => {
+  const entryId = id(0xe1);
+  const versionsUrl = `${base}/api/vaults/${encodeBytes(vaultId)}/entries/${encodeBytes(entryId)}/versions`;
+
+  it("asks for every version of one entry with the session's token and parses them", async () => {
+    const seen: Seen[] = [];
+    const one = record();
+    const connection: Connection = {
+      fetch: (async (url: string, init?: RequestInit) => {
+        seen.push({ url, init });
+        return Response.json([recordToWire(one), { broken: true }]);
+      }) as typeof fetch,
+      baseUrl: base,
+      token: "t-jonas",
+    };
+    const versions = (await httpServer(connection, vaultId).versions?.(entryId)) ?? [];
+    expect(versions).toEqual([one]);
+    expect(
+      seen.map((s) => [
+        s.url,
+        (s.init?.headers as Record<string, string> | undefined)?.authorization,
+      ]),
+    ).toEqual([[versionsUrl, "Bearer t-jonas"]]);
+  });
+
+  it("rejects on an unexpected status and reads broken JSON as no versions", async () => {
+    const failing = httpServer(
+      answering(() => new Response("", { status: 404 })),
+      vaultId,
+    );
+    await expect(failing.versions?.(entryId)).rejects.toThrow("versions: 404");
+    const broken = httpServer(
+      answering(() => new Response("{", { status: 200 })),
+      vaultId,
+    );
+    expect(await broken.versions?.(entryId)).toEqual([]);
+  });
+});
