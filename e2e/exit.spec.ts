@@ -70,7 +70,10 @@ const annaSeesNothing = async (anna: Page) => {
   await anna.reload();
   await unlock(anna, "Anna Heizung Bad Fliese");
   await openVaults(anna);
-  await expect(anna.getByRole("main").getByRole("list")).not.toContainText("Büro");
+  // With no vault left the page shows the empty state instead of an (empty, hidden) list
+  const main = anna.getByRole("main");
+  await expect(main.getByRole("list").or(main.getByText("Noch keine Tresore."))).toBeVisible();
+  await expect(main).not.toContainText("Büro");
   await visibleLink(anna, "Einträge").click();
   await expect(anna.getByRole("option", { name: /Neuer Zugang/ })).toHaveCount(0);
   await expect(anna.getByRole("option", { name: /Sparkasse/ })).toHaveCount(0);

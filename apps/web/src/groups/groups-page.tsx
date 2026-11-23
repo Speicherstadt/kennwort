@@ -6,7 +6,18 @@
 
 import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
 import { idKey, type MemberView } from "@kennwort/core";
-import { Button, Icon, Input, m, pageClass, selectClass } from "@kennwort/ui";
+import {
+  Badge,
+  Button,
+  Icon,
+  Input,
+  introClass,
+  m,
+  pageClass,
+  panelClass,
+  panelTitleClass,
+  selectClass,
+} from "@kennwort/ui";
 import { Users } from "@kennwort/ui/icons";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, For, Loading, Show } from "solid-js";
@@ -41,7 +52,10 @@ const AddMember = (props: {
     setChosen("");
   };
   return (
-    <form class="flex flex-wrap gap-2 px-3 py-2" onSubmit={submit}>
+    <form
+      class="flex flex-wrap gap-2 border-t border-border bg-muted/40 px-4 py-3"
+      onSubmit={submit}
+    >
       <select
         aria-label={m.groups_person_for({ name: props.group.name })}
         class={selectClass}
@@ -73,26 +87,38 @@ const GroupCard = (props: {
   onRemove: (accountId: Uint8Array) => void;
   onDelete: () => void;
 }) => (
-  <li class="rounded-xl border border-border">
-    <div class="flex items-center gap-3 px-3.5 py-2.5">
-      <Icon icon={Users} />
-      <h2 class="flex-1 font-semibold">{props.group.name}</h2>
-      <span class="text-xs text-muted-foreground">
-        {m.groups_members({ count: props.group.members.length })}
+  <li class="overflow-hidden rounded-xl border border-border">
+    <div class="flex items-center gap-3 px-4 py-3">
+      <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-accent">
+        <Icon icon={Users} />
       </span>
+      <h2 class="flex-1 truncate font-semibold">{props.group.name}</h2>
+      <Badge variant="secondary">{m.groups_members({ count: props.group.members.length })}</Badge>
       <Show when={props.keeper}>
         <Button disabled={props.busy} onClick={props.onDelete}>
           {m.groups_delete()}
         </Button>
       </Show>
     </div>
-    <ul class="divide-y divide-border border-t border-border" aria-label={props.group.name}>
+    <Show when={props.group.members.length === 0}>
+      <p class="border-t border-border px-4 py-3 text-[13px] text-muted-foreground">
+        {m.groups_no_members()}
+      </p>
+    </Show>
+    <ul
+      class="divide-y divide-border border-t border-border empty:hidden"
+      aria-label={props.group.name}
+    >
       <For each={props.group.members}>
         {(accountId) => (
-          <li class="flex items-center gap-2 px-3 py-2">
+          <li class="flex items-center gap-2 py-2 pr-3 pl-15">
             <span class="flex-1 truncate">{nameOf(props.people, accountId)}</span>
             <Show when={props.keeper}>
-              <Button disabled={props.busy} onClick={() => props.onRemove(accountId)}>
+              <Button
+                variant="ghost"
+                disabled={props.busy}
+                onClick={() => props.onRemove(accountId)}
+              >
                 {m.groups_remove_member()}
               </Button>
             </Show>
@@ -115,8 +141,8 @@ const CreateGroup = (props: { busy: boolean; onCreate: (name: string) => void })
     setName("");
   };
   return (
-    <form class="mt-6 grid max-w-md gap-2" onSubmit={submit}>
-      <h2 class="font-semibold">{m.groups_create_title()}</h2>
+    <form class={`mt-6 ${panelClass}`} onSubmit={submit}>
+      <h2 class={panelTitleClass}>{m.groups_create_title()}</h2>
       <Input
         label={m.groups_create_name()}
         value={name()}
@@ -124,7 +150,7 @@ const CreateGroup = (props: { busy: boolean; onCreate: (name: string) => void })
         required
         onInput={(event) => setName(event.currentTarget.value)}
       />
-      <Button type="submit" disabled={props.busy}>
+      <Button type="submit" variant="primary" class="w-fit justify-self-end" disabled={props.busy}>
         {m.groups_create()}
       </Button>
     </form>
@@ -159,17 +185,22 @@ export const GroupsPage = (props: {
   const { api, session } = props;
   return (
     <section aria-labelledby="page-title" class={pageClass()}>
-      <h1 id="page-title" class="mb-4 text-[28px] font-semibold md:text-lg">
+      <h1 id="page-title" class="mb-2 text-[28px] font-semibold md:text-lg">
         {m.nav_groups()}
       </h1>
-      <p class="mb-4 max-w-prose text-muted-foreground">{m.groups_intro_real()}</p>
+      <p class={introClass}>{m.groups_intro_real()}</p>
       <Loading>
         <Show when={changeFailed() || groups.data === null}>
           <p class={alertClass} role="alert">
             {m.groups_failed()}
           </p>
         </Show>
-        <ul class="grid gap-3">
+        <Show when={groups.data?.length === 0}>
+          <p class="rounded-xl border border-dashed border-border px-4 py-8 text-center text-[13px] text-muted-foreground">
+            {m.groups_empty()}
+          </p>
+        </Show>
+        <ul class="grid gap-3 empty:hidden">
           <For each={groups.data ?? []}>
             {(group) => (
               <GroupCard
