@@ -55,7 +55,7 @@ einziges Merkmal: dazu immer Text oder Icon.
 
 ## Aufbau
 
-**Desktop (ab `md`, 768 px)**: Rail (56 px) ohne Logo mit Einträgen, Generator, Team, Einstellungen und der Glocke der
+**Desktop (ab `md`, 768 px)**: Rail (56 px) ohne Logo mit Einträgen, Generator, Einmal-Links, Team, Einstellungen und der Glocke der
 Mitteilungen (Zähler als Badge), jeder Punkt mit seinem Namen als Tooltip; unten abgesetzt „Sperren“
 (umrandet, Tooltip „Sperren (Strg+L)“, Strg/Cmd+L sperrt überall) und der Avatar · Seitenleiste (232 px,
 ab `lg`) mit Firma, „Alle Einträge“, „Favoriten“, „Zum Ändern“, „Mit mir geteilt“ (sobald jemand
@@ -97,7 +97,7 @@ und Tab-Leiste markieren „Team“ auf allen dreien.
 **Im Fluss bleiben**: Sicherheit behält die Seitenleiste, der Punkt dort ist
 markiert, und in der Rail bleibt „Einträge“ aktiv; „Sicherheit“ ist am Handy ein Filter-Chip neben
 „Zum Ändern“. Die Seiten unter den Einstellungen (Import, Export, Notfallzugriff,
-Einmal-Links, Firmen, Datenschutz, Schlüssel erneuern) markieren „Einstellungen“ in Rail und Tab-Leiste
+Firmen, Datenschutz, Schlüssel erneuern) markieren „Einstellungen“ in Rail und Tab-Leiste
 und haben oben den Link „← Einstellungen“.
 
 **Einstellungen**: Gruppen mit Titel und einem Satz – Allgemein, Firma, Daten, Konto, Geräte und
@@ -140,7 +140,7 @@ der Datenleck-Abgleich und die Aufnahme über den Anmeldedienst.
 **Handy (unter `md`)**: ein Screen zur Zeit, über die URL gewählt; großer Titel, Suchfeld, Filter-Chips
 („Alle“, „Favoriten“, „Zum Ändern · 3“, „Mit mir geteilt“ wie in der Seitenleiste), Liste mit
 40-px-Icons; Eintrag mit Zurück-Link, großem Icon, Feldkarte; unten Tab-Leiste (Einträge,
-Generator, Team, Einstellungen und, mit offenem Konto, Mitteilungen mit Zähler). Berührungsziele
+Generator, „Links“ für die Einmal-Links, Team, Einstellungen und, mit offenem Konto, Mitteilungen mit Zähler). Berührungsziele
 mindestens 44 px.
 
 **Extension-Popup (360 × 600)**: Kopf mit Logo und Sperren, Suche, Filter-Chips „Alle“ und

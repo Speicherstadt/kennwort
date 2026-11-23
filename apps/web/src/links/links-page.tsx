@@ -1,5 +1,5 @@
 /**
- * Einstellungen → „Einmal-Links“ (K-601, P-18): a link for a free text, and the account's links
+ * „Einmal-Links“ in the rail (K-601, P-18): a link for a free text, and the account's links
  * that still last, each with what is left of it and a button to revoke it. The address of a link
  * is not listed: its secret was only ever on screen once, when it was made.
  */

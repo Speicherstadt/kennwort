@@ -24,7 +24,7 @@ für immer als du anmelden.
 Einen Link aus einem Eintrag erstellen kann, wer im Tresor bearbeiten oder verwalten darf, wie beim
 Teilen; für einen Eintrag, der mit dir geteilt wurde, gibt es keinen.
 
-**Für freien Text:** Unter **Einstellungen → Einmal-Links** schreibst du einen Titel (freiwillig)
+**Für freien Text:** Unter **Einmal-Links** in der Navigation (unter dem Generator) schreibst du einen Titel (freiwillig)
 und das Geheimnis selbst, etwa einen Tür-Code oder eine kurze Anleitung.
 
 Dann wählst du:
@@ -59,7 +59,7 @@ Adresszeile und dem Verlauf des Browsers. Die Seite sendet keine Statistiken und
 
 ## Deine Links
 
-Unter **Einstellungen → Einmal-Links** stehen deine Links, die noch gelten, mit dem Tag, an dem du
+Unter **Einmal-Links** in der Navigation (unter dem Generator) stehen deine Links, die noch gelten, mit dem Tag, an dem du
 sie erstellt hast, wie viele Abrufe übrig sind und bis wann sie gelten. **Widerrufen** löscht einen
 Link sofort auf dem Server; wer ihn danach öffnet, sieht nur, dass er nicht mehr gilt. Ein Link,
 der abläuft oder dessen letzter Abruf vorbei ist, verschwindet von selbst. Jedes Konto kann bis zu

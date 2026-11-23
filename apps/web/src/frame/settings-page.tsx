@@ -13,7 +13,6 @@ import {
   Download,
   Import,
   LifeBuoy,
-  Link2,
   Lock,
   Plus,
   RefreshCw,
@@ -36,7 +35,6 @@ export type SettingsProps = {
   onImport?: (() => void) | undefined;
   onExport?: (() => void) | undefined;
   onEmergency?: (() => void) | undefined;
-  onLinks?: (() => void) | undefined;
   onSecurity?: (() => void) | undefined;
   onRenew?: (() => void) | undefined;
   onCompanies?: (() => void) | undefined;
@@ -228,7 +226,6 @@ const groups = (props: SettingsProps) => ({
       icon: Download,
       open: props.onExport,
     },
-    { label: m.settings_links(), help: m.settings_links_help(), icon: Link2, open: props.onLinks },
   ],
   account: [
     {

@@ -30,8 +30,12 @@ const recordRequests = (page: Page) => {
 
 const linksPage = async (page: Page) => {
   await goInApp(page, "/entries");
-  await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).first().click();
-  await page.getByRole("button", { name: "Einmal-Links" }).click();
+  // Its own section beside the generator: "Einmal-Links" in the rail, "Links" in the phone's tab bar
+  await page
+    .getByRole("link", { name: /^(Einmal-Links|Links)$/ })
+    .filter({ visible: true })
+    .first()
+    .click();
   await expect(heading(page, "Einmal-Links")).toBeVisible();
 };
 

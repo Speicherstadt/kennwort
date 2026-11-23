@@ -1,5 +1,5 @@
 /**
- * The phone's tab bar: the four sections and, with an account open, the notifications (K-602) as a
+ * The phone's tab bar: the sections and, with an account open, the notifications (K-602) as a
  * fifth tab; touch targets of at least 44 px (DESIGN.md)
  */
 import { cn, Icon, m } from "@kennwort/ui";
@@ -12,10 +12,10 @@ import { isSection, sections } from "./sections.ts";
 export const TabBar = (props: { nav: Navigation; bell?: (() => JSX.Element) | undefined }) => (
   <nav
     aria-label={m.nav_main()}
-    class={cn(
-      "grid border-t border-border bg-background md:hidden",
-      props.bell ? "grid-cols-5" : "grid-cols-4",
-    )}
+    class="grid border-t border-border bg-background md:hidden"
+    style={{
+      "grid-template-columns": `repeat(${sections.length + (props.bell ? 1 : 0)}, minmax(0, 1fr))`,
+    }}
   >
     <For each={sections}>
       {(section) => (
@@ -31,7 +31,7 @@ export const TabBar = (props: { nav: Navigation; bell?: (() => JSX.Element) | un
           )}
         >
           <Icon icon={section.icon} size={22} />
-          {section.label()}
+          {(section.short ?? section.label)()}
         </Link>
       )}
     </For>
