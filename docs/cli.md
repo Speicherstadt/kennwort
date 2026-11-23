@@ -104,6 +104,10 @@ Tresor-Protokoll reichte). Der Ordner hat die Rechte 0700, die Dateien 0600; dar
 `device.json` lesen, verweigert `kennwort` sie, wie ssh einen solchen privaten Schlüssel. Ohne die
 Passphrase entsperrt nichts davon das Konto. `logout` löscht beide Dateien.
 
+**Nur an den eigenen Server.** `kennwort` schickt Anfragen nur an die Adresse aus `login` und
+folgt keiner Weiterleitung: Leitet der Server auf einen anderen Host um, bricht der Befehl ab, statt
+die Anfrage dorthin zu wiederholen. Das gilt genauso für die Browser-Erweiterung.
+
 **Passphrase und Secret Key** kommen vom Terminal, ohne dass das Terminal sie anzeigt, nie aus
 einem Argument (das jeder auf dem Rechner in der Prozessliste sieht und das in der Shell-Historie
 landet) und nie aus einer Umgebungsvariablen. Für Skripte liest `--passphrase-stdin` die Passphrase
