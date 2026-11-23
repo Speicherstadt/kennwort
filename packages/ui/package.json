@@ -7,7 +7,6 @@
     ".": "./src/index.ts",
     "./styles.css": "./src/styles.css",
     "./icons": "./src/icons.ts",
-    "./messages": "./src/messages.ts",
     "./generator/*": "./src/generator/*"
   },
   "dependencies": {

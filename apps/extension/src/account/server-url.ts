@@ -1,8 +1,7 @@
 /**
- * The company's server as the user types it into the extension (K-402) or the CLI (K-606): only its
- * origin counts, and only over HTTPS. Plain HTTP only on this machine (localhost), for development
- * and the end-to-end tests: anything else would send the session token and the ciphertexts over
- * the network unprotected.
+ * The company's server as the user types it: only its origin counts, and only over HTTPS. Plain
+ * HTTP only on this machine (localhost), for development and the end-to-end tests: anything else
+ * would send the session token and the ciphertexts over the network unprotected.
  */
 export type ServerError = "invalid-server" | "insecure-server";
 

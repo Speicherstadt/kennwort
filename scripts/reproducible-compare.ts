@@ -15,7 +15,6 @@ export const BUILD_OUTPUTS = [
   "apps/extension/dist/firefox",
   "apps/extension/dist/safari",
   "apps/server/dist",
-  "apps/cli/dist",
 ] as const;
 
 /** One file of a build: its SHA-256 and, for a small text file, its text to show where it differs */

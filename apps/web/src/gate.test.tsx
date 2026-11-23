@@ -38,6 +38,13 @@ const fakeSession = (state: { opened?: boolean; device?: boolean }) => {
     lock: () => setOpened(undefined),
     touch: () => touches.push(1),
     setLockAfter: () => {},
+    // One company: the home is the one on screen (K-605)
+    companies: {
+      activeId: () => (opened() ? "home" : undefined),
+      atHome: () => opened() !== undefined,
+      companies: () => [],
+      handover: () => undefined,
+    },
   } as unknown as Session;
   return { session, touches };
 };

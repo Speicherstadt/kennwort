@@ -9,7 +9,6 @@
  */
 import type { Api } from "@kennwort/client/session/api.ts";
 import { type Opened, stateUpdater } from "@kennwort/client/session/open-account.ts";
-import { type ServerError, serverOrigin } from "@kennwort/client/session/server-url.ts";
 import { type SessionError, signInAndUnlock } from "@kennwort/client/session/unlock.ts";
 import { bytes, type Derive } from "@kennwort/core";
 import { parseSecretKey, randomBytes } from "@kennwort/crypto";
@@ -18,6 +17,7 @@ import type { SessionArea } from "../session-keys.ts";
 import type { AlarmsApi } from "./auto-lock.ts";
 import { createLockTimer, MINUTE } from "./lock-timer.ts";
 import type { DeviceRecord } from "./records.ts";
+import { type ServerError, serverOrigin } from "./server-url.ts";
 import { createUnlockedStore } from "./unlocked-store.ts";
 
 export type PopupError = SessionError | ServerError | "invalid-account" | "storage-failed";

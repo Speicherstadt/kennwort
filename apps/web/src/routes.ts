@@ -25,6 +25,8 @@ export type Route =
   /** The security overview (K-603) */
   | { page: "security" }
   | { page: "renew" }
+  /** Einstellungen → „Firmen“ (K-605): the companies of the account, joining and switching */
+  | { page: "companies" }
   | { page: "setup" }
   | { page: "unlock" }
   | { page: "recover" }

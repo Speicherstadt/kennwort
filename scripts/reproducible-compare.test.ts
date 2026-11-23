@@ -26,7 +26,6 @@ describe("the outputs of `bun run build` (K-408)", () => {
       "apps/extension/dist/firefox",
       "apps/extension/dist/safari",
       "apps/server/dist",
-      "apps/cli/dist",
     ]);
   });
 
@@ -36,7 +35,6 @@ describe("the outputs of `bun run build` (K-408)", () => {
       "apps/extension/dist/chrome",
       "apps/extension/dist/firefox",
       "apps/extension/dist/safari",
-      "apps/cli/dist",
     ]);
   });
 });

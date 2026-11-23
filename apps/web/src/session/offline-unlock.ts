@@ -7,10 +7,10 @@
  */
 
 import type { AccountApi } from "@kennwort/client/session/api.ts";
-import { mergedState as merged } from "@kennwort/client/session/kept-state.ts";
 import {
   type AccountState,
   encodeBytes,
+  mergeStates,
   openState,
   type Stored,
   sealState,
@@ -24,8 +24,18 @@ import type { Opened, Outcome } from "./session.ts";
 /** What the session uses of the copy */
 export type AccountCopy = Pick<
   LocalCopy,
-  "useAccount" | "forget" | "keys" | "keepKeys" | "state" | "keepState"
+  "useAccount" | "forget" | "keys" | "keepKeys" | "state" | "keepState" | "suspend"
 >;
+
+/**
+ * Both states merged, the higher of each. A conflict (another root, bundle or log hash) means the
+ * server showed something else than this device checked: the device keeps its own, and the vault
+ * checks then refuse what does not fit it (P-06).
+ */
+const merged = (mine: AccountState, served: AccountState) => {
+  const both = mergeStates(mine, served);
+  return both.ok ? both.value : mine;
+};
 
 /** The state the server served, with what this device kept merged into it */
 export const withKeptState = async (

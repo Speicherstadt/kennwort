@@ -10,6 +10,7 @@ import { err, ok, type Result } from "../result.ts";
 import { bytes, encodeBytes } from "../sync/bytes.ts";
 import { parseJson } from "../sync/record.ts";
 import { EmergencySeen, mergeEmergency } from "./emergency-seen.ts";
+import { LinkedCompanies, linkedToJson, mergeLinked } from "./linked.ts";
 import { LeakCheckChoice, mergeSecurityPrefs, ReportMonth } from "./security-prefs.ts";
 
 const Remembered = z.object({ seq: z.number().int().nonnegative(), hash: bytes(32) });
@@ -71,6 +72,11 @@ export const AccountState = z.object({
   leakCheck: LeakCheckChoice.optional(),
   /** The month whose security report this account has seen (K-603) */
   reportSeen: ReportMonth.optional(),
+  /**
+   * The further companies of this account (K-605, P-27): the way into each one's own account, by
+   * its account ID; a removed one keeps a tombstone without a way in (linked.ts)
+   */
+  linked: LinkedCompanies.default({}),
 });
 export type AccountState = z.infer<typeof AccountState>;
 
@@ -98,6 +104,7 @@ const toJson = (state: AccountState) =>
       next: encodeBytes(r.next),
       until: r.until,
     })),
+    linked: linkedToJson(state.linked),
   });
 
 export const sealState = (
@@ -244,6 +251,7 @@ export const mergeStates = (
     ...personalOf(mine, theirs),
     retiredRoots,
     ...mergeSecurityPrefs(mine, theirs),
+    linked: mergeLinked(mine.linked, theirs.linked),
   });
 };
 
@@ -268,4 +276,5 @@ export const emptyState = (
   neverSave: [],
   emergency: {},
   retiredRoots: [],
+  linked: {},
 });

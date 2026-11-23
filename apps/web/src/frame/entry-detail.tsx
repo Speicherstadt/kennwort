@@ -7,7 +7,7 @@ import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { entryIcon } from "@kennwort/client/entries/entry-icon.ts";
 import { typeLabel } from "@kennwort/client/entries/entry-types.ts";
 import { Button, cn, getLocale, Icon, m, type Toasts } from "@kennwort/ui";
-import { ArrowLeft, Link2, Pencil, Share2 } from "@kennwort/ui/icons";
+import { ArrowLeft, Link2, Pencil, QrCode, Share2 } from "@kennwort/ui/icons";
 import { For, Show } from "solid-js";
 import { entries as demoEntries, vaultName as demoVaultName } from "../demo.ts";
 import type { Navigation } from "../navigation.ts";
@@ -34,9 +34,10 @@ const Actions = (props: {
   onEdit?: (() => void) | undefined;
   onShare?: (() => void) | undefined;
   onLink?: (() => void) | undefined;
+  onLabel?: (() => void) | undefined;
   onFavorite?: (() => Promise<Saved> | undefined) | undefined;
 }) => (
-  <div class="flex gap-2">
+  <div class="flex flex-wrap gap-2">
     <FavoriteButton
       favorite={props.entry.favorite}
       toasts={props.toasts}
@@ -48,6 +49,13 @@ const Actions = (props: {
     <Button disabled={!props.onLink} onClick={() => props.onLink?.()}>
       <Icon icon={Link2} /> {m.detail_link()}
     </Button>
+    <Show when={props.onLabel}>
+      {(open) => (
+        <Button onClick={() => open()()}>
+          <Icon icon={QrCode} /> {m.detail_label()}
+        </Button>
+      )}
+    </Show>
     <Button variant="primary" disabled={!props.onEdit} onClick={() => props.onEdit?.()}>
       <Icon icon={Pencil} /> {m.detail_edit()}
     </Button>
@@ -61,6 +69,7 @@ const Detail = (props: {
   onEdit?: (() => void) | undefined;
   onShare?: (() => void) | undefined;
   onLink?: (() => void) | undefined;
+  onLabel?: (() => void) | undefined;
   onFavorite?: (() => Promise<Saved> | undefined) | undefined;
 }) => (
   <div class="grid gap-5 p-4 md:p-6 xl:grid-cols-[1fr_16rem]">
@@ -134,6 +143,8 @@ export const EntryDetail = (props: {
   onShare?: ((entry: ShownEntry) => void) | undefined;
   /** Opens a one-time link for an entry of a vault this account may edit (K-601) */
   onLink?: ((entry: ShownEntry) => void) | undefined;
+  /** A QR label for the device the entry is for (K-605); not for an entry shared with this account */
+  onLabel?: ((entry: ShownEntry) => void) | undefined;
   /** Marks an entry of a vault this account may edit as a favorite, or no longer (K-306 part 5) */
   onFavorite?: ((entry: ShownEntry) => Promise<Saved>) | undefined;
 }) => {
@@ -176,6 +187,11 @@ export const EntryDetail = (props: {
             onLink={
               props.onLink && found.editable !== false && found.sharedBy === undefined
                 ? () => props.onLink?.(found)
+                : undefined
+            }
+            onLabel={
+              props.onLabel && found.sharedBy === undefined
+                ? () => props.onLabel?.(found)
                 : undefined
             }
             onFavorite={

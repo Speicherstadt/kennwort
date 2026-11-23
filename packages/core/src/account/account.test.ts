@@ -24,6 +24,7 @@ describe("account state", () => {
     neverSave: ["portal.weber-haustechnik.test"],
     emergency: { jonas: { grant: 5, revoked: false, objected: 0 } },
     retiredRoots: [],
+    linked: {},
   };
   const key = new Uint8Array(32).fill(9);
   const account = new Uint8Array(16).fill(4);
@@ -76,6 +77,7 @@ describe("account state", () => {
         sandra: { grant: 2, revoked: false, objected: 0 },
       },
       retiredRoots: [],
+      linked: {},
     };
     expect(mergeStates(state, theirs)).toEqual({
       ok: true,
@@ -98,6 +100,7 @@ describe("account state", () => {
           sandra: { grant: 2, revoked: false, objected: 0 },
         },
         retiredRoots: [],
+        linked: {},
       },
     });
     expect(mergeStates(state, emptyState(root))).toEqual({ ok: true, value: state });

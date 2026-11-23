@@ -1,7 +1,7 @@
 /** The sidebar from lg: company, the lists, vaults and groups, the note on encryption at the bottom */
 
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
-import { Badge, cn, Icon, m } from "@kennwort/ui";
+import { Badge, cn, Icon, m, selectClass } from "@kennwort/ui";
 import type { IconNode } from "@kennwort/ui/icons";
 import {
   Archive,
@@ -53,6 +53,36 @@ const Item = (props: {
   );
 };
 
+/** The companies of the account (K-605): which one is on screen and how to put another there */
+export type CompanySwitch = {
+  options: () => { id: string; name: string }[];
+  activeId: () => string | undefined;
+  busy: () => boolean;
+  onSwitch: (id: string) => void;
+};
+
+/** The company's name, or a switch between the companies when the account has more than one */
+const CompanyName = (props: { companies?: CompanySwitch | undefined }) => (
+  <Show
+    when={props.companies && props.companies.options().length > 1 ? props.companies : undefined}
+    fallback={<p class="px-2 py-1 font-semibold">{company.name}</p>}
+  >
+    {(companies) => (
+      <select
+        aria-label={m.companies_switch()}
+        class={cn(selectClass, "mx-2 mb-1 font-semibold")}
+        value={companies().activeId()}
+        disabled={companies().busy()}
+        onChange={(event) => companies().onSwitch(event.currentTarget.value)}
+      >
+        <For each={companies().options()}>
+          {(option) => <option value={option.id}>{option.name}</option>}
+        </For>
+      </select>
+    )}
+  </Show>
+);
+
 const Heading = (props: { children: JSX.Element }) => (
   <h2 class="mt-4 mb-1 px-2 text-[11px] font-semibold tracking-[.04em] text-muted-foreground uppercase">
     {props.children}
@@ -69,12 +99,13 @@ export const Sidebar = (props: {
   entries?: ShownEntry[] | undefined;
   /** Whether the security overview (K-603) is there to link to */
   security?: boolean | undefined;
+  companies?: CompanySwitch | undefined;
 }) => (
   <aside
     class="hidden w-58 shrink-0 flex-col border-r border-border bg-muted p-3 lg:flex"
     aria-label={m.nav_sections()}
   >
-    <p class="px-2 py-1 font-semibold">{company.name}</p>
+    <CompanyName companies={props.companies} />
     <nav aria-label={m.nav_entries()} class="grid gap-0.5">
       <Item
         nav={props.nav}

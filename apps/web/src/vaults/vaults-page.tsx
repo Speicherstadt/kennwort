@@ -7,7 +7,7 @@
 import type { CreateError, Vault } from "@kennwort/client/vaults/vaults.ts";
 import type { Trust } from "@kennwort/core";
 import { Button, Icon, Input, m } from "@kennwort/ui";
-import { Archive, TriangleExclamationPoint, Users } from "@kennwort/ui/icons";
+import { Archive, Handshake, TriangleExclamationPoint, Users } from "@kennwort/ui/icons";
 import { createSignal, For, Match, onSettled, Show, Switch } from "solid-js";
 import { Link } from "../frame/link.tsx";
 import type { Navigation } from "../navigation.ts";
@@ -71,6 +71,8 @@ export const VaultsPage = (props: {
     accountId: Uint8Array,
     left: ReadonlySet<string>,
   ) => Promise<Outcome>;
+  /** Hands a vault this account manages over to another company of the account (K-605) */
+  onHandOver?: ((vault: Vault) => void) | undefined;
 }) => {
   /** The vault whose members show: by ID, so the dialog stays open while the vaults load anew */
   const [membersOf, setMembersOf] = createSignal<string>();
@@ -108,7 +110,7 @@ export const VaultsPage = (props: {
               <ul class="divide-y divide-border rounded-xl border border-border">
                 <For each={ready().vaults}>
                   {(vault) => (
-                    <li class="flex items-center gap-2 pr-2">
+                    <li class="flex flex-wrap items-center gap-2 pr-2">
                       <Link
                         nav={props.nav}
                         href={`/vaults/${vault.idText}`}
@@ -124,6 +126,18 @@ export const VaultsPage = (props: {
                       >
                         <Icon icon={Users} /> {m.vault_members_open()}
                       </Button>
+                      <Show when={vault.role === "manage" ? props.onHandOver : undefined}>
+                        {(handOver) => (
+                          <Button
+                            aria-label={m.handover_open({
+                              name: vault.name ?? m.vaults_unnamed(),
+                            })}
+                            onClick={() => handOver()(vault)}
+                          >
+                            <Icon icon={Handshake} /> {m.handover_button()}
+                          </Button>
+                        )}
+                      </Show>
                     </li>
                   )}
                 </For>

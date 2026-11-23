@@ -6,10 +6,16 @@
  * server that plays back an older one cannot throw the device back (E-07, E-13; review of K-402).
  */
 import type { Api } from "@kennwort/client/session/api.ts";
-import { withKeptState } from "@kennwort/client/session/kept-state.ts";
 import type { Opened } from "@kennwort/client/session/open-account.ts";
 import type { KeptState } from "@kennwort/client/session/state-sync.ts";
-import { type Stored, unlockWithAccountKey } from "@kennwort/core";
+import {
+  type AccountState,
+  mergeStates,
+  openState,
+  type Stored,
+  sealState,
+  unlockWithAccountKey,
+} from "@kennwort/core";
 import {
   clearUnlocked,
   createSessionKeys,
@@ -30,6 +36,16 @@ import {
   unlockedToKeys,
 } from "./records.ts";
 
+/**
+ * Both states merged, the higher of each. A conflict (another root, bundle or log hash) means the
+ * server showed something else than this device checked: the device keeps its own, as the web app
+ * does with its offline copy (apps/web/src/session/offline-unlock.ts)
+ */
+const merged = (mine: AccountState, served: AccountState) => {
+  const both = mergeStates(mine, served);
+  return both.ok ? both.value : mine;
+};
+
 export const createUnlockedStore = (
   area: SessionArea | undefined,
   alarms: AlarmsApi | undefined,
@@ -45,11 +61,15 @@ export const createUnlockedStore = (
 
   /**
    * The served state with the kept one merged in, kept again under the higher counter; a kept
-   * state of another account or a damaged one does not open and is replaced (packages/client)
+   * state of another account or a damaged one does not open and is replaced
    */
   const withKept = async (opened: Opened, served: Stored): Promise<Opened> => {
-    const { state: value, kept } = withKeptState(opened, await readKept(), served.stateCounter);
-    await keepState(kept);
+    const kept = await readKept();
+    const mine = kept && openState(opened.accountKey, opened.accountId, kept.counter, kept.sealed);
+    const value = mine?.ok ? merged(mine.value, opened.state) : opened.state;
+    const counter = Math.max(kept?.counter ?? 0, served.stateCounter);
+    const sealed = sealState(opened.accountKey, opened.accountId, counter, value);
+    await keepState({ counter, sealed });
     return { ...opened, state: value };
   };
 

@@ -66,7 +66,7 @@
       "workspaces": ["packages/ui"]
     },
     "uqr": {
-      "reason": "QR codes on the recovery kit (P-12) and, later, for adding a device (P-04): a dependency-free TypeScript port of Nayuki's reference QR encoder (MIT), generation only; nothing secret beyond what the printed kit shows passes through it",
+      "reason": "QR codes on the recovery kit (P-12), for adding a device (P-04) and on the labels for devices and installations (K-605, P-27: the entry's address with IDs only): a dependency-free TypeScript port of Nayuki's reference QR encoder (MIT), generation only; nothing secret beyond what the printed kit shows passes through it",
       "workspaces": ["apps/web"]
     },
     "jsqr": {

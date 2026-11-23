@@ -5,18 +5,44 @@
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import type { Vault, VaultDeps } from "@kennwort/client/vaults/vaults.ts";
 import type { Toasts } from "@kennwort/ui";
-import { onSettled } from "solid-js";
+import { onSettled, Show } from "solid-js";
 import { openTarget } from "./deep-link.ts";
 import { EmergencyPage } from "./emergency/emergency-page.tsx";
 import { writableVaults } from "./entries/entries-wiring.tsx";
+import { DevicesSection } from "./frame/devices-section.tsx";
 import { type ImportDeps, ImportPage } from "./import/import-page.tsx";
 import type { Navigation } from "./navigation.ts";
+import { OidcSection } from "./oidc/oidc-section.tsx";
 import type { Session } from "./session/session.ts";
 import { NoAccess } from "./vaults/no-access.tsx";
 import { requestAccess, vaultIdOf } from "./vaults/vault-members.ts";
 import type { VaultStore } from "./vaults/vault-store.ts";
 
 type EmergencyApi = Parameters<typeof EmergencyPage>[0]["api"];
+type DevicesApi = Parameters<typeof DevicesSection>[0]["api"] &
+  Parameters<typeof OidcSection>[0]["api"];
+
+/**
+ * The identity provider and the device list in the settings (K-303, K-604), with the session's
+ * token; signing this device out forgets the account here
+ */
+export const devicesFor = (props: { api: DevicesApi; session: Session; nav: Navigation }) => () => (
+  <Show when={props.session.opened()?.token}>
+    {(token) => (
+      <>
+        <OidcSection token={token()} api={props.api} />
+        <DevicesSection
+          token={token()}
+          api={props.api}
+          onSignedOut={() => {
+            props.session.forget();
+            props.nav.replace("/entries");
+          }}
+        />
+      </>
+    )}
+  </Show>
+);
 
 /** The import (K-501) with where it may write, what is there already, and the write */
 export const importPage =
