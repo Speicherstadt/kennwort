@@ -1,0 +1,52 @@
+# Caddy serves the web build itself and passes only the server's own paths on (K-703,
+# docs/installation.md). Then Caddy must send exactly the headers the server would send with the
+# app's files: the table in docs/sicherheitsdesign.md (P-16, "CSP und Sicherheits-Kopfzeilen"),
+# behind https. A test compares every value with packages/core/src/headers/security-headers.ts
+# (apps/server/src/deploy/deploy.test.ts); change them there, never only here. The server's answers
+# (/api, /auth, /health) keep the sandbox policy it sets itself, so no header is set for them here.
+# Run the server without KENNWORT_WEB_ROOT, and mount the web build (/app/web in the image, or
+# apps/web/dist) at /srv/kennwort-web.
+{$KENNWORT_DOMAIN} {
+	@server path /api /api/* /auth /auth/* /health
+	handle @server {
+		reverse_proxy kennwort:8100
+	}
+
+	handle {
+		root * /srv/kennwort-web
+
+		header {
+			Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+			X-Content-Type-Options "nosniff"
+			Referrer-Policy "no-referrer"
+			Cross-Origin-Opener-Policy "same-origin"
+			Cross-Origin-Resource-Policy "same-origin"
+			X-Frame-Options "DENY"
+			Permissions-Policy "accelerometer=(), autoplay=(self), bluetooth=(), browsing-topics=(), camera=(self), clipboard-read=(), clipboard-write=(self), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), local-fonts=(), magnetometer=(), microphone=(), midi=(), otp-credentials=(), payment=(), picture-in-picture=(), publickey-credentials-create=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), window-management=(), xr-spatial-tracking=()"
+			Strict-Transport-Security "max-age=31536000"
+			-Server
+		}
+
+		# Vite names these after their content; everything else, sw.js and release.json too, no-cache
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		@other not path /assets/*
+		header @other Cache-Control "no-cache"
+
+		# With nosniff the browser takes the type as named; Caddy does not know these two
+		@manifest path *.webmanifest
+		header @manifest Content-Type "application/manifest+json"
+		@signature path *.sig
+		header @signature Content-Type "text/plain; charset=utf-8"
+
+		# No dotfile; every path without a file extension is a page of the app (index.html)
+		@hidden path */.*
+		respond @hidden 404
+		@page {
+			not file
+			not path_regexp \.[^/]*$
+		}
+		rewrite @page /index.html
+		file_server
+	}
+}

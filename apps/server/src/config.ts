@@ -40,6 +40,9 @@ const Config = z.object({
   KENNWORT_PWNED_URL: z
     .union([z.literal("off"), z.url({ protocol: /^https?$/ }).regex(/\/$/)])
     .default("https://api.pwnedpasswords.com/range/"),
+  // The update notice (K-703): once a day a plain GET to GitHub's API for the newest release;
+  // "false" and the server never asks (docs/plan.md, Entscheidungen: "Update-Hinweis")
+  KENNWORT_UPDATE_CHECK: z.enum(["true", "false"]).default("true"),
 });
 
 export type Config = {
@@ -57,6 +60,8 @@ export type Config = {
   push: { subject: string; extraHosts: string[] } | undefined;
   /** The leak check's range address, or undefined when the operator turned it off */
   pwnedUrl: string | undefined;
+  /** Asks GitHub once a day for the newest release and tells owners and admins (K-703) */
+  updateCheck: boolean;
   /** Sign-in with OpenID Connect (K-604), undefined without an issuer */
   oidc: OidcSettings | undefined;
 };
@@ -94,6 +99,7 @@ export const readConfig = (env: Record<string, string | undefined>) => {
           }
         : undefined,
     pwnedUrl: data.KENNWORT_PWNED_URL === "off" ? undefined : data.KENNWORT_PWNED_URL,
+    updateCheck: data.KENNWORT_UPDATE_CHECK === "true",
     oidc: oidc.value,
   };
   return { ok: true as const, value };

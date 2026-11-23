@@ -11,6 +11,7 @@ import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { sign } from "@kennwort/crypto";
 import { newRelease, RELEASE_PURPOSE, serializeRelease, toHex } from "../src/sw/release.ts";
+import { commitHistory } from "./commit-history.ts";
 import { listedPaths, sequenceOf, signingKeys } from "./release-build.ts";
 
 const dist = process.argv[2] ?? "dist";
@@ -19,18 +20,6 @@ if (!keys.ok) {
   console.error(keys.error);
   process.exit(1);
 }
-
-/** The committer times of the first-parent history, oldest first; undefined outside a checkout */
-const commitHistory = (): string | undefined => {
-  try {
-    const git = Bun.spawnSync(["git", "log", "--first-parent", "--reverse", "--format=%ct"], {
-      stderr: "ignore",
-    });
-    return git.exitCode === 0 ? git.stdout.toString() : undefined;
-  } catch {
-    return undefined;
-  }
-};
 
 const relatives = readdirSync(dist, { recursive: true, withFileTypes: true })
   .filter((entry) => entry.isFile())

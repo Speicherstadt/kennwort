@@ -31,6 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       code: ${{ steps.filter.outputs.code }}
+      image: ${{ steps.filter.outputs.image }}
     steps:
       # The pull request's merge commit and its first parent, the base
       - uses: actions/checkout@v7
@@ -48,6 +49,9 @@ jobs:
           other="$(grep -Ev '\.md$|^docs/|^LICENSE$' <<< "$changed" || true)$(grep -E "$tested" <<< "$changed" || true)"
           if [ -n "$changed" ] && [ -z "$other" ]; then code=false; else code=true; fi
           echo "code=$code" >> "$GITHUB_OUTPUT"
+          # The image (K-703) builds only when its files change; release.yml builds it on every tag
+          if grep -Eq '^(docker/|\.dockerignore$|\.github/workflows/release\.yml$)' <<< "$changed"; then image=true; else image=false; fi
+          echo "image=$image" >> "$GITHUB_OUTPUT"
 
   unit:
     needs: changes
@@ -146,13 +150,59 @@ jobs:
         run: bunx playwright install-deps firefox webkit
       - run: bun run e2e:engines --project=firefox --project=webkit
 
+  # K-703: only for a pull request that changes docker/: the Caddyfiles and compose.yaml as Caddy and
+  # Compose read them, then the image built and started, healthy on /health, read-only and non-root.
+  # Side by side with the parts above, about three minutes, so CI stays under five
+  image:
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.image == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Caddyfiles and compose.yaml
+        working-directory: docker
+        run: |
+          set -euo pipefail
+          for file in Caddyfile Caddyfile.static; do
+            docker run --rm -e KENNWORT_DOMAIN=kennwort.example.org -v "$PWD:/etc/kennwort:ro" caddy:2.10 \
+              caddy validate --adapter caddyfile --config "/etc/kennwort/$file"
+          done
+          printf 'KENNWORT_DOMAIN=kennwort.example.org\nKENNWORT_AUTH_SECRET=%s\n' "$(openssl rand -hex 32)" > .env
+          docker compose config --quiet
+          rm .env
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          load: true
+          tags: kennwort:ci
+      - name: Starts read-only as a user, healthy on /health
+        run: |
+          set -euo pipefail
+          docker run -d --name kennwort --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges:true \
+            -e KENNWORT_AUTH_SECRET="$(openssl rand -hex 32)" -p 127.0.0.1:28710:8100 kennwort:ci
+          for _ in $(seq 60); do
+            status="$(docker inspect -f '{{.State.Health.Status}}' kennwort)"
+            [ "$status" = healthy ] && break
+            sleep 1
+          done
+          docker logs kennwort
+          [ "$(docker inspect -f '{{.State.Health.Status}}' kennwort)" = healthy ]
+          [ "$(docker inspect -f '{{.Config.User}}' kennwort)" = 65532:65532 ]
+          curl -fsS http://127.0.0.1:28710/health
+          curl -fsSI http://127.0.0.1:28710/ | grep -i "^content-security-policy: default-src 'none'; script-src 'self'"
+          docker exec kennwort /app/kennwort-server backup /data/backups/ci.db
+
   # One result for the rules on main (required check "check"), however many parts the jobs split into
   check:
     if: ${{ always() && !github.event.pull_request.draft }}
-    needs: [changes, unit, e2e, engines]
+    needs: [changes, unit, e2e, engines, image]
     runs-on: ubuntu-latest
     steps:
       - run: |
-          for result in "${{ needs.unit.result }}" "${{ needs.e2e.result }}" "${{ needs.engines.result }}"; do
+          for result in "${{ needs.unit.result }}" "${{ needs.e2e.result }}" "${{ needs.engines.result }}" "${{ needs.image.result }}"; do
             case "$result" in success | skipped) ;; *) echo "A part ended with: $result"; exit 1 ;; esac
           done

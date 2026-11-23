@@ -18,6 +18,7 @@ describe("readConfig", () => {
         secure: false,
         push: { subject: "http://localhost:8100", extraHosts: [] },
         pwnedUrl: "https://api.pwnedpasswords.com/range/",
+        updateCheck: true,
       },
     });
   });
@@ -43,6 +44,7 @@ describe("readConfig", () => {
         secure: true,
         push: { subject: "https://kennwort.weber-haustechnik.test", extraHosts: [] },
         pwnedUrl: "https://api.pwnedpasswords.com/range/",
+        updateCheck: true,
       },
     });
   });
@@ -64,6 +66,13 @@ describe("readConfig", () => {
     };
     expect(at("https://kennwort.weber-haustechnik.test")).toBe(true);
     expect(at("http://localhost:8100")).toBe(false);
+  });
+
+  it("asks for updates unless KENNWORT_UPDATE_CHECK is false, and takes only true or false", () => {
+    const check = (value: string) => readConfig({ ...base, KENNWORT_UPDATE_CHECK: value });
+    expect(check("false")).toMatchObject({ ok: true, value: { updateCheck: false } });
+    expect(check("true")).toMatchObject({ ok: true, value: { updateCheck: true } });
+    expect(check("no")).toEqual({ ok: false, error: ["KENNWORT_UPDATE_CHECK"] });
   });
 
   it("takes only true or false for being behind a proxy", () => {
@@ -112,6 +121,13 @@ describe("readConfig", () => {
       ok: false,
       error: ["KENNWORT_PORT", "KENNWORT_LOG_LEVEL"],
     });
+  });
+
+  it("asks for updates unless KENNWORT_UPDATE_CHECK is false, and takes only true or false", () => {
+    const check = (value: string) => readConfig({ ...base, KENNWORT_UPDATE_CHECK: value });
+    expect(check("false")).toMatchObject({ ok: true, value: { updateCheck: false } });
+    expect(check("true")).toMatchObject({ ok: true, value: { updateCheck: true } });
+    expect(check("no")).toEqual({ ok: false, error: ["KENNWORT_UPDATE_CHECK"] });
   });
 
   it("takes only true or false for being behind a proxy", () => {

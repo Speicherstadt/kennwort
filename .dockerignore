@@ -1,0 +1,19 @@
+# What docker/Dockerfile does not need: installed packages and builds are made inside the image,
+# the rest is local state. Secrets never go into an image.
+**/node_modules
+**/dist
+**/target
+.git
+.github
+.claude
+.cache
+.env
+.env.*
+**/*.env
+data
+site
+coverage
+test-results
+playwright-report
+docs
+e2e

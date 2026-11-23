@@ -11,8 +11,21 @@ import { createLog } from "./log.ts";
 import { PUSH_HOSTS, pushHostAllowed } from "./notifications/push.ts";
 import { loadVapid } from "./notifications/vapid.ts";
 import { createProvider } from "./oidc/provider.ts";
+import { parseCommand, runCommand } from "./operations/command.ts";
 import { PWNED_LIMIT } from "./pwned/routes.ts";
 import { upstreamRanges } from "./pwned/upstream.ts";
+import { latestRelease } from "./updates/releases.ts";
+import { startUpdateCheck } from "./updates/update-check.ts";
+import { SERVER_VERSION } from "./version.ts";
+
+// health, backup and restore (K-703) run instead of the server and need fewer settings
+const exitCode = await runCommand(parseCommand(process.argv.slice(2)), {
+  env: process.env,
+  log: createLog("info", (line) => console.log(line)),
+  fetch: (url) => fetch(url),
+  now: Date.now,
+});
+if (exitCode !== undefined) process.exit(exitCode);
 
 const config = readConfig(process.env);
 if (!config.ok) {
@@ -33,6 +46,7 @@ const {
   webRoot,
   secure,
   oidc,
+  updateCheck,
 } = config.value;
 const log = createLog(logLevel, (line) => console.log(line));
 
@@ -94,3 +108,12 @@ const server = Bun.serve({
   fetch: (request, bun) => app.fetch(request, { address: bun.requestIP(request)?.address }),
 });
 log("info", "listening", { port: server.port });
+// The update notice (K-703), unless the operator turned it off
+if (updateCheck)
+  startUpdateCheck({
+    db,
+    notify: app.notify,
+    now: Date.now,
+    current: SERVER_VERSION,
+    latest: () => latestRelease(fetch),
+  });

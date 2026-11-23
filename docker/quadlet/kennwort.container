@@ -1,0 +1,33 @@
+# Kennwort as a Podman Quadlet unit (K-703, docs/installation.md), the same container as
+# docker/compose.yaml: copy the files of this folder to /etc/containers/systemd/, the settings
+# to /etc/kennwort/kennwort.env (from docker/kennwort.env.example), then
+#   systemctl daemon-reload && systemctl start kennwort-caddy
+[Unit]
+Description=Kennwort server
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+ContainerName=kennwort
+Image=ghcr.io/speicherstadt/kennwort:latest
+EnvironmentFile=/etc/kennwort/kennwort.env
+Network=kennwort.network
+Volume=kennwort-data.volume:/data
+# Only /data is written, and only by the image's unprivileged user
+ReadOnly=true
+ReadOnlyTmpfs=true
+DropCapability=all
+NoNewPrivileges=true
+HealthCmd=/app/kennwort-server health
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=15s
+# `podman auto-update` pulls a newer :latest and restarts; see docs/updates.md before turning it on
+AutoUpdate=registry
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

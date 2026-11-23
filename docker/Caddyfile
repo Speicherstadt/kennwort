@@ -1,0 +1,9 @@
+# Caddy in front of Kennwort (K-703, docs/installation.md): gets the TLS certificate and passes
+# everything to the server unchanged. The server serves the web app itself and sets every security
+# header (docs/sicherheitsdesign.md, P-16, "CSP und Sicherheits-Kopfzeilen"), HSTS included with
+# KENNWORT_PUBLIC_URL on https. This file sets none: two CSP headers would both apply, and two
+# Strict-Transport-Security headers are an error. To serve the web build from Caddy instead, take
+# Caddyfile.static, which sends exactly the headers of the table.
+{$KENNWORT_DOMAIN} {
+	reverse_proxy kennwort:8100
+}

@@ -1,0 +1,3 @@
+# The network Kennwort and its Caddy share (K-703); only Caddy publishes ports
+[Network]
+NetworkName=kennwort

@@ -1968,7 +1968,10 @@ Kopfzeilen nicht ein zweites Mal setzen: Zwei CSP-Kopfzeilen gelten beide, und z
 `Strict-Transport-Security` sind ein Fehler. Wer `includeSubDomains` oder `preload` will, ersetzt
 HSTS im Proxy (`header Strict-Transport-Security "max-age=31536000; includeSubDomains"`). Liefert
 der Proxy die Web-App selbst aus statt des Servers, muss er genau die Kopfzeilen der Tabelle oben
-senden; die Installation (K-703) bringt dafür eine fertige Konfiguration mit. Der Entwicklungsserver
+senden; die Installation (K-703) bringt dafür eine fertige Konfiguration mit
+(`docker/Caddyfile.static`, ein Test vergleicht jeden Wert mit der Tabelle im Code; die
+Standard-Konfiguration `docker/Caddyfile` reicht nur durch und setzt keine Kopfzeile, siehe
+[Installation](installation.md)). Der Entwicklungsserver
 von Vite (Port 5175) sendet keine Policy, weil er Skripte und Styles inline nachlädt; die E2E-Tests
 laufen gegen den Server mit dem Build und damit unter der Policy.
 
