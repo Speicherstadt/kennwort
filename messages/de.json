@@ -1195,6 +1195,8 @@
   "demo_passphrase": "Passphrase:",
   "demo_preparing": "Die Demo-Firma Weber Haustechnik wird angelegt …",
   "demo_failed": "Die Demo konnte nicht starten. Lade die Seite neu.",
+  "demo_unavailable": "In der Demo nicht verfügbar: Dafür braucht es einen echten Server.",
+  "demo_unavailable_close": "Schließen",
   "passkey_title": "Entsperren mit Passkey",
   "passkey_text": "Mit einem Passkey entsperrst du Kennwort auf diesem Gerät ohne Passphrase. Passphrase und Secret Key funktionieren weiter.",
   "passkey_set_up": "Passkey zum Entsperren einrichten",
