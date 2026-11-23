@@ -17,8 +17,7 @@ const add = async (page: Page, login: Parameters<typeof addEntry>[1]) => {
 };
 const toSecurity = async (page: Page) => {
   await goInApp(page, "/entries");
-  await visible(page, "link", "Einstellungen").click();
-  await page.getByRole("button", { name: "Sicherheit" }).click();
+  await visible(page, "link", "Sicherheit").click();
   await expect(page.getByRole("heading", { level: 1, name: "Sicherheit" })).toBeVisible();
 };
 const list = (page: Page, name: string) => page.getByRole("list", { name, exact: true });
