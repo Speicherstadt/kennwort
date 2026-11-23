@@ -104,6 +104,14 @@ export {
   verifyAudit,
 } from "./audit/chain.ts";
 export {
+  OidcLinkWire,
+  OidcProviderWire,
+  type OidcStatus,
+  OidcStatusWire,
+  type OidcTicket,
+  OidcTicketWire,
+} from "./auth/oidc.ts";
+export {
   answerChallenge,
   answerRecoveryChallenge,
   type Derive,
@@ -115,14 +123,6 @@ export {
   signInWithPassphrase,
   signInWithRecoveryKey,
 } from "./auth/sign-in.ts";
-export {
-  OidcLinkWire,
-  OidcProviderWire,
-  type OidcStatus,
-  OidcStatusWire,
-  type OidcTicket,
-  OidcTicketWire,
-} from "./auth/oidc.ts";
 export * from "./export/index.ts";
 export {
   DIGITS,

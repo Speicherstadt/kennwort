@@ -4,7 +4,6 @@
  * Another language renders everything anew instead of reloading the page, which would lock it.
  */
 
-import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { httpServerFor } from "@kennwort/client/entries/entry-store.ts";
 import type { AccountApi, Api } from "@kennwort/client/session/api.ts";
 import type { DevicesApi } from "@kennwort/client/session/devices-api.ts";
@@ -12,12 +11,12 @@ import type { EmergencyApi } from "@kennwort/client/session/emergency-api.ts";
 import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
 import type { LinkApi } from "@kennwort/client/session/links-api.ts";
 import type { NotificationApi } from "@kennwort/client/session/notifications-api.ts";
+import type { OidcApi } from "@kennwort/client/session/oidc-api.ts";
 import type { PwnedApi } from "@kennwort/client/session/pwned-api.ts";
 import type { ShareApi } from "@kennwort/client/session/shares-api.ts";
 import type { VaultApi } from "@kennwort/client/session/vaults-api.ts";
-import type { Vault } from "@kennwort/client/vaults/vaults.ts";
 import { exitReport } from "@kennwort/core";
-import { getLocale, type Locale, setLocale, type Toasts } from "@kennwort/ui";
+import { getLocale, type Locale, setLocale } from "@kennwort/ui";
 import { QueryClientProvider } from "@tanstack/solid-query";
 import { createMemo, createSignal, Match, onSettled, Show, Switch, untrack } from "solid-js";
 import { AddDevicePage } from "./account/add-device-page.tsx";
@@ -28,17 +27,16 @@ import { RecoverPage } from "./account/recover-page.tsx";
 import { renewPage } from "./account/renew-route.tsx";
 import { SetupPage } from "./account/setup-page.tsx";
 import { readDeviceLink, UnlockPage, WelcomePage } from "./account/unlock-page.tsx";
+import { emergencyPage, importPage, noAccessFor } from "./app-pages.tsx";
 import { renewEmergency } from "./emergency/emergency.ts";
 import { EmergencyNotice } from "./emergency/emergency-notice.tsx";
-import { EmergencyPage } from "./emergency/emergency-page.tsx";
-import { createEntries, writableVaults } from "./entries/entries-wiring.tsx";
+import { createEntries } from "./entries/entries-wiring.tsx";
 import { markToChange } from "./entries/to-change.ts";
 import { ExportPage } from "./export/export-page.tsx";
 import { exportDeps } from "./export/export-wiring.ts";
 import { DevicesSection } from "./frame/devices-section.tsx";
 import { Frame } from "./frame/frame.tsx";
 import { GroupsPage } from "./groups/groups-page.tsx";
-import { type ImportDeps, ImportPage } from "./import/import-page.tsx";
 import { createLinks } from "./links/links-wiring.tsx";
 import { SecretPage } from "./links/secret-page.tsx";
 import type { MemberExits } from "./members/member-exit.tsx";
@@ -49,15 +47,16 @@ import { createNotifications } from "./notifications/notifications-wiring.tsx";
 import type { LocalCopy } from "./offline/local-copy.ts";
 import { OfflineNotice } from "./offline/offline-notice.tsx";
 import { createOfflineView } from "./offline/offline-view.ts";
+import { OidcPage } from "./oidc/oidc-page.tsx";
+import { OidcSection } from "./oidc/oidc-section.tsx";
+import { createOidcName } from "./oidc/sign-in-button.tsx";
 import { ApplyPolicy } from "./policy/policy-section.tsx";
 import { createAccountQueries } from "./queries.ts";
 import { createSecurity } from "./security/security-wiring.tsx";
 import type { Session } from "./session/session.ts";
 import { createSharing } from "./shares/shares-wiring.tsx";
 import { createExits } from "./vaults/exit.ts";
-import { NoAccess } from "./vaults/no-access.tsx";
 import { RotationNotice } from "./vaults/rotation-notice.tsx";
-import { requestAccess, vaultIdOf } from "./vaults/vault-members.ts";
 import { createVaultStore, type VaultStore } from "./vaults/vault-store.ts";
 import { namedMarks, peopleOf, vaultViews } from "./vaults/vault-views.ts";
 import { VaultsPage } from "./vaults/vaults-page.tsx";
@@ -72,41 +71,9 @@ export type AppApi = PairDeps &
   LinkApi &
   NotificationApi &
   PwnedApi &
+  OidcApi &
   Pick<AccountApi, "replaceUnlock"> &
   Pick<Api, "rekey"> & { syncFetch: typeof fetch };
-
-/** The import (K-501) with where it may write, what is there already, and the write */
-const importPage =
-  (nav: Navigation, store: VaultStore, entries: () => ShownEntry[], save: ImportDeps["save"]) =>
-  () => {
-    const deps: ImportDeps = {
-      vaults: () => writableVaults(store),
-      existing: (vaultIdText) => entries().filter((e) => e.vault === vaultIdText),
-      save,
-    };
-    return <ImportPage nav={nav} deps={deps} />;
-  };
-
-/** Konto → Notfallzugriff (K-307 part d) with the vaults it may grant and the frame's toasts */
-const emergencyPage =
-  (props: { api: AppApi; session: Session }, vaults: () => Vault[] | undefined) =>
-  (toasts: Toasts) => (
-    <EmergencyPage api={props.api} session={props.session} vaults={vaults} toasts={toasts} />
-  );
-
-/** What shows for a vault link this account cannot open: a way to ask for access (K-305) */
-const noAccessFor =
-  (props: { api: AppApi; session: Session }, store: VaultStore) => (vaultId: string) => {
-    const shown = store.shown();
-    // A vault refused for any reason but a time run out is this account's: no "no access" then
-    const known =
-      shown.state !== "ready" ||
-      shown.vaults.some((v) => v.idText === vaultId) ||
-      shown.refused.some((r) => r.idText === vaultId && r.error !== "expired");
-    const id = vaultIdOf(vaultId);
-    if (known || !id) return undefined;
-    return <NoAccess onRequest={() => requestAccess(props.api, props.session, id)} />;
-  };
 
 /**
  * The stores of an open account: the vaults, their entries, the shares, the exits and the export.
@@ -222,14 +189,17 @@ const OpenedFrame = (props: {
         devices={() => (
           <Show when={props.session.opened()?.token}>
             {(token) => (
-              <DevicesSection
-                token={token()}
-                api={props.api}
-                onSignedOut={() => {
-                  props.session.forget();
-                  props.nav.replace("/entries");
-                }}
-              />
+              <>
+                <OidcSection token={token()} api={props.api} />
+                <DevicesSection
+                  token={token()}
+                  api={props.api}
+                  onSignedOut={() => {
+                    props.session.forget();
+                    props.nav.replace("/entries");
+                  }}
+                />
+              </>
             )}
           </Show>
         )}
@@ -309,6 +279,8 @@ export const App = (props: {
     const r = route();
     return r.page === "secret" ? r : undefined;
   };
+  // The identity provider's name for the sign-in button (K-604), none without one
+  const oidc = createOidcName(props.api);
   return (
     <Show when={locale()} keyed>
       {(_locale) => (
@@ -369,12 +341,26 @@ export const App = (props: {
               </Show>
             )}
           </Match>
+          <Match when={route().page === "oidc"}>
+            <Show when={link()} keyed>
+              {(shown) => (
+                <OidcPage
+                  nav={props.nav}
+                  session={props.session}
+                  api={props.api}
+                  hash={hashFor(shown, "oidc")}
+                />
+              )}
+            </Show>
+          </Match>
           <Match when={!props.session.opened()}>
             <Show
               when={props.session.device() || otherAccount()}
-              fallback={<WelcomePage nav={props.nav} onUnlock={() => setOtherAccount(true)} />}
+              fallback={
+                <WelcomePage nav={props.nav} onUnlock={() => setOtherAccount(true)} oidc={oidc()} />
+              }
             >
-              <UnlockPage nav={props.nav} session={props.session} />
+              <UnlockPage nav={props.nav} session={props.session} oidc={oidc()} />
             </Show>
           </Match>
           <Match when={props.session.opened()}>

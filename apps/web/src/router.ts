@@ -37,6 +37,7 @@ const simplePages = [
   "recover-company",
   "pair",
   "link",
+  "oidc",
 ] as const;
 
 const entriesOf = (filter: ListFilter, entry?: string): Route =>

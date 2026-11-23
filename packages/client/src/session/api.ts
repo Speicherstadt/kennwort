@@ -100,14 +100,16 @@ export const callerOf =
     return { status: response.status, json: await response.json().catch(() => undefined) };
   };
 
+/** The session token of a sign-up answer (setup or invitation), or why there is none */
+const session = (answer: { status: number; json: unknown }): Answer<string> => {
+  const parsed = SessionWire.safeParse(answer.json);
+  return answer.status === 201 && parsed.success
+    ? { ok: true, value: parsed.data.token }
+    : { ok: false, error: errorOf(answer.status) };
+};
+
 export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity) => {
   const call = callerOf(send, identity);
-  const session = (answer: { status: number; json: unknown }): Answer<string> => {
-    const parsed = SessionWire.safeParse(answer.json);
-    return answer.status === 201 && parsed.success
-      ? { ok: true, value: parsed.data.token }
-      : { ok: false, error: errorOf(answer.status) };
-  };
   const post: Post = (path, body) => call("POST", path, body);
   /** fetch for the sync (K-306): every request names the device, as the API's own calls do */
   const syncFetch: typeof fetch = (input, init = {}) =>

@@ -62,7 +62,12 @@ describe("a member who enrolled through the identity provider", () => {
   });
 
   it("reads the mark from the wire, absent as no mark", () => {
-    const wire = { ...row(), id: "QEBAQEBAQEBAQEBAQEBAQA", xwingPublicKey: null, edPublicKey: null };
+    const wire = {
+      ...row(),
+      id: "QEBAQEBAQEBAQEBAQEBAQA",
+      xwingPublicKey: null,
+      edPublicKey: null,
+    };
     const parsed = MembersWire.parse({ members: [wire] }).members[0];
     expect(parsed?.oidc).toBe(true);
     const { oidc: _, ...without } = wire;

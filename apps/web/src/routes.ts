@@ -31,6 +31,8 @@ export type Route =
   | { page: "recover-company" }
   | { page: "pair" }
   | { page: "link" }
+  /** Back from the identity provider (K-604): a one-time ticket in the fragment */
+  | { page: "oidc" }
   | { page: "invite"; id: string }
   /** A one-time link's page (K-601): reachable without an account, its secret in the fragment */
   | { page: "secret"; id: string }

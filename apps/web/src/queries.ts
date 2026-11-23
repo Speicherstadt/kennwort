@@ -15,6 +15,7 @@ export const queryKeys = {
   members: ["members"],
   notifications: ["notifications"],
   notificationPrefs: ["notification-prefs"],
+  oidc: ["oidc"],
   policy: ["policy"],
   recovery: ["recovery"],
 } as const;

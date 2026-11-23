@@ -1,7 +1,7 @@
 import { rootFingerprint } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
-import { createSession } from "./session.ts";
 import { derive, fakeApi, memory, PASSPHRASE } from "./session.test-kit.ts";
+import { createSession } from "./session.ts";
 
 // K-604: someone the identity provider signed in makes an account like an invitee, under the root
 // the ticket named, uploads no certificate and no MAC, and waits for an owner's or admin's check
