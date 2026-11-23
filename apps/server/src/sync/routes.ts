@@ -13,7 +13,7 @@ import { streamSSE } from "hono/streaming";
 import { z } from "zod";
 import type { Db } from "../db/database.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
-import type { Hub } from "./hub.ts";
+import type { Hub, LiveChange } from "./hub.ts";
 import { currentEpoch, currentMembers } from "./vault-chain.ts";
 
 export type SyncDeps = { db: Db; hub: Hub; now: () => number; keepAliveMs?: number };
@@ -29,6 +29,18 @@ export const roleIn = (db: Db, c: Context<TenantEnv>, vaultId: string, now: numb
   c.var.scope.vault(vaultId)
     ? currentMembers(db, vaultId, Math.floor(now / 1000)).get(c.var.session.accountId)?.role
     : undefined;
+
+/**
+ * Who may hear of a new version in a vault of the writer's company: its current members by the
+ * stored log who have not left the company. Once per change, so a write costs the same whether
+ * one device listens or a hundred (K-702)
+ */
+const audienceOf = (db: Db, c: Context<TenantEnv>, vaultId: string, now: number) =>
+  new Set(
+    [...currentMembers(db, vaultId, Math.floor(now / 1000)).keys()].filter(
+      (id) => c.var.scope.account(id)?.leftAt == null,
+    ),
+  );
 
 export const syncRoutes = ({ db, hub, now, keepAliveMs = 20_000 }: SyncDeps) =>
   new Hono<TenantEnv>()
@@ -88,6 +100,7 @@ export const syncRoutes = ({ db, hub, now, keepAliveMs = 20_000 }: SyncDeps) =>
         hub.publish(vaultId, {
           entryId: encodeBytes(parsed.data.entryId),
           version: parsed.data.version,
+          audience: audienceOf(db, c, vaultId, now()),
         });
         return c.json({ stored: true });
       },
@@ -99,15 +112,19 @@ export const syncRoutes = ({ db, hub, now, keepAliveMs = 20_000 }: SyncDeps) =>
         // Someone removed, or whose time ran out, hears nothing more: checked before every
         // change and every ping, and then the stream ends (review of the members-only sync).
         // So does someone who left the company with the stream still open (review of K-307)
-        const stillMember = () => {
-          const stayed = c.var.scope.account(c.var.session.accountId)?.leftAt == null;
-          if (stayed && roleIn(db, c, vaultId, now())) return true;
+        // A change brings who may hear it, worked out once for all streams; a ping checks itself
+        const stillMember = (audience?: LiveChange["audience"]) => {
+          const { accountId } = c.var.session;
+          const allowed = audience
+            ? audience.has(accountId)
+            : c.var.scope.account(accountId)?.leftAt == null && roleIn(db, c, vaultId, now());
+          if (allowed) return true;
           stream.abort();
           return false;
         };
-        const unsubscribe = hub.subscribe(vaultId, (change) => {
-          if (stillMember())
-            void stream.writeSSE({ event: "record", data: JSON.stringify(change) });
+        const unsubscribe = hub.subscribe(vaultId, ({ entryId, version, audience }) => {
+          if (stillMember(audience))
+            void stream.writeSSE({ event: "record", data: JSON.stringify({ entryId, version }) });
         });
         stream.onAbort(unsubscribe);
         // "ready" once listening, so a client knows no change after this one is missed

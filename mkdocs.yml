@@ -77,6 +77,7 @@ nav:
       - Installation: installation.md
       - Backups: backup.md
       - Updates: updates.md
+      - Lasttest: lasttest.md
   - Sicherheitsdesign: sicherheitsdesign.md
   - Entwicklung:
       - Projektplan: plan.md

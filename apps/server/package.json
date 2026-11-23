@@ -8,6 +8,7 @@
     "build": "bun build --compile --minify src/main.ts --outfile dist/kennwort-server",
     "test": "bun test",
     "smoke": "bun scripts/smoke.ts",
+    "load": "bun scripts/load.ts",
     "db:generate": "drizzle-kit generate && bun scripts/embed-migrations.ts"
   },
   "dependencies": {

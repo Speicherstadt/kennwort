@@ -1,0 +1,48 @@
+name: Lasttest
+
+# The load test (K-702, docs/lasttest.md): a hundred devices of Weber Haustechnik with live streams
+# against the server in its own process. It needs a quiet machine and longer than ci.yml may take
+# (five minutes, the user's rule), so it runs nightly and on demand, like mutation.yml; a smoke run
+# with twelve devices is part of the server's tests (apps/server/src/load/load-test.test.ts).
+# A missed target from docs/plan.md ("Lasttest") turns the run red.
+on:
+  schedule:
+    - cron: "43 3 * * *"
+  workflow_dispatch:
+    inputs:
+      devices:
+        description: Simulated devices
+        default: "100"
+      writes:
+        description: Writes per writing device
+        default: "5"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: load
+  cancel-in-progress: false
+
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - working-directory: apps/server
+        env:
+          DEVICES: ${{ inputs.devices || '100' }}
+          WRITES: ${{ inputs.writes || '5' }}
+        run: bun scripts/load.ts "$DEVICES" "$WRITES" | tee load-result.txt
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: load-result
+          path: apps/server/load-result.txt

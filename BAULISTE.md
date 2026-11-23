@@ -613,7 +613,13 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   E-24, E-25) in `packages/core/src/adversary/catalog.test.ts` nachgespielt sind und
   `scripts/security-design.test.ts` fehlschlägt, wenn ein Angriff fehlt oder ein genannter Pfad
   nicht existiert.
-- [ ] **K-702 Lasttest** – viele Geräte mit Live-Sync.
+- [x] **K-702 Lasttest** – viele Geräte mit Live-Sync.
+  Fertig, wenn: `apps/server/scripts/load.ts` den Server in eigenem Prozess (Port 28750) startet,
+  100 Geräte von Weber Haustechnik mit Live-Stream schreiben, mithören und abgleichen lässt, Latenz
+  (p50/p95/p99), Ankunftszeit, Speicher und Fehler misst und bei einem verfehlten Ziel aus
+  `docs/plan.md` rot wird; `load.yml` ihn nachts und von Hand fährt, nicht `ci.yml`; ein Lauf mit
+  zwölf Geräten in den Server-Tests; ein Schreiben ermittelt die Hörer einmal statt je Stream;
+  `docs/lasttest.md` mit Ergebnissen.
 - [x] **K-703 Installation und Betrieb** – Docker-Image, Compose, Quadlet, Caddy, Backups mit
   Wiederherstellung, Update-Hinweis; Release-Workflow aus firsttris/workflows.
   Fertig, wenn: `docker/Dockerfile` mehrstufig mit der Bun-Version aus `packageManager` den Server
