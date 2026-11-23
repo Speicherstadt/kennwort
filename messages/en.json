@@ -366,7 +366,6 @@
   "entry_editor_rotation_due": "This vault is waiting for a key change. Until a manager makes it, nobody can change anything in it.",
   "detail_mark": "{name} had access until {date}. Change: {fields}.",
   "detail_mark_unnamed": "A former member",
-  "members_leave": "Remove from company",
   "members_leave_of": "Remove {name} from the company",
   "members_leave_text": "{name} can no longer reach the server, starting now. Kennwort takes them out of the vaults you manage, changes their keys and puts what they could read under “To change”.",
   "members_leave_confirm": "Remove",
@@ -1213,7 +1212,7 @@
   "mobile_autofill_text": "Pick the entry Kennwort should fill with. Only the username and password go to the field, nothing else.",
   "mobile_autofill_none": "No entry is stored for exactly {target}. For an app, enter android://package.name as the entry's website.",
   "mobile_autofill_cancel": "Don't fill",
-  "members_intro": "Who belongs to the company, with their role and what this device checked. On the right, the company's rules.",
+  "members_intro": "Who belongs to the company, with their role and what this device checked, and the company's rules.",
   "settings_intro": "How Kennwort looks, what belongs to the company and what this device may do.",
   "settings_sections": "Settings sections",
   "settings_group_general": "General",
@@ -1285,5 +1284,6 @@
   "lock_shortcut": "Lock (Ctrl+L)",
   "vault_access": "Access",
   "vault_access_of": "Who sees {name}",
-  "sidebar_vault_members": "{count} people"
+  "sidebar_vault_members": "{count} people",
+  "demo_details": "Details"
 }

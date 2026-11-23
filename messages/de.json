@@ -366,7 +366,6 @@
   "entry_editor_rotation_due": "In diesem Tresor steht ein Schlüsselwechsel aus. Bis ein Verwalter ihn macht, kann dort niemand etwas ändern.",
   "detail_mark": "{name} hatte Zugriff bis {date}. Ändere: {fields}.",
   "detail_mark_unnamed": "Ein ehemaliges Mitglied",
-  "members_leave": "Aus der Firma entfernen",
   "members_leave_of": "{name} aus der Firma entfernen",
   "members_leave_text": "{name} kommt sofort nicht mehr an den Server. Kennwort nimmt die Person aus den Tresoren, die du verwaltest, wechselt deren Schlüssel und setzt, was sie lesen konnte, auf „Zum Ändern“.",
   "members_leave_confirm": "Entfernen",
@@ -1213,7 +1212,7 @@
   "mobile_autofill_text": "Wähle den Eintrag, mit dem Kennwort ausfüllen soll. Nur Benutzername und Passwort gehen an das Feld, nichts sonst.",
   "mobile_autofill_none": "Kein Eintrag ist genau für {target} gespeichert. Für eine App trägst du im Eintrag als Website android://Paketname ein.",
   "mobile_autofill_cancel": "Nicht ausfüllen",
-  "members_intro": "Wer zur Firma gehört, mit Rolle und dem, was dieses Gerät geprüft hat. Rechts die Regeln der Firma.",
+  "members_intro": "Wer zur Firma gehört, mit Rolle und dem, was dieses Gerät geprüft hat; dazu die Regeln der Firma.",
   "settings_intro": "Wie Kennwort aussieht, was zur Firma gehört und was dieses Gerät darf.",
   "settings_sections": "Bereiche der Einstellungen",
   "settings_group_general": "Allgemein",
@@ -1285,5 +1284,6 @@
   "lock_shortcut": "Sperren (Strg+L)",
   "vault_access": "Zugriff",
   "vault_access_of": "Wer {name} sieht",
-  "sidebar_vault_members": "{count} Personen"
+  "sidebar_vault_members": "{count} Personen",
+  "demo_details": "Details"
 }
