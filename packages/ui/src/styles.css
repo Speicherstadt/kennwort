@@ -101,24 +101,13 @@
 /* A chevron for native selects (selectClass) drawn from two gradients in zinc-500: a data: or
    inline-SVG image would break the app's CSP (img-src 'self') */
 @utility select-chevron {
+  /* Two half-squares meet in a small downward triangle (the classic CSS caret) */
   background-image:
-    linear-gradient(
-      45deg,
-      transparent 50%,
-      #71717a 50%,
-      #71717a calc(50% + 1.5px),
-      transparent calc(50% + 1.5px)
-    ),
-    linear-gradient(
-      135deg,
-      transparent 50%,
-      #71717a 50%,
-      #71717a calc(50% + 1.5px),
-      transparent calc(50% + 1.5px)
-    );
-  background-size: 6px 6px;
+    linear-gradient(45deg, transparent 50%, #71717a 50%),
+    linear-gradient(135deg, #71717a 50%, transparent 50%);
+  background-size: 5px 5px;
   background-position:
-    right 0.875rem center,
-    right 0.5rem center;
+    right 0.875rem top 50%,
+    right 0.5625rem top 50%;
   background-repeat: no-repeat;
 }
