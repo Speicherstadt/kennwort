@@ -28,6 +28,8 @@ import {
   supersededCertificates,
   vaultKeys,
 } from "../db/schema.ts";
+import { type Notify, noNotify } from "../notifications/notify.ts";
+import { companyAccounts } from "../notifications/recipients.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 
 // A sealed AK: version, nonce, 32 bytes and the tag (F-01)
@@ -164,18 +166,27 @@ const replace = (
   });
 
 /** PUT /api/account/rekey */
-const rekeyAccount = (db: Db, now: () => number) => async (c: Context<TenantEnv>) => {
-  const parsed = RekeyBody.safeParse(await c.req.json().catch(() => undefined));
-  if (!parsed.success) return c.json({ error: "invalid" }, 400);
-  const { accountId, sessionId } = c.var.session;
-  const keys = db.select().from(accountKeys).where(eq(accountKeys.accountId, accountId)).get();
-  if (!keys) return c.json({ error: "not-found" }, 404);
-  if (!proven(keys, accountId, parsed.data)) return c.json({ error: "not-proven" }, 403);
-  if (!fitsHeld(db, accountId, parsed.data)) return c.json({ error: "invalid" }, 400);
-  const done = replace(db, now(), accountId, sessionId, parsed.data);
-  if (done.stale !== undefined) return c.json({ error: "stale", stateCounter: done.stale }, 409);
-  return c.json({ stored: true });
-};
+const rekeyAccount =
+  (db: Db, now: () => number, notify: Notify) => async (c: Context<TenantEnv>) => {
+    const parsed = RekeyBody.safeParse(await c.req.json().catch(() => undefined));
+    if (!parsed.success) return c.json({ error: "invalid" }, 400);
+    const { accountId, sessionId } = c.var.session;
+    const keys = db.select().from(accountKeys).where(eq(accountKeys.accountId, accountId)).get();
+    if (!keys) return c.json({ error: "not-found" }, 404);
+    if (!proven(keys, accountId, parsed.data)) return c.json({ error: "not-proven" }, 403);
+    if (!fitsHeld(db, accountId, parsed.data)) return c.json({ error: "invalid" }, 400);
+    const done = replace(db, now(), accountId, sessionId, parsed.data);
+    if (done.stale !== undefined) return c.json({ error: "stale", stateCounter: done.stale }, 409);
+    // The new bundle counts once an owner or admin certifies it: they hear of it (K-602)
+    notify({
+      companyId: c.var.session.companyId,
+      recipients: companyAccounts(db, c.var.session.companyId, ["owner", "admin"]),
+      kind: "member-renewed",
+      subject: accountId,
+      actor: accountId,
+    });
+    return c.json({ stored: true });
+  };
 
 /** The certificates of bundles these accounts have replaced, as stored JSON, oldest first */
 export const supersededOf = (db: Db, accountIds: readonly string[]) => {
@@ -194,5 +205,12 @@ export const supersededOf = (db: Db, accountIds: readonly string[]) => {
   return byAccount;
 };
 
-export const rekeyRoutes = ({ db, now }: { db: Db; now: () => number }) =>
-  new Hono<TenantEnv>().put("/account/rekey", rekeyAccount(db, now));
+export const rekeyRoutes = ({
+  db,
+  now,
+  notify = noNotify,
+}: {
+  db: Db;
+  now: () => number;
+  notify?: Notify;
+}) => new Hono<TenantEnv>().put("/account/rekey", rekeyAccount(db, now, notify));

@@ -19,6 +19,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import type { Db } from "../db/database.ts";
 import { vaultKeys, vaultLog, vaultRequests, vaults } from "../db/schema.ts";
+import { type Notify, noNotify } from "../notifications/notify.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 import { chainRefusal, isCurrent, membersOf } from "./vault-chain.ts";
 
@@ -35,7 +36,7 @@ const Append = z.object({
 });
 type WrappedKeys = NonNullable<z.infer<typeof Append>["wrappedKeys"]>;
 
-type Deps = { db: Db; now: () => number };
+type Deps = { db: Db; now: () => number; notify?: Notify };
 type Row = typeof vaultLog.$inferSelect;
 type Refusal = "stale" | "forbidden" | "invalid";
 
@@ -177,6 +178,15 @@ const append = (s: Store, deps: Deps) => async (c: Context<TenantEnv>) => {
   if (stored.refused === "stale") return c.json({ error: "stale", seq: stored.seq }, 409);
   if (stored.refused === "forbidden") return c.json({ error: "forbidden" }, 403);
   if (stored.refused) return c.json({ error: "invalid" }, 400);
+  // Whom a manager added hears of it (K-602); the vault's name comes from the client's own load
+  if (entry.action === "add")
+    (deps.notify ?? noNotify)({
+      companyId: c.var.session.companyId,
+      recipients: [encodeBytes(entry.accountId)],
+      kind: "vault-added",
+      subject: vaultId,
+      actor: c.var.session.accountId,
+    });
   return c.json({ seq: stored.seq }, 201);
 };
 

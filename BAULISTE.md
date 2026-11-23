@@ -450,7 +450,26 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   Playwright desktop und `@phone`: Jonas erstellt einen Link mit zwei Abrufen, eine Vorschau
   verbraucht keinen, ein Externer öffnet ihn zweimal, beim dritten Mal „abgelaufen“, das Fragment
   ist weg und nichts Geheimes erreicht den Server; dazu Passphrase und Widerruf.
-- [ ] **K-602 Benachrichtigungen** – in der App, Web-Push, optional Mail.
+- [x] **K-602 Benachrichtigungen** – in der App, Web-Push, optional Mail.
+  Fertig, wenn: der Server je Konto Mitteilungen nur aus Ereignissen schreibt, die er ohnehin
+  bearbeitet (Zugriffsanfrage an die Verwalter, Aufnahme in einen Tresor, erstmals geteilter
+  Eintrag, angenommene Einladung an ihren Ersteller, neue Schlüssel an Inhaber und Admins, neuer
+  Firmenschlüssel an alle, Bitte um Notfallzugriff an den Gebenden, Antwort und erste Freigabe an die
+  Vertrauensperson, Wiederherstellung durch einen Inhaber, abgerufener Einmal-Link an seinen
+  Ersteller; dazu die Art `security-report` als Haken für K-603), mit Art und IDs und nie mit einem
+  Namen, nie an den Auslöser, an Ausgetretene oder eine andere Firma (Test je Ereignis und ein Test,
+  dass keine Zeile einen Namen trägt); die Routen nur die eigenen Zeilen lesen, als gelesen markieren
+  und löschen (Test je Route im Mandanten-Test); ein SSE-Strom je Konto nur „neu“ sagt; die Glocke
+  in Rail und Tab-Leiste den Zähler zeigt, die Seite „Mitteilungen“ mit den Namen, die das Gerät
+  selbst kennt, auf Deutsch und Englisch; Web-Push leer (RFC 8030) mit VAPID (RFC 8292, ES256 per
+  WebCrypto, das JWT mit `node:crypto` geprüft), der VAPID-Schlüssel beim ersten Start entsteht und
+  Tests einen festen nehmen, Push nur nach einem Klick, je Art wählbar, nur an die Push-Dienste der
+  Browser (SSRF), ein Abo bei 404/410 oder mit seiner Sitzung endet (Tests gegen einen nachgebauten
+  Push-Dienst); der Service Worker einen festen Text in der Sprache des Browsers zeigt und
+  Release-Signatur und Nachbau (K-408) weiter bestehen; P-24 im Sicherheitsdesign, eine Seite für
+  Nutzer und Betreiber; Playwright desktop und `@phone`: Anna nimmt Jonas' Einladung an und fragt
+  Zugriff auf Büro an, beides erscheint live in Jonas' Glocke, „Gelesen“ und das Öffnen leeren den
+  Zähler. Mail ist zurückgestellt (unten).
 - [x] **K-603 Sicherheits-Übersicht** – schwache, mehrfache, geleakte Passwörter (k-Anonymität),
   monatlicher Bericht; „Zum Ändern“ mit `/.well-known/change-password`.
   Fertig, wenn: die Seite „Sicherheit“ (Einstellungen, Seitenleiste ab `lg`) Zahlen und Listen der
@@ -509,6 +528,13 @@ Punkte, die dreimal gescheitert sind, mit Grund; der Loop kommt am Ende auf sie 
   keinen Export, nur eine Sicherung in Microsofts Cloud, die sich nur in Microsoft Authenticator
   wiederherstellen lässt (Aegis' `MicrosoftAuthImporter` liest die Datenbank nur mit Root).
   Wieder aufnehmen, sobald Microsoft einen Export dokumentiert.
+- **K-602 Mitteilungen per Mail** – nicht gescheitert, aber bewusst ausgelassen: Der Server kennt
+  keine Mail-Adressen (Konten haben nur IDs, die Adresse bei Better Auth ist ein Platzhalter). Mail
+  bräuchte neue persönliche Daten mit Bestätigung der Adresse und einen SMTP-Client über Buns
+  TCP/TLS ohne Paket; das ist mehr Angriffsfläche als Nutzen, solange Glocke und Push reichen.
+  Wieder aufnehmen mit einer Kontaktadresse je Konto (etwa aus OpenID Connect, K-604): dann
+  `KENNWORT_SMTP_*`, aus und nur mit einem festen Text und einem Link zur App, und `mail` als
+  zweiter Kanal neben `push` in den Einstellungen.
 
 ## Schritte für Menschen
 

@@ -16,6 +16,7 @@ import { recordAudit } from "../audit/store.ts";
 import type { ClientAddress, ClientEnv } from "../auth/client-address.ts";
 import type { Db } from "../db/database.ts";
 import { oneTimeLinks } from "../db/schema.ts";
+import { type Notify, noNotify } from "../notifications/notify.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 
 /** Active links per account: enough for any team, a brake on filling the database */
@@ -27,6 +28,7 @@ export type LinkDeps = {
   random: (length: number) => Uint8Array;
   allow: (key: string) => boolean;
   address: ClientAddress;
+  notify?: Notify;
 };
 
 const fetchHash = (fetchId: string) => createHash("sha256").update(fetchId).digest("hex");
@@ -161,7 +163,13 @@ const takeOne = (db: Db, hash: string, at: number) =>
  * its address. Unknown, malformed, expired, used up and revoked answer alike: 404 and nothing more.
  * POST, not GET: no link preview, prefetch or cache ever sends one by itself.
  */
-export const linkPublicRoutes = ({ db, now, allow, address }: Omit<LinkDeps, "random">) =>
+export const linkPublicRoutes = ({
+  db,
+  now,
+  allow,
+  address,
+  notify = noNotify,
+}: Omit<LinkDeps, "random">) =>
   new Hono().post("/:fetchId/open", (c) => {
     if (!allow(`link-open:${address(c.req.raw, c.env as ClientEnv)}`))
       return privately(c.json({ error: "too-many-requests" }, 429));
@@ -172,6 +180,14 @@ export const linkPublicRoutes = ({ db, now, allow, address }: Omit<LinkDeps, "ra
     const taken = takeOne(db, hash, at);
     if (!taken) return privately(c.json({ error: "not-found" }, 404));
     audit(db, taken, "link-opened", at);
+    // Its creator hears of each fetch (K-602): which link, by the ID it lists it by; no one caused
+    // it with an account
+    notify({
+      companyId: taken.companyId,
+      recipients: [taken.createdBy],
+      kind: "link-opened",
+      subject: taken.id,
+    });
     return privately(
       c.json({
         ciphertext: encodeBytes(taken.ciphertext),

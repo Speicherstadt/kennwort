@@ -24,6 +24,7 @@ import { type Context, Hono } from "hono";
 import type { z } from "zod";
 import type { Db } from "../db/database.ts";
 import { accountKeys } from "../db/schema.ts";
+import { type Notify, noNotify } from "../notifications/notify.ts";
 import { currentEpoch, currentMembers } from "../sync/vault-chain.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 import {
@@ -35,9 +36,23 @@ import {
 } from "./emergency-store.ts";
 import { emergencyVaults } from "./emergency-vaults.ts";
 
-type Deps = { db: Db; now: () => number };
+type Deps = { db: Db; now: () => number; notify?: Notify };
 type Env = Context<TenantEnv>;
 type Upload = z.infer<typeof GrantUpload>;
+
+/** The other side of the grant hears of a step (K-602), by account ID and nothing more */
+const tell = (
+  deps: Deps,
+  c: Env,
+  kind: "emergency-granted" | "emergency-requested" | "emergency-answered",
+  recipient: string,
+) =>
+  (deps.notify ?? noNotify)({
+    companyId: c.var.session.companyId,
+    recipients: [recipient],
+    kind,
+    actor: c.var.session.accountId,
+  });
 
 const notFound = { error: "not-found" } as const;
 /** A request signed this far from the server's clock is not taken: the wait would start wrong */
@@ -123,6 +138,8 @@ const putGrant = (deps: Deps) => async (c: Env) => {
     storedAt: deps.now(),
   });
   audit(deps, c, "emergency-granted", grantee);
+  // A grant made anew after a key rotation is no news to the grantee
+  if (!old) tell(deps, c, "emergency-granted", grantee);
   return c.json({ stored: true });
 };
 
@@ -195,6 +212,8 @@ const request = (deps: Deps) => async (c: Env) => {
     releasedAt: null,
   });
   audit(deps, c, "emergency-requested", grantor);
+  // The grantor must learn of it within the waiting time to object (P-14)
+  tell(deps, c, "emergency-requested", grantor);
   const until = releaseAt({ ...row, requestedAt: deps.now() }) ?? 0;
   return c.json({ releaseAt: Math.floor(until / 1000) }, 201);
 };
@@ -218,6 +237,7 @@ const answer =
       store.update(row.grantor, grantee, { approval: text, releasedAt: deps.now() });
       audit(deps, c, "emergency-released", grantee);
     }
+    tell(deps, c, "emergency-answered", grantee);
     return c.json({ stored: true });
   };
 

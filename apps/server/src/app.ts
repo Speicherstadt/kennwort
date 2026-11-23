@@ -21,6 +21,9 @@ import type { Db } from "./db/database.ts";
 import { accounts } from "./db/schema.ts";
 import { linkApiRoutes, linkPublicRoutes } from "./links/routes.ts";
 import { type Log, pathForLog } from "./log.ts";
+import { createNotifier, type NotificationHub } from "./notifications/notify.ts";
+import { createPusher, type PushDeps } from "./notifications/push.ts";
+import { notificationRoutes } from "./notifications/routes.ts";
 import { type PwnedDeps, pwnedRoutes } from "./pwned/routes.ts";
 import { groupRoutes } from "./sync/group-routes.ts";
 import { createHub, type Hub } from "./sync/hub.ts";
@@ -49,6 +52,10 @@ export type Deps = {
   authenticate: Authenticate;
   signIn?: SignIn;
   hub?: Hub;
+  /** The notifications' live channel per account (K-602) */
+  notificationHub?: NotificationHub;
+  /** Web Push (K-602); without it notifications show in the app only */
+  push?: PushDeps | undefined;
   now?: () => number;
   keepAliveMs?: number;
   /** The leak check's proxy (K-603); without it the route answers that the check is off */
@@ -74,11 +81,20 @@ export const createApp = ({
   authenticate,
   signIn,
   hub = createHub(),
+  notificationHub = createHub<null>(),
+  push,
   now = Date.now,
   keepAliveMs,
   pwned,
 }: Deps) => {
   const app = new Hono();
+  // Notifications (K-602) from events the routes handle anyway, IDs only
+  const notify = createNotifier({
+    db,
+    now,
+    hub: notificationHub,
+    push: push ? createPusher(db, push, log, now) : undefined,
+  });
 
   // Method, path without query string, status and duration; nothing of headers or body
   app.use(async (c, next) => {
@@ -120,21 +136,31 @@ export const createApp = ({
   api.route("/", companyRoutes());
   api.route("/", auditRoutes({ db, now }));
   api.route("/", accountRoutes({ db, now }));
-  api.route("/", rekeyRoutes({ db, now }));
+  api.route("/", rekeyRoutes({ db, now, notify }));
   api.route("/", memberRoutes({ db, now }));
   api.route("/", policyRoutes({ db, now }));
-  api.route("/", rootRoutes({ db, now }));
+  api.route("/", rootRoutes({ db, now, notify }));
   api.route("/", companyRecoveryRoutes({ db, now }));
-  api.route("/", emergencyRoutes({ db, now }));
+  api.route("/", emergencyRoutes({ db, now, notify }));
   api.route("/", deviceRoutes({ db, now }));
-  api.route("/", logRoutes({ db, now }));
-  api.route("/", requestRoutes({ db, now }));
+  api.route("/", logRoutes({ db, now, notify }));
+  api.route("/", requestRoutes({ db, now, notify }));
   api.route("/", groupRoutes({ db, now }));
-  api.route("/", shareRoutes({ db, now }));
+  api.route("/", shareRoutes({ db, now, notify }));
   api.route("/", pwnedRoutes(pwned));
   api.route("/", syncRoutes({ db, hub, now, ...(keepAliveMs ? { keepAliveMs } : {}) }));
+  api.route(
+    "/",
+    notificationRoutes({
+      db,
+      now,
+      hub: notificationHub,
+      push,
+      ...(keepAliveMs ? { keepAliveMs } : {}),
+    }),
+  );
   if (signIn) {
-    const deps = { db, ...signIn };
+    const deps = { db, ...signIn, notify };
     api.route("/", createInvitationRoute(deps));
     api.route("/", pairingApiRoutes(deps));
     api.route("/", linkApiRoutes(deps));
@@ -164,5 +190,5 @@ export const createApp = ({
   });
 
   // The tenancy test tells the middleware from endpoints by this handler, not by method and path
-  return Object.assign(app, { requireSession, hub });
+  return Object.assign(app, { requireSession, hub, notificationHub, notify });
 };

@@ -165,6 +165,7 @@ export {
 export { isRangePrefix, parseRange } from "./leaks/range.ts";
 export * from "./links/index.ts";
 export * from "./membership/index.ts";
+export * from "./notifications/index.ts";
 export { bytes, encodeBytes } from "./sync/bytes.ts";
 export {
   ChangeMark,

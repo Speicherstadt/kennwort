@@ -8,6 +8,8 @@ import { rateLimiter } from "./auth/limits.ts";
 import { readConfig } from "./config.ts";
 import { migrate, openDatabase } from "./db/database.ts";
 import { createLog } from "./log.ts";
+import { PUSH_HOSTS, pushHostAllowed } from "./notifications/push.ts";
+import { loadVapid } from "./notifications/vapid.ts";
 import { PWNED_LIMIT } from "./pwned/routes.ts";
 import { upstreamRanges } from "./pwned/upstream.ts";
 
@@ -41,6 +43,18 @@ const signIn = {
   address: clientAddress(behindProxy),
   setupCode,
 };
+// Web Push (K-602): the VAPID key is made at the first start and kept in the database
+const pushConfig = config.value.push;
+const vapid = pushConfig ? loadVapid(db, Date.now()) : undefined;
+const push =
+  pushConfig && vapid
+    ? {
+        fetch: (url: string, init: RequestInit) => fetch(url, init),
+        vapid: () => vapid,
+        subject: pushConfig.subject,
+        allowHost: pushHostAllowed([...PUSH_HOSTS, ...pushConfig.extraHosts]),
+      }
+    : undefined;
 // The leak check's proxy (K-603) asks the configured service with nothing but a SHA-1 prefix
 const pwned = pwnedUrl
   ? {
@@ -48,7 +62,7 @@ const pwned = pwnedUrl
       allow: rateLimiter(PWNED_LIMIT.max, PWNED_LIMIT.windowMs),
     }
   : undefined;
-const app = createApp({ db, log, authenticate: authenticateWith(auth), signIn, pwned });
+const app = createApp({ db, log, authenticate: authenticateWith(auth), signIn, push, pwned });
 // The peer address goes to the app as its environment; the rate limits count it
 const server = Bun.serve({
   port,

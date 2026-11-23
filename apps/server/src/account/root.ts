@@ -39,6 +39,8 @@ import {
   rootGrants,
   supersededCertificates,
 } from "../db/schema.ts";
+import { type Notify, noNotify } from "../notifications/notify.ts";
+import { companyAccounts } from "../notifications/recipients.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 import { bytesOf } from "./company-recovery.ts";
 
@@ -162,7 +164,7 @@ const storeRotation = (db: Db, at: number, company: Company, rotation: Rotation)
 const ROTATION_STATUS = { invalid: 400, stale: 409 } as const;
 
 /** PUT /api/company/root: an owner's client replaces the company root */
-const putRoot = (db: Db, now: () => number) => async (c: Context<TenantEnv>) => {
+const putRoot = (db: Db, now: () => number, notify: Notify) => async (c: Context<TenantEnv>) => {
   const { scope, session } = c.var;
   if (scope.account(session.accountId)?.role !== "owner")
     return c.json({ error: "forbidden" }, 403);
@@ -178,6 +180,13 @@ const putRoot = (db: Db, now: () => number) => async (c: Context<TenantEnv>) => 
     action: "root-changed",
     subject: encodeBytes(parsed.data.change.newRootPublicKey),
     signature: new Uint8Array(),
+  });
+  // Every client takes the change only once its person confirmed it (P-07): all hear of it
+  notify({
+    companyId: session.companyId,
+    recipients: companyAccounts(db, session.companyId),
+    kind: "root-changed",
+    actor: session.accountId,
   });
   return c.json({ changed: true });
 };
@@ -209,7 +218,15 @@ const putKeyBlock = (db: Db, now: () => number) => async (c: Context<TenantEnv>)
   return stored ? c.json({ stored: true }) : c.json({ error: "not-found" }, 404);
 };
 
-export const rootRoutes = ({ db, now }: { db: Db; now: () => number }) =>
+export const rootRoutes = ({
+  db,
+  now,
+  notify = noNotify,
+}: {
+  db: Db;
+  now: () => number;
+  notify?: Notify;
+}) =>
   new Hono<TenantEnv>()
-    .put("/company/root", putRoot(db, now))
+    .put("/company/root", putRoot(db, now, notify))
     .put("/account/key-block", putKeyBlock(db, now));

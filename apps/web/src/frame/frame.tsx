@@ -8,6 +8,7 @@ import { createToasts, type Locale, Toaster, type Toasts } from "@kennwort/ui";
 import type { JSX } from "@solidjs/web";
 import { Match, Show, Switch } from "solid-js";
 import type { Navigation } from "../navigation.ts";
+import type { FrameNotifications } from "../notifications/notifications-wiring.tsx";
 import { EntryDetail } from "./entry-detail.tsx";
 import type { Saved } from "./entry-detail-parts.tsx";
 import { EntryList, type ShownVault } from "./entry-list.tsx";
@@ -54,12 +55,18 @@ export const Frame = (props: {
   onFavoriteEntry?: ((entry: ShownEntry) => Promise<Saved>) | undefined;
   /** A vault link this account cannot open: what shows instead of its entries (K-305) */
   noAccess?: ((vaultId: string) => JSX.Element | undefined) | undefined;
+  /** The bell and the page of the notifications (K-602) */
+  notifications?: FrameNotifications | undefined;
 }) => {
   const toasts = createToasts();
   const route = () => props.nav.route();
   return (
     <div class="flex h-dvh flex-col md:flex-row">
-      <Rail nav={props.nav} onLock={props.onLock} />
+      <Rail
+        nav={props.nav}
+        onLock={props.onLock}
+        bell={props.notifications ? () => props.notifications?.bell("rail") : undefined}
+      />
       <Switch>
         <Match
           when={(() => {
@@ -163,6 +170,9 @@ export const Frame = (props: {
         <Match when={route().page === "links" && props.linksPage}>
           <main class="flex min-h-0 flex-1">{props.linksPage?.()}</main>
         </Match>
+        <Match when={route().page === "notifications" && props.notifications}>
+          <main class="flex min-h-0 flex-1">{props.notifications?.page()}</main>
+        </Match>
         <Match when={route().page === "security" && props.securityPage}>
           <main class="flex min-h-0 flex-1">{props.securityPage?.()}</main>
         </Match>
@@ -175,7 +185,10 @@ export const Frame = (props: {
           </main>
         </Match>
       </Switch>
-      <TabBar nav={props.nav} />
+      <TabBar
+        nav={props.nav}
+        bell={props.notifications ? () => props.notifications?.bell("tab") : undefined}
+      />
       <Toaster toasts={toasts} />
     </div>
   );

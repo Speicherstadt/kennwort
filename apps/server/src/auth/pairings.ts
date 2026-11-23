@@ -18,6 +18,7 @@ import { z } from "zod";
 import { hasDeposit } from "../account/company-recovery.ts";
 import type { Db } from "../db/database.ts";
 import { pairings } from "../db/schema.ts";
+import { type Notify, noNotify } from "../notifications/notify.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 import type { Auth } from "./better-auth.ts";
 import type { ClientAddress, ClientEnv } from "./client-address.ts";
@@ -48,6 +49,7 @@ export type PairingDeps = {
   random: (length: number) => Uint8Array;
   allow: (key: string) => boolean;
   address: ClientAddress;
+  notify?: Notify;
 };
 
 /** The pairing behind an ID and a poll token, while it lasts */
@@ -158,7 +160,11 @@ const recoveryRefusal = (
 };
 
 /** For an unlocked device: load the one-time key, answer with the package, confirm the code */
-export const pairingApiRoutes = ({ db, now }: Pick<PairingDeps, "db" | "now">) =>
+export const pairingApiRoutes = ({
+  db,
+  now,
+  notify = noNotify,
+}: Pick<PairingDeps, "db" | "now" | "notify">) =>
   new Hono<TenantEnv>()
     .get("/pairings/:id", (c) => {
       const row = db
@@ -214,5 +220,14 @@ export const pairingApiRoutes = ({ db, now }: Pick<PairingDeps, "db" | "now">) =
       const refused = row.accountId === me ? undefined : recoveryRefusal(c.var, row.accountId, id);
       if (refused) return c.json({ error: refused.error }, refused.status);
       const confirmed = db.update(pairings).set({ confirmed: true }).where(open).returning().get();
-      return confirmed ? c.json({ confirmed: true }) : c.json({ error: "not-found" }, 404);
+      if (!confirmed) return c.json({ error: "not-found" }, 404);
+      // A member an owner recovered hears of it on every device still signed in (K-602, P-13)
+      if (row.accountId && row.accountId !== me)
+        notify({
+          companyId: c.var.session.companyId,
+          recipients: [row.accountId],
+          kind: "account-recovered",
+          actor: me,
+        });
+      return c.json({ confirmed: true });
     });
