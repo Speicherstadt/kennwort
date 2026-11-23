@@ -10,7 +10,7 @@ import {
   type LinkSummary,
   linkContentOfText,
 } from "@kennwort/core";
-import { Button, Input, m, TextArea } from "@kennwort/ui";
+import { Button, Input, m, pageClass, TextArea } from "@kennwort/ui";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import { dateTime, LinkOptionsForm, MadeLinkView, makeErrorText } from "./link-form.tsx";
 import { type LinkOptions, type MadeLink, type MakeError, makeLink } from "./links.ts";
@@ -116,7 +116,7 @@ export const LinksPage = (props: { deps: LinksPageDeps }) => {
     setBusy(false);
   };
   return (
-    <section aria-labelledby="page-title" class="min-h-0 flex-1 overflow-auto p-4 md:p-6">
+    <section aria-labelledby="page-title" class={pageClass()}>
       <h1 id="page-title" class="mb-2 text-[28px] font-semibold md:text-lg">
         {m.links_title()}
       </h1>

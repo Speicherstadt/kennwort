@@ -142,7 +142,11 @@ export const Sidebar = (props: {
         <Link
           nav={props.nav}
           href="/security"
-          class="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent"
+          current={props.nav.route().page === "security"}
+          class={cn(
+            "flex items-center gap-2 rounded-md px-2 py-1.5",
+            props.nav.route().page === "security" ? "bg-accent text-foreground" : "hover:bg-accent",
+          )}
         >
           <Icon icon={ShieldExclamationPoint} />
           <span class="flex-1 truncate">{m.nav_security()}</span>
@@ -164,7 +168,13 @@ export const Sidebar = (props: {
         <Link
           nav={props.nav}
           href="/vaults"
-          class="flex items-center gap-2 rounded-md px-2 py-1.5 text-muted-foreground hover:bg-accent"
+          current={props.nav.route().page === "vaults"}
+          class={cn(
+            "flex items-center gap-2 rounded-md px-2 py-1.5",
+            props.nav.route().page === "vaults"
+              ? "bg-accent text-foreground"
+              : "text-muted-foreground hover:bg-accent",
+          )}
         >
           {m.vaults_all()}
         </Link>
@@ -176,7 +186,13 @@ export const Sidebar = (props: {
           <Link
             nav={props.nav}
             href="/groups"
-            class="flex items-center gap-2 rounded-md px-2 py-1.5 text-muted-foreground hover:bg-accent"
+            current={props.nav.route().page === "groups"}
+            class={cn(
+              "flex items-center gap-2 rounded-md px-2 py-1.5",
+              props.nav.route().page === "groups"
+                ? "bg-accent text-foreground"
+                : "text-muted-foreground hover:bg-accent",
+            )}
           >
             {m.groups_all()}
           </Link>

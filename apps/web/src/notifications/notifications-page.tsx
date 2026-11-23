@@ -4,8 +4,8 @@
  * one. Below, push on this device and which kinds go out as push.
  */
 import type { Notification } from "@kennwort/core";
-import { Button, cn, Icon, IconButton, m } from "@kennwort/ui";
-import { Trash2 } from "@kennwort/ui/icons";
+import { Button, cn, Icon, IconButton, introClass, m, pageClass } from "@kennwort/ui";
+import { BellOff, Trash2 } from "@kennwort/ui/icons";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, For, Loading, onSettled, Show } from "solid-js";
 import { isPlainClick, type Navigation } from "../navigation.ts";
@@ -98,8 +98,8 @@ export const NotificationsPage = (props: {
   };
   const api = props.deps.api;
   return (
-    <section aria-labelledby="page-title" class="min-h-0 flex-1 overflow-auto p-4 md:p-6">
-      <div class="mb-2 flex max-w-xl flex-wrap items-center gap-2">
+    <section aria-labelledby="page-title" class={pageClass("wide")}>
+      <div class="mb-1 flex flex-wrap items-center gap-2">
         <h1 id="page-title" class="flex-1 text-[28px] font-semibold md:text-lg">
           {m.notifications_title()}
         </h1>
@@ -115,52 +115,57 @@ export const NotificationsPage = (props: {
           </Show>
         </Loading>
       </div>
-      <p class="mb-4 max-w-xl text-[13px] text-muted-foreground">{m.notifications_hint()}</p>
-      <div class="grid max-w-xl gap-6">
-        <Show when={failed()}>
-          <p role="alert" class={alertClass}>
-            {m.notifications_load_failed()}
-          </p>
-        </Show>
-        <Loading>
-          <Show
-            when={list.data}
-            fallback={
-              <p role="alert" class={alertClass}>
-                {m.notifications_load_failed()}
-              </p>
-            }
-          >
-            {(loaded) => (
-              <Show
-                when={loaded().notifications.length > 0}
-                fallback={
-                  <p class="text-[13px] text-muted-foreground">{m.notifications_empty()}</p>
-                }
-              >
-                <ul
-                  aria-label={m.notifications_list()}
-                  class="divide-y divide-border rounded-xl border border-border"
-                >
-                  <For each={loaded().notifications}>
-                    {(note) => (
-                      <NotificationRow
-                        note={note}
-                        names={props.names}
-                        nav={props.nav}
-                        busy={busy()}
-                        onRead={() => void change((token) => api.markRead(token, note.id))}
-                        onDelete={() =>
-                          void change((token) => api.removeNotification(token, note.id))
-                        }
-                      />
-                    )}
-                  </For>
-                </ul>
-              </Show>
-            )}
+      <p class={introClass}>{m.notifications_hint()}</p>
+      <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+        <div class="grid content-start gap-4">
+          <Show when={failed()}>
+            <p role="alert" class={alertClass}>
+              {m.notifications_load_failed()}
+            </p>
           </Show>
-        </Loading>
+          <Loading>
+            <Show
+              when={list.data}
+              fallback={
+                <p role="alert" class={alertClass}>
+                  {m.notifications_load_failed()}
+                </p>
+              }
+            >
+              {(loaded) => (
+                <Show
+                  when={loaded().notifications.length > 0}
+                  fallback={
+                    <p class="grid place-items-center gap-2 rounded-xl border border-dashed border-border px-4 py-12 text-center text-[13px] text-muted-foreground">
+                      <Icon icon={BellOff} size={20} />
+                      {m.notifications_empty()}
+                    </p>
+                  }
+                >
+                  <ul
+                    aria-label={m.notifications_list()}
+                    class="divide-y divide-border rounded-xl border border-border"
+                  >
+                    <For each={loaded().notifications}>
+                      {(note) => (
+                        <NotificationRow
+                          note={note}
+                          names={props.names}
+                          nav={props.nav}
+                          busy={busy()}
+                          onRead={() => void change((token) => api.markRead(token, note.id))}
+                          onDelete={() =>
+                            void change((token) => api.removeNotification(token, note.id))
+                          }
+                        />
+                      )}
+                    </For>
+                  </ul>
+                </Show>
+              )}
+            </Show>
+          </Loading>
+        </div>
         <PushSettings deps={props.deps} />
       </div>
     </section>

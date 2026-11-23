@@ -4,7 +4,7 @@
  * account's, stored on the server; in the app every kind always shows.
  */
 import { NOTIFICATION_KINDS, type NotificationKind, type NotificationPrefs } from "@kennwort/core";
-import { Button, m } from "@kennwort/ui";
+import { Button, m, panelClass, panelTitleClass } from "@kennwort/ui";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, For, Loading, onSettled, Show } from "solid-js";
 import { queryKeys } from "../queries.ts";
@@ -89,8 +89,8 @@ export const PushSettings = (props: { deps: NotificationsDeps; browser?: PushDep
     setBusy(false);
   };
   return (
-    <section aria-labelledby="push-title" class="grid gap-3">
-      <h2 id="push-title" class="text-sm font-semibold">
+    <section aria-labelledby="push-title" class={panelClass}>
+      <h2 id="push-title" class={panelTitleClass}>
         {m.push_settings_title()}
       </h2>
       <p class="text-[13px] text-muted-foreground">{m.push_settings_text()}</p>

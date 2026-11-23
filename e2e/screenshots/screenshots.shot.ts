@@ -66,6 +66,7 @@ const screens = (entry: string) => [
   { name: "members", path: "/members" },
   { name: "security", path: "/security" },
   { name: "notifications", path: "/notifications" },
+  { name: "settings", path: "/settings" },
 ];
 
 type Company = { device: string; accountId: string; secretKey: string; entry: string };

@@ -1,28 +1,15 @@
-/** The other sections: generator, groups, settings, and a page that does not exist */
-import { Button, getLocale, Icon, type Locale, locales, m, type Toasts } from "@kennwort/ui";
+/** The other sections: generator, groups, and a page that does not exist (settings: settings-page.tsx) */
+import { Icon, m, pageClass, type Toasts } from "@kennwort/ui";
 import { GeneratorPanel } from "@kennwort/ui/generator/generator-panel.tsx";
-import {
-  Archive,
-  Building2,
-  Download,
-  Import,
-  LifeBuoy,
-  Link2,
-  Lock,
-  RefreshCw,
-  ShieldCheck,
-  ShieldUser,
-  Users,
-} from "@kennwort/ui/icons";
+import { Users } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
-import { createSignal, For, Show } from "solid-js";
+import { For } from "solid-js";
 import { groups } from "../demo.ts";
 import type { Navigation } from "../navigation.ts";
-import { applyTheme, readTheme, type Theme } from "../theme.ts";
 import { Link } from "./link.tsx";
 
 const Page = (props: { title: string; children: JSX.Element }) => (
-  <section aria-labelledby="page-title" class="min-h-0 flex-1 overflow-auto p-4 md:p-6">
+  <section aria-labelledby="page-title" class={pageClass()}>
     <h1 id="page-title" class="mb-4 text-[28px] font-semibold md:text-lg">
       {props.title}
     </h1>
@@ -55,157 +42,6 @@ export const GroupsPage = () => (
     </ul>
   </Page>
 );
-
-const Choice = <T extends string>(props: {
-  legend: string;
-  name: string;
-  options: { value: T; label: string }[];
-  value: T;
-  onChange: (value: T) => void;
-}) => (
-  <fieldset class="grid gap-2">
-    <legend class="mb-1 text-xs font-medium">{props.legend}</legend>
-    <For each={props.options}>
-      {(option) => (
-        <label class="flex min-h-11 items-center gap-2 md:min-h-0">
-          <input
-            type="radio"
-            name={props.name}
-            value={option.value}
-            checked={props.value === option.value}
-            onChange={() => props.onChange(option.value)}
-          />
-          {option.label}
-        </label>
-      )}
-    </For>
-  </fieldset>
-);
-
-export const SettingsPage = (props: {
-  onLock: () => void;
-  onLocale: (locale: Locale) => void;
-  onAddDevice: () => void;
-  onMembers?: (() => void) | undefined;
-  onVaults?: (() => void) | undefined;
-  onImport?: (() => void) | undefined;
-  onExport?: (() => void) | undefined;
-  onEmergency?: (() => void) | undefined;
-  onLinks?: (() => void) | undefined;
-  onSecurity?: (() => void) | undefined;
-  onRenew?: (() => void) | undefined;
-  onCompanies?: (() => void) | undefined;
-  onPrivacy?: (() => void) | undefined;
-  devices?: (() => JSX.Element) | undefined;
-}) => {
-  const [theme, setTheme] = createSignal<Theme>(readTheme(globalThis.localStorage));
-  const chooseTheme = (next: Theme) => {
-    setTheme(next);
-    applyTheme(next, document.documentElement, globalThis.localStorage);
-  };
-  const languages = { de: m.language_de(), en: m.language_en() } as const;
-  return (
-    <Page title={m.nav_settings()}>
-      <div class="grid max-w-md gap-6">
-        <Choice
-          legend={m.settings_theme()}
-          name="theme"
-          value={theme()}
-          onChange={chooseTheme}
-          options={[
-            { value: "system", label: m.theme_system() },
-            { value: "light", label: m.theme_light() },
-            { value: "dark", label: m.theme_dark() },
-          ]}
-        />
-        <Choice
-          legend={m.settings_language()}
-          name="language"
-          value={getLocale()}
-          onChange={(locale) => props.onLocale(locale)}
-          options={locales.map((locale) => ({ value: locale, label: languages[locale] }))}
-        />
-        <Show when={props.onCompanies}>
-          {(open) => (
-            <Button class="w-fit" onClick={() => open()()}>
-              <Icon icon={Building2} /> {m.settings_companies()}
-            </Button>
-          )}
-        </Show>
-        <Show when={props.onMembers}>
-          {(open) => (
-            <Button class="w-fit" onClick={() => open()()}>
-              <Icon icon={Users} /> {m.settings_members()}
-            </Button>
-          )}
-        </Show>
-        <Show when={props.onVaults}>
-          {(open) => (
-            <Button class="w-fit" onClick={() => open()()}>
-              <Icon icon={Archive} /> {m.settings_vaults()}
-            </Button>
-          )}
-        </Show>
-        <Show when={props.onImport}>
-          {(open) => (
-            <Button class="w-fit" onClick={() => open()()}>
-              <Icon icon={Import} /> {m.settings_import()}
-            </Button>
-          )}
-        </Show>
-        <Show when={props.onExport}>
-          {(open) => (
-            <Button class="w-fit" onClick={() => open()()}>
-              <Icon icon={Download} /> {m.settings_export()}
-            </Button>
-          )}
-        </Show>
-        <Show when={props.onEmergency}>
-          {(open) => (
-            <Button class="w-fit" onClick={() => open()()}>
-              <Icon icon={LifeBuoy} /> {m.settings_emergency()}
-            </Button>
-          )}
-        </Show>
-        <Show when={props.onSecurity}>
-          {(open) => (
-            <Button class="w-fit" onClick={() => open()()}>
-              <Icon icon={ShieldCheck} /> {m.nav_security()}
-            </Button>
-          )}
-        </Show>
-        <Show when={props.onLinks}>
-          {(open) => (
-            <Button class="w-fit" onClick={() => open()()}>
-              <Icon icon={Link2} /> {m.settings_links()}
-            </Button>
-          )}
-        </Show>
-        <Show when={props.onRenew}>
-          {(open) => (
-            <Button class="w-fit" onClick={() => open()()}>
-              <Icon icon={RefreshCw} /> {m.settings_renew()}
-            </Button>
-          )}
-        </Show>
-        <Show when={props.onPrivacy}>
-          {(open) => (
-            <Button class="w-fit" onClick={() => open()()}>
-              <Icon icon={ShieldUser} /> {m.settings_privacy()}
-            </Button>
-          )}
-        </Show>
-        {props.devices?.()}
-        <Button class="w-fit" onClick={() => props.onAddDevice()}>
-          {m.settings_add_device()}
-        </Button>
-        <Button class="w-fit" onClick={() => props.onLock()}>
-          <Icon icon={Lock} /> {m.lock()}
-        </Button>
-      </div>
-    </Page>
-  );
-};
 
 export const NotFoundPage = (props: { nav: Navigation }) => (
   <Page title={m.not_found_title()}>

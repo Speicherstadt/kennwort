@@ -5,7 +5,7 @@
  */
 import type { PasskeyError } from "@kennwort/client/session/passkey-unlock.ts";
 import type { UnlockPasskeys } from "@kennwort/core";
-import { Button, m } from "@kennwort/ui";
+import { Button, m, panelClass, panelTitleClass } from "@kennwort/ui";
 import { createSignal, For, Show } from "solid-js";
 import type { PasskeyUnlock } from "../session/passkey.ts";
 
@@ -47,8 +47,8 @@ export const PasskeySection = (props: { passkeys: UnlockPasskeys; unlock: Passke
     return result.ok;
   };
   return (
-    <section aria-labelledby="passkeys-title" class="grid gap-2">
-      <h2 id="passkeys-title" class="text-xs font-medium">
+    <section aria-labelledby="passkeys-title" class={panelClass}>
+      <h2 id="passkeys-title" class={panelTitleClass}>
         {m.passkey_title()}
       </h2>
       <p class="text-xs text-muted-foreground">{m.passkey_text()}</p>

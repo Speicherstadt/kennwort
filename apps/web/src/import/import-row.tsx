@@ -6,12 +6,12 @@
  * never offered, one with this code makes the row a duplicate.
  */
 import { typeLabel } from "@kennwort/client/entries/entry-types.ts";
-import { Badge, m } from "@kennwort/ui";
+import { Badge, badgeVariants, m } from "@kennwort/ui";
 import { createUniqueId, For, Show } from "solid-js";
 import type { CodeTarget, PreviewRow } from "./preview.ts";
 
 /** A grey chip in the text colour: grey text on grey stays under 4.5:1 (DESIGN.md, Farben) */
-export const chipClass = "rounded-full border border-border px-1.5 py-0.5 text-[11px] font-medium";
+export const chipClass = badgeVariants({ variant: "outline" });
 
 const untitled = (title: string) => title || m.import_untitled();
 const withState = (row: PreviewRow, state: CodeTarget["state"]) =>

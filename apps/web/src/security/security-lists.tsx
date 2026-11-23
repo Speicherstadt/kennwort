@@ -52,14 +52,16 @@ export const ReasonList = (props: {
   /** Shown instead of the list, e.g. while the leak check is off */
   instead?: string | undefined;
 }) => (
-  <section aria-labelledby={props.id} class="grid gap-2">
+  <section aria-labelledby={props.id} class="grid content-start gap-2">
     <h2 id={props.id} class="text-sm font-semibold">
       {props.title}
     </h2>
     <Show
       when={!props.instead && (props.entries ?? []).length > 0}
       fallback={
-        <p class="text-[13px] text-muted-foreground">{props.instead ?? m.security_none()}</p>
+        <p class="rounded-xl border border-dashed border-border px-4 py-6 text-center text-[13px] text-muted-foreground">
+          {props.instead ?? m.security_none()}
+        </p>
       }
     >
       <ul aria-label={props.title} class="divide-y divide-border rounded-xl border border-border">
@@ -90,9 +92,17 @@ export const Counts = (props: {
       }
     >
       {([label, count]) => (
-        <div class="rounded-xl border border-border px-3 py-2">
+        <div class="grid gap-1 rounded-xl border border-border px-4 py-3">
           <dt class="text-xs text-muted-foreground">{label}</dt>
-          <dd class="text-lg font-semibold">{count ?? m.security_not_checked()}</dd>
+          <dd
+            class={
+              count === undefined
+                ? "text-[13px] font-medium text-muted-foreground"
+                : "text-2xl font-semibold tabular-nums"
+            }
+          >
+            {count ?? m.security_not_checked()}
+          </dd>
         </div>
       )}
     </For>

@@ -6,7 +6,7 @@
  */
 import type { MemberView } from "@kennwort/core";
 import { encodeBytes } from "@kennwort/core";
-import { Badge, Button, Icon, m } from "@kennwort/ui";
+import { Badge, Button, Icon, introClass, m, pageClass } from "@kennwort/ui";
 import { ShieldCheck } from "@kennwort/ui/icons";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, For, Loading, Match, onSettled, resolve, Show, Switch } from "solid-js";
@@ -142,7 +142,13 @@ const MemberRow = (props: {
 }) => {
   const name = () => props.view.name ?? (props.isMe ? m.members_you() : m.members_unnamed());
   return (
-    <li class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3.5 py-2.5">
+    <li class="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3">
+      <span
+        aria-hidden="true"
+        class="grid size-9 shrink-0 place-items-center rounded-full bg-accent text-[13px] font-medium"
+      >
+        {name().slice(0, 1).toUpperCase()}
+      </span>
       <div class="min-w-0 flex-1">
         <p class="font-medium">
           {name()}
@@ -272,11 +278,12 @@ export const MembersPage = (props: {
       (await setRole(props.api, props.session, view, role)) ? undefined : m.members_role_failed(),
     );
   return (
-    <section aria-labelledby="page-title" class="min-h-0 flex-1 overflow-auto p-4 md:p-6">
-      <h1 id="page-title" class="mb-4 text-[28px] font-semibold md:text-lg">
+    <section aria-labelledby="page-title" class={pageClass("wide")}>
+      <h1 id="page-title" class="mb-1 text-[28px] font-semibold md:text-lg">
         {m.members_title()}
       </h1>
-      <div class="grid max-w-xl gap-6">
+      <p class={introClass}>{m.members_intro()}</p>
+      <div class="grid gap-6">
         <Loading>
           <LoadProblem
             loaded={members.data}
@@ -286,50 +293,54 @@ export const MembersPage = (props: {
           />
           <Show when={ready()}>
             {(list) => (
-              <>
-                <Show when={mayInvite(list().me)}>
-                  <InviteForm onInvite={inviting(props)} />
-                </Show>
-                <Show when={problem()}>
-                  <p role="alert" class={alertClass}>
-                    {problem()}
-                  </p>
-                </Show>
-                <ul
-                  class="divide-y divide-border rounded-xl border border-border"
-                  aria-label={m.members_title()}
-                >
-                  <For each={list().views}>
-                    {(view) => (
-                      <MemberRow
-                        view={view}
-                        isMe={
-                          encodeBytes(view.accountId) ===
-                          encodeBytes(opened()?.accountId ?? new Uint8Array())
-                        }
-                        canConfirm={may(mayConfirm, list().me)}
-                        canChangeRole={may(mayChangeRoles, list().me)}
-                        canRemove={mayRemove(list().me, view)}
-                        reportable={props.exits !== undefined}
-                        busy={busy()}
-                        onConfirm={() => doConfirm(view, list().me)}
-                        onCheck={() => renewal.ask(view)}
-                        onRole={(role) => doRole(view, role)}
-                        onRemove={() => leaving.ask(view)}
-                        onReport={() => leaving.show(view)}
-                      />
-                    )}
-                  </For>
-                </ul>
+              <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
+                <div class="grid content-start gap-6">
+                  <Show when={mayInvite(list().me)}>
+                    <InviteForm onInvite={inviting(props)} />
+                  </Show>
+                  <Show when={problem()}>
+                    <p role="alert" class={alertClass}>
+                      {problem()}
+                    </p>
+                  </Show>
+                  <ul
+                    class="divide-y divide-border rounded-xl border border-border"
+                    aria-label={m.members_title()}
+                  >
+                    <For each={list().views}>
+                      {(view) => (
+                        <MemberRow
+                          view={view}
+                          isMe={
+                            encodeBytes(view.accountId) ===
+                            encodeBytes(opened()?.accountId ?? new Uint8Array())
+                          }
+                          canConfirm={may(mayConfirm, list().me)}
+                          canChangeRole={may(mayChangeRoles, list().me)}
+                          canRemove={mayRemove(list().me, view)}
+                          reportable={props.exits !== undefined}
+                          busy={busy()}
+                          onConfirm={() => doConfirm(view, list().me)}
+                          onCheck={() => renewal.ask(view)}
+                          onRole={(role) => doRole(view, role)}
+                          onRemove={() => leaving.ask(view)}
+                          onReport={() => leaving.show(view)}
+                        />
+                      )}
+                    </For>
+                  </ul>
+                </div>
                 <ExitDialogs leaving={leaving} />
                 <RenewedCheck check={renewal} me={list().me} session={props.session} />
-                <CompanySections
-                  session={props.session}
-                  api={props.api}
-                  canEdit={may(mayChangeRoles, list().me)}
-                  onRoot={afterRoot}
-                />
-              </>
+                <div class="grid content-start gap-4">
+                  <CompanySections
+                    session={props.session}
+                    api={props.api}
+                    canEdit={may(mayChangeRoles, list().me)}
+                    onRoot={afterRoot}
+                  />
+                </div>
+              </div>
             )}
           </Show>
         </Loading>

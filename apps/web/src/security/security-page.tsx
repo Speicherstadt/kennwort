@@ -5,7 +5,15 @@
  * turns it on. Everything is worked out on the device from the entries it already decrypted.
  */
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
-import { Button, getLocale, m } from "@kennwort/ui";
+import {
+  Button,
+  getLocale,
+  introClass,
+  m,
+  pageClass,
+  panelClass,
+  panelTitleClass,
+} from "@kennwort/ui";
 import { createEffect, createMemo, createSignal, Match, Show, Switch } from "solid-js";
 import type { Navigation } from "../navigation.ts";
 import type { LeakState, Leaks } from "./leaks.ts";
@@ -50,8 +58,8 @@ const LeakSwitch = (props: { deps: SecurityDeps }) => {
   };
   const state = () => props.deps.leaks.state();
   return (
-    <section aria-labelledby="security-leak" class="grid gap-2">
-      <h2 id="security-leak" class="text-sm font-semibold">
+    <section aria-labelledby="security-leak" class={panelClass}>
+      <h2 id="security-leak" class={panelTitleClass}>
         {m.security_leak_title()}
       </h2>
       <label class="flex min-h-11 items-center gap-2 md:min-h-0">
@@ -106,12 +114,12 @@ export const SecurityPage = (props: { deps: SecurityDeps }) => {
   const leakNote = (entry: ShownEntry) =>
     m.security_leaked_count({ count: leaked()?.get(entry.id) ?? 0 });
   return (
-    <section aria-labelledby="page-title" class="min-h-0 flex-1 overflow-auto p-4 md:p-6">
-      <h1 id="page-title" class="mb-2 text-[28px] font-semibold md:text-lg">
+    <section aria-labelledby="page-title" class={pageClass("wide")}>
+      <h1 id="page-title" class="mb-1 text-[28px] font-semibold md:text-lg">
         {m.nav_security()}
       </h1>
-      <p class="mb-4 max-w-prose text-[13px] text-muted-foreground">{m.security_intro()}</p>
-      <div class="grid max-w-3xl gap-6">
+      <p class={introClass}>{m.security_intro()}</p>
+      <div class="grid gap-6">
         <Counts
           weak={overview().weak.length}
           reused={overview().reused.length}
@@ -128,35 +136,37 @@ export const SecurityPage = (props: { deps: SecurityDeps }) => {
             />
           )}
         </Show>
-        <ReasonList
-          nav={props.deps.nav}
-          id="security-leaked"
-          title={m.security_leaked()}
-          entries={overview().leaked}
-          note={leakNote}
-          instead={leaked() ? undefined : m.security_not_checked()}
-        />
-        <ReasonList
-          nav={props.deps.nav}
-          id="security-weak"
-          title={m.security_weak()}
-          entries={overview().weak}
-          note={(entry) => entry.subtitle}
-        />
-        <ReasonList
-          nav={props.deps.nav}
-          id="security-reused"
-          title={m.security_reused()}
-          entries={overview().reused}
-          note={(entry) => m.security_reused_count({ count: entry.reused })}
-        />
-        <ReasonList
-          nav={props.deps.nav}
-          id="security-marked"
-          title={m.security_marked()}
-          entries={overview().marked}
-          note={(entry) => entry.subtitle}
-        />
+        <div class="grid gap-6 lg:grid-cols-2">
+          <ReasonList
+            nav={props.deps.nav}
+            id="security-leaked"
+            title={m.security_leaked()}
+            entries={overview().leaked}
+            note={leakNote}
+            instead={leaked() ? undefined : m.security_not_checked()}
+          />
+          <ReasonList
+            nav={props.deps.nav}
+            id="security-weak"
+            title={m.security_weak()}
+            entries={overview().weak}
+            note={(entry) => entry.subtitle}
+          />
+          <ReasonList
+            nav={props.deps.nav}
+            id="security-reused"
+            title={m.security_reused()}
+            entries={overview().reused}
+            note={(entry) => m.security_reused_count({ count: entry.reused })}
+          />
+          <ReasonList
+            nav={props.deps.nav}
+            id="security-marked"
+            title={m.security_marked()}
+            entries={overview().marked}
+            note={(entry) => entry.subtitle}
+          />
+        </div>
         <LeakSwitch deps={props.deps} />
       </div>
     </section>

@@ -17,7 +17,7 @@ import { type OpenedVault, openReleased } from "@kennwort/client/emergency/open.
 import type { RecoveryApi } from "@kennwort/client/session/recovery-api.ts";
 import type { Vault } from "@kennwort/client/vaults/vaults.ts";
 import { encodeBytes } from "@kennwort/core";
-import { m, type Toasts } from "@kennwort/ui";
+import { m, pageClass, type Toasts } from "@kennwort/ui";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, Loading, Show } from "solid-js";
 import { queryKeys } from "../queries.ts";
@@ -81,7 +81,7 @@ export const EmergencyPage = (props: {
     );
   };
   return (
-    <section aria-labelledby="page-title" class="min-h-0 flex-1 overflow-auto p-4 md:p-6">
+    <section aria-labelledby="page-title" class={pageClass()}>
       <h1 id="page-title" class="mb-4 text-[28px] font-semibold md:text-lg">
         {m.emergency_title()}
       </h1>

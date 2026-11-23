@@ -6,7 +6,7 @@
  */
 import type { OidcApi } from "@kennwort/client/session/oidc-api.ts";
 import type { OidcStatus } from "@kennwort/core";
-import { Button, m } from "@kennwort/ui";
+import { Button, m, panelClass, panelTitleClass } from "@kennwort/ui";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, For, Loading, Show } from "solid-js";
 import { queryKeys } from "../queries.ts";
@@ -116,8 +116,8 @@ export const OidcSection = (props: {
     <Loading>
       <Show when={status.data}>
         {(shown) => (
-          <section aria-labelledby="oidc-title" class="grid gap-3">
-            <h2 id="oidc-title" class="text-xs font-medium">
+          <section aria-labelledby="oidc-title" class={panelClass}>
+            <h2 id="oidc-title" class={panelTitleClass}>
               {m.oidc_section_title()}
             </h2>
             <Show

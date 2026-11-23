@@ -11,7 +11,7 @@ import {
   type RecoveryDeps,
   switchRecoveryOff,
 } from "@kennwort/client/policy/recovery.ts";
-import { Button, m } from "@kennwort/ui";
+import { Button, m, panelClass, panelTitleClass } from "@kennwort/ui";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, Loading, Show } from "solid-js";
 import { queryKeys } from "../queries.ts";
@@ -55,8 +55,8 @@ export const RecoverySection = (props: {
     await client.invalidateQueries({ queryKey: queryKeys.recovery });
   };
   return (
-    <section aria-labelledby="recovery-title" class="grid gap-3">
-      <h2 id="recovery-title" class="text-xs font-medium">
+    <section aria-labelledby="recovery-title" class={panelClass}>
+      <h2 id="recovery-title" class={panelTitleClass}>
         {m.recovery_title()}
       </h2>
       <Loading>
