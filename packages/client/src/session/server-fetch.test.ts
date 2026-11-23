@@ -9,7 +9,7 @@ describe("fetch against the connected server", () => {
     const send = ok();
     await serverFetch(SERVER, send)("/api/vaults", { method: "GET" });
     expect(String(send.mock.calls[0]?.[0])).toBe(`${SERVER}/api/vaults`);
-    expect(send.mock.calls[0]?.[1]).toEqual({ method: "GET" });
+    expect(send.mock.calls[0]?.[1]).toEqual({ method: "GET", redirect: "error" });
   });
 
   it.each(["https://evil.test/api/vaults", "//evil.test/api", `${SERVER}.evil.test/api`])(
@@ -20,4 +20,18 @@ describe("fetch against the connected server", () => {
       expect(send).not.toHaveBeenCalled();
     },
   );
+});
+
+describe("redirects", () => {
+  it("asks the platform to refuse a redirect instead of following it", async () => {
+    const send = ok();
+    await serverFetch(SERVER, send)("/api/account/keys", { method: "POST", body: "proof" });
+    expect(send.mock.calls[0]?.[1]).toEqual({ method: "POST", body: "proof", redirect: "error" });
+  });
+
+  it("refuses a redirect for a Request too, whatever mode it carries", async () => {
+    const send = ok();
+    await serverFetch(SERVER, send)(new Request(`${SERVER}/api/vaults`, { redirect: "follow" }));
+    expect(send.mock.calls[0]?.[1]).toMatchObject({ redirect: "error" });
+  });
 });
