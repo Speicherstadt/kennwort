@@ -607,7 +607,12 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
 
 ## Phase 7 – Härtung
 
-- [ ] **K-701 Alle ETH-Angriffe** – jeder der 27 Angriffe als Test gegen den bösartigen Testserver.
+- [x] **K-701 Alle ETH-Angriffe** – jeder der 27 Angriffe als Test gegen den bösartigen Testserver.
+  Fertig, wenn: die Tabelle „Angriffe als Tests“ in `docs/sicherheitsdesign.md` für E-01 bis E-27
+  je eine Zeile mit Testpfaden hat, die noch fehlenden Angriffe (E-09, E-11, E-14, E-18, E-21,
+  E-24, E-25) in `packages/core/src/adversary/catalog.test.ts` nachgespielt sind und
+  `scripts/security-design.test.ts` fehlschlägt, wenn ein Angriff fehlt oder ein genannter Pfad
+  nicht existiert.
 - [ ] **K-702 Lasttest** – viele Geräte mit Live-Sync.
 - [x] **K-703 Installation und Betrieb** – Docker-Image, Compose, Quadlet, Caddy, Backups mit
   Wiederherstellung, Update-Hinweis; Release-Workflow aus firsttris/workflows.

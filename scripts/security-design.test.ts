@@ -1,7 +1,7 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { protocols, ruleNames, section, tableColumn } from "./security-design.ts";
+import { namedPaths, protocols, ruleNames, section, tableColumn } from "./security-design.ts";
 
 const read = (path: string) => readFileSync(join(import.meta.dirname, "..", path), "utf8");
 const plan = read("docs/plan.md");
@@ -15,6 +15,9 @@ const cryptography = section(plan, "## Kryptografie");
 const purposes = tableColumn(cryptography);
 const rules = ruleNames(cryptography.slice(cryptography.indexOf("Regeln:")));
 const designProtocols = protocols(design);
+const attackTests = section(design, "### Angriffe als Tests");
+const testedAttacks = tableColumn(attackTests);
+const testPaths = tableColumn(attackTests, 1);
 
 describe("security design", () => {
   it("reads the plan's threats and crypto rules", () => {
@@ -48,6 +51,30 @@ describe("security design", () => {
   it("names only catalog attacks in the coverage table", () => {
     const named = coverageAttacks.flatMap((cell) => cell.match(/E-\d+/g) ?? []);
     for (const attack of named) expect(catalog).toContain(attack);
+  });
+});
+
+describe("attacks as tests (K-701)", () => {
+  it("has a row for every attack of the catalog, in order", () => {
+    expect(testedAttacks).toEqual(catalog);
+  });
+
+  it.each(testedAttacks.map((attack, index) => [attack, testPaths[index] ?? ""]))(
+    "%s names test files that exist",
+    (_attack, cell) => {
+      const paths = namedPaths(cell);
+      expect(paths.length).toBeGreaterThan(0);
+      for (const path of paths)
+        expect(existsSync(join(import.meta.dirname, "..", path)), path).toBe(true);
+    },
+  );
+});
+
+describe("namedPaths", () => {
+  it("takes file paths in backticks and leaves other code alone", () => {
+    expect(
+      namedPaths("`a/b.test.ts`, `x`, `apps/server/src/adversary/`, `e2e/pwa.spec.ts`"),
+    ).toEqual(["a/b.test.ts", "e2e/pwa.spec.ts"]);
   });
 });
 
