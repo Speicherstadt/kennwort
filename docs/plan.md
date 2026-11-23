@@ -58,6 +58,9 @@ später).
 | Versionen geteilter Einträge | Der Empfänger merkt sich die höchste Version jedes geteilten Eintrags im verschlüsselten Kontostand (`versions`) und zeigt keine ältere | So spielt ihm der Server auch ohne Log keinen älteren Stand ein, über Geräte und Sitzungen hinweg (E-13) |
 | „Mit mir geteilt“ getrennt | Geteilte Einträge stehen nur unter „Mit mir geteilt“, nicht unter „Alle Einträge“ oder in einem Tresor | Der Empfänger ist kein Mitglied des Tresors; die Liste zeigt klar, was nur geliehen und nur lesbar ist |
 | Rolle einer Freigabe | Eine Freigabe trägt ihre Rolle im signierten Format, vorerst nur „lesen“ | Wer einen einzelnen Eintrag bekommt, hat kein Log, in dem eine Schreibberechtigung stünde; „bearbeiten“ kann später kommen, ohne das Format zu ändern |
+| Tauri-Version der Mobile-App | Tauri 3.0.0-alpha.6 (`tauri`, `tauri-runtime-wry`, CLI), exakt gepinnt; die Crates stehen wie die npm-Pakete in `allowed-dependencies.json` | Zum Bau der App (K-801, 23.11.2026) ist Tauri 3 noch Alpha, stabil ist 2.12. Der Projektplan wählt Tauri 3; das Gerüst ist klein genug, um bei Problemen auf 2.x zurückzugehen. Der Rust-Kern bleibt dünn, damit Alpha-Änderungen wenig treffen |
+| Oberfläche und Updates der Mobile-App | Die App bündelt den Build von `apps/web` im Vite-Modus `mobile` (ohne Service Worker) und lädt nie Code von einem Server; Updates nur als signiertes App-Paket (APK aus den Releases, Play Store, App Store). Ihre CSP ist mindestens so streng wie die der Web-App, ein Test vergleicht beide | keine zweite Oberfläche; das Betriebssystem nimmt ein Update nur mit derselben Signatur an, ein Service Worker wäre dort ein zweiter, schwächerer Update-Weg |
+| Autofill-Brücke der App | Ein Tauri-Plugin je Plattform (`apps/mobile/plugins/autofill`: `android/` Kotlin mit dem `AutofillService`, später `ios/` Swift mit dem Credential Provider) sammelt nur, wo gefüllt werden soll, und füllt, was zurückkommt. Entsperren, exakter Host-Abgleich und Auswahl laufen in TypeScript in der WebView, auf denselben Paketen wie Web-App und Extension; beide Plattformen schicken dasselbe JSON (`apps/mobile/src/autofill/bridge.ts`, Version 1). Der Abgleich aus `apps/extension/src/page/matches.ts` zieht dafür in K-802 in ein gemeinsames Paket | Die Logik gibt es so nur einmal, geprüft von denselben Tests; eine Kopie in Kotlin und Swift würde auseinanderlaufen. Eine Anfrage trägt nie ein Geheimnis, eine Antwort nur die angefragten Felder und erst nach Entsperren und Auswahl |
 | Persönlicher Tresor | Jedes Konto bekommt beim ersten Öffnen einen Tresor „Persönlich“, dessen ID aus dem AK abgeleitet ist | Ein Ort für eigene Zugänge ohne Zutun; dieselbe ID auf allen Geräten verhindert doppelte Tresore |
 | Schlüsselwechsel beim Austritt | `entfernen` und `schlüsselwechsel` signiert derselbe Verwalter in einem Zug; das neue VK geht an jedes Mitglied, das das Log danach noch nennt, auch an abgelaufene, und nur über ein Zertifikat des Wurzelschlüssels mit dem Fingerabdruck aus dem Log, sonst bricht der Wechsel ab; jeder Eintrag wird als nächste Version in der neuen Epoche geschrieben | Was nach dem Austritt geschrieben wird, liegt so unter einem Schlüssel, den die Person nie hatte (E-26); ein still ausgelassenes oder an einen fremden Schlüssel verpacktes Mitglied wäre schlimmer als ein abgebrochener Wechsel. Abgelaufene bekommen den Schlüssel, weil `rolle` sie wieder hereinlässt und keinen Schlüssel trägt; der Server gibt ihn nur aktuellen Mitgliedern |
 | Epochen beim Lesen und Schreiben | Geschrieben wird nur unter dem Schlüssel der aktuellen Epoche des geprüften Logs (sonst schreibt der Abgleich nichts), der Server nimmt Versionen nur in dieser Epoche; ältere Schlüssel liest der Client nur für Versionen, die noch nicht neu verschlüsselt sind; eine Version einer Epoche, die das Log nicht erreicht, ist ein Angriff | Ein Gerät mit dem alten Schlüssel schriebe für jemanden, der gegangen ist; ein abgebrochener Wechsel soll den Tresor aber lesbar lassen. Neu verschlüsselte Einträge verraten einen zurückgehaltenen Wechsel oder ein zurückgespieltes Log auch einem Gerät, das sich den neueren Stand nie gemerkt hat |
@@ -384,9 +387,8 @@ Aushilfen, fremde oder geteilte Geräte, Baustellen-Tablets und alle, die nichts
 oder dürfen, auch auf dem iPhone ohne App Store. Beide nutzen dieselben Pakete (`packages/ui`,
 `packages/core`, `packages/crypto`).
 
-**Tauri 3**: Stand 19.11.2026 ist 3.0.0-alpha.6 (6.11.2026) aktuell, der 3.0-Meilenstein zu 31 %
-erledigt; stabil ist Tauri 2.12. Die App kommt als letzte Bauphase, damit Tauri 3 bis dahin
-möglichst stabil ist; ist es dann nicht stabil, nimmt der Loop die neueste Alpha oder 2.x.
+**Tauri 3**: Stand 23.11.2026 ist 3.0.0-alpha.6 (6.11.2026) aktuell (crates.io, npm `next`); stabil
+ist Tauri 2.12. Das Gerüst (K-801) nutzt diese Alpha, siehe [Entscheidungen](#entscheidungen).
 
 Aufbau:
 
@@ -459,6 +461,10 @@ wenn dort alles abgehakt ist und die menschlichen Schritte erledigt sind.
 - Ab wann Budget für das externe Audit, und welcher Prüfer?
 - Aktueller Stand von Googles Entwickler-Verifizierung für APKs außerhalb des Play Stores?
 - Bringt Tauri 3 für Mobile genug, um auf die stabile Version zu warten?
+- Wie spricht die App ihren Server an? Die Web-App ruft `/api` unter ihrer eigenen Adresse auf, in
+  der App ist das die App selbst (K-801). Kandidaten: eine Server-Adresse beim Einrichten und
+  `connect-src` dafür zur Laufzeit (die CSP steht aber beim Bauen fest), oder die Anfragen über den
+  Rust-Kern an die eingerichtete Adresse weiterreichen, sodass die CSP bei `'self'` bleibt.
 
 ## Quellen
 

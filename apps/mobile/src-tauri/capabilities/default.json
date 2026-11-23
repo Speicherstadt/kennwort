@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "default",
+  "description": "The main window gets the core defaults and nothing more; the autofill plugin adds its own permissions in K-802",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

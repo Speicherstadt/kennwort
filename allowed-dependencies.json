@@ -77,5 +77,15 @@
       "reason": "the Public Suffix List for the exact host the extension lists and fills by (P-17, K-403): a public suffix such as co.uk or github.io is never taken for one site. Pure functions without I/O or globals; its one dependency is tldts-core from the same project, which has none (pinned with tldts in the root overrides). The list is bundled (about 130 kB minified) into the popup, the inline menu and the service worker, never into the content script",
       "workspaces": ["apps/extension"]
     }
+  },
+  "crates": {
+    "tauri": {
+      "reason": "Tauri 3 (3.0.0-alpha.6, the newest; stable is 2.12), the mobile app's shell for Android and iOS (docs/plan.md, Stack; K-801): one system webview on the web app's bundled build, IPC for the autofill plugins of K-802. No feature flags; the Rust side holds no keys and no logic of its own",
+      "workspaces": ["apps/mobile"]
+    },
+    "tauri-runtime-wry": {
+      "reason": "Tauri 3's webview runtime on wry (Android WebView, WKWebView), a separate crate since 3.0 that the app must name; same project and release as tauri",
+      "workspaces": ["apps/mobile"]
+    }
   }
 }

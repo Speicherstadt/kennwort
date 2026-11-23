@@ -1,0 +1,28 @@
+[package]
+name = "kennwort-mobile"
+version = "0.0.0"
+description = "Kennwort for Android and iOS: the shared web UI in a Tauri shell"
+license = "AGPL-3.0-only"
+edition = "2024"
+rust-version = "1.95"
+publish = false
+
+# Tauri 3 is still an alpha (3.0.0-alpha.6, 2026-11-06); pinned exactly like every JS dependency,
+# bumped on purpose. The layout follows tauri-cli 3.0.0-alpha.6, templates/app/src-tauri.
+[lib]
+name = "kennwort_mobile_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "=3.0.0-alpha.4", features = [] }
+
+[dependencies]
+tauri = { version = "=3.0.0-alpha.6", features = [] }
+tauri-runtime-wry = "=3.0.0-alpha.6"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

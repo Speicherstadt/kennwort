@@ -6,7 +6,9 @@
  * package under an allowed name (docs/plan.md: dependencies pinned exactly).
  */
 
-export type Allowlist = { packages: Record<string, { reason: string; workspaces: string[] }> };
+type Entry = { reason: string; workspaces: string[] };
+/** npm packages, and the Rust crates the mobile app links into its binary (K-801) */
+export type Allowlist = { packages: Record<string, Entry>; crates?: Record<string, Entry> };
 /** A workspace's runtime dependencies, as a map or as entries when several fields name one package */
 export type Workspace = { dir: string; dependencies: Record<string, string> | [string, string][] };
 
@@ -54,4 +56,39 @@ export const overrideViolations = (root: Record<string, unknown>): string[] =>
         ([name, version]) =>
           `package.json: ${field} ${name}@${JSON.stringify(version)} is not an exact registry version`,
       ),
+  );
+
+/** A Cargo manifest's runtime dependencies: [build-dependencies] run only while building */
+export type Crate = { dir: string; dependencies: Record<string, unknown> };
+
+// Cargo reads a bare version as "this or any compatible later one"; "=" pins it exactly
+const EXACT_CRATE_VERSION = /^=\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
+/** A crates.io version, or nothing when the source is a repository, a path or another registry */
+const crateVersion = (spec: unknown): string | undefined => {
+  if (typeof spec === "string") return spec;
+  if (typeof spec !== "object" || spec === null) return undefined;
+  const fields = spec as Record<string, unknown>;
+  if (["git", "path", "registry"].some((source) => source in fields)) return undefined;
+  return typeof fields.version === "string" ? fields.version : undefined;
+};
+
+const crateProblem = (allowlist: Allowlist, dir: string, name: string, spec: unknown) => {
+  const version = crateVersion(spec);
+  if (version === undefined || !EXACT_CRATE_VERSION.test(version))
+    return `${dir}: crate ${name} is not pinned to an exact crates.io version ("=x.y.z")`;
+  const entry = allowlist.crates?.[name];
+  if (!entry) return `${dir}: crate ${name} is not in allowed-dependencies.json`;
+  if (entry.reason.trim() === "")
+    return `${dir}: crate ${name} has no reason in allowed-dependencies.json`;
+  if (!entry.workspaces.includes(dir))
+    return `${dir}: crate ${name} is allowed only in ${entry.workspaces.join(", ")}`;
+  return undefined;
+};
+
+/** Every runtime crate that the allowlist does not cover */
+export const crateViolations = (allowlist: Allowlist, crates: Crate[]): string[] =>
+  crates.flatMap(({ dir, dependencies }) =>
+    Object.entries(dependencies)
+      .map(([name, spec]) => crateProblem(allowlist, dir, name, spec))
+      .filter((problem) => problem !== undefined),
   );

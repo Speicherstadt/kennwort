@@ -3,7 +3,12 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { type Allowlist, overrideViolations, violations } from "./allowed-dependencies.ts";
+import {
+  type Allowlist,
+  crateViolations,
+  overrideViolations,
+  violations,
+} from "./allowed-dependencies.ts";
 
 const allowlist: Allowlist = {
   packages: {
@@ -79,6 +84,48 @@ describe("violations", () => {
     expect(
       violations(allowlist, [{ dir: "apps/web", dependencies: { "@kennwort/ui": "workspace:*" } }]),
     ).toEqual([]);
+  });
+});
+
+describe("crateViolations", () => {
+  const crates: Allowlist = {
+    packages: {},
+    crates: {
+      tauri: { reason: "shell", workspaces: ["apps/mobile"] },
+      bare: { reason: " ", workspaces: ["apps/mobile"] },
+    },
+  };
+  const check = (dependencies: Record<string, unknown>, dir = "apps/mobile") =>
+    crateViolations(crates, [{ dir, dependencies }]);
+
+  it("lets a listed crate through, pinned exactly, as a string or a table", () => {
+    expect(check({ tauri: "=3.0.0-alpha.6" })).toEqual([]);
+    expect(check({ tauri: { version: "=3.0.0-alpha.6", features: [] } })).toEqual([]);
+  });
+
+  it("fails a crate that is not on the list or has no reason", () => {
+    expect(check({ serde: "=1.0.0", bare: "=1.0.0" })).toEqual([
+      "apps/mobile: crate serde is not in allowed-dependencies.json",
+      "apps/mobile: crate bare has no reason in allowed-dependencies.json",
+    ]);
+  });
+
+  it("fails a listed crate in a workspace not named for it", () => {
+    expect(check({ tauri: "=3.0.0-alpha.6" }, "apps/cli")).toEqual([
+      "apps/cli: crate tauri is allowed only in apps/mobile",
+    ]);
+  });
+
+  it.each([
+    ["3.0.0-alpha.6"],
+    ["^3"],
+    [{ git: "https://example.test/tauri", version: "=3.0.0" }],
+    [{ path: "../tauri" }],
+    [{ version: "=3.0.0", registry: "other" }],
+  ])("fails a crate that is not pinned to crates.io: %j", (spec) => {
+    expect(check({ tauri: spec })).toEqual([
+      'apps/mobile: crate tauri is not pinned to an exact crates.io version ("=x.y.z")',
+    ]);
   });
 });
 

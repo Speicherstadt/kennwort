@@ -1,8 +1,10 @@
 /** `bun run lint`: fails when a workspace has a runtime dependency allowed-dependencies.json does not cover */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   type Allowlist,
+  type Crate,
+  crateViolations,
   overrideViolations,
   violations,
   type Workspace,
@@ -24,8 +26,21 @@ const workspaces: Workspace[] = workspaceDirs(root).map((dir) => {
     dependencies: RUNTIME_FIELDS.flatMap((field) => Object.entries(manifest[field] ?? {})),
   };
 });
+// A workspace with a Tauri shell links Rust crates into the app: they are runtime code as well
+const TAURI_MANIFEST = "/src-tauri/Cargo.toml";
+const crates: Crate[] = workspaceDirs(root)
+  .filter((dir) => existsSync(join(root, dir + TAURI_MANIFEST)))
+  .map((dir) => {
+    const manifest = Bun.TOML.parse(readFileSync(join(root, dir + TAURI_MANIFEST), "utf8"));
+    return {
+      dir,
+      dependencies: (manifest as { dependencies?: Record<string, unknown> }).dependencies ?? {},
+    };
+  });
+const allowlist = readJson("allowed-dependencies.json") as Allowlist;
 const problems = [
-  ...violations(readJson("allowed-dependencies.json") as Allowlist, workspaces),
+  ...violations(allowlist, workspaces),
+  ...crateViolations(allowlist, crates),
   ...overrideViolations(readJson("package.json") as Record<string, unknown>),
 ];
 for (const problem of problems) console.error(problem);

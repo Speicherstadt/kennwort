@@ -41,8 +41,9 @@ if (root) {
     ),
     root,
   );
-  // Only a production build has a signed release to check (P-16); the dev server has none
-  if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  // Only a production build has a signed release to check (P-16); the dev server has none, and the
+  // mobile app's build (Vite mode "mobile", K-801) is updated by its store, never by a worker
+  if (import.meta.env.PROD && import.meta.env.MODE !== "mobile" && "serviceWorker" in navigator) {
     void watchForUpdates({
       container: navigator.serviceWorker,
       document,
