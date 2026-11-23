@@ -113,6 +113,30 @@ export const contentOf = (entry: (typeof data.entries)[number]): EntryContent =>
   history: [],
 });
 
+/** The company's groups, each linked to the vault of its team; everyone in them is already in it */
+export const GROUPS = [
+  { name: "Büro", members: ["Anna", "Sandra", "Max"], vault: "office", role: "read" }, // i18n-ignore: demo data
+  { name: "Buchhaltung", members: ["Anna"], vault: "accounting", role: "manage" }, // i18n-ignore: demo data
+] as const;
+
+/** Groups ask, never give (K-305 part 5): they go on the stand-in as the server keeps them */
+const seedGroups = (
+  store: DemoStore,
+  vaultIds: Map<string, string>,
+  colleagues: { person: Person; certificate: Certificate }[],
+) => {
+  const accountOf = (name: string) =>
+    colleagues.find((c) => c.person.name === name)?.certificate.accountId ?? fail(`no ${name}`);
+  for (const group of GROUPS) {
+    const id = encodeBytes(randomBytes(16));
+    const members = new Set(group.members.map((name) => encodeBytes(accountOf(name))));
+    store.groups.set(id, { id, name: group.name, members });
+    const vaultId = vaultIds.get(group.vault) ?? fail(`no vault ${group.vault}`);
+    const links = store.vaultGroups.get(vaultId) ?? new Map();
+    store.vaultGroups.set(vaultId, links.set(id, group.role));
+  }
+};
+
 export type Seeded = { store: DemoStore; accountId: Uint8Array; secretKey: Uint8Array };
 
 type SeedOptions = { derive?: Derive; passphrase?: string };
@@ -175,6 +199,7 @@ export const seedDemo = async (options: SeedOptions = {}): Promise<Seeded> => {
     }
   }
 
+  seedGroups(store, ids, colleagues);
   const loaded = await vaultsNow();
   const entries = createEntryStore(httpServerFor(api.syncFetch), session);
   await entries.load(loaded.vaults, loaded.trust);

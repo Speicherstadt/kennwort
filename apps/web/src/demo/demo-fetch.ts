@@ -40,8 +40,9 @@ const openStream = (signal: AbortSignal | null | undefined) =>
     { status: 200, headers: { "content-type": "text/event-stream" } },
   );
 
+/** `onUnavailable` hears of every write the stand-in does not offer (501 "demo-unavailable") */
 export const demoFetch =
-  (store: DemoStore): typeof fetch =>
+  (store: DemoStore, onUnavailable: () => void = () => {}): typeof fetch =>
   async (input, init) => {
     const path = pathOf(input);
     if (!/^\/(api|auth)\//.test(path)) throw new TypeError("demo: no network"); // i18n-ignore
@@ -49,6 +50,7 @@ export const demoFetch =
     const headers = new Headers(init?.headers);
     if (method === "GET" && path.endsWith("/events")) return openStream(init?.signal);
     const { status, json } = route(store, method, path, bodyOf(init), bearer(headers));
+    if (status === 501) onUnavailable();
     return new Response(JSON.stringify(json ?? {}), {
       status,
       headers: { "content-type": "application/json" },
