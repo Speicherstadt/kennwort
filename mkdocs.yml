@@ -21,6 +21,8 @@ validation:
   anchors: warn
 theme:
   name: material
+  # Link previews and structured data for the start page (overrides/main.html)
+  custom_dir: overrides
   language: de
   icon:
     repo: fontawesome/brands/github
@@ -45,6 +47,9 @@ theme:
       toggle: { icon: material/weather-sunny, name: Hell }
 plugins:
   - search
+# The showcase start page (index.md)
+extra_css:
+  - assets/showcase.css
 markdown_extensions:
   - admonition
   - attr_list
@@ -61,6 +66,7 @@ exclude_docs: |
   solid-2.0/
 nav:
   - Kennwort: index.md
+  - Alle Funktionen: ueberblick.md
   - Konto und Entsperren: konto.md
   - Tresore: tresore.md
   - Einträge: eintraege.md

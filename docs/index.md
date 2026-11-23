@@ -1,140 +1,216 @@
 ---
 title: Kennwort – der Passwortmanager für dein Team
+og_title: "Kennwort: Die Zugänge deines Teams. Nur für euch lesbar."
 description: >-
   Kennwort: der selbst gehostete, Ende-zu-Ende-verschlüsselte Passwortmanager für Teams in kleinen
-  Betrieben. Web-App, Browser-Extension und App, ohne Kosten pro Benutzer.
+  Betrieben. Web-App, Browser-Extension, App und Kommandozeile; der Server speichert nur
+  Verschlüsseltes. Ein Rundgang in Bildern.
+image: assets/screenshots/entry-desktop-light.webp
+hide:
+  - navigation
+  - toc
 ---
 
-# Kennwort
+<!-- The page to send to customers: what Kennwort does, in pictures. The details live in
+     ueberblick.md. -->
 
-**Die Zugänge deines Teams – nur für euch lesbar, auf deinem eigenen Server.**
+<div class="showcase-hero" markdown>
 
-Kennwort ist ein selbst gehosteter Passwortmanager für kleine Betriebe: Tresore und Gruppen fürs
-Team, eine Browser-Extension, die erst nach Klick ausfüllt, und eine Web-App fürs Handy.
-Ende-zu-Ende-verschlüsselt, mit Post-Quanten-Schutz, Open Source und ohne Kosten pro Benutzer.
+<p class="showcase-kicker">Passwortmanager für kleine Betriebe, selbst gehostet</p>
 
-<a href="/demo/" class="md-button md-button--primary">Demo ausprobieren</a>
-[Installieren](installation.md){ .md-button }
+# Die Zugänge deines Teams. Nur für euch lesbar.
+
+<p class="showcase-claim">Tresore fürs Team, eine Browser-Extension, die erst nach deinem Klick
+ausfüllt, eine Web-App fürs Handy und eine Kommandozeile. Verschlüsselt wird auf dem Gerät – dein
+Server speichert nur Geheimtext.</p>
+
+[Demo ausprobieren](https://kennwort.app/demo/){ .md-button .md-button--primary } [Rundgang starten](#rundgang){ .md-button } [Alle Funktionen im Detail](ueberblick.md){ .md-button }
+
+</div>
 
 !!! warning "Noch nicht veröffentlicht"
     Kennwort ist gebaut, aber noch ohne externes Audit; die App für Android ist eine Alpha ohne
-    Release, die iOS-App fehlt noch. Bitte
-    noch keine echten Passwörter damit verwalten. In der Demo gibst du ohnehin nur Testdaten ein.
+    Release, die iOS-App fehlt noch. Bitte noch keine echten Passwörter damit verwalten. Die Demo
+    läuft ganz im Browser mit Testdaten; die Passphrase ist `weber-haustechnik`.
 
-!!! tip "Ausprobieren ohne Server"
-    Die [Demo](https://kennwort.app/demo/) zeigt die Web-App mit der Beispielfirma „Weber
-    Haustechnik“ (Jonas, Anna, Sandra und Max). Sie läuft ganz in deinem Browser: Ein Ersatz für den
-    Server hält die verschlüsselten Daten nur im Speicher des Tabs, beim Neuladen beginnt alles von
-    vorn, und die Seite darf keinen Server erreichen (CSP `connect-src 'none'`). Die Verschlüsselung
-    ist dieselbe wie in der echten App, auch Argon2id mit den festen Parametern; deshalb dauert das
-    Entsperren ein, zwei Sekunden. Die Passphrase steht oben auf der Seite und ist absichtlich
-    schwach. Entsperren kann nur Jonas; Anna, Sandra und Max sind bestätigte Mitglieder, deren
-    Passphrase niemand kennt. Gib dort keine echten Passwörter ein.
+<!-- On a phone the phone's own screen, so nothing has to be read at a quarter of its size. -->
+<div class="showcase-shot showcase-cover" markdown>
+[![Kennwort im Browser: die Einträge von Weber Haustechnik, daneben der Eintrag Sparkasse](assets/screenshots/entry-desktop-light.webp#only-light){ .showcase-cover-wide width="2560" height="1600" }](https://kennwort.app/demo/)
+[![Kennwort im Browser im dunklen Design: die Einträge, daneben der Eintrag Sparkasse](assets/screenshots/entry-desktop-dark.webp#only-dark){ .showcase-cover-wide width="2560" height="1600" }](https://kennwort.app/demo/)
+[![Kennwort am Handy: die Liste der Einträge mit Tab-Leiste](assets/screenshots/entries-phone-light.webp#only-light){ .showcase-cover-phone width="824" height="1678" }](https://kennwort.app/demo/)
+[![Kennwort am Handy im dunklen Design: die Liste der Einträge](assets/screenshots/entries-phone-dark.webp#only-dark){ .showcase-cover-phone width="824" height="1678" }](https://kennwort.app/demo/)
+</div>
 
-## Was Kennwort kann
+<div class="showcase-feature" id="rundgang" markdown>
+<div markdown>
+<span class="showcase-kicker">Tresore</span>
 
-- **Tresore fürs Team**: Logins, Notizen, WLAN, Karten, SSH- und API-Schlüssel, Einmal-Codes und
-  Passkeys in [Tresoren](tresore.md) mit Gruppen, Rollen und Zugriff auf Zeit.
-- **Entsperren mit Passkey oder Passphrase**: in der Web-App mit einem Passkey (WebAuthn PRF) oder
-  mit Passphrase und Secret Key, die das Gerät nie verlassen ([Kryptografie](kryptografie.md)); dazu
-  Recovery-Kit, Firmen-Recovery und Notfallzugriff ([Konto und Entsperren](konto.md)).
-- **Browser-Extension**: Treffer nur für den exakten Host, Ausfüllen erst nach deinem Klick,
-  Speichern neuer Logins, Phishing-Warnung und Passkeys ([Browser-Extension](extension.md)).
-- **Für Handwerk und IT-Dienstleister**: QR-Etiketten für Geräte, Übergabe an den Kunden, mehrere
-  Firmen in einem Konto ([Handwerk und IT-Dienstleister](handwerk.md)).
-- **Im Alltag sicher**: [Sicherheits-Übersicht](sicherheit.md) mit schwachen, doppelten und
-  geleakten Passwörtern, [Einmal-Links](einmal-links.md) für Externe, [Mitteilungen](mitteilungen.md)
-  und eine [Kommandozeile](cli.md).
-- **Umzug in Minuten**: Import aus Bitwarden, 1Password, LastPass, KeePass, Team Password Manager,
-  Passbolt und den Browsern, direkt auf deinem Gerät ([Import und Export](import-export.md)).
+## Jeder sieht, was er braucht
 
-## Rundgang
+Ein persönlicher Tresor für jeden, geteilte Tresore für Büro, Baustelle oder Buchhaltung. Gruppen,
+Rollen und Zugriff auf Zeit.
+</div>
+<div class="showcase-shot" markdown>
+![Die Tresore der Firma mit der Zahl ihrer Personen](assets/screenshots/vaults-desktop-light.webp#only-light){ width="2560" height="1600" loading="lazy" }
+![Die Tresore der Firma, dunkles Design](assets/screenshots/vaults-desktop-dark.webp#only-dark){ width="2560" height="1600" loading="lazy" }
+</div>
+</div>
 
-Die Web-App zeigt am Rechner Liste und Eintrag nebeneinander, mit der Seitenleiste für Tresore (dein
-persönlicher zuerst, dann die geteilten mit der Zahl ihrer Personen); am Handy einen Bildschirm nach
-dem anderen mit der Tab-Leiste unten. Die Navigation hat fünf Punkte: Einträge, Generator, Team
-(Mitglieder, Gruppen und Tresore auf einer eigenen Seite), Einstellungen und Mitteilungen; unten am
-Rand **Sperren** (Strg+L) und dein Konto ([Handy und App](handy.md)). Die
-Extension öffnet ein Popup mit den Treffern der Seite und legt ein Menü unter Login-Felder. Am
-schnellsten siehst du es in der <a href="/demo/">Demo</a>.
+<div class="showcase-feature showcase-feature--flip" markdown>
+<div markdown>
+<span class="showcase-kicker">Einträge</span>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/entry-desktop-dark.webp">
-  <img src="assets/screenshots/entry-desktop-light.webp" alt="Weber Haustechnik in Kennwort: Liste der Einträge, daneben der Eintrag Sparkasse" width="800">
-</picture>
+## Mehr als Passwörter
 
-Die Tresore, die Mitglieder, die Sicherheit und die Mitteilungen der Firma:
+Logins, Notizen, WLAN, Karten, SSH- und API-Schlüssel, Einmal-Codes und Passkeys. Für Externe ein
+[Einmal-Link](einmal-links.md), der abläuft und sich nur so oft öffnen lässt, wie du wählst.
+</div>
+<div class="showcase-shot" markdown>
+![Liste der Einträge mit Suche und Filtern](assets/screenshots/entries-desktop-light.webp#only-light){ width="2560" height="1600" loading="lazy" }
+![Liste der Einträge, dunkles Design](assets/screenshots/entries-desktop-dark.webp#only-dark){ width="2560" height="1600" loading="lazy" }
+</div>
+</div>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/vaults-desktop-dark.webp">
-  <img src="assets/screenshots/vaults-desktop-light.webp" alt="Die Tresore der Firma" width="400">
-</picture>
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/members-desktop-dark.webp">
-  <img src="assets/screenshots/members-desktop-light.webp" alt="Mitglieder mit Rollen und bestätigten Schlüsseln" width="400">
-</picture>
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/security-desktop-dark.webp">
-  <img src="assets/screenshots/security-desktop-light.webp" alt="Sicherheit: schwache und mehrfach verwendete Passwörter" width="400">
-</picture>
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/notifications-desktop-dark.webp">
-  <img src="assets/screenshots/notifications-desktop-light.webp" alt="Mitteilungen" width="400">
-</picture>
+<div class="showcase-feature" markdown>
+<div markdown>
+<span class="showcase-kicker">Team</span>
 
-Am Handy und im Popup der Extension (360 × 600):
+## Niemand kommt heimlich dazu
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/entries-phone-dark.webp">
-  <img src="assets/screenshots/entries-phone-light.webp" alt="Liste der Einträge am Handy" width="200">
-</picture>
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/entry-phone-dark.webp">
-  <img src="assets/screenshots/entry-phone-light.webp" alt="Ein Eintrag am Handy" width="200">
-</picture>
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/security-phone-dark.webp">
-  <img src="assets/screenshots/security-phone-light.webp" alt="Sicherheit am Handy" width="200">
-</picture>
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/popup-extension-dark.webp">
-  <img src="assets/screenshots/popup-extension-light.webp" alt="Das Popup der Extension mit dem Login für die Seite" width="200">
-</picture>
+Jede Mitgliedschaft ist unterschrieben, und jedes Gerät prüft die Unterschriften. Ein Server, der
+einen Fremden in einen Tresor schmuggeln will, fällt auf.
+</div>
+<div class="showcase-shot" markdown>
+![Mitglieder mit Rollen und bestätigten Schlüsseln](assets/screenshots/members-desktop-light.webp#only-light){ width="2560" height="1600" loading="lazy" }
+![Mitglieder, dunkles Design](assets/screenshots/members-desktop-dark.webp#only-dark){ width="2560" height="1600" loading="lazy" }
+</div>
+</div>
 
-## Was Kennwort verspricht
+<div class="showcase-feature showcase-feature--flip" markdown>
+<div markdown>
+<span class="showcase-kicker">Sicherheit</span>
 
-Kennwort ist gegen einen Server gebaut, der selbst angegriffen wird:
+## Schwache Passwörter auf einen Blick
 
-- **Der Server sieht nur Verschlüsseltes.** Verschlüsselt wird auf deinem Gerät, mit
-  XChaCha20-Poly1305, X25519 und ML-KEM-768 gegen künftige Quantencomputer, Ed25519 und Argon2id.
-  Passphrase und Schlüssel verlassen das Gerät nie.
-- **Niemand bekommt heimlich Zugriff.** Jede Mitgliedschaft ist unterschrieben, jeder Geheimtext an
-  Eintrag, Tresor und Version gebunden; dein Gerät prüft beides. Alle 27 Angriffe der ETH-Studie zu
-  Passwortmanagern mit bösartigem Server laufen als Tests.
-- **Updates nur signiert.** Die installierte Web-App nimmt nur vom Kennwort-Projekt signierte
-  Versionen an, auch wenn dein Server etwas anderes ausliefert.
-- **Ausfüllen nur nach Klick**, nur auf dem exakten Host und nie in fremde iFrames.
-- **Offen und prüfbar.** Quellcode unter AGPL-3.0, reproduzierbare Builds, eine Handvoll
-  Abhängigkeiten im Client.
+Schwache, doppelte und geleakte Passwörter der Tresore, die du siehst, in einer Liste – mit dem
+Weg zum Ändern.
+</div>
+<div class="showcase-shot" markdown>
+![Sicherheit: schwache und mehrfach verwendete Passwörter](assets/screenshots/security-desktop-light.webp#only-light){ width="2560" height="1600" loading="lazy" }
+![Sicherheit, dunkles Design](assets/screenshots/security-desktop-dark.webp#only-dark){ width="2560" height="1600" loading="lazy" }
+</div>
+</div>
 
-Die Einzelheiten stehen im [Sicherheitsdesign](sicherheitsdesign.md), was der Server über dich
-speichert unter [Datenschutz](datenschutz.md).
+<div class="showcase-feature" markdown>
+<div markdown>
+<span class="showcase-kicker">Mitteilungen</span>
 
-## Installation
+## Du erfährst, was sich ändert
 
-Ein Container mit Caddy davor für TLS, mit Docker Compose oder Podman Quadlet:
+Anna bittet um Zugriff auf einen Tresor, eine Einladung wurde angenommen, ein Einmal-Link wurde
+abgerufen: Kennwort sagt dir Bescheid, wenn jemand auf dich wartet.
+</div>
+<div class="showcase-shot" markdown>
+![Mitteilungen der Firma](assets/screenshots/notifications-desktop-light.webp#only-light){ width="2560" height="1600" loading="lazy" }
+![Mitteilungen, dunkles Design](assets/screenshots/notifications-desktop-dark.webp#only-dark){ width="2560" height="1600" loading="lazy" }
+</div>
+</div>
 
-```sh
-curl -fsSLO https://raw.githubusercontent.com/Speicherstadt/kennwort/main/docker/compose.yaml
-curl -fsSLO https://raw.githubusercontent.com/Speicherstadt/kennwort/main/docker/Caddyfile
-curl -fsSL -o .env https://raw.githubusercontent.com/Speicherstadt/kennwort/main/docker/kennwort.env.example
-# KENNWORT_DOMAIN, KENNWORT_AUTH_SECRET und KENNWORT_SETUP_CODE in .env eintragen
-docker compose up -d
-```
+<div class="showcase-feature showcase-feature--flip" markdown>
+<div markdown>
+<span class="showcase-kicker">Browser-Extension</span>
 
-Danach legst du mit dem Einrichtungs-Code deine Firma an. Alles Weitere: [Installation](installation.md),
-[Backups](backup.md), [Updates](updates.md) und [Verwaltung](verwaltung.md).
+## Ausfüllen erst nach deinem Klick
 
-## Fragen
+Treffer nur für den exakten Host, nie in fremde iFrames. Neue Logins speichern, Passkeys nutzen,
+eine Warnung, wenn du ein gespeichertes Passwort auf einer Seite eintippst, die nicht zu ihm passt.
+</div>
+<div class="showcase-shot showcase-popup" markdown>
+![Das Popup der Extension mit dem Login für die Seite](assets/screenshots/popup-extension-light.webp#only-light){ width="720" height="1200" loading="lazy" }
+![Das Popup der Extension, dunkles Design](assets/screenshots/popup-extension-dark.webp#only-dark){ width="720" height="1200" loading="lazy" }
+</div>
+</div>
 
-Kosten, Umzug, vergessene Passphrase: Antworten stehen in der [FAQ](faq.md).
+<div class="showcase-center" markdown>
+<span class="showcase-kicker">Am Handy</span>
+
+## Am Handy ein Bildschirm nach dem anderen
+
+Die Web-App lässt sich installieren, mit Tab-Leiste unten. Die App für Android füllt in anderen
+Apps aus (Alpha); iOS folgt.
+
+<div class="showcase-phones" markdown>
+![Liste der Einträge am Handy](assets/screenshots/entries-phone-light.webp#only-light){ width="824" height="1678" loading="lazy" }
+![Liste der Einträge am Handy, dunkel](assets/screenshots/entries-phone-dark.webp#only-dark){ width="824" height="1678" loading="lazy" }
+![Ein Eintrag am Handy](assets/screenshots/entry-phone-light.webp#only-light){ width="824" height="1678" loading="lazy" }
+![Ein Eintrag am Handy, dunkel](assets/screenshots/entry-phone-dark.webp#only-dark){ width="824" height="1678" loading="lazy" }
+![Tresore am Handy](assets/screenshots/vaults-phone-light.webp#only-light){ width="824" height="1678" loading="lazy" }
+![Tresore am Handy, dunkel](assets/screenshots/vaults-phone-dark.webp#only-dark){ width="824" height="1678" loading="lazy" }
+![Sicherheit am Handy](assets/screenshots/security-phone-light.webp#only-light){ width="824" height="1678" loading="lazy" }
+![Sicherheit am Handy, dunkel](assets/screenshots/security-phone-dark.webp#only-dark){ width="824" height="1678" loading="lazy" }
+</div>
+</div>
+
+<div class="showcase-center" markdown>
+
+## Gebaut gegen einen bösartigen Server
+
+</div>
+
+<div class="showcase-cards" markdown>
+<div markdown>
+**Nur Geheimtext auf dem Server**
+
+Verschlüsselt wird auf deinem Gerät. Passphrase und Schlüssel verlassen es nie.
+</div>
+<div markdown>
+**Post-Quanten-Schutz**
+
+Schlüssel für Personen mit X-Wing: X25519 und ML-KEM-768 zusammen ([Kryptografie](kryptografie.md)).
+</div>
+<div markdown>
+**Die ETH-Studie als Tests**
+
+Alle 27 Angriffe des eigenen Katalogs nach der ETH-Studie zu Passwortmanagern mit bösartigem
+Server laufen als Tests.
+</div>
+<div markdown>
+**Signierte Updates**
+
+Die installierte Web-App nimmt nur vom Projekt signierte Versionen an, auch wenn dein Server etwas
+anderes ausliefert.
+</div>
+<div markdown>
+**Passkey oder Passphrase**
+
+Entsperren mit Passkey (WebAuthn PRF) oder Passphrase und Secret Key; dazu Recovery-Kit und
+Notfallzugriff ([Konto](konto.md)).
+</div>
+<div markdown>
+**Umzug auf dem Gerät**
+
+Import aus Bitwarden, 1Password, LastPass, KeePass, Passbolt und den Browsern, ohne Umweg über den
+Server ([Import](import-export.md)).
+</div>
+<div markdown>
+**Kommandozeile**
+
+Zugänge in Skripten und auf Servern abrufen ([CLI](cli.md)).
+</div>
+<div markdown>
+**Open Source, ohne Kosten pro Kopf**
+
+AGPL-3.0, reproduzierbare Builds, ein Container auf deinem Server ([Installation](installation.md)).
+</div>
+</div>
+
+<div class="showcase-hero" markdown>
+
+## Für Handwerk, Büros und IT-Dienstleister
+
+<p class="showcase-claim">QR-Etiketten für Geräte, Übergabe an den Kunden, mehrere Firmen in einem
+Konto: <a href="handwerk.html">Handwerk und IT-Dienstleister</a>.</p>
+
+[Alle Funktionen im Detail](ueberblick.md){ .md-button .md-button--primary } [Installieren](installation.md){ .md-button } [Sicherheitsdesign](sicherheitsdesign.md){ .md-button }
+
+</div>
