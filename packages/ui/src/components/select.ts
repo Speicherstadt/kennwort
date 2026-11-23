@@ -1,6 +1,6 @@
 /**
  * The look of a native <select> (K-305, DESIGN.md): like the text fields, as tall as a button, 44
- * px on the phone, with lucide's chevron-down (`select-chevron` in styles.css) instead of the
+ * px on the phone, with a CSS-drawn chevron (`select-chevron` in styles.css) instead of the
  * browser's arrow; the list itself stays the browser's, so it works everywhere.
  */
 export const selectClass =
