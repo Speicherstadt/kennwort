@@ -29,7 +29,8 @@ FROM scratch AS web
 COPY --from=build /out/web /
 
 # glibc for the compiled Bun runtime, no shell, no package manager
-FROM gcr.io/distroless/cc-debian12:nonroot
+# Pinned by digest like the other projects; Renovate raises it
+FROM gcr.io/distroless/cc-debian12:nonroot@sha256:9dac0a79194e45a7da0158a9c6da57b217585af0786db3845d1f0ec1a0dd182f
 COPY --from=build /out/kennwort-server /app/kennwort-server
 COPY --from=build /out/web /app/web
 COPY --from=build --chown=65532:65532 /out/data /data

@@ -167,7 +167,19 @@ jobs:
         with:
           name: kennwort-release
           path: release
-      - run: cmp image-web/release.json release/release.json && cmp image-web/release.sig release/release.sig
+      - name: The image's web build is the published one
+        run: |
+          if cmp image-web/release.json release/release.json && cmp image-web/release.sig release/release.sig; then
+            exit 0
+          fi
+          # Name what differs, so a mismatch can be traced instead of guessed
+          diff <(jq -S . release/release.json) <(jq -S . image-web/release.json) || true
+          exit 1
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: image-web-${{ matrix.pair }}
+          path: image-web/
       - id: build
         uses: docker/build-push-action@v7
         with:
