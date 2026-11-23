@@ -1,6 +1,6 @@
 /**
  * What the opened app does with one-time links (K-601, P-18): „Einmal-Link“ on an entry opens the
- * dialog, Einstellungen → „Einmal-Links“ the page. Both make links with the session's token on the
+ * dialog, the rail's „Einmal-Links“ the page. Both make links with the session's token on the
  * app's own origin.
  */
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";

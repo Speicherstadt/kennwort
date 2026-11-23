@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { LinkDialog } from "./link-dialog.tsx";
 import { LinksPage, type LinksPageDeps } from "./links-page.tsx";
 
-// K-601: the creator's side, the entry's dialog and Einstellungen → „Einmal-Links“
+// K-601: the creator's side, the entry's dialog and the page „Einmal-Links“
 let dispose = () => {};
 afterEach(() => {
   dispose();

@@ -61,7 +61,7 @@ type FrameProps = {
   companiesPage?: (() => JSX.Element) | undefined;
   /** Einstellungen → „Datenschutz“ (K-607) */
   privacyPage?: (() => JSX.Element) | undefined;
-  /** Einstellungen → „Einmal-Links“ (K-601): a link for a free text and the account's links */
+  /** „Einmal-Links“ in the rail (K-601): a link for a free text and the account's links */
   linksPage?: (() => JSX.Element) | undefined;
   /** „Sicherheit“ (K-603): weak, reused and leaked passwords and the monthly report */
   securityPage?: (() => JSX.Element) | undefined;
@@ -82,7 +82,6 @@ const settingsLinks = (props: FrameProps): Omit<SettingsProps, "devices"> => ({
   onImport: props.importPage ? () => props.nav.go("/import") : undefined,
   onExport: props.exportPage && props.canExport ? () => props.nav.go("/export") : undefined,
   onEmergency: props.emergencyPage ? () => props.nav.go("/emergency") : undefined,
-  onLinks: props.linksPage ? () => props.nav.go("/links") : undefined,
   onRenew: props.renewPage ? () => props.nav.go("/renew") : undefined,
   onCompanies: props.companiesPage ? () => props.nav.go("/companies") : undefined,
   onPrivacy: props.privacyPage ? () => props.nav.go("/privacy") : undefined,
@@ -219,9 +218,7 @@ export const Frame = (props: FrameProps) => {
         <Match when={route().page === "emergency" && props.emergencyPage}>
           <SettingsChild nav={props.nav}>{props.emergencyPage?.(toasts)}</SettingsChild>
         </Match>
-        <Match when={route().page === "links" && props.linksPage}>
-          <SettingsChild nav={props.nav}>{props.linksPage?.()}</SettingsChild>
-        </Match>
+        <Match when={route().page === "links" && props.linksPage}>{props.linksPage?.()}</Match>
         <Match when={route().page === "notifications" && props.notifications}>
           <main class="flex min-h-0 flex-1">{props.notifications?.page()}</main>
         </Match>
