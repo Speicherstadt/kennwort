@@ -82,6 +82,15 @@ describe("weakerThan", () => {
     expect(weakerThan(loose, loose)).toEqual(["style-src allows 'unsafe-inline'"]);
   });
 
+  it("judges a repeated directive by its first occurrence, as browsers enforce it", () => {
+    expect(
+      weakerThan(
+        strict,
+        "default-src 'none'; script-src https://cdn.test; script-src 'self'; connect-src 'self'",
+      ),
+    ).toEqual(["script-src allows https://cdn.test"]);
+  });
+
   it("reads directive names in any case", () => {
     expect(weakerThan(strict, "DEFAULT-SRC 'none'; Script-Src 'self'; connect-src 'self'")).toEqual(
       [],

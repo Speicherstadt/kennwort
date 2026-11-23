@@ -7,14 +7,20 @@
 
 export type Policy = ReadonlyMap<string, readonly string[]>;
 
-/** "default-src 'none'; script-src 'self'" → directive → sources, names in lower case */
+/**
+ * "default-src 'none'; script-src 'self'" → directive → sources, names in lower case. A repeated
+ * directive keeps its first occurrence: browsers ignore the later ones (CSP 3, "parse a serialized
+ * CSP"), so judging the last would let a loose first one through.
+ */
 export const parsePolicy = (text: string): Policy =>
   new Map(
     text
       .split(";")
       .map((part) => part.trim().split(/\s+/))
       .filter(([name]) => name !== undefined && name !== "")
-      .map(([name, ...sources]) => [(name as string).toLowerCase(), sources] as const),
+      .map(([name, ...sources]) => [(name as string).toLowerCase(), sources] as const)
+      // new Map would keep the last of a repeated name; keep only its first occurrence
+      .filter(([name], index, all) => all.findIndex(([other]) => other === name) === index),
   );
 
 /** What only the shell may add, by directive: Tauri's IPC (tauri-utils 3.0.0-alpha.4, config.rs) */
