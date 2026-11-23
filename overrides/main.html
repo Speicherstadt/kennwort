@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{#- Search engines and link previews (WhatsApp, Signal, Mail, LinkedIn): every page has Open
+    Graph with its title, its description and a picture (`image:` in the front matter, else the
+    entry screenshot); the start page also says what Kennwort is in structured data
+    (https://schema.org/SoftwareApplication); the 404 page stays out of the index. -#}
+{% block extrahead %}
+  {%- set seo_image = config.site_url ~ (page.meta.image if page and page.meta and page.meta.image else "assets/screenshots/entry-desktop-light.webp") -%}
+  {%- set seo_description = page.meta.description if page and page.meta and page.meta.description else config.site_description -%}
+  {%- set seo_title = (page.meta.og_title or page.title) if page and page.meta else config.site_name -%}
+  {%- set is_home = page and page.url == "index.html" -%}
+  {%- if not page or not page.canonical_url %}
+    <meta name="robots" content="noindex">
+  {%- endif %}
+  <meta property="og:type" content="{{ 'website' if is_home else 'article' }}">
+  <meta property="og:locale" content="de_DE">
+  <meta property="og:site_name" content="{{ config.site_name }}">
+  <meta property="og:title" content="{{ seo_title }}">
+  <meta property="og:description" content="{{ seo_description }}">
+  {%- if page and page.canonical_url %}
+  <meta property="og:url" content="{{ page.canonical_url }}">
+  {%- endif %}
+  <meta property="og:image" content="{{ seo_image }}">
+  <meta name="twitter:card" content="summary_large_image">
+  {%- if is_home %}
+  <script type="application/ld+json">
+    {{ {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": config.site_name,
+      "url": config.site_url,
+      "description": config.site_description,
+      "inLanguage": config.theme.language,
+      "applicationCategory": "SecurityApplication",
+      "operatingSystem": "Linux, Docker",
+      "isAccessibleForFree": true,
+      "license": "https://www.gnu.org/licenses/agpl-3.0.html",
+      "image": seo_image,
+      "installUrl": config.site_url ~ "installation.html",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+      "sameAs": [config.repo_url]
+    } | tojson }}
+  </script>
+  {%- endif %}
+{% endblock %}
