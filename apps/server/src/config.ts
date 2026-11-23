@@ -22,6 +22,11 @@ const Config = z.object({
   // The built web app (apps/web/dist) the server serves with its security headers; without it a
   // reverse proxy serves the app and must send the same headers (docs/sicherheitsdesign.md, P-16)
   KENNWORT_WEB_ROOT: z.string().min(1).optional(),
+  // Where the leak check (K-603) gets its ranges: the address up to the prefix, ending in "/",
+  // such as a mirror of Pwned Passwords; "off" turns the check off for everyone on this server
+  KENNWORT_PWNED_URL: z
+    .union([z.literal("off"), z.url({ protocol: /^https?$/ }).regex(/\/$/)])
+    .default("https://api.pwnedpasswords.com/range/"),
 });
 
 export type Config = {
@@ -35,12 +40,18 @@ export type Config = {
   webRoot: string | undefined;
   /** People reach the server over https: HSTS and upgrade-insecure-requests */
   secure: boolean;
+  /** The leak check's range address, or undefined when the operator turned it off */
+  pwnedUrl: string | undefined;
 };
 
 export const readConfig = (env: Record<string, string | undefined>) => {
   const parsed = Config.safeParse(env);
   if (!parsed.success)
-    return { ok: false as const, error: parsed.error.issues.map((issue) => issue.path.join(".")) };
+    // Each setting once, though a union reports one issue per branch
+    return {
+      ok: false as const,
+      error: [...new Set(parsed.error.issues.map((issue) => issue.path.join(".")))],
+    };
   const data = parsed.data;
   const value: Config = {
     port: data.KENNWORT_PORT,
@@ -52,6 +63,7 @@ export const readConfig = (env: Record<string, string | undefined>) => {
     setupCode: data.KENNWORT_SETUP_CODE,
     webRoot: data.KENNWORT_WEB_ROOT,
     secure: new URL(data.KENNWORT_PUBLIC_URL).protocol === "https:",
+    pwnedUrl: data.KENNWORT_PWNED_URL === "off" ? undefined : data.KENNWORT_PWNED_URL,
   };
   return { ok: true as const, value };
 };

@@ -16,6 +16,7 @@ describe("readConfig", () => {
         authSecret: SECRET,
         behindProxy: false,
         secure: false,
+        pwnedUrl: "https://api.pwnedpasswords.com/range/",
       },
     });
   });
@@ -39,6 +40,7 @@ describe("readConfig", () => {
         authSecret: SECRET,
         behindProxy: true,
         secure: true,
+        pwnedUrl: "https://api.pwnedpasswords.com/range/",
       },
     });
   });
@@ -86,6 +88,21 @@ describe("readConfig", () => {
       ok: false,
       error: ["KENNWORT_PORT"],
     });
+  });
+
+  it("takes a mirror for the leak check, or off (K-603)", () => {
+    const mirror = readConfig({
+      ...base,
+      KENNWORT_PWNED_URL: "http://pwned.weber.test:8080/range/",
+    });
+    expect(mirror.ok && mirror.value.pwnedUrl).toBe("http://pwned.weber.test:8080/range/");
+    const off = readConfig({ ...base, KENNWORT_PWNED_URL: "off" });
+    expect(off.ok && off.value.pwnedUrl).toBeUndefined();
+    for (const url of ["ftp://pwned.test/range/", "https://pwned.test/range", "anything"])
+      expect(readConfig({ ...base, KENNWORT_PWNED_URL: url })).toEqual({
+        ok: false,
+        error: ["KENNWORT_PWNED_URL"],
+      });
   });
 
   it("names the settings it cannot read", () => {

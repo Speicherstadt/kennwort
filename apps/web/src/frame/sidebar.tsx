@@ -8,6 +8,7 @@ import {
   List,
   Share2,
   ShieldCheck,
+  ShieldExclamationPoint,
   Star,
   TriangleExclamationPoint,
 } from "@kennwort/ui/icons";
@@ -66,6 +67,8 @@ export const Sidebar = (props: {
   nav: Navigation;
   vaults?: ShownVault[] | undefined;
   entries?: ShownEntry[] | undefined;
+  /** Whether the security overview (K-603) is there to link to */
+  security?: boolean | undefined;
 }) => (
   <aside
     class="hidden w-58 shrink-0 flex-col border-r border-border bg-muted p-3 lg:flex"
@@ -103,6 +106,16 @@ export const Sidebar = (props: {
           icon={Share2}
           label={m.nav_shared()}
         />
+      </Show>
+      <Show when={props.security}>
+        <Link
+          nav={props.nav}
+          href="/security"
+          class="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent"
+        >
+          <Icon icon={ShieldExclamationPoint} />
+          <span class="flex-1 truncate">{m.nav_security()}</span>
+        </Link>
       </Show>
       <Heading>{m.nav_vaults()}</Heading>
       <For each={sidebarVaults(props.vaults)}>

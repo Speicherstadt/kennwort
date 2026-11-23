@@ -464,8 +464,27 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   verbraucht keinen, ein Externer öffnet ihn zweimal, beim dritten Mal „abgelaufen“, das Fragment
   ist weg und nichts Geheimes erreicht den Server; dazu Passphrase und Widerruf.
 - [ ] **K-602 Benachrichtigungen** – in der App, Web-Push, optional Mail.
-- [ ] **K-603 Sicherheits-Übersicht** – schwache, mehrfache, geleakte Passwörter (k-Anonymität),
+- [x] **K-603 Sicherheits-Übersicht** – schwache, mehrfache, geleakte Passwörter (k-Anonymität),
   monatlicher Bericht; „Zum Ändern“ mit `/.well-known/change-password`.
+  Fertig, wenn: die Seite „Sicherheit“ (Einstellungen, Seitenleiste ab `lg`) Zahlen und Listen der
+  schwachen und mehrfachen Passwörter nach der Regel von K-306, der geleakten und der markierten
+  Einträge der eigenen Tresore zeigt, nie ein Passwort; „Jetzt ändern“ je Zeile
+  `/.well-known/change-password` der Website in neuem Tab mit `noopener,noreferrer` öffnet (Port,
+  IDN, IP-Adressen und Namen ohne Punkt auf die Startseite, andere Schemata ohne Knopf; Vitest);
+  die Datenleck-Prüfung je Person aus ist, bis sie sie einschaltet (Wahl versiegelt im
+  Kontozustand, spätere Wahl gewinnt, bei Gleichstand „aus“), ohne Einschalten keine Anfrage
+  hinausgeht (Vitest und Playwright), nur die ersten fünf Hex-Zeichen von SHA-1 (`@noble/hashes`,
+  Testvektoren) an den eigenen Server gehen, der nur genau fünf große Hex-Zeichen annimmt, mit
+  `Add-Padding: true` beim eingestellten Dienst fragt (`KENNWORT_PWNED_URL`, Spiegel oder `off`),
+  den Bereich eine Stunde im Speicher hält, je Konto begrenzt und kein Präfix ins Log schreibt
+  (Server-Tests), und das Gerät die Suffixe vergleicht, Polsterzeilen auslässt und je Präfix im
+  Speicher behält (Vitest); Inhaber und Admins einmal im Monat einen Bericht mit Zahlen je Tresor
+  ohne Titel sehen, bis sie ihn als gelesen markieren (Monat im Kontozustand); Mutation-Tests der
+  neuen und geänderten Dateien in `packages/crypto` und `packages/core` bei 100 %; Playwright
+  desktop und `@phone` mit einem Ersatz-Dienst: die Übersicht zeigt ein schwaches, ein mehrfaches
+  und nach dem Einschalten ein geleaktes Passwort, „Jetzt ändern“ öffnet die well-known-Adresse,
+  der Bericht verschwindet nach „Gelesen“ auch nach dem Neuladen. Zustellung des Berichts per Push
+  oder Mail kommt mit K-602.
 - [ ] **K-604 OpenID Connect und SCIM** – allgemeiner OIDC-Client mit groups-Claim, Gruppenwechsel
   als Anfrage, optional SCIM, Deep Links.
 - [ ] **K-605 Handwerk und IT-Dienstleister** – QR-Etiketten, Übergabe an den Kunden, mehrere Firmen

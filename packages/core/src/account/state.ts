@@ -10,6 +10,7 @@ import { err, ok, type Result } from "../result.ts";
 import { bytes, encodeBytes } from "../sync/bytes.ts";
 import { parseJson } from "../sync/record.ts";
 import { EmergencySeen, mergeEmergency } from "./emergency-seen.ts";
+import { LeakCheckChoice, mergeSecurityPrefs, ReportMonth } from "./security-prefs.ts";
 
 const Remembered = z.object({ seq: z.number().int().nonnegative(), hash: bytes(32) });
 const Retired = z.object({
@@ -66,6 +67,10 @@ export const AccountState = z.object({
    * a fork, and their certificates count only for what was signed before the change
    */
   retiredRoots: z.array(Retired).default([]),
+  /** The leak check of the security overview, off until this person switches it on (K-603) */
+  leakCheck: LeakCheckChoice.optional(),
+  /** The month whose security report this account has seen (K-603) */
+  reportSeen: ReportMonth.optional(),
 });
 export type AccountState = z.infer<typeof AccountState>;
 
@@ -238,6 +243,7 @@ export const mergeStates = (
     emergency: mergeEmergency(mine.emergency, theirs.emergency),
     ...personalOf(mine, theirs),
     retiredRoots,
+    ...mergeSecurityPrefs(mine, theirs),
   });
 };
 
