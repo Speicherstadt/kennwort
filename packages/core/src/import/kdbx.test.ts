@@ -372,6 +372,23 @@ describe("gunzip", () => {
     expect(await gunzip(new Uint8Array(0), 10)).toEqual({ ok: false, error: "bad-kdbx" });
     expect(await gunzip(Uint8Array.of(1, 2, 3), 10)).toEqual({ ok: false, error: "bad-kdbx" });
   });
+
+  it("stops past the limit without a stray rejection when junk follows the gzip data", async () => {
+    // Node 24's DecompressionStream rejects a cancel when junk follows the stream's end
+    // (ERR_TRAILING_JUNK_AFTER_STREAM_END); left unhandled, that would crash a server
+    const { gzipSync } = await import("node:zlib");
+    const packed = new Uint8Array([...gzipSync(new Uint8Array(1000).fill(7)), 1, 2, 3]);
+    const stray: unknown[] = [];
+    const listener = (reason: unknown) => stray.push(reason);
+    process.on("unhandledRejection", listener);
+    try {
+      expect(await gunzip(packed, 1)).toEqual({ ok: false, error: "too-large" });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    } finally {
+      process.off("unhandledRejection", listener);
+    }
+    expect(stray).toEqual([]);
+  });
 });
 
 /** Where the header ends in a built database: right before its SHA-256 */

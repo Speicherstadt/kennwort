@@ -92,10 +92,9 @@ export const gunzip = async (
     if (chunk.done) break;
     length += chunk.value.length;
     chunks.push(chunk.value);
-    if (length > max) {
-      void reader.cancel();
-      return err("too-large");
-    }
+    // Stopped by no longer reading: backpressure halts the inflater. A cancel would reject on
+    // Node 24 when junk follows the stream's end (ERR_TRAILING_JUNK_AFTER_STREAM_END), unhandled
+    if (length > max) return err("too-large");
   }
   return ok(joinBytes(chunks));
 };
