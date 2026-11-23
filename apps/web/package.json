@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5175 --strictPort",
-    "build": "vite build && bun scripts/build-worker.ts dist && bun scripts/sign-release.ts dist",
+    "build": "bun --bun vite build && bun scripts/build-worker.ts dist && bun scripts/sign-release.ts dist",
     "build:demo": "vite build --config vite.demo.config.ts",
     "preview": "vite preview --port 5176 --strictPort"
   },
