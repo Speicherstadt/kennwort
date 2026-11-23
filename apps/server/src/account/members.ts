@@ -69,20 +69,21 @@ const membersOf = (db: Db, companyId: string, me: string) => {
   );
   const previous = supersededOf(db, ids);
   // Enrolled through the identity provider (K-604): the admin's client compares a code instead
-  const linked = new Set(
+  const linked = new Map(
     db
-      .select({ id: oidcIdentities.accountId })
+      .select({ id: oidcIdentities.accountId, name: oidcIdentities.name })
       .from(oidcIdentities)
       .where(inArray(oidcIdentities.accountId, ids))
       .all()
-      .map((row) => row.id),
+      .map((row) => [row.id, row.name]),
   );
   return rows.map((row) => {
     const key = keys.get(row.id);
     return {
       id: row.id,
       role: row.role,
-      name: invited.get(row.id)?.label ?? null,
+      // The inviter's label, else the provider's name for the person (K-604); a label, never trust
+      name: invited.get(row.id)?.label ?? linked.get(row.id) ?? null,
       xwingPublicKey: key ? encodeBytes(key.xwingPublicKey) : null,
       edPublicKey: key ? encodeBytes(key.edPublicKey) : null,
       certificate: key?.certificate ? JSON.parse(key.certificate) : null,

@@ -111,7 +111,7 @@ const finishEnrolment = async (
   if (!user) return undefined;
   // A person enrols once: of two tickets that raced past the check above, the second account
   // leaves at once and keeps no session
-  if (!linkIdentity(db, user.id, ticket.issuer, ticket.subject, at)) {
+  if (!linkIdentity(db, user.id, ticket, at)) {
     db.update(accounts).set({ leftAt: at }).where(eq(accounts.id, user.id)).run();
     return undefined;
   }

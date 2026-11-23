@@ -131,6 +131,8 @@ describe("a provider that claims groups", () => {
       role: "member",
       certificate: null,
       oidc: true,
+      // The provider's name for her: a label in the list, like an invitation's
+      name: "Sandra Weber",
     });
   });
 });

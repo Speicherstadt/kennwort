@@ -18,6 +18,7 @@ import {
   identityOf,
   linkIdentity,
   randomText,
+  renameIdentity,
   saveTicket,
   type TicketData,
   takeFlow,
@@ -63,7 +64,7 @@ const link = (deps: OidcDeps, accountId: string, person: Person): Outcome => {
   if (own && (own.issuer !== person.issuer || own.subject !== person.subject))
     return { ok: false, error: "already-linked" };
   if (!own) {
-    linkIdentity(deps.db, account.id, person.issuer, person.subject, deps.now());
+    linkIdentity(deps.db, account.id, person, deps.now());
     recordAudit(deps.db, {
       companyId: account.companyId,
       time: deps.now(),
@@ -83,6 +84,7 @@ const known = (
   person: Person,
 ): Outcome => {
   if (account.leftAt !== null) return { ok: false, error: "left" };
+  renameIdentity(deps.db, account.id, person.name);
   syncGroups(
     { db: deps.db, now: deps.now, notify: deps.notify ?? noNotify },
     account,

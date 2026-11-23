@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { OIDC_CLIENT, OIDC_ISSUER, OIDC_NAME, OIDC_PORT } from "./e2e/oidc.ts";
 import { PWNED_PORT } from "./e2e/pwned.ts";
 import { SETUP_CODE } from "./e2e/setup-code.ts";
 
@@ -44,6 +45,23 @@ export default defineConfig({
         KENNWORT_BEHIND_PROXY: "true",
         // The leak check (K-603) asks the stand-in below, never the real service
         KENNWORT_PWNED_URL: `http://localhost:${PWNED_PORT}/range/`,
+        // Sign-in with OpenID Connect (K-604) against the fake provider below
+        KENNWORT_OIDC_ISSUER: OIDC_ISSUER,
+        KENNWORT_OIDC_CLIENT_ID: OIDC_CLIENT.id,
+        KENNWORT_OIDC_CLIENT_SECRET: OIDC_CLIENT.secret,
+        KENNWORT_OIDC_NAME: OIDC_NAME,
+      },
+    },
+    {
+      // The fake identity provider of the server tests (apps/server/src/testing/fake-idp-server.ts)
+      command: "bun apps/server/src/testing/fake-idp-server.ts",
+      port: OIDC_PORT,
+      reuseExistingServer: false,
+      env: {
+        FAKE_IDP_PORT: String(OIDC_PORT),
+        FAKE_IDP_ISSUER: OIDC_ISSUER,
+        FAKE_IDP_CLIENT_ID: OIDC_CLIENT.id,
+        FAKE_IDP_CLIENT_SECRET: OIDC_CLIENT.secret,
       },
     },
     {

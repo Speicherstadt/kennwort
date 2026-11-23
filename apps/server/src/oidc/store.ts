@@ -124,19 +124,24 @@ export const identityOf = (db: Db, accountId: string) =>
   db.select().from(oidcIdentities).where(eq(oidcIdentities.accountId, accountId)).get();
 
 /** Links once: false when the person or the account is linked already */
+export type Person = { issuer: string; subject: string; name: string | null };
+
 export const linkIdentity = (
   db: Db,
   accountId: string,
-  issuer: string,
-  subject: string,
+  { issuer, subject, name }: Person,
   now: number,
 ) =>
   db
     .insert(oidcIdentities)
-    .values({ accountId, issuer, subject, linkedAt: now })
+    .values({ accountId, issuer, subject, name, linkedAt: now })
     .onConflictDoNothing()
     .returning()
     .get() !== undefined;
+
+/** The provider's name for the person, a label like an invitation's, kept current at each login */
+export const renameIdentity = (db: Db, accountId: string, name: string | null) =>
+  db.update(oidcIdentities).set({ name }).where(eq(oidcIdentities.accountId, accountId)).run();
 
 export const enrolmentOpen = (db: Db, companyId: string) =>
   db.select().from(oidcCompanies).where(eq(oidcCompanies.companyId, companyId)).get() !== undefined;

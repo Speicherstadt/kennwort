@@ -22,6 +22,8 @@ export const oidcIdentities = sqliteTable(
       .references(() => accounts.id),
     issuer: text("issuer").notNull(),
     subject: text("subject").notNull(),
+    /** What the provider calls the person: a label in the member list, like an invitation's */
+    name: text("name"),
     linkedAt: integer("linked_at").notNull(),
   },
   (table) => [uniqueIndex("oidc_identities_subject").on(table.issuer, table.subject)],

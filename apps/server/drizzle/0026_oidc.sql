@@ -20,6 +20,7 @@ CREATE TABLE `oidc_identities` (
 	`account_id` text PRIMARY KEY NOT NULL,
 	`issuer` text NOT NULL,
 	`subject` text NOT NULL,
+	`name` text,
 	`linked_at` integer NOT NULL,
 	FOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action
 );
