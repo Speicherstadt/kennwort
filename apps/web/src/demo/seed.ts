@@ -34,7 +34,7 @@ import { demoFetch } from "./demo-fetch.ts";
 import { type DemoStore, emptyStore } from "./demo-store.ts";
 
 /** Shown on the demo page: weak on purpose, it guards nothing but made-up data */
-export const DEMO_PASSPHRASE = "demo demo demo";
+export const DEMO_PASSPHRASE = "weber-haustechnik";
 
 type Person = { name: string; role: CompanyRole; vaults: Record<string, VaultRole> };
 
