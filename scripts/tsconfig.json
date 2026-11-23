@@ -11,6 +11,7 @@
     "../playwright.config.ts",
     "../playwright.engines.config.ts",
     "../e2e/setup-code.ts",
+    "../e2e/pwned.ts",
     "../e2e/engines/serve.ts",
     "../e2e/engines/harness-pages.ts"
   ]

@@ -21,6 +21,7 @@ import type { Db } from "./db/database.ts";
 import { accounts } from "./db/schema.ts";
 import { linkApiRoutes, linkPublicRoutes } from "./links/routes.ts";
 import { type Log, pathForLog } from "./log.ts";
+import { type PwnedDeps, pwnedRoutes } from "./pwned/routes.ts";
 import { groupRoutes } from "./sync/group-routes.ts";
 import { createHub, type Hub } from "./sync/hub.ts";
 import { logRoutes } from "./sync/log-routes.ts";
@@ -50,6 +51,8 @@ export type Deps = {
   hub?: Hub;
   now?: () => number;
   keepAliveMs?: number;
+  /** The leak check's proxy (K-603); without it the route answers that the check is off */
+  pwned?: PwnedDeps | undefined;
 };
 
 const hasLeft = (db: Db, accountId: string) =>
@@ -73,6 +76,7 @@ export const createApp = ({
   hub = createHub(),
   now = Date.now,
   keepAliveMs,
+  pwned,
 }: Deps) => {
   const app = new Hono();
 
@@ -127,6 +131,7 @@ export const createApp = ({
   api.route("/", requestRoutes({ db, now }));
   api.route("/", groupRoutes({ db, now }));
   api.route("/", shareRoutes({ db, now }));
+  api.route("/", pwnedRoutes(pwned));
   api.route("/", syncRoutes({ db, hub, now, ...(keepAliveMs ? { keepAliveMs } : {}) }));
   if (signIn) {
     const deps = { db, ...signIn };

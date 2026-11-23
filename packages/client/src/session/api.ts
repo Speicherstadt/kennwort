@@ -27,6 +27,7 @@ import { linkCalls } from "./links-api.ts";
 import { memberCalls } from "./members-api.ts";
 import { pairingCalls } from "./pairing-api.ts";
 import { policyCalls } from "./policy-api.ts";
+import { pwnedCalls } from "./pwned-api.ts";
 import { recoveryCalls } from "./recovery-api.ts";
 import { renewalCalls } from "./renewal-api.ts";
 import { shareCalls } from "./shares-api.ts";
@@ -126,6 +127,7 @@ export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity)
     ...emergencyCalls(call),
     ...renewalCalls(call),
     ...linkCalls(call),
+    ...pwnedCalls(call),
     /** The root key's public half goes along, for every member to check certificates (P-07) */
     setup: async (
       code: string,
@@ -212,4 +214,5 @@ export type AccountApi = Omit<
   | keyof ReturnType<typeof shareCalls>
   | keyof ReturnType<typeof emergencyCalls>
   | keyof ReturnType<typeof linkCalls>
+  | keyof ReturnType<typeof pwnedCalls>
 >;

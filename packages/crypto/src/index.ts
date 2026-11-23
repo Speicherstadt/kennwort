@@ -147,6 +147,7 @@ export {
   alertTag,
   PASSWORD_ALERT_V1,
 } from "./password-alert.ts";
+export { PWNED_PREFIX_LENGTH, type PwnedHash, pwnedHash } from "./pwned.ts";
 export { randomBytes } from "./random.ts";
 export {
   isSignedRekey,

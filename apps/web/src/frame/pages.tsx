@@ -9,6 +9,7 @@ import {
   Link2,
   Lock,
   RefreshCw,
+  ShieldCheck,
   Users,
 } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
@@ -89,6 +90,7 @@ export const SettingsPage = (props: {
   onExport?: (() => void) | undefined;
   onEmergency?: (() => void) | undefined;
   onLinks?: (() => void) | undefined;
+  onSecurity?: (() => void) | undefined;
   onRenew?: (() => void) | undefined;
   devices?: (() => JSX.Element) | undefined;
 }) => {
@@ -151,6 +153,13 @@ export const SettingsPage = (props: {
           {(open) => (
             <Button class="w-fit" onClick={() => open()()}>
               <Icon icon={LifeBuoy} /> {m.settings_emergency()}
+            </Button>
+          )}
+        </Show>
+        <Show when={props.onSecurity}>
+          {(open) => (
+            <Button class="w-fit" onClick={() => open()()}>
+              <Icon icon={ShieldCheck} /> {m.nav_security()}
             </Button>
           )}
         </Show>
