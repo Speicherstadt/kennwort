@@ -35,6 +35,7 @@ import {
   withKeptState,
   withServedState,
 } from "./offline-unlock.ts";
+import { createPasskeyUnlock, type PasskeyPlatform } from "./passkey.ts";
 import { recoverAccount } from "./recover.ts";
 
 export { signInError } from "@kennwort/client/session/unlock.ts";
@@ -59,6 +60,8 @@ export type SessionDeps = {
   cancel?: (timer: unknown) => void;
   /** The device's offline copy (K-308 part b); without it the app needs the server to unlock */
   copy?: AccountCopy;
+  /** WebAuthn for unlocking with a passkey (K-707); without it the lock screen offers none */
+  passkeys?: PasskeyPlatform;
 };
 
 type Unlock = { opened: Opened; stored?: Stored };
@@ -158,15 +161,18 @@ const reconnect = async (
 
 /**
  * The account under its renewed keys (P-12), with the same session: the offline copy, whose boxes
- * the old keys open, emptied and written anew, the new Secret Key remembered on the device
+ * the old keys open, emptied and written anew, the new Secret Key remembered on the device. The
+ * server removed every passkey of the account, this device's too (K-707)
  */
 const openRenewed =
   (
     copy: AccountCopy | undefined,
     remember: (accountId: Uint8Array, secretKey: Uint8Array) => void,
     open: (value: Opened) => void,
+    forgetPasskey: () => void,
   ) =>
   async ({ opened: next, stored, secretKey }: Renewed) => {
+    forgetPasskey();
     await copy?.forget();
     remember(next.accountId, secretKey);
     open(next);
@@ -238,6 +244,7 @@ export const createSession = (deps: SessionDeps) => {
   const { opened, setOpened, lock, touch, open, setLockAfter, updateState, companies } =
     accountsInMemory(deps);
   const { device, setDevice, remember } = deviceMemory(deps);
+  const passkey = createPasskeyUnlock(deps, { opened, open, updateState, device });
   /** Opened with a token from the server: its ciphertexts are kept for unlocking offline */
   const openAndKeep = (value: Opened) => {
     open(value);
@@ -317,7 +324,9 @@ export const createSession = (deps: SessionDeps) => {
       openAndKeep({ ...served, ...(await withKeptState(deps.copy, keys.accountId, served)) });
       return { ok: true, value: keys };
     },
-    renewed: openRenewed(deps.copy, remember, open),
+    renewed: openRenewed(deps.copy, remember, open, passkey.forget),
+    /** Unlocking with a passkey (K-707) */
+    passkey,
     /** A device joined by pairing (P-04): remember it and open the account it was given */
     adopt: (value: Opened, secretKey: Uint8Array) => {
       remember(value.accountId, secretKey);
@@ -339,6 +348,7 @@ export const createSession = (deps: SessionDeps) => {
     forget: () => {
       lock();
       forgetDevice(deps.storage);
+      passkey.forget();
       setDevice(undefined);
       void deps.copy?.forget();
     },

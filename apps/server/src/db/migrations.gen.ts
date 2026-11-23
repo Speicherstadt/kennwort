@@ -163,5 +163,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795398337612,
     "breakpoints": true,
     "sql": "CREATE TABLE `oidc_companies` (\n\t`company_id` text PRIMARY KEY NOT NULL,\n\t`enabled_by` text NOT NULL,\n\t`enabled_at` integer NOT NULL,\n\tFOREIGN KEY (`company_id`) REFERENCES `companies`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE TABLE `oidc_flows` (\n\t`state_hash` text PRIMARY KEY NOT NULL,\n\t`binding_hash` text NOT NULL,\n\t`nonce` text NOT NULL,\n\t`verifier` text NOT NULL,\n\t`company_id` text,\n\t`link_account` text,\n\t`expires_at` integer NOT NULL\n);\n--> statement-breakpoint\nCREATE INDEX `oidc_flows_expiry` ON `oidc_flows` (`expires_at`);--> statement-breakpoint\nCREATE TABLE `oidc_identities` (\n\t`account_id` text PRIMARY KEY NOT NULL,\n\t`issuer` text NOT NULL,\n\t`subject` text NOT NULL,\n\t`name` text,\n\t`linked_at` integer NOT NULL,\n\tFOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action\n);\n--> statement-breakpoint\nCREATE UNIQUE INDEX `oidc_identities_subject` ON `oidc_identities` (`issuer`,`subject`);--> statement-breakpoint\nCREATE TABLE `oidc_tickets` (\n\t`ticket_hash` text PRIMARY KEY NOT NULL,\n\t`issuer` text NOT NULL,\n\t`subject` text NOT NULL,\n\t`account_id` text,\n\t`company_id` text,\n\t`name` text,\n\t`groups` text NOT NULL,\n\t`expires_at` integer NOT NULL\n);\n--> statement-breakpoint\nCREATE INDEX `oidc_tickets_expiry` ON `oidc_tickets` (`expires_at`);--> statement-breakpoint\nALTER TABLE `group_members` ADD `via_idp` integer DEFAULT false NOT NULL;"
+  },
+  {
+    "tag": "0027_unlock_passkeys",
+    "when": 1795425447329,
+    "breakpoints": true,
+    "sql": "CREATE TABLE `unlock_passkeys` (\n\t`passkey_id` text PRIMARY KEY NOT NULL,\n\t`account_id` text NOT NULL,\n\t`sealed` blob NOT NULL,\n\t`created_at` integer NOT NULL,\n\tFOREIGN KEY (`passkey_id`) REFERENCES `auth_passkey`(`id`) ON UPDATE no action ON DELETE cascade\n);\n--> statement-breakpoint\nCREATE INDEX `unlock_passkeys_account` ON `unlock_passkeys` (`account_id`);"
   }
 ];

@@ -40,6 +40,19 @@ export {
   unlockWithDevicePackage,
 } from "./account/pairing.ts";
 export {
+  type PasskeyUnlockError,
+  sealPasskeyUnlock,
+  unlockWithPasskey,
+} from "./account/passkey-unlock.ts";
+export {
+  activeSalt,
+  addPasskey,
+  newPasskeySalt,
+  PASSKEY_SALT_LENGTH,
+  removePasskey,
+  UnlockPasskeys,
+} from "./account/passkeys.ts";
+export {
   type Current,
   derivedPersonalVault,
   type RekeyDeps,

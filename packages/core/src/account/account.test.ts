@@ -25,6 +25,7 @@ describe("account state", () => {
     emergency: { jonas: { grant: 5, revoked: false, objected: 0 } },
     retiredRoots: [],
     linked: {},
+    passkeys: {},
   };
   const key = new Uint8Array(32).fill(9);
   const account = new Uint8Array(16).fill(4);
@@ -78,6 +79,7 @@ describe("account state", () => {
       },
       retiredRoots: [],
       linked: {},
+      passkeys: {},
     };
     expect(mergeStates(state, theirs)).toEqual({
       ok: true,
@@ -101,6 +103,7 @@ describe("account state", () => {
         },
         retiredRoots: [],
         linked: {},
+        passkeys: {},
       },
     });
     expect(mergeStates(state, emptyState(root))).toEqual({ ok: true, value: state });

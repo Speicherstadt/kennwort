@@ -10,6 +10,7 @@ import {
   accountKeys,
   accounts,
   auditEvents,
+  authPasskey,
   authSession,
   authUser,
   companies,
@@ -29,6 +30,7 @@ import {
   recoveryDeposits,
   recoveryGrants,
   rootGrants,
+  unlockPasskeys,
   vaultKeys,
   vaults,
 } from "../db/schema.ts";
@@ -126,6 +128,24 @@ const maxSession = () => {
 };
 
 /** Max's keys on the server, uncertified */
+/** Max's passkey at Müller Elektro (K-707) */
+const maxPasskey = () => {
+  maxSession();
+  app.db
+    .insert(authPasskey)
+    .values({
+      id: "max-pk",
+      publicKey: "AA",
+      userId: "max",
+      credentialID: "bWF4",
+      counter: 0,
+      deviceType: "singleDevice",
+      backedUp: false,
+    })
+    .onConflictDoNothing()
+    .run();
+};
+
 const maxKeys = () =>
   app.db
     .insert(accountKeys)
@@ -589,6 +609,25 @@ const cases: Record<string, () => Promise<void>> = {
     expect(max?.keyBlock).toEqual(Buffer.alloc(8));
     expect(
       app.db.select().from(authSession).where(eq(authSession.id, "max-session")).get(),
+    ).toBeDefined();
+  },
+  "PUT /api/account/unlock-passkeys": async () => {
+    // Jonas cannot hang a sealed AK on Max's passkey (K-707)
+    maxPasskey();
+    const answer = await jonasSends("PUT", "/api/account/unlock-passkeys", {
+      credentialId: "bWF4",
+      sealed: encodeBytes(new Uint8Array(73)),
+    });
+    expect(answer.status).toBe(404);
+    expect(app.db.select().from(unlockPasskeys).all()).toEqual([]);
+  },
+  "DELETE /api/account/unlock-passkeys/:credentialId": async () => {
+    maxPasskey();
+    expect(
+      (await jonasSends("DELETE", "/api/account/unlock-passkeys/bWF4", undefined)).status,
+    ).toBe(404);
+    expect(
+      app.db.select().from(authPasskey).where(eq(authPasskey.id, "max-pk")).get(),
     ).toBeDefined();
   },
   "PUT /api/account/state": async () => {

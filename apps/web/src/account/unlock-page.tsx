@@ -9,6 +9,7 @@ import type { Navigation } from "../navigation.ts";
 import { OidcSignIn } from "../oidc/sign-in-button.tsx";
 import type { Session } from "../session/session.ts";
 import { Card, errorText } from "./form.tsx";
+import { passkeyErrorText } from "./passkey-section.tsx";
 
 /** Account ID and Secret Key from the fragment of the recovery kit's QR code (P-12) */
 export type DeviceLink = { accountId: string; secretKey: string };
@@ -49,8 +50,23 @@ export const UnlockPage = (props: {
     if (!result.ok) setError(errorText(result.error));
     else props.onUnlocked?.();
   };
+  /** The passkey this device set up (K-707); passphrase and Secret Key stay below */
+  const withPasskey = async () => {
+    setError(undefined);
+    setBusy(true);
+    const result = await props.session.passkey.unlock();
+    setBusy(false);
+    if (!result.ok) setError(passkeyErrorText(result.error));
+    else props.onUnlocked?.();
+  };
   return (
     <Card title={m.unlock_title()} error={error()}>
+      <Show when={known() && props.session.passkey.offered()}>
+        <Button variant="primary" disabled={busy()} onClick={withPasskey}>
+          {m.passkey_unlock()}
+        </Button>
+        <p class="text-center text-xs text-muted-foreground">{m.passkey_or_passphrase()}</p>
+      </Show>
       <form class="grid gap-4" onSubmit={submit}>
         <Show when={!known()}>
           <Input
