@@ -8,6 +8,7 @@ import { notifications } from "../db/schema.ts";
 import { weberWithBuero } from "../testing/emergency-setup.ts";
 import { signInSetup } from "../testing/sign-in-setup.ts";
 import { createBuero, NOW, post, stateOf, weber } from "../testing/weber-vaults.ts";
+import { MAX_NOTIFICATIONS } from "./notify.ts";
 
 const rowsOf = (db: Db) =>
   db
@@ -70,6 +71,28 @@ describe("events → notifications", () => {
     });
     // The invitation's label ("Anna") is plain text the server holds; no row copies it
     onlyIds(db, ["Anna", "Büro"]);
+  });
+
+  it("tells the managers of an access request once: asking again cannot flood their list", async () => {
+    const w = await weber();
+    const db = w.o.setup.db;
+    const jonas = encodeBytes(w.jonas.signer.accountId);
+    const { vaultId } = await createBuero(w);
+    const ask = () =>
+      w.o.setup.request(`/api/vaults/${vaultId}/requests`, {
+        method: "POST",
+        token: w.annaToken,
+        body: {},
+      });
+    expect((await ask()).status).toBe(201);
+    // Anna asks over and over: Jonas's older rows (here the accepted invitation; an emergency
+    // request he must object to within the waiting time alike, P-14) must not be pruned by it
+    for (let i = 0; i < MAX_NOTIFICATIONS; i++) expect((await ask()).status).toBe(201);
+    expect(
+      rowsOf(db)
+        .filter((row) => row.accountId === jonas)
+        .map((row) => row.kind),
+    ).toEqual(["invitation-accepted", "access-requested"]);
   });
 
   it("tells Jonas of Anna's emergency request and Anna of his grant and his objection", async () => {
