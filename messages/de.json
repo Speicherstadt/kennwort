@@ -1248,5 +1248,14 @@
   "vaults_empty": "Noch keine Tresore. Lege unten einen gemeinsamen Tresor an.",
   "vaults_create_hint": "Ein gemeinsamer Tresor für dich und dein Team.",
   "groups_empty": "Noch keine Gruppen.",
-  "groups_no_members": "Noch keine Mitglieder."
+  "groups_no_members": "Noch keine Mitglieder.",
+  "entry_editor_cancel": "Abbrechen",
+  "entry_editor_keys": "Esc bricht ab, Strg+Enter speichert.",
+  "entry_editor_basics": "Allgemein",
+  "entry_editor_fields": "Felder",
+  "entry_editor_unsaved": "Nicht gespeichert",
+  "entry_editor_discard_title": "Änderungen verwerfen?",
+  "entry_editor_discard_text": "Was du an diesem Eintrag geändert hast, geht verloren.",
+  "entry_editor_keep": "Weiter bearbeiten",
+  "entry_editor_discard": "Verwerfen"
 }

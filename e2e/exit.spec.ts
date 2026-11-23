@@ -26,7 +26,7 @@ const loginInBuero = async (page: Page, title: string, password: string) => {
     .filter({ visible: true })
     .first()
     .click();
-  const editor = page.getByRole("dialog", { name: "Neuer Eintrag" });
+  const editor = page.getByRole("form", { name: "Neuer Eintrag" });
   await editor.getByLabel("Tresor").selectOption({ label: "Büro" });
   await editor.getByLabel("Titel").fill(title);
   await editor.getByLabel("Benutzername").fill("buero@weber-haustechnik.test");
@@ -120,7 +120,7 @@ test.describe("leaving a vault", { tag: "@phone" }, () => {
     await visibleLink(page, "Einträge").click();
     await page.getByRole("option", { name: /Sparkasse/ }).click();
     await page.getByRole("button", { name: "Bearbeiten" }).click();
-    const editor = page.getByRole("dialog", { name: "Eintrag bearbeiten" });
+    const editor = page.getByRole("form", { name: "Eintrag bearbeiten" });
     await editor.getByLabel("Passwort", { exact: true }).fill("Wasser-Licht-Rohr-2027!");
     await editor.getByRole("button", { name: "Speichern" }).click();
     await expect(editor).toBeHidden();

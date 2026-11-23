@@ -1248,5 +1248,14 @@
   "vaults_empty": "No vaults yet. Create a shared vault below.",
   "vaults_create_hint": "A shared vault for you and your team.",
   "groups_empty": "No groups yet.",
-  "groups_no_members": "No members yet."
+  "groups_no_members": "No members yet.",
+  "entry_editor_cancel": "Cancel",
+  "entry_editor_keys": "Esc cancels, Ctrl+Enter saves.",
+  "entry_editor_basics": "General",
+  "entry_editor_fields": "Fields",
+  "entry_editor_unsaved": "Not saved",
+  "entry_editor_discard_title": "Discard changes?",
+  "entry_editor_discard_text": "What you changed in this entry will be lost.",
+  "entry_editor_keep": "Keep editing",
+  "entry_editor_discard": "Discard"
 }

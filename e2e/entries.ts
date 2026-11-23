@@ -1,4 +1,4 @@
-// Entries for the e2e tests (K-306): written through the app's own dialog, like a person does
+// Entries for the e2e tests (K-306): written through the app's own editor, like a person does
 import { expect, type Page } from "@playwright/test";
 
 export type Login = { title: string; username?: string; password?: string; website?: string };
@@ -14,7 +14,7 @@ export const addEntry = async (page: Page, login: Login) => {
     .filter({ visible: true })
     .first()
     .click();
-  const dialog = page.getByRole("dialog", { name: "Neuer Eintrag" });
+  const dialog = page.getByRole("form", { name: "Neuer Eintrag" });
   await dialog.getByLabel("Titel").fill(login.title);
   await dialog.getByLabel("Benutzername").fill(login.username ?? "");
   await dialog.getByLabel("Passwort", { exact: true }).fill(login.password ?? "");

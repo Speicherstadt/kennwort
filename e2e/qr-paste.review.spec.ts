@@ -11,7 +11,7 @@ const openScan = async (page: Page) => {
     .filter({ visible: true })
     .first()
     .click();
-  const dialog = page.getByRole("dialog", { name: "Neuer Eintrag" });
+  const dialog = page.getByRole("form", { name: "Neuer Eintrag" });
   await dialog.getByRole("button", { name: "QR-Code scannen" }).click();
   return { dialog, scan: page.getByRole("dialog", { name: "QR-Code scannen" }) };
 };

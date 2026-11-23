@@ -13,7 +13,7 @@ const openNew = async (page: Page) => {
     .filter({ visible: true })
     .first()
     .click();
-  return page.getByRole("dialog", { name: "Neuer Eintrag" });
+  return page.getByRole("form", { name: "Neuer Eintrag" });
 };
 const fields = (page: Page) => page.getByRole("region", { name: "Felder" });
 
@@ -33,7 +33,7 @@ test.describe("entry types", { tag: "@phone" }, () => {
     await dialog.getByLabel("Name des Felds", { exact: true }).fill("Router");
     await dialog.getByLabel("Art des Felds").selectOption({ label: "Adresse (URL)" });
     await dialog.getByLabel("Router", { exact: true }).fill("https://router.lan");
-    const { violations } = await new AxeBuilder({ page }).include("dialog").analyze();
+    const { violations } = await new AxeBuilder({ page }).include("form:has(h1)").analyze();
     expect(violations.map((v) => v.id)).toEqual([]);
     await dialog.getByRole("button", { name: "Speichern" }).click();
     await expect(dialog).toBeHidden();
@@ -47,7 +47,7 @@ test.describe("entry types", { tag: "@phone" }, () => {
     await expect(page.getByRole("button", { name: "Passwort aufdecken" })).toBeVisible();
 
     await page.getByRole("button", { name: "Bearbeiten" }).click();
-    const change = page.getByRole("dialog", { name: "Eintrag bearbeiten" });
+    const change = page.getByRole("form", { name: "Eintrag bearbeiten" });
     // The type of a saved entry stays
     await expect(change.getByLabel("Art", { exact: true })).toHaveCount(0);
     await change.getByRole("button", { name: "Router entfernen" }).click();

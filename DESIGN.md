@@ -59,8 +59,42 @@ Badge) und Avatar · Seitenleiste (232 px,
 ab `lg`) mit Firma, „Alle Einträge“, „Favoriten“, „Zum Ändern“, „Mit mir geteilt“ (sobald jemand
 etwas geteilt hat), Tresoren und Gruppen, unten der
 Hinweis zur Verschlüsselung · Liste (340 px) mit Titel, Suche (`/`) und Einträgen · Detail mit
-Kopfzeile (Icon, Titel, Tresor, letzte Änderung, Teilen, Bearbeiten), Feldkarte und rechts Zugriff
-und Verlauf.
+Kopfzeile (Icon, Titel, Tresor, letzte Änderung; rechts daneben Stern und „Bearbeiten“ als einzige
+Hauptaktion), darunter eine ruhige Zeile kleiner Knöpfe (Teilen, Einmal-Link, Etikett), Feldkarte
+und – sobald der Bereich mindestens 768 px breit ist (Container-Query, nicht die Fensterbreite) –
+rechts Zugriff und Verlauf.
+
+**Eintrag bearbeiten und anlegen**: kein Dialog, sondern ein Formular an Ort und Stelle im Bereich
+des Eintrags; am Handy ein eigener Screen ohne Liste. Titel (`h1`, „Neuer Eintrag“ oder „Eintrag
+bearbeiten“) mit dem Tastenhinweis darunter, dann Panels: Allgemein (Tresor und Art beim Anlegen,
+Titel), Felder (mit „Feld hinzufügen“ als Ghost-Knopf), Tags. Unten klebt die Leiste mit dem Badge
+„Nicht gespeichert“, sobald sich etwas geändert hat, „Abbrechen“ und dem Hauptknopf „Speichern“.
+Esc bricht ab, Strg/Cmd+Enter speichert, Enter in einem Feld speichert wie gewohnt. Wer mit
+Änderungen geht (Abbrechen, Esc, ein Link in der App, Schließen des Tabs), wird gefragt: „Änderungen
+verwerfen?“ mit „Weiter bearbeiten“ (Fokus) und „Verwerfen“ in `--danger`; das ist ein echter
+`<dialog>`, wie jede Bestätigung, die etwas zerstört.
+
+**Seiten neben der Liste** (Mitglieder, Mitteilungen, Sicherheit, Einstellungen und die Seiten
+darunter): `pageClass()` aus `packages/ui` legt alles in eine zentrierte Spalte, nie halb leer an
+den linken Rand gedrückt. `reading` (768 px) für Formulare und Texte, `wide` (1152 px) für Seiten mit
+zwei Spalten: Mitglieder mit der Liste links und den Firmen-Regeln rechts (ab `xl`), Mitteilungen mit
+der Liste links und den Push-Einstellungen rechts (ab `lg`), Sicherheit mit den vier Zahlen oben und
+den Listen in zwei Spalten (ab `lg`). Kopf jeder Seite: Titel, darunter ein Satz in
+`--muted-foreground` (`introClass`). Ein Abschnitt ist ein Panel (`panelClass`, `panelTitleClass`):
+Rahmen, Radius 12 px, 16–20 px innen, Titel 14 px halbfett. Leere Listen stehen in einem gestrichelten
+Rahmen statt als loser Satz.
+
+**Im Fluss bleiben**: Sicherheit, Tresore und Gruppen behalten die Seitenleiste, der Punkt dort ist
+markiert, und in der Rail bleibt „Einträge“ aktiv; „Sicherheit“ ist am Handy ein Filter-Chip neben
+„Zum Ändern“. Die Seiten unter den Einstellungen (Mitglieder, Import, Export, Notfallzugriff,
+Einmal-Links, Firmen, Datenschutz, Schlüssel erneuern) markieren „Einstellungen“ in Rail und Tab-Leiste
+und haben oben den Link „← Einstellungen“.
+
+**Einstellungen**: Gruppen mit Titel und einem Satz – Allgemein, Firma, Daten, Konto, Geräte und
+Anmeldung, zuletzt die **Gefahrenzone** mit rotem Rahmen (Sperren). Jede Gruppe ist eine Karte aus
+Zeilen: links Name und Hilfe, rechts die Steuerung; eine Zeile, die eine eigene Seite öffnet, ist
+ganz anklickbar, mit Icon und Chevron; der Knopf darin heißt nur wie die Zeile. Ab `md` steht links eine klebende Liste der Gruppen, die zu ihnen
+springt; am Handy führen die Zeilen in ihre eigenen Screens.
 
 **Seiten neben der Liste** (Mitglieder, Mitteilungen, Sicherheit, Einstellungen und die Seiten
 darunter): `pageClass()` aus `packages/ui` legt alles in eine zentrierte Spalte, nie halb leer an

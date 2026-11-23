@@ -57,11 +57,25 @@ export const createNavigation = (
     history.flush();
     void done.catch(() => {});
   };
+  /** Asked before a link leaves the page; true when it holds the step back (unsaved changes) */
+  let guard: ((proceed: () => void) => boolean) | undefined;
   return {
     route: () => routeAt(router.stores.location.get().pathname),
     go: (next: string) => {
       if (next === history.location.pathname) return;
-      commit(router.navigate({ href: next }));
+      const proceed = () => commit(router.navigate({ href: next }));
+      if (guard?.(proceed)) return;
+      proceed();
+    },
+    /**
+     * Sets the guard asked before `go` (the inline editor with unsaved changes); returns its
+     * removal. `replace` is not asked: it only drops what the address carried
+     */
+    setGuard: (next: (proceed: () => void) => boolean) => {
+      guard = next;
+      return () => {
+        if (guard === next) guard = undefined;
+      };
     },
     /** Replaces the current entry, so what it carried (a link's fragment) leaves the history */
     replace: (next: string) => commit(router.navigate({ href: next, replace: true })),

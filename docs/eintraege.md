@@ -58,7 +58,8 @@ der nur das Passwort kennt.
 
 ## Einen Eintrag anlegen
 
-In der Liste der Einträge öffnet **Neu** den Dialog **Neuer Eintrag**. Du wählst den Tresor –
+In der Liste der Einträge öffnet **Neu** das Formular **Neuer Eintrag** rechts neben der Liste, am
+Handy als eigener Screen. Du wählst den Tresor –
 angeboten werden nur Tresore, in denen du bearbeiten oder verwalten darfst – und die Art, gibst
 den Titel und die Felder ein und wählst **Speichern**. Wechselst du die Art, bevor du speicherst,
 bleiben Titel, eigene Felder und Felder, die beide Arten haben (etwa das Passwort), erhalten; was
@@ -67,7 +68,10 @@ verschlüsselt den Eintrag auf deinem Gerät und zeigt ihn danach an.
 
 ## Einen Eintrag ändern
 
-In einem Eintrag öffnet **Bearbeiten** denselben Dialog mit den bisherigen Werten; die Art eines
+In einem Eintrag öffnet **Bearbeiten** dasselbe Formular an Ort und Stelle, mit den bisherigen
+Werten. Unten bleibt die Leiste mit **Abbrechen** und **Speichern** stehen; Esc bricht ab,
+Strg+Enter (am Mac Cmd+Enter) speichert. Hast du etwas geändert, fragt Kennwort vor dem Verlassen,
+ob es die Änderungen verwerfen soll. Die Art eines
 gespeicherten Eintrags bleibt. Jede Änderung
 wird eine neue Version; frühere Versionen bleiben auf dem Server erhalten. Haben zwei Geräte
 denselben Eintrag gleichzeitig geändert, führt Kennwort beide Stände zusammen, ohne einen
@@ -103,7 +107,7 @@ oder verwalten darf. Für die anderen ist der Stern ausgegraut. Eigene Favoriten
 sind noch nicht gebaut.
 
 **Tags** fasst Einträge über Tresore hinweg zusammen, etwa „Steuer“ oder „Baustelle“. Du
-vergibst sie im Dialog des Eintrags unter **Tags**: einen Namen eingeben und Enter oder
+vergibst sie beim Bearbeiten des Eintrags unter **Tags**: einen Namen eingeben und Enter oder
 **Tag hinzufügen**; das Kreuz am Tag entfernt ihn wieder. Im Eintrag stehen die Tags unter dem
 Titel, und die Suche findet einen Eintrag auch über seine Tags. Groß- und Kleinschreibung zählt
 dabei nicht: „Büro“ und „büro“ sind derselbe Tag.

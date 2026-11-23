@@ -24,7 +24,7 @@ const add = async (page: Page, login: Parameters<typeof addEntry>[1]) => {
   await toList(page);
   await addEntry(page, login);
 };
-const editor = (page: Page) => page.getByRole("dialog", { name: "Eintrag bearbeiten" });
+const editor = (page: Page) => page.getByRole("form", { name: "Eintrag bearbeiten" });
 
 test.describe("entry care", { tag: "@phone" }, () => {
   test("Jonas changes the bank password and finds the old one under Frühere Passwörter", async ({
@@ -68,7 +68,7 @@ test.describe("entry care", { tag: "@phone" }, () => {
     await expect(
       editor(page).getByRole("button", { name: "Tag Steuerbüro entfernen" }),
     ).toBeVisible();
-    const { violations } = await new AxeBuilder({ page }).include("dialog").analyze();
+    const { violations } = await new AxeBuilder({ page }).include("form:has(h1)").analyze();
     expect(violations.map((v) => v.id)).toEqual([]);
     await editor(page).getByRole("button", { name: "Speichern" }).click();
     await expect(editor(page)).toBeHidden();

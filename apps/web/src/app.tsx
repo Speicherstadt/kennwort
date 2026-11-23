@@ -125,6 +125,8 @@ const OpenedFrame = (props: {
         vaultName={vaultName}
         onNewEntry={canWrite() ? online(entries.startNew) : undefined}
         onEditEntry={online(entries.startChange)}
+        editing={entries.editing}
+        editor={() => <Editor nav={props.nav} vaults={store} />}
         onFavoriteEntry={online(entries.toggleFavorite)}
         onShareEntry={online(sharing.start)}
         onLinkEntry={online(links.start)}
@@ -158,7 +160,6 @@ const OpenedFrame = (props: {
         renewPage={renewPage(props, store, reload)}
         devices={devicesFor(props)}
       />
-      <Editor nav={props.nav} vaults={store} />
       <ShareDialog vaults={store} />
       {links.dialog()}
       {handover.startDialog()}
@@ -168,10 +169,18 @@ const OpenedFrame = (props: {
       <RotationNotice vaults={shownVaults()} />
       <EmergencyNotice api={props.api} session={props.session} nav={props.nav} />
       {notifications.live()}
-      {props.autofill?.({ entries: allEntries, onSave: entries.startNewLogin })}
+      {props.autofill?.({ entries: allEntries, onSave: inPane(props.nav, entries.startNewLogin) })}
     </QueryClientProvider>
   );
 };
+
+/** Opens the editor where it lives, in the entry pane, from any page (the mobile autofill) */
+const inPane =
+  <T,>(nav: Navigation, open: (value: T) => void) =>
+  (value: T) => {
+    open(value);
+    if (nav.route().page !== "entries") nav.go("/entries");
+  };
 
 /** The fragment meant for a page, empty for any other */
 const hashFor = (shown: TakenFragment, page: TakenFragment["page"]) =>
