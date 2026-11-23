@@ -59,16 +59,20 @@ export const overrideViolations = (root: Record<string, unknown>): string[] =>
   );
 
 /** A Cargo manifest's runtime dependencies: [build-dependencies] run only while building */
-export type Crate = { dir: string; dependencies: Record<string, unknown> };
+export type Crate = { dir: string; dependencies: Record<string, unknown> | [string, unknown][] };
 
 // Cargo reads a bare version as "this or any compatible later one"; "=" pins it exactly
 const EXACT_CRATE_VERSION = /^=\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
-/** A crates.io version, or nothing when the source is a repository, a path or another registry */
+/**
+ * A crates.io version, or nothing when the source is a repository, a path, another registry or
+ * another crate under the listed name (`package = "..."` renames it, so the allowlist entry would
+ * cover code it never named)
+ */
 const crateVersion = (spec: unknown): string | undefined => {
   if (typeof spec === "string") return spec;
   if (typeof spec !== "object" || spec === null) return undefined;
   const fields = spec as Record<string, unknown>;
-  if (["git", "path", "registry"].some((source) => source in fields)) return undefined;
+  if (["git", "path", "registry", "package"].some((source) => source in fields)) return undefined;
   return typeof fields.version === "string" ? fields.version : undefined;
 };
 
@@ -88,7 +92,18 @@ const crateProblem = (allowlist: Allowlist, dir: string, name: string, spec: unk
 /** Every runtime crate that the allowlist does not cover */
 export const crateViolations = (allowlist: Allowlist, crates: Crate[]): string[] =>
   crates.flatMap(({ dir, dependencies }) =>
-    Object.entries(dependencies)
+    (Array.isArray(dependencies) ? dependencies : Object.entries(dependencies))
       .map(([name, spec]) => crateProblem(allowlist, dir, name, spec))
       .filter((problem) => problem !== undefined),
   );
+
+/** Every runtime dependency table of a Cargo manifest: [dependencies] and each [target.*.dependencies] */
+export const manifestCrates = (manifest: Record<string, unknown>): [string, unknown][] => {
+  const table = (value: unknown) =>
+    typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+  const targets = Object.values(table(manifest.target)).map((target) =>
+    table(table(target).dependencies),
+  );
+  // Entries, not a merged map: one name in two tables is checked twice, never hidden by the other
+  return [table(manifest.dependencies), ...targets].flatMap((deps) => Object.entries(deps));
+};

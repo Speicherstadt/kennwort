@@ -5,6 +5,7 @@ import {
   type Allowlist,
   type Crate,
   crateViolations,
+  manifestCrates,
   overrideViolations,
   violations,
   type Workspace,
@@ -32,10 +33,7 @@ const crates: Crate[] = workspaceDirs(root)
   .filter((dir) => existsSync(join(root, dir + TAURI_MANIFEST)))
   .map((dir) => {
     const manifest = Bun.TOML.parse(readFileSync(join(root, dir + TAURI_MANIFEST), "utf8"));
-    return {
-      dir,
-      dependencies: (manifest as { dependencies?: Record<string, unknown> }).dependencies ?? {},
-    };
+    return { dir, dependencies: manifestCrates(manifest as Record<string, unknown>) };
   });
 const allowlist = readJson("allowed-dependencies.json") as Allowlist;
 const problems = [

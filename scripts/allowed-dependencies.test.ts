@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   type Allowlist,
   crateViolations,
+  manifestCrates,
   overrideViolations,
   violations,
 } from "./allowed-dependencies.ts";
@@ -122,9 +123,26 @@ describe("crateViolations", () => {
     [{ git: "https://example.test/tauri", version: "=3.0.0" }],
     [{ path: "../tauri" }],
     [{ version: "=3.0.0", registry: "other" }],
+    [{ version: "=3.0.0", package: "not-tauri" }],
   ])("fails a crate that is not pinned to crates.io: %j", (spec) => {
     expect(check({ tauri: spec })).toEqual([
       'apps/mobile: crate tauri is not pinned to an exact crates.io version ("=x.y.z")',
+    ]);
+  });
+});
+
+describe("manifestCrates", () => {
+  it("reads [dependencies] and every [target.*.dependencies], not [build-dependencies]", () => {
+    // Cargo.toml as Bun.TOML.parse reads it
+    const manifest = {
+      dependencies: { tauri: "=3.0.0" },
+      "build-dependencies": { "tauri-build": "=3.0.0" },
+      target: { 'cfg(target_os = "android")': { dependencies: { tauri: "3", jni: "=0.21.1" } } },
+    };
+    expect(manifestCrates(manifest)).toEqual([
+      ["tauri", "=3.0.0"],
+      ["tauri", "3"],
+      ["jni", "=0.21.1"],
     ]);
   });
 });
