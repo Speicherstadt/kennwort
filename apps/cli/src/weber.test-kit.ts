@@ -15,6 +15,10 @@ import { serverFetch } from "@kennwort/client/session/server-fetch.ts";
 import { loadVaults, newVault } from "@kennwort/client/vaults/vaults.ts";
 import { createCompany, type EntryContent } from "@kennwort/core";
 
+// Test data of Weber Haustechnik, not interface texts
+const VAULT_NAME = "Büro"; // i18n-ignore: test data
+const WLAN_TITLE = "WLAN Büro"; // i18n-ignore: test data
+
 export const JONAS_PASSPHRASE = "Heizung-Wasser-Licht-Kupfer";
 export const DATEV_PASSWORD = "Kessel-Rohr-Ventil-42";
 export const WLAN_PASSWORD = "Gas-Wasser-Heizung-7";
@@ -47,7 +51,7 @@ export const WEBER_ENTRIES: EntryContent[] = [
     field("website", "url", "https://www.datev.de"),
     field("totp", "totp", DATEV_TOTP),
   ]),
-  content("wifi", "WLAN Büro", [
+  content("wifi", WLAN_TITLE, [
     field("ssid", "text", "Weber-Buero"),
     field("password", "secret", WLAN_PASSWORD),
     field("security", "text", "WPA3"),
@@ -81,7 +85,7 @@ export const setUpWeber = async (server: string, setupCode: string) => {
       },
     ),
   };
-  const vault = await newVault(api, account, "Büro");
+  const vault = await newVault(api, account, VAULT_NAME);
   if (!vault.ok) throw new Error(`vault not made: ${vault.error}`);
   const loaded = await loadVaults(api, account);
   if (!loaded.ok) throw new Error(`vaults not loaded: ${loaded.error}`);
