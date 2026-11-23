@@ -104,7 +104,11 @@ const groupAdmin = (s: Store, deps: Deps) =>
       s.db
         .insert(groupMembers)
         .values({ groupId: group.id, accountId: account.id })
-        .onConflictDoNothing()
+        // One the provider gave becomes the admin's: the claim no longer ends it (K-604)
+        .onConflictDoUpdate({
+          target: [groupMembers.groupId, groupMembers.accountId],
+          set: { viaIdp: false },
+        })
         .run();
       // Joining asks the managers of every vault the group is linked to
       const linked = s.db.select().from(vaultGroups).where(eq(vaultGroups.groupId, group.id)).all();

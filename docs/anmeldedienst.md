@@ -64,7 +64,8 @@ Anmeldedienst in jeder Gruppe sind.
 - Verlässt jemand die Gruppe beim Anmeldedienst, fällt eine offene Anfrage weg. Ist die Person
   schon im Tresor, bekommt der Verwalter eine Mitteilung und entfernt sie dort selbst – mit dem
   Schlüsselwechsel, den nur sein Gerät machen kann.
-- Gruppen, die ein Admin in Kennwort von Hand vergeben hat, ändert der Anmeldedienst nicht.
+- Gruppen, die ein Admin in Kennwort von Hand vergeben hat, ändert der Anmeldedienst nicht – auch
+  dann nicht, wenn die Person schon über den Anmeldedienst in der Gruppe war.
 
 Kennwort gleicht die Gruppen bei jeder Anmeldung über den Anmeldedienst ab. Wer beim Anmeldedienst
 gesperrt wird, kommt mit Passphrase weiter in Kennwort: Entferne die Person unter **Mitglieder**
