@@ -4,13 +4,7 @@
  * derivation, entries slipped into an export, the passphrase taken at sign-in, and a new device's
  * pairing redirected or a device of the server's own registered.
  */
-import {
-  deviceFingerprint,
-  encode,
-  passphraseKeysWith,
-  wrap,
-  xwingKeyPair,
-} from "@kennwort/crypto";
+import { deviceFingerprint, passphraseKeysWith, xwingKeyPair } from "@kennwort/crypto";
 import { describe, expect, it } from "vitest";
 import { createAccount } from "../account/create.ts";
 import {
@@ -251,15 +245,9 @@ describe("E-09 and E-25 the server registers a device of its own or redirects a 
   });
 
   it("cannot answer the new device with a package of its own making", () => {
-    const to = {
-      publicKey: newDevice.publicKey,
-      fingerprint: deviceFingerprint(newDevice.publicKey),
-    };
-    const forged = wrap(
-      to,
-      encode(content.accountKey, content.accountId, content.secretKey, content.stateHash),
-      { purpose: "device", context: [new Uint8Array(32)] },
-    );
+    // The server seals exactly as the honest device does, only without the secret from the QR
+    // code, which it never saw: a guess must not open the package
+    const forged = sealDevicePackage(newDevice.publicKey, new Uint8Array(32), content);
     expect(
       openDevicePackage(newDevice.secretKey, newDevice.publicKey, pairingSecret, forged),
     ).toEqual({
