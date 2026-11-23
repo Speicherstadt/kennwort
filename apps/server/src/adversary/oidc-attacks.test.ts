@@ -130,6 +130,7 @@ describe("a provider that claims groups", () => {
     expect(listed.find((m) => m.id === accountId)).toMatchObject({
       role: "member",
       certificate: null,
+      oidc: true,
     });
   });
 });

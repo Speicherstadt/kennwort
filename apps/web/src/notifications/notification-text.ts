@@ -26,6 +26,8 @@ const texts: Record<NotificationKind, (name: string, vault: string) => string> =
   "account-recovered": (name) => m.notifications_account_recovered({ name }),
   "link-opened": () => m.notifications_link_opened(),
   "security-report": () => m.notifications_security_report(),
+  "member-enrolled": (name) => m.notifications_member_enrolled({ name }),
+  "group-left": (name, vault) => m.notifications_group_left({ name, vault }),
 };
 
 /** The page where the person checks and acts; a vault's own page where it has one */
@@ -33,11 +35,14 @@ const hrefOf = (note: Notification): string => {
   switch (note.kind) {
     case "access-requested":
       return "/vaults";
+    case "group-left":
+      return note.subject ? `/vaults/${encodeURIComponent(note.subject)}` : "/vaults";
     case "vault-added":
       return note.subject ? `/vaults/${encodeURIComponent(note.subject)}` : "/vaults";
     case "share-received":
       return "/shared";
     case "invitation-accepted":
+    case "member-enrolled":
     case "member-renewed":
     case "root-changed":
       return "/members";
@@ -74,4 +79,6 @@ export const kindLabels: Record<NotificationKind, () => string> = {
   "account-recovered": () => m.push_kind_account_recovered(),
   "link-opened": () => m.push_kind_link_opened(),
   "security-report": () => m.push_kind_security_report(),
+  "member-enrolled": () => m.push_kind_member_enrolled(),
+  "group-left": () => m.push_kind_group_left(),
 };

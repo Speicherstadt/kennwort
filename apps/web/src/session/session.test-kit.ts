@@ -23,6 +23,11 @@ export const fakeApi = (overrides: Partial<Api> = {}) => {
       accounts.set(encodeBytes(upload.accountId), upload);
       return { ok: true, value: "token-1" };
     },
+    enrolOidc: async (ticket, upload) => {
+      if (ticket !== "ticket") return { ok: false, error: "invalid-ticket" };
+      accounts.set(encodeBytes(upload.accountId), upload);
+      return { ok: true, value: "token-3" };
+    },
     accept: async (_id, token, upload) => {
       if (token !== "einladung") return { ok: false, error: "invalid-invitation" };
       accounts.set(encodeBytes(upload.accountId), upload);

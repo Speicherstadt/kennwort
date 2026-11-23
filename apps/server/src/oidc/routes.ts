@@ -21,7 +21,7 @@ import type { ClientAddress, ClientEnv } from "../auth/client-address.ts";
 import { startSession } from "../auth/devices.ts";
 import { enrol } from "../auth/enrol.ts";
 import type { Db } from "../db/database.ts";
-import { accounts } from "../db/schema.ts";
+import { accounts, companies } from "../db/schema.ts";
 import type { Log } from "../log.ts";
 import { type Notify, noNotify } from "../notifications/notify.ts";
 import { companyAccounts } from "../notifications/recipients.ts";
@@ -172,7 +172,17 @@ export const oidcPublicRoutes = (deps: OidcDeps) => {
         takeTicket(db, parsed.data.ticket, deps.now());
         return c.json({ kind: "known", accountId: ticket.accountId });
       }
-      return c.json({ kind: "enrol", name: ticket.name });
+      // The company root, for the new device to pin on first use (TOFU, compared by code: P-07)
+      const company = db
+        .select()
+        .from(companies)
+        .where(eq(companies.id, ticket.companyId ?? ""))
+        .get();
+      return c.json({
+        kind: "enrol",
+        name: ticket.name,
+        rootPublicKey: company?.rootPublicKey ?? null,
+      });
     })
     .post("/oidc/enrol", async (c) => {
       if (limited(c, "enrol")) return c.json({ error: "too-many-requests" }, 429);

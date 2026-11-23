@@ -71,7 +71,9 @@ describe("a person without an account", () => {
     await s.openEnrolment();
     const { ticket } = await s.login(SANDRA);
     const peek = await s.request("/auth/oidc/ticket", { body: { ticket } });
-    expect(await peek.json()).toEqual({ kind: "enrol", name: "Sandra Weber" });
+    // The root key comes along: the new device pins it on first use, checked by comparing codes
+    const root = encodeBytes(s.w.o.company.rootPublicKey);
+    expect(await peek.json()).toEqual({ kind: "enrol", name: "Sandra Weber", rootPublicKey: root });
     const answer = await s.enrol(ticket ?? "");
     expect(answer.status).toBe(201);
     const { accountId, token } = (await answer.json()) as { accountId: string; token: string };
@@ -144,7 +146,7 @@ describe("a person with an account", () => {
     s.idp.state.tamper = { claims: (c) => ({ ...c, email: "sandra@weber-haustechnik.test" }) };
     const other = await s.login({ ...SANDRA, sub: "another-sub" });
     const answer = await s.request("/auth/oidc/ticket", { body: { ticket: other.ticket } });
-    expect(await answer.json()).toEqual({ kind: "enrol", name: "Sandra Weber" });
+    expect(await answer.json()).toMatchObject({ kind: "enrol", name: "Sandra Weber" });
   });
 
   it("links a signed-in account to its person, once, and never a person linked elsewhere", async () => {

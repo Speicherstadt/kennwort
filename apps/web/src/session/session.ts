@@ -22,6 +22,7 @@ import {
   invitationMac,
   type Stored,
 } from "@kennwort/core";
+import { rootFingerprint } from "@kennwort/crypto";
 import { createSignal } from "solid-js";
 import { type DeviceAccount, forgetDevice, readDevice, rememberDevice } from "./device.ts";
 import {
@@ -315,6 +316,26 @@ export const createSession = (deps: SessionDeps) => {
       return enrolled(account, token, (t) =>
         deps.api.uploadKeys(t, account.upload, undefined, mac),
       );
+    },
+    /**
+     * Someone the identity provider signed in, without an account yet (K-604, P-25): the account
+     * is made here like an invitee's, under the root the ticket named, pinned on first use; an
+     * owner or admin compares the codes of both before certifying the new bundle (P-07)
+     */
+    enrolOidc: async (ticket: string, rootPublicKey: Uint8Array, passphrase: string) => {
+      const account = createAccount(
+        passphrase,
+        emptyState(rootFingerprint(rootPublicKey)),
+        deps.derive ? { derive: deps.derive } : {},
+      );
+      const token = await deps.api.enrolOidc(ticket, account.upload);
+      const asSession = token.ok
+        ? token
+        : {
+            ok: false as const,
+            error: token.error === "invalid-ticket" ? ("invalid-invitation" as const) : token.error,
+          };
+      return enrolled(account, asSession, (t) => deps.api.uploadKeys(t, account.upload));
     },
     unlock: unlockWith(deps, device, remember, open),
     /** The passphrase is forgotten: the Recovery Key opens the account and is renewed (recover.ts) */

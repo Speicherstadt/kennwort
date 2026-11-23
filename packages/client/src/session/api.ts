@@ -26,6 +26,7 @@ import { groupCalls } from "./groups-api.ts";
 import { linkCalls } from "./links-api.ts";
 import { memberCalls } from "./members-api.ts";
 import { notificationCalls } from "./notifications-api.ts";
+import { oidcCalls } from "./oidc-api.ts";
 import { pairingCalls } from "./pairing-api.ts";
 import { policyCalls } from "./policy-api.ts";
 import { pwnedCalls } from "./pwned-api.ts";
@@ -130,6 +131,7 @@ export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity)
     ...linkCalls(call),
     ...notificationCalls(call),
     ...pwnedCalls(call),
+    ...oidcCalls(call),
     /** The root key's public half goes along, for every member to check certificates (P-07) */
     setup: async (
       code: string,
@@ -218,4 +220,5 @@ export type AccountApi = Omit<
   | keyof ReturnType<typeof linkCalls>
   | keyof ReturnType<typeof notificationCalls>
   | keyof ReturnType<typeof pwnedCalls>
+  | Exclude<keyof ReturnType<typeof oidcCalls>, "enrolOidc">
 >;

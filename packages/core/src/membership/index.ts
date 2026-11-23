@@ -77,6 +77,7 @@ export {
 } from "./log-entry.ts";
 export {
   CompanyWire,
+  certifyEnrolled,
   certifyRenewed,
   checkMembers,
   type MemberStatus,

@@ -19,6 +19,7 @@ const api: Api = {
   signInWithRecovery: async () => ({ ok: false, error: "denied" }),
   signInWithLoginKey: async () => ({ ok: false, error: "denied" }),
   replaceUnlock: async () => false,
+  enrolOidc: async () => ({ ok: true, value: "token-3" }),
 };
 
 describe("session replaced by another account", () => {
