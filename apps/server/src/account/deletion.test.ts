@@ -467,8 +467,14 @@ describe("deleting one's own account (K-607, P-28)", () => {
     expect((await post(w, shared, { entry: toWire(promote) }, w.annaToken)).status).toBe(201);
     // Jonas leaves the company; the log still names him until a manager removes him (P-11)
     const db = w.o.setup.db;
-    db.update(accounts).set({ role: "owner" }).where(eq(accounts.id, annaId(w))).run();
-    db.update(accounts).set({ leftAt: NOW + 4 }).where(eq(accounts.id, jonasId(w))).run();
+    db.update(accounts)
+      .set({ role: "owner" })
+      .where(eq(accounts.id, annaId(w)))
+      .run();
+    db.update(accounts)
+      .set({ leftAt: NOW + 4 })
+      .where(eq(accounts.id, jonasId(w)))
+      .run();
     const plan = await (
       await w.o.setup.request("/api/account/deletion", { token: w.annaToken })
     ).json();

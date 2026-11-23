@@ -32,16 +32,20 @@ export type DeletionDeps = {
 
 /** What deleting would do now: the company's fate and each vault's (by the stored logs) */
 const planFor = (db: Db, companyId: string, accountId: string, now: number) => {
+  const companyAccounts = db.select().from(accounts).where(eq(accounts.companyId, companyId)).all();
+  // A member who has left the company manages nothing and keeps no vault alive, though the log
+  // names them until a manager removes them (P-11)
+  const active = new Set(companyAccounts.filter((a) => a.leftAt === null).map((a) => a.id));
   const companyVaults = db
     .select({ id: vaults.id })
     .from(vaults)
     .where(eq(vaults.companyId, companyId))
     .all()
-    .map(({ id }) => ({ id, members: membersOf(storedEntries(db, id)) }));
-  const company = companyFate(
-    db.select().from(accounts).where(eq(accounts.companyId, companyId)).all(),
-    accountId,
-  );
+    .map(({ id }) => ({
+      id,
+      members: new Map([...membersOf(storedEntries(db, id))].filter(([key]) => active.has(key))),
+    }));
+  const company = companyFate(companyAccounts, accountId);
   return { company, vaults: deletionPlan(companyVaults, accountId, Math.floor(now / 1000)) };
 };
 
