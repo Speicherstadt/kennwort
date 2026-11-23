@@ -17,7 +17,8 @@ Ende-zu-Ende-verschlüsselt, mit Post-Quanten-Schutz, Open Source und ohne Koste
 [Installieren](installation.md){ .md-button }
 
 !!! warning "Noch nicht veröffentlicht"
-    Kennwort ist fertig gebaut bis auf die App fürs Handy, aber noch ohne externes Audit. Bitte
+    Kennwort ist gebaut, aber noch ohne externes Audit; die App für Android ist eine Alpha ohne
+    Release, die iOS-App fehlt noch. Bitte
     noch keine echten Passwörter damit verwalten. In der Demo gibst du ohnehin nur Testdaten ein.
 
 !!! tip "Ausprobieren ohne Server"
@@ -34,8 +35,8 @@ Ende-zu-Ende-verschlüsselt, mit Post-Quanten-Schutz, Open Source und ohne Koste
 
 - **Tresore fürs Team**: Logins, Notizen, WLAN, Karten, SSH- und API-Schlüssel, Einmal-Codes und
   Passkeys in [Tresoren](tresore.md) mit Gruppen, Rollen und Zugriff auf Zeit.
-- **Anmelden mit Passkey, entsperren auf dem Gerät**: Anmelden per Passkey, entsperrt wird mit
-  Passphrase und Secret Key, die das Gerät nie verlassen; dazu
+- **Entsperren mit Passkey oder Passphrase**: in der Web-App mit einem Passkey (WebAuthn PRF) oder
+  mit Passphrase und Secret Key, die das Gerät nie verlassen ([Kryptografie](kryptografie.md)); dazu
   Recovery-Kit, Firmen-Recovery und Notfallzugriff ([Konto und Entsperren](konto.md)).
 - **Browser-Extension**: Treffer nur für den exakten Host, Ausfüllen erst nach deinem Klick,
   Speichern neuer Logins, Phishing-Warnung und Passkeys ([Browser-Extension](extension.md)).

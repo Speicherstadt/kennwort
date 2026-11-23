@@ -10,6 +10,7 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 const pageFiles: Record<string, string> = {
   Überblick: "index.md",
   Installation: "installation.md",
+  Kryptografie: "kryptografie.md",
   Sicherheitsdesign: "sicherheitsdesign.md",
   "Import und Export": "import-export.md",
   Extension: "extension.md",

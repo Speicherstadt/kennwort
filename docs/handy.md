@@ -2,7 +2,7 @@
 title: Handy und App
 description: >-
   Kennwort am Handy: die Web-App zum Installieren (PWA), die Extension in Firefox für Android und
-  die geplante App für Android und iOS mit systemweitem Ausfüllen.
+  die App für Android (Alpha, noch ohne Release) mit systemweitem Ausfüllen; iOS folgt.
 ---
 
 # Handy und App
@@ -36,21 +36,23 @@ installieren wollen oder dürfen.
 ## Die App
 
 Die App für Android und iOS ist die letzte Bauphase im [Projektplan](plan.md#handy-und-mobile-app).
-Geplant ist:
-
-- dieselbe Oberfläche und dieselbe Kryptografie wie in der Web-App;
-- Entsperren mit Fingerabdruck oder Gesicht, der Kontoschlüssel im Android Keystore bzw. im
-  iOS-Schlüsselbund verpackt (noch nicht gebaut: das braucht erst eine eigene Regel im
-  Sicherheitsdesign, siehe [Ausfüllen in anderen Apps](#ausfullen-in-anderen-apps));
-- Ausfüllen in allen Apps und Browsern über den Android-Autofill-Dienst (da) und die
-  AutoFill-Erweiterung von iOS, mit Passkeys;
-Bis dahin ist die Web-App der Weg am Handy.
+Sie ist eine Tauri-3-App (3.0.0-alpha.6; Tauri 3 ist noch nicht stabil) in `apps/mobile`, die genau
+den Build der Web-App zeigt, mit derselben Oberfläche und derselben
+[Kryptografie](kryptografie.md).
 
 ### Stand
 
-Das Gerüst steht: eine Tauri-3-App (3.0.0-alpha.6; Tauri 3 ist noch nicht stabil) in
-`apps/mobile`, die genau den Build der Web-App zeigt, keine eigene Oberfläche. Das Android-Projekt
-und das iOS-Projekt sind angelegt.
+| Was | Android | iOS |
+| --- | --- | --- |
+| Verbindung zum eigenen Server | da | fehlt, kommt mit dem Bau auf dem Mac |
+| Live-Sync von Mitteilungen und Tresoren | da | – |
+| Ausfüllen in anderen Apps und Browsern | da (Autofill-Dienst) | AutoFill-Erweiterung mit Passkeys folgt |
+| Zwischenablage leeren, Bildschirmschutz | da | kopiert wie die Web-App |
+| Entsperren mit Fingerabdruck oder Gesicht | noch nicht (siehe [unten](#ausfullen-in-anderen-apps)) | noch nicht |
+| Anmeldung über OIDC | noch nicht | noch nicht |
+| Release | noch keins, nur Debug-APKs zum Testen | noch nie gebaut |
+
+Bis zum ersten Release ist die Web-App der Weg am Handy.
 
 ### Mit dem Server verbinden
 
@@ -88,7 +90,7 @@ So läuft es:
 1. Du tippst in ein Anmeldefeld. Android zeigt **Mit Kennwort ausfüllen**; noch steht nichts im
    Feld.
 2. Du tippst darauf. Kennwort öffnet sich; ist es gesperrt, entsperrst du es wie gewohnt mit
-   Passphrase oder Passkey.
+   Passphrase.
 3. Kennwort zeigt nur die Einträge, die genau für diese App oder Website gespeichert sind. Du
    wählst einen, und Kennwort springt zurück und füllt Benutzername und Passwort aus. Mit
    **Nicht ausfüllen** bleibt das Feld leer.

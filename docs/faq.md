@@ -25,6 +25,13 @@ auch ein gehackter Server weder mitlesen noch jemandem Zugriff geben. Alle 27 An
 ETH-Studie zu Passwortmanagern mit bösartigem Server laufen als Tests
 ([Sicherheitsdesign](sicherheitsdesign.md)).
 
+## Welche Verschlüsselung nutzt Kennwort?
+
+XChaCha20-Poly1305 für die Daten, X-Wing (X25519 und ML-KEM-768) gegen künftige Quantenrechner,
+Ed25519 für Unterschriften und Argon2id mit einem Secret Key für die Passphrase, alles aus den
+`@noble`-Bibliotheken. Was das bringt und wo die Grenzen liegen, steht unter
+[Kryptografie](kryptografie.md).
+
 ## Ich habe meine Passphrase vergessen.
 
 Mit dem Recovery-Kit setzt du eine neue ([Passphrase vergessen](konto.md#passphrase-vergessen)).
@@ -49,8 +56,9 @@ Nein, erst nach deinem Klick, nur auf dem exakten Host und nie in fremde iFrames
 
 ## Gibt es eine App fürs Handy?
 
-Die Web-App lässt sich heute schon installieren; die App für Android und iOS kommt zuletzt
-([Handy und App](handy.md)).
+Die Web-App lässt sich heute schon installieren. Die App für Android verbindet sich mit deinem
+Server, synchronisiert live und füllt in anderen Apps aus, ist aber eine Alpha ohne Release; die
+iOS-App fehlt noch ([Handy und App](handy.md)).
 
 ## Kann ich Kennwort ausprobieren, ohne etwas zu installieren?
 

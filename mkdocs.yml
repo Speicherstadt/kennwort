@@ -80,6 +80,7 @@ nav:
       - Backups: backup.md
       - Updates: updates.md
       - Lasttest: lasttest.md
+  - Kryptografie: kryptografie.md
   - Sicherheitsdesign: sicherheitsdesign.md
   - FAQ: faq.md
   - Entwicklung:
