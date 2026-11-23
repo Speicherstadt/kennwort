@@ -20,6 +20,7 @@ import {
 } from "@kennwort/core";
 import { constantTimeEqual } from "@kennwort/crypto";
 import type { Call } from "./api.ts";
+import { deviceCalls } from "./devices-api.ts";
 import type { OpenAccount } from "./open-account.ts";
 import type { StateDeps } from "./state-sync.ts";
 import type { Unlock } from "./unlock.ts";
@@ -195,6 +196,17 @@ const openWith = (
 };
 
 /**
+ * Signs out the session a passkey sign-in just made (as the CLI does, apps/cli/src/account.ts):
+ * a sign-in whose unlock failed leaves no session behind; a server that does not answer lets it
+ * run out
+ */
+export const signOutSession = async (call: Call, token: string) => {
+  const api = deviceCalls(call);
+  const current = (await api.devices(token).catch(() => undefined))?.find((d) => d.current);
+  if (current) await api.removeDevice(token, current.id).catch(() => false);
+};
+
+/**
  * Signs in with the passkey this device remembers (Better Auth) and opens the account with the
  * PRF output of the same ceremony
  */
@@ -220,7 +232,9 @@ export const unlockWithPasskeyOnline = async (
     prf.fill(0);
     return fail(verified.status === 0 ? "unreachable" : "wrong-passkey");
   }
-  return openWith(await deps.api.keys(token), wanted, prf, token);
+  const opened = openWith(await deps.api.keys(token), wanted, prf, token);
+  if (!opened.ok) await signOutSession(deps.call, token);
+  return opened;
 };
 
 /**

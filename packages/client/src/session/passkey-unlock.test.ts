@@ -117,7 +117,7 @@ const server = (options: { tamper?: boolean; failPut?: boolean; failState?: bool
     if (path === "/api/devices" && method === "GET")
       return {
         status: 200,
-        json: { devices: [{ id: "s-1", name: "Browser", createdAt: 1, lastUsedAt: 1, current: true }] },
+        json: { devices: [{ id: "s-1", name: "Browser", signedInAt: 1, lastSeenAt: 1, current: true }] },
       };
     if (path === "/api/devices/s-1" && method === "DELETE") return { status: 200, json: {} };
     if (path === "/api/account/state") {
