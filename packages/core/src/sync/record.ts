@@ -22,6 +22,7 @@ import {
   certificateOf,
   idKey,
   type LogState,
+  mayEdit,
   type Trust,
 } from "../membership/verify-log.ts";
 import { err, ok, type Result } from "../result.ts";
@@ -155,12 +156,22 @@ export const openRecordWithKey = (
   if (certificates.length === 0) return err("uncertified-author");
   if (!certificates.some((certificate) => isSignedBy(certificate, record)))
     return err("bad-signature");
-  if (member?.role !== "edit" && member?.role !== "manage") return err("not-editor");
+  if (!member || !(mayEdit(member.role) || editedAt(log, record))) return err("not-editor");
   const at = { vaultId: record.vaultId, entryId: record.entryId, epoch: record.epoch };
   const entryKey = openEntryKey(ring.vaultKey, record.entryKey, at);
   if (!entryKey.ok) return err("unreadable");
   const content = readContent(entryKey.value, record);
   return content.ok ? ok({ content: content.value, entryKey: entryKey.value }) : content;
+};
+
+/**
+ * Whether the author could edit at the log state the record names, in the record's epoch: the
+ * state is signed with the record, so a server cannot move a version to an earlier one, and a
+ * member reduced to reading names a later state with everything she writes (P-09)
+ */
+const editedAt = (log: LogState, record: EntryRecord) => {
+  const then = log.editorsAt?.get(idKey(record.lastSeen));
+  return then?.epoch === record.epoch && then.editors.has(idKey(record.author));
 };
 
 export const openRecord = (

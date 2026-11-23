@@ -6,14 +6,15 @@
  */
 import { describe, expect, it } from "vitest";
 import { entryHash, type LogEntry } from "../membership/log-entry.ts";
-import { changeAccess, removeMember } from "../membership/vault-ops.ts";
-import { verifyLog } from "../membership/verify-log.ts";
+import { addMember, changeAccess, removeMember } from "../membership/vault-ops.ts";
+import { idKey, verifyLog } from "../membership/verify-log.ts";
 import { edit, emptyDevice, pull, sync } from "../sync/device.ts";
 import { memoryServer } from "../sync/memory-server.ts";
-import { type EntryRecord, sealRecord } from "../sync/record.ts";
+import { type EntryRecord, openRecord, sealRecord } from "../sync/record.ts";
 import {
   anna,
   bank,
+  certificate,
   contextFor,
   id,
   jonas,
@@ -117,5 +118,47 @@ describe("an editor demoted to reading", () => {
     const { server, ctx } = await demoted("remove");
     const pulled = await pull(emptyDevice(), server, ctx(jonas));
     expect(pulled.refused).toEqual([{ entryId, version: 1, error: "not-editor" }]);
+  });
+
+  it("removed and added again as a reader, her earlier versions still count no more (P-11)", async () => {
+    const { server, ctx } = await demoted("remove");
+    const removed = ctx(jonas).log;
+    const back = addMember(
+      signer,
+      removed,
+      ctx(jonas).ring,
+      certificate(anna),
+      { role: "read", validUntil: 0 },
+      1_800_000_011,
+    ).entry;
+    const entries = [
+      ...logEntries,
+      removeMember(signer, log, vaultId, anna.id, 1_800_000_010),
+      back,
+    ];
+    const checked = verifyLog(vaultId, entries, trust);
+    if (!checked.ok) throw new Error(checked.error);
+    expect(checked.value.members.get(idKey(anna.id))?.role).toBe("read");
+    const pulled = await pull(emptyDevice(), server, { ...ctx(jonas), log: checked.value });
+    expect(pulled.refused).toEqual([{ entryId, version: 1, error: "not-editor" }]);
+  });
+
+  it("counts the log state only in the record's own epoch", async () => {
+    const { server, ctx, before } = await demoted();
+    const record = (await server.pull())[0] as EntryRecord;
+    const { log: demotedLog, ring, trust: t } = ctx(jonas);
+    const editors = new Set([idKey(anna.id)]);
+    const otherEpoch = {
+      ...demotedLog,
+      editorsAt: new Map([[idKey(before), { epoch: 1, editors }]]),
+    };
+    expect(openRecord(record, ring, otherEpoch, t, 0)).toEqual({ ok: false, error: "not-editor" });
+    const sameEpoch = {
+      ...demotedLog,
+      editorsAt: new Map([[idKey(before), { epoch: 0, editors }]]),
+    };
+    expect(openRecord(record, ring, sameEpoch, t, 0).ok).toBe(true);
+    const { editorsAt: _, ...handMade } = demotedLog;
+    expect(openRecord(record, ring, handMade, t, 0)).toEqual({ ok: false, error: "not-editor" });
   });
 });
