@@ -1,5 +1,6 @@
 //! K-802: the webview's three commands for the Android autofill (docs/plan.md, Entscheidungen,
-//! "Autofill unter Android"). The Kotlin service keeps what the system asked for in memory
+//! "Autofill unter Android"), and the same three for the iOS AutoFill extension ("Autofill unter
+//! iOS", plugins/autofill/ios). The Kotlin service keeps what the system asked for in memory
 //! (AutofillPlugin.kt, PendingFills.kt); these commands only pass the bridge's JSON between it and
 //! the webview (packages/client/src/autofill/bridge.ts), which parses everything it gets. Kotlin
 //! checks every answer once more against the pending request before anything is filled. Nothing
@@ -32,10 +33,15 @@ mod shell {
 
   use super::{RespondArgs, checked_message};
 
-  #[cfg(target_os = "android")]
+  #[cfg(any(target_os = "android", target_os = "ios"))]
   struct NativeAutofill<R: Runtime>(tauri::plugin::PluginHandle<R>);
 
-  /// Registers the Kotlin plugin; it has no commands of its own the webview could call directly
+  // The Swift plugin's entry point (plugins/autofill/ios/Plugin, linked by build.rs)
+  #[cfg(target_os = "ios")]
+  tauri::ios_plugin_binding!(init_plugin_kennwort_autofill);
+
+  /// Registers the Kotlin or Swift plugin; it has no commands of its own the webview could call
+  /// directly
   pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("kennwort-autofill")
       .setup(|_app, _api| {
@@ -45,6 +51,12 @@ mod shell {
           let handle = _api.register_android_plugin("app.kennwort", "AutofillPlugin")?;
           _app.manage(NativeAutofill(handle));
         }
+        #[cfg(target_os = "ios")]
+        {
+          use tauri::Manager;
+          let handle = _api.register_ios_plugin(init_plugin_kennwort_autofill)?;
+          _app.manage(NativeAutofill(handle));
+        }
         Ok(())
       })
       .build()
@@ -52,12 +64,12 @@ mod shell {
 
   /// What the Kotlin plugin resolves with: the bridge's JSON text, or null
   #[derive(serde::Deserialize)]
-  #[cfg_attr(not(target_os = "android"), allow(dead_code))]
+  #[cfg_attr(not(any(target_os = "android", target_os = "ios")), allow(dead_code))]
   struct Message {
     message: Option<String>,
   }
 
-  #[cfg(target_os = "android")]
+  #[cfg(any(target_os = "android", target_os = "ios"))]
   fn call<R: Runtime, A: serde::Serialize>(
     app: &AppHandle<R>,
     command: &str,
@@ -72,7 +84,7 @@ mod shell {
       .map_err(|_| "autofill failed")
   }
 
-  #[cfg(not(target_os = "android"))]
+  #[cfg(not(any(target_os = "android", target_os = "ios")))]
   fn call<R: Runtime, A: serde::Serialize>(
     _app: &AppHandle<R>,
     _command: &str,

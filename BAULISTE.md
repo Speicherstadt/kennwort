@@ -748,7 +748,10 @@ Nicht auf dem Weg des Loops; alles erst nach der letzten Phase.
 
 - [ ] Default-Branch auf `main`, GitHub Pages mit Domain kennwort.app
 - [ ] **iOS-App** (nicht im Loop, auf einem Mac): AutoFill-Credential-Provider-Extension mit
-  Passkeys und Schlüsselbund in Xcode, Signatur, App Store
+  Passkeys und Schlüsselbund in Xcode, Signatur, App Store. Die Erweiterung für Passwörter ist
+  geschrieben, aber unübersetzt (`apps/mobile/plugins/autofill/ios`): in Xcode als Target
+  hinzufügen, `swift test` für den Kern laufen lassen und bauen, wie `docs/handy.md`, „iOS-AutoFill
+  bauen“, beschreibt
 - [ ] Signatur-Schlüssel für Release-Manifest, Extension und Apps
 - [ ] Store-Einreichungen und Antworten auf Reviews
 - [ ] Pilotbetrieb bei einem echten Betrieb

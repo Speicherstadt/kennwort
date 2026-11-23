@@ -2441,6 +2441,33 @@ durch etwas Gleichwertiges ersetzt; wo nicht, steht das Restrisiko hier.
   Restrisiko: Signiert ein Browser-Hersteller mit einem neuen Zertifikat, füllt Kennwort in diesem
   Browser nichts, bis die Liste nachgezogen ist.
 
+**In der App unter iOS:** Die AutoFill-Erweiterung (Credential Provider,
+`apps/mobile/plugins/autofill/ios`) hält dieselben Regeln ein; gebaut wird sie von einer Person auf
+einem Mac und ist bis dahin nicht übersetzt.
+
+- Nur nach einer Handlung der Person: iOS öffnet die Erweiterung erst, wenn die Person im
+  Passwort-Menü Kennwort wählt. `provideCredentialWithoutUserInteraction` lehnt immer mit
+  `userInteractionRequired` ab, und Kennwort trägt keine Logins in den `ASCredentialIdentityStore`
+  ein (der hielte Hosts und Benutzernamen unverschlüsselt auf dem Gerät).
+- Übergabe: Eine Erweiterung kann ihre App nicht öffnen. Sie legt deshalb eine Anfrage ohne
+  Geheimnis in die gemeinsame App Group (eine Datei, Schutzklasse „complete“, nicht im Backup),
+  dazu den öffentlichen Teil eines X25519-Schlüssels, den sie für genau diese Anfrage erzeugt und
+  nur im Speicher hält. Die Person wechselt zu Kennwort, entsperrt wie gewohnt und wählt einen
+  Eintrag; die App nimmt die Anfrage dabei aus der Datei (gelesen heißt gelöscht, nach drei Minuten
+  verworfen), prüft die Antwort gegen sie und legt sie mit HPKE versiegelt zurück (RFC 9180,
+  DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, ChaCha20-Poly1305 aus CryptoKit; `info`
+  `kennwort/ios-autofill-handover/v1`, AAD die Anfrage-ID). Kein Passwort liegt im Klartext auf
+  der Platte, und eine Antwort für eine beendete Erweiterung öffnet niemand mehr.
+- Nur bei exakt passendem Ziel: iOS nennt eine Seite über ihre URL, eine App über eine Domain
+  ihrer Associated Domains, die Apple gegen die Website prüft. Die Erweiterung nimmt nur
+  https-Adressen und Domains; nennt iOS mehrere verschiedene Hosts, füllt sie nichts. Den Host
+  gleicht die App mit derselben Funktion ab wie Extension und Android.
+- Nur die angefragten Felder: Swift prüft die Antwort in der App und noch einmal in der
+  Erweiterung (Version, Anfrage-ID, nur Benutzername und Passwort, höchstens 4096 Zeichen je Wert);
+  alles andere füllt nichts.
+- Schlüssel: keiner im Schlüsselbund, keiner hinter Biometrie (P-03). Der Schlüssel der Übergabe
+  lebt nur im Speicher der Erweiterung, so lange sie wartet.
+
 **Wehrt ab:** E-14.
 
 ### P-18 Einmal-Links
