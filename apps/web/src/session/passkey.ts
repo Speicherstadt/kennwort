@@ -12,6 +12,7 @@ import {
   type PasskeyError,
   removePasskeyUnlock,
   setUpPasskeyUnlock,
+  signOutSession,
   unlockWithPasskeyOnline,
   type WebAuthn,
 } from "@kennwort/client/session/passkey-unlock.ts";
@@ -143,6 +144,7 @@ export const createPasskeyUnlock = (deps: PasskeySessionDeps, parts: Parts) => {
       if (!activeSalt(merged.state.passkeys, bytes().parse(passkey.credentialId))) {
         merged.accountKey.fill(0);
         forget();
+        await signOutSession(using.call, opened.token);
         return { ok: false as const, error: "passkey-removed" as PasskeyError };
       }
       parts.open(merged);
