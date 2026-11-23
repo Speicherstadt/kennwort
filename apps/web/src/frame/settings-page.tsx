@@ -7,7 +7,6 @@
 import { Button, cn, getLocale, Icon, type Locale, locales, m, pageClass } from "@kennwort/ui";
 import type { IconNode } from "@kennwort/ui/icons";
 import {
-  Archive,
   ArrowLeft,
   Building2,
   ChevronRight,
@@ -32,8 +31,8 @@ export type SettingsProps = {
   onLock: () => void;
   onLocale: (locale: Locale) => void;
   onAddDevice: () => void;
-  onMembers?: (() => void) | undefined;
-  onVaults?: (() => void) | undefined;
+  /** The team page (members, groups, vaults), moved out of the settings */
+  onTeam?: (() => void) | undefined;
   onImport?: (() => void) | undefined;
   onExport?: (() => void) | undefined;
   onEmergency?: (() => void) | undefined;
@@ -204,16 +203,10 @@ const groups = (props: SettingsProps) => ({
       open: props.onCompanies,
     },
     {
-      label: m.settings_members(),
-      help: m.settings_members_help(),
+      label: m.settings_team(),
+      help: m.settings_team_help(),
       icon: Users,
-      open: props.onMembers,
-    },
-    {
-      label: m.settings_vaults(),
-      help: m.settings_vaults_help(),
-      icon: Archive,
-      open: props.onVaults,
+      open: props.onTeam,
     },
     {
       label: m.nav_security(),

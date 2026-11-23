@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { setUpCompany, test, unlock } from "./account.ts";
-import { annaJoins, heading, openVaults } from "./company.ts";
+import { annaJoins, heading, openTeam, openVaults } from "./company.ts";
 
 // K-307 part b (P-11): Anna leaves Büro, and then the company. Jonas's client signs remove and
 // rotate, writes every entry anew under the new key and marks what Anna could read "Zum Ändern";
@@ -146,7 +146,7 @@ test.describe("leaving the company", { tag: "@phone" }, () => {
       .filter({ visible: true })
       .first()
       .click();
-    await page.getByRole("button", { name: "Mitglieder" }).click();
+    await openTeam(page, "Mitglieder");
     const members = page.getByRole("list", { name: "Mitglieder" });
     await members.getByRole("button", { name: "Anna aus der Firma entfernen" }).click();
     const confirm = page.getByRole("dialog", { name: "Anna aus der Firma entfernen" });
@@ -171,7 +171,7 @@ test.describe("leaving the company", { tag: "@phone" }, () => {
       .filter({ visible: true })
       .first()
       .click();
-    await page.getByRole("button", { name: "Mitglieder" }).click();
+    await openTeam(page, "Mitglieder");
     await page.getByRole("button", { name: "Austritts-Bericht für Anna" }).click();
     const report = page.getByRole("dialog", { name: "Austritts-Bericht für Anna" });
     const vaults = report.getByRole("list", { name: "Tresore" });

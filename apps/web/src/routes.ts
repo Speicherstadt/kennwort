@@ -16,6 +16,8 @@ export type Route =
   | { page: "groups" }
   | { page: "settings" }
   | { page: "members" }
+  /** „Team“: the members tab; /members, /groups and /vaults are its other addresses */
+  | { page: "team" }
   | { page: "vaults" }
   | { page: "import" }
   | { page: "export" }

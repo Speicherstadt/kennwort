@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { newDevice, setUpCompany, test, unlock } from "./account.ts";
-import { annaJoins, heading, openVaults } from "./company.ts";
+import { annaJoins, heading, openTeam, openVaults } from "./company.ts";
 
 // K-307 part e (P-12): Anna's recovery kit got into other hands. She renews every key of her
 // account; Jonas compares the code and confirms the new bundle; the vaults get a rekey entry and a
@@ -103,7 +103,7 @@ test.describe("renewing the account's keys", { tag: "@phone" }, () => {
 
     // Jonas compares the code with Anna's and confirms; his client rekeys and rotates Büro
     await openSettings(page);
-    await page.getByRole("button", { name: "Mitglieder" }).click();
+    await openTeam(page, "Mitglieder");
     const row = page
       .getByRole("list", { name: "Mitglieder" })
       .getByRole("listitem")

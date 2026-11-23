@@ -6,8 +6,17 @@
  */
 import type { MemberView } from "@kennwort/core";
 import { encodeBytes } from "@kennwort/core";
-import { Badge, Button, cn, Icon, introClass, m, pageClass, selectClass } from "@kennwort/ui";
-import { ShieldCheck } from "@kennwort/ui/icons";
+import {
+  Badge,
+  Button,
+  Icon,
+  introClass,
+  m,
+  pageClass,
+  selectClass,
+  TooltipIconButton,
+} from "@kennwort/ui";
+import { ShieldCheck, UserMinus } from "@kennwort/ui/icons";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, For, Loading, Match, onSettled, resolve, Show, Switch } from "solid-js";
 import { queryKeys } from "../queries.ts";
@@ -109,7 +118,7 @@ const Role = (props: {
   >
     <select
       aria-label={m.members_role_of({ name: props.name })}
-      class={cn(selectClass, "mt-1")}
+      class={selectClass}
       disabled={props.busy}
       value={props.view.role}
       onChange={(event) => props.onRole(event.currentTarget.value as MemberView["role"])}
@@ -142,51 +151,52 @@ const MemberRow = (props: {
 }) => {
   const name = () => props.view.name ?? (props.isMe ? m.members_you() : m.members_unnamed());
   return (
-    <li class="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3">
+    <li class="flex items-start gap-3 px-4 py-3">
       <span
         aria-hidden="true"
         class="grid size-9 shrink-0 place-items-center rounded-full bg-accent text-[13px] font-medium"
       >
         {name().slice(0, 1).toUpperCase()}
       </span>
-      <div class="min-w-0 flex-1">
-        <p class="font-medium">
+      <div class="grid min-w-0 flex-1 gap-1.5">
+        <p class="truncate font-medium">
           {name()}
           <Show when={props.isMe && props.view.name}>
             <span class="ml-2 text-xs font-normal text-muted-foreground">{m.members_you()}</span>
           </Show>
         </p>
-        <Role
-          view={props.view}
-          name={name()}
-          editable={props.canChangeRole && !props.isMe && props.view.status === "certified"}
-          busy={props.busy}
-          onRole={props.onRole}
-        />
+        <div class="flex flex-wrap items-center gap-2">
+          <Role
+            view={props.view}
+            name={name()}
+            editable={props.canChangeRole && !props.isMe && props.view.status === "certified"}
+            busy={props.busy}
+            onRole={props.onRole}
+          />
+          <Show when={props.view.leftAt != null} fallback={<Status {...props} />}>
+            <Badge>{m.members_left()}</Badge>
+            <Show when={props.reportable}>
+              <Button
+                size="sm"
+                class="h-11 md:h-7"
+                aria-label={m.members_report_of({ name: name() })}
+                onClick={() => props.onReport()}
+              >
+                {m.members_report()}
+              </Button>
+            </Show>
+          </Show>
+        </div>
       </div>
-      <Show when={props.view.leftAt != null} fallback={<Status {...props} />}>
-        <Badge>{m.members_left()}</Badge>
-        <Show when={props.reportable}>
-          <Button
-            size="sm"
-            class="h-11 md:h-7"
-            aria-label={m.members_report_of({ name: name() })}
-            onClick={() => props.onReport()}
-          >
-            {m.members_report()}
-          </Button>
-        </Show>
-      </Show>
       <Show when={props.canRemove}>
-        <Button
-          size="sm"
-          class="h-11 md:h-7"
-          aria-label={m.members_leave_of({ name: name() })}
+        <TooltipIconButton
+          label={m.members_leave_of({ name: name() })}
+          class="size-11 shrink-0 text-muted-foreground hover:text-danger md:size-8"
           disabled={props.busy}
           onClick={() => props.onRemove()}
         >
-          {m.members_leave()}
-        </Button>
+          <Icon icon={UserMinus} />
+        </TooltipIconButton>
       </Show>
     </li>
   );

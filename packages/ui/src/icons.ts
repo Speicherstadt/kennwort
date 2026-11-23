@@ -46,6 +46,7 @@ export {
   Trash2,
   TriangleExclamationPoint,
   User,
+  UserMinus,
   Users,
   WandSparkles,
   Wifi,

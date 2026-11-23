@@ -93,19 +93,25 @@ describe("App frame", () => {
     expect(open("/entries/unknown").textContent).toContain("Diesen Eintrag gibt es hier nicht.");
   });
 
-  it("opens the members page from the settings, only where the app gives one", () => {
+  it("opens the team page from the settings, on the members where the app gives them", () => {
     const root = open("/settings", "de", () => <h1>Mitglieder-Seite</h1>);
-    const toMembers = [...root.querySelectorAll("button")].find((b) =>
-      b.textContent?.includes("Mitglieder"),
+    const toTeam = [...root.querySelectorAll("button")].find((b) =>
+      b.textContent?.includes("Team"),
     );
-    click(toMembers);
-    expect(window.location.pathname).toBe("/members");
-    expect(heading(root)).toBe("Mitglieder-Seite");
-    dispose();
-    const without = open("/settings");
     expect(
-      [...without.querySelectorAll("button")].some((b) => b.textContent?.includes("Mitglieder")),
+      [...root.querySelectorAll("button")].some((b) => b.textContent?.includes("Mitglieder")),
     ).toBe(false);
+    click(toTeam);
+    expect(window.location.pathname).toBe("/team");
+    expect(heading(root)).toBe("Mitglieder-Seite");
+    // The old address lands on the same tab
+    dispose();
+    expect(heading(open("/members", "de", () => <h1>Mitglieder-Seite</h1>))).toBe(
+      "Mitglieder-Seite",
+    );
+    dispose();
+    // Without members the team opens on its groups; /members alone shows nothing
+    expect(heading(open("/team"))).toBe("Gruppen");
     dispose();
     expect(heading(open("/members"))).toBeUndefined();
   });

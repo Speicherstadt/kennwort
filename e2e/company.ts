@@ -4,11 +4,18 @@ import { newDevice } from "./account.ts";
 
 export const heading = (page: Page, name: string) => page.getByRole("heading", { level: 1, name });
 
-export const openVaults = async (page: Page) => {
-  await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).first().click();
-  await page.getByRole("button", { name: "Tresore" }).click();
-  await expect(heading(page, "Tresore")).toBeVisible();
+/** The team page (rail on the desktop, tab bar on the phone) on one of its tabs */
+export const openTeam = async (page: Page, tab: "Mitglieder" | "Gruppen" | "Tresore") => {
+  await page
+    .getByRole("link", { name: "Team", exact: true })
+    .filter({ visible: true })
+    .first()
+    .click();
+  await page.getByRole("navigation", { name: "Team" }).getByRole("link", { name: tab }).click();
+  await expect(heading(page, tab)).toBeVisible();
 };
+
+export const openVaults = (page: Page) => openTeam(page, "Tresore");
 
 /**
  * Jonas invites Anna, she accepts on her own device, Jonas confirms her keys; `onKit` reads her
@@ -20,7 +27,7 @@ export const annaJoins = async (
   onKit: (anna: Page) => Promise<void> = async () => {},
 ) => {
   await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).first().click();
-  await page.getByRole("button", { name: "Mitglieder" }).click();
+  await openTeam(page, "Mitglieder");
   await page.getByLabel("Name").fill("Anna");
   await page.getByRole("button", { name: "Einladen" }).click();
   const link = await page.getByLabel("Einladungslink").inputValue();
@@ -35,7 +42,7 @@ export const annaJoins = async (
   await anna.getByRole("button", { name: "Weiter" }).click();
   await expect(heading(anna, "Alle Einträge")).toBeVisible();
   await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).first().click();
-  await page.getByRole("button", { name: "Mitglieder" }).click();
+  await openTeam(page, "Mitglieder");
   const row = page
     .getByRole("list", { name: "Mitglieder" })
     .getByRole("listitem")

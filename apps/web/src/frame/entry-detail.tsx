@@ -74,11 +74,11 @@ const Detail = (props: {
   <div class="mx-auto grid w-full max-w-[60rem] gap-6 p-4 md:p-6 @3xl:grid-cols-[minmax(0,42rem)_16rem] @3xl:justify-center">
     <div class="grid w-full max-w-2xl content-start gap-5">
       <div class="flex items-center gap-3">
-        <span class="grid size-14 shrink-0 place-items-center rounded-xl border border-border md:size-10">
+        <span class="grid size-12 shrink-0 place-items-center rounded-xl border border-border md:size-10">
           <Icon icon={entryIcon[props.entry.type]} size={22} />
         </span>
         <div class="grid min-w-0 flex-1 gap-0.5">
-          <h1 class="truncate text-[28px] font-semibold md:text-lg">{props.entry.title}</h1>
+          <h1 class="truncate text-[22px] font-semibold md:text-lg">{props.entry.title}</h1>
           <p class="truncate text-xs text-muted-foreground">
             {typeLabel(props.entry.type)} ·{" "}
             {props.entry.sharedBy === undefined
@@ -98,11 +98,12 @@ const Detail = (props: {
           />
           <Button
             variant="primary"
-            class="h-11 md:h-8"
+            class="size-11 px-0 sm:w-auto sm:px-3 md:h-8"
+            aria-label={m.detail_edit()}
             disabled={!props.onEdit}
             onClick={() => props.onEdit?.()}
           >
-            <Icon icon={Pencil} /> {m.detail_edit()}
+            <Icon icon={Pencil} /> <span class="hidden sm:inline">{m.detail_edit()}</span>
           </Button>
           <MoreActions onShare={props.onShare} onLink={props.onLink} onLabel={props.onLabel} />
         </div>

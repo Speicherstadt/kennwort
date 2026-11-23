@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { newDevice, setUpCompany, test, unlock } from "./account.ts";
-import { annaJoins, heading } from "./company.ts";
+import { annaJoins, heading, openTeam } from "./company.ts";
 
 // K-307 part f (P-07): Max, an admin, leaves Weber Haustechnik with a copy of the company root.
 // Jonas's client replaces the root at once; Anna's client shows the change and takes the new root
@@ -22,7 +22,7 @@ const axe = async (page: Page, part?: string) => {
 
 const openMembers = async (page: Page) => {
   await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).first().click();
-  await page.getByRole("button", { name: "Mitglieder" }).click();
+  await openTeam(page, "Mitglieder");
   await expect(heading(page, "Mitglieder")).toBeVisible();
 };
 const members = (page: Page) => page.getByRole("list", { name: "Mitglieder" });

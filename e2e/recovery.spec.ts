@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { newDevice, setUpCompany, test, unlock } from "./account.ts";
-import { annaJoins, heading } from "./company.ts";
+import { annaJoins, heading, openTeam } from "./company.ts";
 
 // K-307 part c (P-13): Jonas switches company recovery on, Anna deposits; she loses everything and
 // gets her account back on a new device, which Jonas approves after comparing the code
@@ -18,7 +18,7 @@ const axe = async (page: Page) => {
 
 const openMembers = async (page: Page) => {
   await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).first().click();
-  await page.getByRole("button", { name: "Mitglieder" }).click();
+  await openTeam(page, "Mitglieder");
   await expect(heading(page, "Mitglieder")).toBeVisible();
   return page.getByRole("region", { name: "Firmen-Recovery" });
 };
