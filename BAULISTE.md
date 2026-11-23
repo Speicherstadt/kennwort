@@ -659,8 +659,16 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
 Ganz am Schluss, damit Tauri 3 bis dahin möglichst stabil ist. iOS baut der Loop nicht (siehe
 „Schritte für Menschen“); die gemeinsamen Teile legt er so an, dass die iOS-App sie nur einbindet.
 
-- [ ] **K-801 Tauri-Gerüst** – Tauri 3 (stabil, sonst die neueste Alpha; Rückfall auf 2.x) mit
+- [x] **K-801 Tauri-Gerüst** – Tauri 3 (stabil, sonst die neueste Alpha; Rückfall auf 2.x) mit
   `packages/ui`, Projekt für Android und iOS angelegt.
+  Gebaut mit Tauri 3.0.0-alpha.6 (3.0 ist nicht stabil): `apps/mobile` bündelt den Build von
+  `apps/web` im Vite-Modus `mobile` (ohne Service Worker, Updates nur als signiertes App-Paket), CSP
+  wie die Web-App plus Tauris IPC (Test vergleicht beide), Crates in `allowed-dependencies.json`
+  (von `bun run lint` geprüft), Android-Projekt mit `tauri android init` erzeugt, iOS-Projekt von
+  Hand aus der Vorlage (`tauri ios init` läuft nur auf macOS), Brücke für Autofill
+  (`apps/mobile/src/autofill/bridge.ts`, Entscheidung im Projektplan). Lokal ohne Android SDK und NDK
+  (dl.google.com gesperrt): nur `cargo check` für `aarch64-linux-android`; die Debug-APK baut der
+  Workflow „Android“. Offen: die Verbindung der App zu ihrem Server (Offene Fragen im Projektplan).
 - [ ] **K-802 Android-Autofill** – `AutofillService`, Biometrie, Keystore.
   Fertig, wenn: der Autofill-Dienst im Android-Emulator in CI ausfüllt.
 - [ ] **K-803 Zwischenablage und Bildschirmschutz** – Leeren nach 30 s, sensibel markiert.

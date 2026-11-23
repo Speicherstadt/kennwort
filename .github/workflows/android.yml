@@ -1,0 +1,60 @@
+name: Android
+
+# K-801: builds the mobile app's Android debug APK (Tauri 3, apps/mobile). Not part of ci.yml: Rust for
+# two Android targets plus Gradle takes far longer than the five minutes a CI run may take (the user's
+# rule), so it runs only when apps/mobile changes, and by hand. The agents' sandbox cannot reach
+# dl.google.com for the Android SDK and NDK; this workflow is where the APK is really built.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/mobile/**"
+      - ".github/workflows/android.yml"
+  pull_request:
+    paths:
+      - "apps/mobile/**"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      # The Android Gradle Plugin 9 needs JDK 17 or later; the runner image ships Temurin 21
+      - run: echo "JAVA_HOME=$JAVA_HOME_21_X64" >> "$GITHUB_ENV"
+      # The runner image has the Android SDK (ANDROID_HOME) and the newest NDK; Tauri reads NDK_HOME
+      - run: echo "NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
+      - run: rustup target add aarch64-linux-android x86_64-linux-android
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/mobile/src-tauri/target
+            ~/.gradle/caches
+          key: android-${{ runner.os }}-${{ hashFiles('apps/mobile/src-tauri/Cargo.lock', 'apps/mobile/src-tauri/gen/android/**/*.gradle*') }}
+      # The CSP and bridge tests of the app run in ci.yml with all the others; here only the build.
+      # tauri.conf.json's beforeBuildCommand builds the web app in mode "mobile" into apps/mobile/dist.
+      # aarch64 for phones, x86_64 for the emulator of K-802; debug-signed by Gradle with its test key
+      - run: bun run --cwd apps/mobile android:debug
+      - uses: actions/upload-artifact@v7
+        with:
+          name: kennwort-android-debug
+          path: apps/mobile/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
+          retention-days: 14

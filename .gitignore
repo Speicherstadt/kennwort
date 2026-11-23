@@ -17,9 +17,9 @@ playwright-report/
 site/
 .cache/
 
-# Tauri
+# Tauri (the generated Android and iOS projects under src-tauri/gen are committed: K-802 adds
+# native code to them; their own .gitignore files keep the build output out)
 target/
-apps/mobile/gen/
 
 # macOS
 .DS_Store
