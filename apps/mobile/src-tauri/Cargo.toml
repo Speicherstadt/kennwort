@@ -1,6 +1,6 @@
 [package]
 name = "kennwort-mobile"
-version = "0.0.0"
+version = "0.0.1"
 description = "Kennwort for Android and iOS: the shared web UI in a Tauri shell"
 license = "AGPL-3.0-only"
 edition = "2024"
