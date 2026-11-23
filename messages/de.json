@@ -1197,5 +1197,9 @@
   "mobile_server_title": "Mit deinem Server verbinden",
   "mobile_server_text": "Gib die Adresse des Kennwort-Servers deiner Firma ein; sie steht in deinem Recovery-Kit. Die App spricht danach nur mit diesem Server.",
   "mobile_server_submit": "Verbinden",
-  "mobile_server_storage_failed": "Die App konnte die Adresse nicht speichern. Starte sie neu und versuche es noch einmal."
+  "mobile_server_storage_failed": "Die App konnte die Adresse nicht speichern. Starte sie neu und versuche es noch einmal.",
+  "mobile_autofill_title": "Ausfüllen in {target}",
+  "mobile_autofill_text": "Wähle den Eintrag, mit dem Kennwort ausfüllen soll. Nur Benutzername und Passwort gehen an das Feld, nichts sonst.",
+  "mobile_autofill_none": "Kein Eintrag ist genau für {target} gespeichert. Für eine App trägst du im Eintrag als Website android://Paketname ein.",
+  "mobile_autofill_cancel": "Nicht ausfüllen"
 }

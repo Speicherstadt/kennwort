@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   type Allowlist,
   crateViolations,
+  lockViolations,
   manifestCrates,
   overrideViolations,
   violations,
@@ -215,5 +216,38 @@ describe("bun run lint", () => {
   it("is part of the lint script", () => {
     const scripts = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).scripts;
     expect(scripts.lint).toContain("bun scripts/check-dependencies.ts");
+  });
+});
+
+describe("lockViolations (K-802)", () => {
+  const listed: Allowlist = {
+    packages: {},
+    lockedCrates: { reason: "tauri's tree", names: ["serde"] },
+  };
+  const CRATES_IO = "registry+https://github.com/rust-lang/crates.io-index";
+
+  it("lets a listed crate from crates.io and the workspace's own crate through", () => {
+    expect(
+      lockViolations(listed, "apps/mobile", [
+        { name: "serde", source: CRATES_IO },
+        { name: "kennwort-mobile" },
+      ]),
+    ).toEqual([]);
+  });
+
+  it("fails an indirect crate that is not listed", () => {
+    expect(lockViolations(listed, "apps/mobile", [{ name: "openssl", source: CRATES_IO }])).toEqual(
+      [
+        "apps/mobile: crate openssl in Cargo.lock is not in lockedCrates of allowed-dependencies.json",
+      ],
+    );
+  });
+
+  it("fails a listed name from another source", () => {
+    expect(
+      lockViolations(listed, "apps/mobile", [
+        { name: "serde", source: "git+https://github.com/evil/serde#abc" },
+      ]),
+    ).toEqual(["apps/mobile: crate serde in Cargo.lock does not come from crates.io"]);
   });
 });

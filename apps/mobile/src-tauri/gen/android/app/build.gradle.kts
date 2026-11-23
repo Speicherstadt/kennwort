@@ -24,6 +24,7 @@ android {
         targetSdk = 37
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         getByName("debug") {
@@ -76,8 +77,13 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.lifecycle:lifecycle-process:2.10.0")
     testImplementation("junit:junit:4.13.2")
+    // Android's org.json is a stub in JVM unit tests; the bridge tests need the real one
+    testImplementation("org.json:json:20250517")
     androidTestImplementation("androidx.test.ext:junit:1.1.4")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.0")
+    // K-802: the nightly emulator test of the autofill service (android-emulator.yml)
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
 }
 
 apply(from = file("tauri.build.gradle.kts"))

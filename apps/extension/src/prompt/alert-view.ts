@@ -5,10 +5,11 @@
  * entry that is for this very host, or none left to name, closes the warning unseen. Entries that
  * could not load or were not trusted close it as well: it names nothing it could not check.
  */
+
+import { entryAddresses, matchesHost, urlValues } from "@kennwort/client/autofill/matches.ts";
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import type { Load } from "../account/load-entries.ts";
 import type { Warning } from "../alert/messages.ts";
-import { entryAddresses, matchesHost, urlValues } from "../page/matches.ts";
 
 export type AlertView =
   | { kind: "waiting" }

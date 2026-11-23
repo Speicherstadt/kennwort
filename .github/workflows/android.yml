@@ -1,6 +1,6 @@
 name: Android
 
-# K-801: builds the mobile app's Android debug APK (Tauri 3, apps/mobile). Not part of ci.yml: Rust for
+# K-801: builds the mobile app's Android debug APK (Tauri 3, apps/mobile) and runs the Kotlin unit tests (K-802). Not part of ci.yml: Rust for
 # two Android targets plus Gradle takes far longer than the five minutes a CI run may take (the user's
 # rule), so it runs only when apps/mobile changes, and by hand. The agents' sandbox cannot reach
 # dl.google.com for the Android SDK and NDK; this workflow is where the APK is really built.
@@ -52,6 +52,12 @@ jobs:
       # tauri.conf.json's beforeBuildCommand builds the web app in mode "mobile" into apps/mobile/dist.
       # aarch64 for phones, x86_64 for the emulator of K-802; debug-signed by Gradle with its test key
       - run: bun run --cwd apps/mobile android:debug
+      # K-802: the JVM unit tests of the Kotlin autofill logic (field detection, target, nothing
+      # filled without an answer for exactly the pending request); after the APK build, which
+      # writes the tauri.build.gradle.kts the app module applies. The emulator test is nightly only
+      # (android-emulator.yml) and never blocks a merge.
+      - run: ./gradlew testUniversalDebugUnitTest
+        working-directory: apps/mobile/src-tauri/gen/android
       - uses: actions/upload-artifact@v7
         with:
           name: kennwort-android-debug

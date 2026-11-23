@@ -8,8 +8,9 @@
  * a password stored for https on a page served over http. The hosts come from the entry's
  * encrypted content, never from the server (E-14).
  */
-import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
+
 import { parse as parseDomain } from "tldts";
+import type { ShownEntry } from "../entries/entries.ts";
 
 const WEB = new Set(["http:", "https:"]);
 /** A host a public suffix rule would swallow but that names one machine (tldts, validHosts) */

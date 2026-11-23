@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cancelResponse, fillResponse, parseFillRequest } from "./bridge.ts";
+import { cancelResponse, fillResponse, parseFillRequest, parseSaveProposal } from "./bridge.ts";
 
 const request = {
   version: 1,
@@ -59,5 +59,30 @@ describe("responses", () => {
       requestId: request.requestId,
       kind: "cancel",
     });
+  });
+});
+
+describe("parseSaveProposal", () => {
+  const proposal = {
+    version: 1,
+    requestId: "s-1",
+    target: { kind: "app", id: "com.heizungsapp.monteur" },
+    username: "max@weber-haustechnik.test",
+    password: "M0nteur-App",
+  };
+
+  it("reads a login to save", () => {
+    expect(parseSaveProposal(proposal)).toEqual({ ok: true, value: proposal });
+  });
+
+  it.each([
+    [{ ...proposal, version: 2 }, "wrong-version"],
+    [{ ...proposal, target: { kind: "web", host: "Evil.test" } }, "bad-target"],
+    [{ ...proposal, password: "" }, "bad-fields"],
+    [{ ...proposal, password: "x".repeat(4097) }, "bad-fields"],
+    [{ ...proposal, username: 1 }, "bad-fields"],
+    [null, "not-an-object"],
+  ])("refuses %j", (raw, error) => {
+    expect(parseSaveProposal(raw)).toEqual({ ok: false, error });
   });
 });

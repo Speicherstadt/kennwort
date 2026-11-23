@@ -7,7 +7,7 @@ import { linkCalls } from "@kennwort/client/session/links-api.ts";
 import { getLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { createSignal } from "solid-js";
-import { App } from "./app.tsx";
+import { App, type AutofillHost } from "./app.tsx";
 import { tauriInvoke } from "./mobile/native-send.ts";
 import { startInApp } from "./mobile/start.tsx";
 import { createNavigation, takeStartFragment } from "./navigation.ts";
@@ -27,7 +27,7 @@ if (root) {
   // Before anything renders: a link's secret leaves the address at once (P-04, P-12)
   const hash = takeStartFragment(nav);
   const [updateReady, setUpdateReady] = createSignal(false);
-  const start = (send: typeof fetch) => {
+  const start = (send: typeof fetch, autofill?: AutofillHost) => {
     // Ciphertext only, to unlock and read without the server (K-308 part b)
     const copy = createLocalCopy(indexedDbKeyValue(globalThis.indexedDB));
     const identity = deviceIdentity(globalThis.localStorage, navigator.userAgent);
@@ -45,6 +45,7 @@ if (root) {
             hash={hash}
             copy={copy}
             fetchLink={fetchLink}
+            autofill={autofill}
           />
           <UpdateNotice ready={updateReady()} onReload={() => location.reload()} />
         </>

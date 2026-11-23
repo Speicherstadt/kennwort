@@ -10,6 +10,8 @@
  * (visibility.ts). Then the service worker checks the frame and its address again and hands the
  * login to the content script of that frame alone (fill/broker.ts).
  */
+
+import { urlValues } from "@kennwort/client/autofill/matches.ts";
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { Button, Icon, m } from "@kennwort/ui";
 import { Lock } from "@kennwort/ui/icons";
@@ -18,7 +20,6 @@ import { createEntryLoad } from "../account/load-entries.ts";
 import type { PopupAccount } from "../account/popup-account.ts";
 import { refreshAlertList } from "../alert/alert-refresh.ts";
 import type { MenuAnswer, MenuRequest } from "../fill/messages.ts";
-import { urlValues } from "../page/matches.ts";
 import { forPage } from "../popup/view.ts";
 import {
   ARM_AFTER_MS,

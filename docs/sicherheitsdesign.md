@@ -139,7 +139,7 @@ nicht existiert.
 | E-11 | `packages/core/src/adversary/catalog.test.ts` | falsche Signatur: alle Felder liegen in einem Geheimtext, es gibt kein Feld zum Vertauschen |
 | E-12 | `packages/core/src/adversary/eth.test.ts`, `apps/server/src/adversary/http-attacks.test.ts` | falsche Signatur, anderer Tresor |
 | E-13 | `packages/core/src/adversary/eth.test.ts`, `apps/server/src/adversary/http-attacks.test.ts`, `apps/web/src/entries/entry-store-offline.test.ts`, `packages/core/src/sync/share.test.ts` | Rückfall |
-| E-14 | `packages/core/src/adversary/catalog.test.ts`, `apps/extension/src/page/matches.test.ts` | auf dem Draht kein Titel, keine URL, kein Name; eine geänderte URL: falsche Signatur; ausgefüllt wird nur nach der URL aus dem entschlüsselten Inhalt |
+| E-14 | `packages/core/src/adversary/catalog.test.ts`, `packages/client/src/autofill/matches.test.ts`, `packages/client/src/autofill/choose.test.ts` | auf dem Draht kein Titel, keine URL, kein Name; eine geänderte URL: falsche Signatur; ausgefüllt wird nur nach der URL aus dem entschlüsselten Inhalt |
 | E-15 | `packages/core/src/adversary/eth.test.ts`, `apps/server/src/adversary/http-attacks.test.ts`, `apps/web/src/entries/entry-store-offline.test.ts` | fehlt |
 | E-16 | `packages/core/src/adversary/eth.test.ts`, `packages/core/src/adversary/exit.test.ts`, `packages/core/src/adversary/emergency.test.ts`, `packages/core/src/membership/emergency-open.test.ts` | falsche Signatur, Bindung passt nicht, nicht im Log |
 | E-17 | `packages/core/src/adversary/eth.test.ts`, `packages/core/src/import/bitwarden-protected.test.ts` | falsche Signatur bei anderem Versions-Byte; Bitwarden-EncString ohne HMAC: nicht unterstützt |
@@ -656,6 +656,9 @@ gesehen oder geschrieben hat, hält sie unter AK versiegelt ebenfalls in `chrome
 über das Sperren, und führt ihn in jeden ein, den der Server liefert: Ein älterer, den der Server
 zurückspielt, wirft sie nicht zurück (E-07, E-13). Beim Sperren überschreibt das Popup AK im Speicher.
 Entsperrt wird mit demselben Code wie in der Web-App (`packages/client/src/session/unlock.ts`).
+
+Die Mobile-App entsperrt wie die Web-App; auch für das Ausfüllen unter Android (K-802) legt sie
+keinen Schlüssel hinter Biometrie im Keystore ab ([P-17](#p-17-ausfullen)).
 
 Die Kommandozeile (K-606) entsperrt je Befehl und hält keinen Schlüssel zwischen zwei Aufrufen:
 Jeder Befehl meldet sich an, entsperrt, prüft, meldet die Sitzung am Ende ab und überschreibt AK.
@@ -2302,7 +2305,7 @@ bekommt `SecurityError` und keine Leiste; ein fremder Frame, „Anderes Gerät v
 gesperrtes Kennwort gehen an das WebAuthn des Browsers (ein virtueller Authenticator); eine
 verdeckte Leiste signiert nichts, und kein Speicherbereich hält etwas vom Passkey. Die Regeln selbst
 prüfen Vitest-Tests neben dem Code (`apps/extension/src/fill`, `save`, `alert`, `content`, `menu`,
-`prompt`, `page`, `passkey`) und die Testvektoren von F-10 und F-12.
+`prompt`, `page`, `passkey`, den Abgleich in `packages/client/src/autofill`) und die Testvektoren von F-10 und F-12.
 
 **Je Browser (K-407):** Ein Manifest aus `apps/extension/src/manifest.ts` für drei Builds
 (`dist/chrome` für Chrome und Edge, `dist/firefox` für Firefox auf dem Desktop und Android,
@@ -2356,6 +2359,40 @@ durch etwas Gleichwertiges ersetzt; wo nicht, steht das Restrisiko hier.
   Mindestversion nur in Safari. Den Firefox-Build prüft zusätzlich `addons-linter` von Mozilla.
   Was nur ein echter Browser zeigt – Firefox auf einem Android-Gerät, Safari auf dem Mac –, prüft
   vor einem Release eine Person.
+
+**In der App unter Android (K-802):** Der Autofill-Dienst der App (`KennwortAutofillService`,
+`apps/mobile/src-tauri/gen/android`, Paket `app.kennwort.autofill`) hält dieselben Regeln ein:
+
+- Nur nach einer Handlung der Person: Der Dienst gibt Android einen einzigen Vorschlag
+  („Mit Kennwort ausfüllen“), der keinen Wert trägt, nur eine Anmelde-Activity. Android füllt erst,
+  wenn diese Activity einen Datensatz zurückgibt, und das tut sie nur auf die Antwort der App für
+  genau die offene Anfrage (eine zufällige UUID je Anfrage, `PendingFills.kt`); eine andere Antwort,
+  eine ältere Anfrage oder ein Abbruch füllt nichts. Die App listet die Einträge erst im geöffneten
+  Konto, also nach dem normalen Entsperren, und füllt erst nach dem Tippen auf einen Eintrag.
+- Nur bei exakt passendem Ziel: Eine Website erkennt der Dienst an der Web-Domain, die ein
+  bekannter Browser meldet (`FillTarget.kt`), und nur, wenn die App mit dem Zertifikat dieses
+  Browsers signiert ist (SHA-256 der Signaturzertifikate aus dem `PackageManager`, `Signers.kt`,
+  gegen die Liste in `FillTarget.kt`); jede andere App bekommt ihr eigenes Paket als Ziel,
+  auch wenn sie eine Web-Domain an ihre Ansichten schreibt, denn das kann jede App. Den Host
+  gleicht die App mit derselben Funktion ab wie die Extension (`packages/client/src/autofill`),
+  eine App über `android://Paketname` in einem Adressfeld des Eintrags, nur genau dieses Paket.
+  Eine Seite, die der Browser als http meldet, bekommt nichts; meldet er kein Schema (vor Android
+  9), zählt nur die Domain.
+- Nie in einen fremden Frame: Liegt ein erkanntes Feld in einem anderen Dokument als dem obersten
+  (ein Frame einer anderen Domain oder eines anderen Schemas, etwa ein http-Frame auf einer
+  https-Seite), füllt der Dienst gar nichts.
+- Nur die angefragten Felder: Die Antwort trägt nur Benutzername und Passwort, soweit angefragt;
+  Kotlin prüft das ein zweites Mal (`BridgeJson.kt`). Einmal-Codes füllt der Dienst nie.
+- Speichern: Bestätigt die Person Androids „In Kennwort speichern?“, hält der Dienst die Daten im
+  Speicher und öffnet den Editor der App vorausgefüllt; gespeichert wird erst dort.
+- Schlüssel: Der Dienst hält keinen Schlüssel und kein Geheimnis auf dem Gerät. Biometrie und
+  Keystore nutzt er noch nicht: Ein Geheimnis hinter Biometrie im Keystore wäre ein neuer Weg zu
+  AK, den P-03 nicht vorsieht („nie AK“ auf dem Gerät); er kommt nur mit einem eigenen Abschnitt
+  hier und einem Review. Bis dahin entsperrt die App mit Passphrase oder Passkey wie die Web-App.
+- Eine App unter dem Paketnamen eines bekannten Browsers, aber mit einem anderen Zertifikat
+  signiert, gilt nicht als Browser: Sie bekommt ihr Paket als Ziel, nie eine Web-Domain.
+  Restrisiko: Signiert ein Browser-Hersteller mit einem neuen Zertifikat, füllt Kennwort in diesem
+  Browser nichts, bis die Liste nachgezogen ist.
 
 **Wehrt ab:** E-14.
 

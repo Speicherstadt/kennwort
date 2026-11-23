@@ -4,9 +4,11 @@
  * Another language renders everything anew instead of reloading the page, which would lock it.
  */
 
+import type { LoginInput, ShownEntry } from "@kennwort/client/entries/entries.ts";
 import type { LinkApi } from "@kennwort/client/session/links-api.ts";
 import { exitReport } from "@kennwort/core";
 import { getLocale, type Locale, setLocale } from "@kennwort/ui";
+import type { JSX } from "@solidjs/web";
 import { QueryClientProvider } from "@tanstack/solid-query";
 import { createMemo, createSignal, Match, onSettled, Show, Switch, untrack } from "solid-js";
 import { AddDevicePage } from "./account/add-device-page.tsx";
@@ -48,6 +50,12 @@ import type { VaultStore } from "./vaults/vault-store.ts";
 import { namedMarks, peopleOf, vaultViews } from "./vaults/vault-views.ts";
 import { VaultsPage } from "./vaults/vaults-page.tsx";
 
+/** What the opened account hands the mobile app's autofill picker (mobile/autofill-sheet.tsx) */
+export type AutofillHost = (deps: {
+  entries: () => ShownEntry[];
+  onSave: (login: LoginInput) => void;
+}) => JSX.Element;
+
 /** The people of the company as the vaults' load confirmed them, once loaded */
 const readyPeople = (store: VaultStore) => {
   const shown = store.shown();
@@ -68,6 +76,7 @@ const OpenedFrame = (props: {
   copy: LocalCopy | undefined;
   onLocale: (next: Locale) => void;
   switcher: CompanySwitcher;
+  autofill: AutofillHost | undefined;
 }) => {
   const queries = createAccountQueries();
   const { entries, sharing, exits, store, exporting, links } = createStores(props);
@@ -159,6 +168,7 @@ const OpenedFrame = (props: {
       <RotationNotice vaults={shownVaults()} />
       <EmergencyNotice api={props.api} session={props.session} nav={props.nav} />
       {notifications.live()}
+      {props.autofill?.({ entries: allEntries, onSave: entries.startNewLogin })}
     </QueryClientProvider>
   );
 };
@@ -190,6 +200,8 @@ export const App = (props: {
   copy?: LocalCopy;
   /** A one-time link's fetch (K-601), made without the device's name; the API's own by default */
   fetchLink?: LinkApi["fetchLink"];
+  /** The mobile app's autofill picker (K-802), shown only inside the opened account */
+  autofill?: AutofillHost | undefined;
 }) => {
   const [otherAccount, setOtherAccount] = createSignal(false);
   const [locale, setShownLocale] = createSignal(getLocale());
@@ -335,6 +347,7 @@ export const App = (props: {
                       copy={copy}
                       onLocale={changeLocale}
                       switcher={switcher}
+                      autofill={props.autofill}
                     />
                   </>
                 );
