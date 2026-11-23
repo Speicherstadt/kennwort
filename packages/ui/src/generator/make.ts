@@ -2,7 +2,14 @@
  * Making a password or a passphrase with the settings (K-306): uniform picks from the platform's
  * CSPRNG; the word list is a module of its own, loaded the first time a passphrase is made
  */
-import { passphrase, passphraseBits, password, passwordBits, randomBelow } from "@kennwort/core";
+import {
+  type PasswordOptions,
+  passphrase,
+  passphraseBits,
+  password,
+  passwordBits,
+  randomBelow,
+} from "@kennwort/core";
 import { randomBytes } from "@kennwort/crypto";
 import type { GeneratorSettings } from "./settings.ts";
 
@@ -15,7 +22,7 @@ const loadWords = () => {
 /** The size of the EFF large list, known before it loads, so the strength shows at once */
 const LIST_SIZE = 7776;
 
-export const makePassword = (options: GeneratorSettings["password"]) => password(options, below);
+export const makePassword = (options: PasswordOptions) => password(options, below);
 
 export const makeSecret = async (settings: GeneratorSettings): Promise<string> =>
   settings.kind === "password"

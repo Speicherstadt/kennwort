@@ -1,3 +1,4 @@
+import { MIN_COUNT } from "@kennwort/core";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS, parseSettings, readSettings, writeSettings } from "./settings.ts";
 
@@ -21,7 +22,14 @@ describe("generator settings", () => {
   it("are a password of 20 with digits and symbols, or five words apart by a hyphen", () => {
     expect(DEFAULT_SETTINGS).toEqual({
       kind: "password",
-      password: { length: 20, digits: true, symbols: true },
+      password: {
+        length: 20,
+        digits: true,
+        symbols: true,
+        avoidAmbiguous: false,
+        minDigits: 1,
+        minSymbols: 1,
+      },
       passphrase: { words: 5, separator: "-", capitalize: false, digit: false },
     });
   });
@@ -30,7 +38,14 @@ describe("generator settings", () => {
     const storage = memory();
     const mine = {
       kind: "passphrase" as const,
-      password: { length: 32, digits: false, symbols: true },
+      password: {
+        length: 32,
+        digits: false,
+        symbols: true,
+        avoidAmbiguous: true,
+        minDigits: 0,
+        minSymbols: 4,
+      },
       passphrase: { words: 7, separator: " ", capitalize: true, digit: true },
     };
     writeSettings(storage, mine);
@@ -46,7 +61,14 @@ describe("generator settings", () => {
       }),
     ).toEqual({
       kind: "password",
-      password: { length: 20, digits: true, symbols: false },
+      password: {
+        length: 20,
+        digits: true,
+        symbols: false,
+        avoidAmbiguous: false,
+        minDigits: 1,
+        minSymbols: 1,
+      },
       passphrase: { words: 5, separator: "-", capitalize: false, digit: true },
     });
     expect(parseSettings({ password: { length: 64 }, passphrase: { words: 3 } })).toMatchObject({
@@ -56,6 +78,29 @@ describe("generator settings", () => {
     expect(parseSettings({ password: { length: 12.5 } }).password.length).toBe(20);
     for (const value of [undefined, null, 5, "x"])
       expect(parseSettings(value)).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it("load settings stored before the new options, each new one at its default", () => {
+    const storage = memory();
+    storage.setItem(
+      "kennwort-generator",
+      JSON.stringify({ kind: "password", password: { length: 16, digits: true, symbols: false } }),
+    );
+    expect(readSettings(storage).password).toEqual({
+      length: 16,
+      digits: true,
+      symbols: false,
+      avoidAmbiguous: false,
+      minDigits: MIN_COUNT.initial,
+      minSymbols: MIN_COUNT.initial,
+    });
+    expect(
+      parseSettings({ password: { avoidAmbiguous: "no", minDigits: 10, minSymbols: -1 } }).password,
+    ).toMatchObject({ avoidAmbiguous: false, minDigits: 1, minSymbols: 1 });
+    expect(parseSettings({ password: { minDigits: 9, minSymbols: 0 } }).password).toMatchObject({
+      minDigits: 9,
+      minSymbols: 0,
+    });
   });
 
   it("are the defaults when the storage is empty, blocked, missing or holds no JSON", () => {

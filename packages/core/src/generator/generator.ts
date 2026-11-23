@@ -36,7 +36,26 @@ export const SYMBOLS = "!#$%&*+-=?@^_";
 export const PASSWORD_LENGTH = { min: 8, max: 64, initial: 20 };
 export const PASSPHRASE_WORDS = { min: 3, max: 10, initial: 5 };
 
-export type PasswordOptions = { length: number; digits: boolean; symbols: boolean };
+/**
+ * Characters that look alike in many fonts and are left out when asked: zero and capital/small O,
+ * one, capital I, small i and l and the pipe. None of the symbols above is among them, the set
+ * lists the pipe so it stays out should the symbols ever take it.
+ */
+export const AMBIGUOUS = "0Oo1Iil|";
+/** How many digits or symbols a password must hold at least, when that kind is chosen */
+export const MIN_COUNT = { min: 0, max: 9, initial: 1 };
+
+export type PasswordOptions = {
+  length: number;
+  digits: boolean;
+  symbols: boolean;
+  /** Leave out the look-alikes in AMBIGUOUS; off when not given */
+  avoidAmbiguous?: boolean;
+  /** At least this many digits when digits are chosen; 1 when not given */
+  minDigits?: number;
+  /** At least this many symbols when symbols are chosen; 1 when not given */
+  minSymbols?: number;
+};
 export type PassphraseOptions = {
   words: number;
   separator: string;
@@ -50,55 +69,146 @@ const within = (
   { min, max, initial }: { min: number; max: number; initial: number },
 ) => (Number.isNaN(value) ? initial : Math.min(max, Math.max(min, Math.floor(value))));
 
-const kindsOf = (options: PasswordOptions) => [
-  LOWER,
-  UPPER,
-  ...(options.digits ? [DIGITS] : []),
-  ...(options.symbols ? [SYMBOLS] : []),
-];
+type Kind = { chars: string; min: number };
+
+const clean = (chars: string, avoid: boolean) =>
+  avoid ? [...chars].filter((c) => !AMBIGUOUS.includes(c)).join("") : chars;
+
+/** A minimum in its range; a value that is no number is the usual one */
+const minimum = (value: number | undefined) => within(value ?? MIN_COUNT.initial, MIN_COUNT);
+
+/**
+ * The chosen kinds with how many of each a password holds at least: one lowercase and one capital
+ * letter, the asked digits and symbols; the minimums are lowered (symbols first) so that they and
+ * the two letters fit into the length
+ */
+const kindsOf = (options: PasswordOptions): Kind[] => {
+  const length = within(options.length, PASSWORD_LENGTH);
+  const room = length - 2;
+  const digits = options.digits ? Math.min(room, minimum(options.minDigits)) : 0;
+  const symbols = options.symbols ? Math.min(room - digits, minimum(options.minSymbols)) : 0;
+  const avoid = options.avoidAmbiguous === true;
+  return [
+    { chars: clean(LOWER, avoid), min: 1 },
+    { chars: clean(UPPER, avoid), min: 1 },
+    ...(options.digits ? [{ chars: clean(DIGITS, avoid), min: digits }] : []),
+    ...(options.symbols ? [{ chars: clean(SYMBOLS, avoid), min: symbols }] : []),
+  ];
+};
 
 const pickFrom = (chars: string, below: RandomBelow) => chars[below(chars.length)] as string;
 
+const binomials = (n: number) => {
+  const rows: bigint[][] = [[1n]];
+  for (let i = 1; i <= n; i++)
+    rows.push(
+      Array.from(
+        { length: i + 1 },
+        (_, k) => (rows[i - 1]?.[k - 1] ?? 0n) + (rows[i - 1]?.[k] ?? 0n),
+      ),
+    );
+  return rows;
+};
+
 /**
- * Whole passwords drawn uniformly from all chosen characters, drawn again until one holds every
- * kind: so each valid password is equally likely and passwordBits is exact (review of K-306 part 3)
+ * Every split of the length into how many characters of each kind (each at least its minimum),
+ * with the number of passwords that split has: the ways to place the kinds times the choices of
+ * characters, exact, in BigInt
+ */
+const splitsOf = (length: number, kinds: Kind[]) => {
+  const key = JSON.stringify([length, kinds]);
+  const known = splitCache.get(key);
+  if (known) return known;
+  const splits = countSplits(length, kinds);
+  splitCache.set(key, splits);
+  return splits;
+};
+type Split = { counts: number[]; weight: bigint };
+/** The splits per length and kinds, worked out once: the panel makes a password on every change */
+const splitCache = new Map<string, Split[]>();
+
+const countSplits = (length: number, kinds: Kind[]) => {
+  const choose = binomials(length);
+  const splits: Split[] = [];
+  const walk = (at: number, left: number, counts: number[], weight: bigint) => {
+    const kind = kinds[at] as Kind;
+    if (at === kinds.length - 1) {
+      if (left >= kind.min)
+        splits.push({
+          counts: [...counts, left],
+          weight: weight * BigInt(kind.chars.length) ** BigInt(left),
+        });
+      return;
+    }
+    for (let n = kind.min; n <= left; n++)
+      walk(
+        at + 1,
+        left - n,
+        [...counts, n],
+        weight * (choose[left]?.[n] ?? 0n) * BigInt(kind.chars.length) ** BigInt(n),
+      );
+  };
+  walk(0, length, [], 1n);
+  return splits;
+};
+
+/** A uniform BigInt below the bound: 32-bit pieces, the top one cut to the bound's bit length, drawn again at or above it */
+const bigBelow = (bound: bigint, below: RandomBelow): bigint => {
+  const bits = bound.toString(2).length;
+  for (;;) {
+    let value = BigInt(below(2 ** (bits % 32 || 32)));
+    for (let left = bits - (bits % 32 || 32); left > 0; left -= 32)
+      value = (value << 32n) | BigInt(below(2 ** 32));
+    if (value < bound) return value;
+  }
+};
+
+/** Fisher–Yates with uniform picks: every order is equally likely */
+const shuffled = <T>(items: T[], below: RandomBelow): T[] => {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = below(i + 1);
+    [out[i], out[j]] = [out[j] as T, out[i] as T];
+  }
+  return out;
+};
+
+/**
+ * Uniform over every password that holds the minimum of each kind, so passwordBits stays exact:
+ * a split of the length into kinds is drawn with the weight of how many passwords it has, its
+ * characters uniformly from their kind, then their order by Fisher–Yates. Given a split, each
+ * placement of the kinds and each character is equally likely, so each valid password is too;
+ * no kind is pinned to a place.
  */
 export const password = (options: PasswordOptions, below: RandomBelow): string => {
   const length = within(options.length, PASSWORD_LENGTH);
   const kinds = kindsOf(options);
-  const all = kinds.join("");
-  for (;;) {
-    const made = Array.from({ length }, () => pickFrom(all, below)).join("");
-    if (kinds.every((kind) => [...made].some((c) => kind.includes(c)))) return made;
-  }
+  const splits = splitsOf(length, kinds);
+  let draw = bigBelow(
+    splits.reduce((sum, split) => sum + split.weight, 0n),
+    below,
+  );
+  const split =
+    splits.find((s) => {
+      if (draw < s.weight) return true;
+      draw -= s.weight;
+      return false;
+    }) ?? (splits[0] as Split);
+  const chars = kinds.flatMap((kind, i) =>
+    Array.from({ length: split.counts[i] ?? 0 }, () => pickFrom(kind.chars, below)),
+  );
+  return shuffled(chars, below).join("");
 };
-
-/**
- * How many passwords hold every chosen kind, by inclusion–exclusion: all strings, less those
- * without one kind, plus those without two, and so on; exact, in BigInt
- */
-const validCount = (length: number, sizes: number[]) =>
-  sizes
-    // Every kind is either in (its characters count) or out (the sign turns), as the formula has it
-    .reduce<[number, bigint][]>(
-      (terms, size) =>
-        terms.flatMap(([sum, sign]) => [
-          [sum + size, sign],
-          [sum, -sign],
-        ]),
-      [[0, 1n]],
-    )
-    .reduce((count, [sum, sign]) => count + sign * BigInt(sum) ** BigInt(length), 0n);
 
 /**
  * What a guesser who knows the options faces: log2 of the number of equally likely passwords,
  * rounded down, which for a whole number is its bit length less one
  */
-export const passwordBits = (options: PasswordOptions): number =>
-  validCount(
-    within(options.length, PASSWORD_LENGTH),
-    kindsOf(options).map((kind) => kind.length),
-  ).toString(2).length - 1;
+export const passwordBits = (options: PasswordOptions): number => {
+  const length = within(options.length, PASSWORD_LENGTH);
+  const total = splitsOf(length, kindsOf(options)).reduce((sum, s) => sum + s.weight, 0n);
+  return total.toString(2).length - 1;
+};
 
 const capitalized = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
 

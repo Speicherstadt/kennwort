@@ -198,6 +198,12 @@ Der **Generator** erzeugt auf deinem Gerät ein zufälliges Passwort oder eine P
 
 - **Passwort**: 8 bis 64 Zeichen aus Klein- und Großbuchstaben, nach Wahl mit Ziffern und
   Sonderzeichen (`!#$%&*+-=?@^_`); von jeder gewählten Art ist mindestens ein Zeichen dabei.
+  Für Ziffern und Sonderzeichen stellst du ein, wie viele mindestens vorkommen (0 bis 9, sonst
+  eines); passen sie mit je einem Klein- und Großbuchstaben nicht in die Länge, zählen weniger
+  Sonderzeichen, dann weniger Ziffern. **Mehrdeutige Zeichen vermeiden** lässt `0 O o 1 I i l |`
+  weg, die sich in vielen Schriften gleichen. Jedes Passwort, das die Vorgaben erfüllt, ist gleich
+  wahrscheinlich, und die Pflichtzeichen stehen an zufälligen Stellen. Im Ergebnis sind Ziffern
+  blau und Sonderzeichen rot gefärbt; kopiert wird der reine Text.
 - **Passphrase**: 3 bis 10 Wörter aus der Wortliste der Electronic Frontier Foundation (7776
   englische Wörter), getrennt durch Bindestrich, Punkt, Unterstrich oder Leerzeichen, nach Wahl
   groß beginnend und mit einer angehängten Ziffer.

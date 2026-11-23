@@ -4,6 +4,7 @@
  * something else gives the defaults.
  */
 import {
+  MIN_COUNT,
   PASSPHRASE_WORDS,
   PASSWORD_LENGTH,
   type PassphraseOptions,
@@ -13,14 +14,22 @@ import {
 export type GeneratorKind = "password" | "passphrase";
 export type GeneratorSettings = {
   kind: GeneratorKind;
-  password: PasswordOptions;
+  /** Every option stored, so the form shows what the password is made with */
+  password: Required<PasswordOptions>;
   passphrase: PassphraseOptions;
 };
 export const SEPARATORS = ["-", ".", "_", " "] as const;
 
 export const DEFAULT_SETTINGS: GeneratorSettings = {
   kind: "password",
-  password: { length: PASSWORD_LENGTH.initial, digits: true, symbols: true },
+  password: {
+    length: PASSWORD_LENGTH.initial,
+    digits: true,
+    symbols: true,
+    avoidAmbiguous: false,
+    minDigits: MIN_COUNT.initial,
+    minSymbols: MIN_COUNT.initial,
+  },
   passphrase: { words: PASSPHRASE_WORDS.initial, separator: "-", capitalize: false, digit: false },
 };
 const KEY = "kennwort-generator";
@@ -49,6 +58,10 @@ export const parseSettings = (value: unknown): GeneratorSettings => {
       length: whole(pw.length, d.password.length, PASSWORD_LENGTH),
       digits: flag(pw.digits, d.password.digits),
       symbols: flag(pw.symbols, d.password.symbols),
+      // Settings stored before these options existed lack them and take the defaults
+      avoidAmbiguous: flag(pw.avoidAmbiguous, d.password.avoidAmbiguous),
+      minDigits: whole(pw.minDigits, d.password.minDigits, MIN_COUNT),
+      minSymbols: whole(pw.minSymbols, d.password.minSymbols, MIN_COUNT),
     },
     passphrase: {
       words: whole(pp.words, d.passphrase.words, PASSPHRASE_WORDS),

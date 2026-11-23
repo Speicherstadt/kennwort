@@ -5,8 +5,16 @@
  * remembered is the app's choice (the extension remembers nothing outside its session area).
  */
 
-import { PASSPHRASE_WORDS, PASSWORD_LENGTH, type Strength, strengthOf } from "@kennwort/core";
-import { createSignal, For, untrack } from "solid-js";
+import {
+  DIGITS,
+  MIN_COUNT,
+  PASSPHRASE_WORDS,
+  PASSWORD_LENGTH,
+  type Strength,
+  SYMBOLS,
+  strengthOf,
+} from "@kennwort/core";
+import { createSignal, For, Show, untrack } from "solid-js";
 import { IconButton } from "../components/button.tsx";
 import { Checkbox } from "../components/checkbox.tsx";
 import { Icon } from "../components/icon.tsx";
@@ -40,6 +48,49 @@ const Check = (props: { label: string; checked: boolean; onChange: (on: boolean)
     />
     {props.label}
   </label>
+);
+
+/** A checkbox with how many at least, the count only while the box is checked */
+const CheckWithMin = (props: {
+  label: string;
+  minLabel: string;
+  checked: boolean;
+  min: number;
+  onChange: (on: boolean) => void;
+  onMin: (min: number) => void;
+}) => (
+  <div class="flex items-center gap-3">
+    <Check label={props.label} checked={props.checked} onChange={props.onChange} />
+    <Show when={props.checked}>
+      <input
+        type="number"
+        aria-label={props.minLabel}
+        class="h-8 w-14 rounded-lg border border-border bg-background px-2 text-[13px]"
+        min={MIN_COUNT.min}
+        max={MIN_COUNT.max}
+        value={props.min}
+        onInput={(event) => {
+          const value = Number(event.currentTarget.value);
+          if (Number.isInteger(value) && value >= MIN_COUNT.min && value <= MIN_COUNT.max)
+            props.onMin(value);
+        }}
+      />
+    </Show>
+  </div>
+);
+
+/** Digits and symbols in their own colors, so a 0 is told from an O; the text stays the same */
+const kindClass = (c: string) =>
+  DIGITS.includes(c)
+    ? "text-sky-500 dark:text-sky-400"
+    : SYMBOLS.includes(c)
+      ? "text-rose-500 dark:text-rose-400"
+      : undefined;
+
+const Colored = (props: { value: string }) => (
+  <For each={[...props.value]} keyed={false}>
+    {(c) => <span class={kindClass(c())}>{c()}</span>}
+  </For>
 );
 
 const Range = (props: {
@@ -80,15 +131,26 @@ const PasswordOptionsForm = (props: OptionsProps) => {
         max={PASSWORD_LENGTH.max}
         onInput={(length) => set({ length })}
       />
-      <Check
+      <CheckWithMin
         label={m.generator_digits()}
+        minLabel={m.generator_min_digits()}
         checked={props.settings().password.digits}
+        min={props.settings().password.minDigits}
         onChange={(digits) => set({ digits })}
+        onMin={(minDigits) => set({ minDigits })}
+      />
+      <CheckWithMin
+        label={m.generator_symbols()}
+        minLabel={m.generator_min_symbols()}
+        checked={props.settings().password.symbols}
+        min={props.settings().password.minSymbols}
+        onChange={(symbols) => set({ symbols })}
+        onMin={(minSymbols) => set({ minSymbols })}
       />
       <Check
-        label={m.generator_symbols()}
-        checked={props.settings().password.symbols}
-        onChange={(symbols) => set({ symbols })}
+        label={m.generator_avoid_ambiguous()}
+        checked={props.settings().password.avoidAmbiguous}
+        onChange={(avoidAmbiguous) => set({ avoidAmbiguous })}
       />
     </div>
   );
@@ -169,7 +231,7 @@ export const GeneratorPanel = (props: {
           aria-live="polite"
           class="min-w-0 flex-1 break-all font-mono text-lg"
         >
-          {value()}
+          <Colored value={value()} />
         </output>
         <IconButton label={m.generator_new()} onClick={() => void show(latest)}>
           <Icon icon={RefreshCw} />

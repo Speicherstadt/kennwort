@@ -9,6 +9,21 @@ describe("making a secret", () => {
     expect(makePassword({ length: 12, digits: false, symbols: false })).toMatch(/^[a-zA-Z]{12}$/);
   });
 
+  it("follows the new options: no look-alikes, at least the asked digits and symbols", () => {
+    for (let i = 0; i < 100; i++) {
+      const made = makePassword({
+        ...DEFAULT_SETTINGS.password,
+        length: 10,
+        avoidAmbiguous: true,
+        minDigits: 4,
+        minSymbols: 4,
+      });
+      expect(made).not.toMatch(/[0Oo1Iil|]/);
+      expect(made.replace(/\D/g, "").length).toBeGreaterThanOrEqual(4);
+      expect(made.replace(/[^!#$%&*+\-=?@^_]/g, "").length).toBeGreaterThanOrEqual(4);
+    }
+  });
+
   it("makes a passphrase from the EFF list, loaded on first use", async () => {
     const made = await makeSecret({
       ...DEFAULT_SETTINGS,

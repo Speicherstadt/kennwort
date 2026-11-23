@@ -67,13 +67,61 @@ describe("GeneratorPanel", () => {
       length: 32,
       digits: false,
       symbols: false,
+      avoidAmbiguous: false,
+      minDigits: 1,
+      minSymbols: 1,
     });
     const before = result(root);
     button(root, "Neu erzeugen").click();
     await settle();
     expect(result(root)).not.toBe(before);
   });
+});
 
+describe("GeneratorPanel's password options", () => {
+  it("avoids look-alikes and keeps the asked minimums when told to", async () => {
+    const { root } = await show();
+    checkbox(root, "Mehrdeutige Zeichen vermeiden").click();
+    const digits = root.querySelector(
+      'input[aria-label="Mindestens so viele Ziffern"]',
+    ) as HTMLInputElement;
+    digits.value = "6";
+    digits.dispatchEvent(new Event("input", { bubbles: true }));
+    await settle();
+    for (let i = 0; i < 20; i++) {
+      expect(result(root)).toHaveLength(20);
+      expect(result(root)).not.toMatch(/[0Oo1Iil|]/);
+      expect(result(root).replace(/\D/g, "").length).toBeGreaterThanOrEqual(6);
+      button(root, "Neu erzeugen").click();
+      await settle();
+    }
+    expect(JSON.parse(localStorage.getItem("kennwort-generator") ?? "{}").password).toMatchObject({
+      avoidAmbiguous: true,
+      minDigits: 6,
+    });
+    checkbox(root, "Ziffern").click();
+    await settle();
+    expect(root.querySelector('input[aria-label="Mindestens so viele Ziffern"]')).toBeNull();
+  });
+
+  it("colors digits and symbols but keeps the plain text to read and copy", async () => {
+    const { root } = await show();
+    const output = root.querySelector("output") as HTMLOutputElement;
+    expect(output.getAttribute("aria-label")).toBe("Ergebnis");
+    const spans = [...output.querySelectorAll("span")];
+    expect(spans.map((s) => s.textContent).join("")).toBe(result(root));
+    for (const span of spans) {
+      const c = span.textContent ?? "";
+      if (/\d/.test(c)) expect(span.className).toContain("text-sky-500");
+      else if (/[a-zA-Z]/.test(c)) expect(span.className).toBe("");
+      else expect(span.className).toContain("text-rose-500");
+    }
+    expect(spans.some((s) => s.className.includes("text-sky-500"))).toBe(true);
+    expect(spans.some((s) => s.className.includes("text-rose-500"))).toBe(true);
+  });
+});
+
+describe("GeneratorPanel's other kinds and actions", () => {
   it("makes a passphrase of five words from the list on its tab", async () => {
     const { root } = await show();
     tab(root, "Passphrase").click();

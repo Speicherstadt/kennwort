@@ -150,8 +150,10 @@ export {
 } from "./auth/sign-in.ts";
 export * from "./export/index.ts";
 export {
+  AMBIGUOUS,
   DIGITS,
   LOWER,
+  MIN_COUNT,
   PASSPHRASE_WORDS,
   PASSWORD_LENGTH,
   type PassphraseOptions,
