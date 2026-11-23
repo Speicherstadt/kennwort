@@ -86,7 +86,7 @@ export const VaultsPage = (props: {
   // Another device may have changed a vault: the page shows them as they are now
   onSettled(() => void props.store.reload());
   return (
-    <section aria-labelledby="page-title" class={pageClass()}>
+    <section aria-labelledby="page-title" class={pageClass("wide")}>
       <h1 id="page-title" class="mb-6 text-[28px] font-semibold md:text-lg">
         {m.vaults_title()}
       </h1>
@@ -122,11 +122,11 @@ export const VaultsPage = (props: {
               <ul class="divide-y divide-border overflow-hidden rounded-xl border border-border empty:hidden">
                 <For each={ready().vaults}>
                   {(vault) => (
-                    <li class="flex flex-wrap items-center gap-2 pr-3">
+                    <li class="flex flex-wrap items-center gap-2 pr-3 transition-colors hover:bg-muted/50">
                       <Link
                         nav={props.nav}
                         href={`/vaults/${vault.idText}`}
-                        class="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 hover:bg-accent"
+                        class="flex min-w-0 flex-1 items-center gap-3 px-4 py-3"
                       >
                         <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-accent">
                           <Icon icon={Archive} />
