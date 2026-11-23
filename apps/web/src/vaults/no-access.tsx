@@ -2,7 +2,7 @@
  * A link to a vault this account is not a member of (K-305 part 4): nothing of the vault shows,
  * only the way to ask its managers for access (P-05 step 4)
  */
-import { Button, Icon, m } from "@kennwort/ui";
+import { Button, Icon, m, pageClass } from "@kennwort/ui";
 import { Lock } from "@kennwort/ui/icons";
 import { createSignal, Match, Show, Switch } from "solid-js";
 
@@ -15,7 +15,7 @@ export const NoAccess = (props: { onRequest: () => Promise<boolean> }) => {
     setAsked((await props.onRequest()) ? "sent" : "failed");
   };
   return (
-    <section aria-labelledby="page-title" class="min-h-0 flex-1 overflow-auto p-4 md:p-6">
+    <section aria-labelledby="page-title" class={pageClass()}>
       <h1 id="page-title" class="mb-4 flex items-center gap-2 text-[28px] font-semibold md:text-lg">
         <Icon icon={Lock} /> {m.no_access_title()}
       </h1>

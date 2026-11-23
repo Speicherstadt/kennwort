@@ -13,4 +13,19 @@ export const sections: readonly Section[] = [
   { page: "settings", href: "/settings", label: () => m.nav_settings(), icon: Settings },
 ];
 
-export const isSection = (route: Route, page: string) => route.page === page;
+/** Pages under a section: the security overview belongs to the entries, the rest to settings */
+const parent: Partial<Record<Route["page"], Route["page"]>> = {
+  security: "entries",
+  members: "settings",
+  vaults: "settings",
+  import: "settings",
+  export: "settings",
+  emergency: "settings",
+  links: "settings",
+  companies: "settings",
+  privacy: "settings",
+  renew: "settings",
+};
+
+export const isSection = (route: Route, page: string) =>
+  route.page === page || parent[route.page] === page;

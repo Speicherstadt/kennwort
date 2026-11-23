@@ -5,7 +5,7 @@
 
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { entryIcon } from "@kennwort/client/entries/entry-icon.ts";
-import { Badge, Button, cn, Icon, List, m, SearchInput } from "@kennwort/ui";
+import { Badge, Button, badgeVariants, cn, Icon, List, m, SearchInput } from "@kennwort/ui";
 import { Plus } from "@kennwort/ui/icons";
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { entries as demoEntries, vaultName } from "../demo.ts";
@@ -30,7 +30,7 @@ export const listTitle = (filter: ListFilter, vaults: ShownVault[] = []) =>
           : (vaults.find((v) => v.idText === filter.id)?.name ?? vaultName(filter.id));
 
 /** The phone's filters; "Mit mir geteilt" only once something is shared with this account */
-const chips = (entries: readonly ShownEntry[]) => [
+const chips = (entries: readonly ShownEntry[], security: boolean) => [
   { href: "/entries", kind: "all", label: m.chip_all() },
   { href: "/favorites", kind: "favorites", label: m.nav_favorites() },
   {
@@ -41,6 +41,8 @@ const chips = (entries: readonly ShownEntry[]) => [
   ...(entries.some((e) => e.sharedBy !== undefined)
     ? [{ href: "/shared", kind: "shared", label: m.nav_shared() }]
     : []),
+  // The security overview in the flow of the list, as in the sidebar (K-603)
+  ...(security ? [{ href: "/security", kind: "security", label: m.nav_security() }] : []),
 ];
 
 export const EntryList = (props: {
@@ -51,6 +53,8 @@ export const EntryList = (props: {
   /** The entries from the vaults (K-306); the demo's while the app gives none */
   entries?: ShownEntry[] | undefined;
   onNew?: (() => void) | undefined;
+  /** Whether the security overview is there to link to, as a chip on the phone */
+  security?: boolean | undefined;
 }) => {
   const [search, setSearch] = createSignal("");
   const all = () => props.entries ?? demoEntries;
@@ -100,18 +104,24 @@ export const EntryList = (props: {
           onInput={(event) => setSearch(event.currentTarget.value)}
         />
         <nav aria-label={m.list_filters()} class="flex flex-wrap gap-2 md:hidden">
-          <For each={chips(all())}>
+          <For each={chips(all(), props.security === true)}>
             {(chip) => (
               <Link
                 nav={props.nav}
                 href={chip.href}
                 current={props.filter.kind === chip.kind}
-                class={cn(
-                  "flex min-h-11 items-center rounded-full border border-border px-3 text-[13px]",
-                  props.filter.kind === chip.kind && "bg-primary text-primary-foreground",
-                )}
+                class="flex min-h-11 items-center"
               >
-                {chip.label}
+                <span
+                  class={cn(
+                    badgeVariants({
+                      variant: props.filter.kind === chip.kind ? "default" : "outline",
+                    }),
+                    "px-3 py-1 text-[13px]",
+                  )}
+                >
+                  {chip.label}
+                </span>
               </Link>
             )}
           </For>

@@ -12,7 +12,7 @@ import {
 import { keepDeposit } from "@kennwort/client/policy/recovery.ts";
 import type { RecoveryApi } from "@kennwort/client/session/recovery-api.ts";
 import { LOCK_MINUTES, type UnsignedPolicy } from "@kennwort/core";
-import { Button, Input, m } from "@kennwort/ui";
+import { Button, Input, m, panelClass, panelTitleClass } from "@kennwort/ui";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createMemo, createSignal, Loading, onSettled, Show } from "solid-js";
 import { queryKeys } from "../queries.ts";
@@ -55,8 +55,8 @@ export const PolicySection = (props: { session: Session; api: PolicyDeps; canEdi
     await client.invalidateQueries({ queryKey: queryKeys.policy });
   };
   return (
-    <section aria-labelledby="policy-title" class="grid gap-3">
-      <h2 id="policy-title" class="text-xs font-medium">
+    <section aria-labelledby="policy-title" class={panelClass}>
+      <h2 id="policy-title" class={panelTitleClass}>
         {m.policy_title()}
       </h2>
       <Loading>

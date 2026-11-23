@@ -1,5 +1,5 @@
 /** The form on the members page that invites someone and shows the link to copy (K-304) */
-import { Button, Icon, Input, m } from "@kennwort/ui";
+import { Button, Icon, Input, m, panelClass, panelTitleClass } from "@kennwort/ui";
 import { Copy } from "@kennwort/ui/icons";
 import { createSignal, Show } from "solid-js";
 
@@ -30,8 +30,8 @@ export const InviteForm = (props: { onInvite: (label: string) => Promise<string 
     }
   };
   return (
-    <section aria-labelledby="invite-title" class="grid gap-3">
-      <h2 id="invite-title" class="text-xs font-medium">
+    <section aria-labelledby="invite-title" class={panelClass}>
+      <h2 id="invite-title" class={panelTitleClass}>
         {m.members_invite_title()}
       </h2>
       <form class="flex flex-wrap items-end gap-2" onSubmit={submit}>

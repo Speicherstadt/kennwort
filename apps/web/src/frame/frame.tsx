@@ -12,12 +12,13 @@ import type { FrameNotifications } from "../notifications/notifications-wiring.t
 import { EntryDetail } from "./entry-detail.tsx";
 import type { Saved } from "./entry-detail-parts.tsx";
 import { EntryList, type ShownVault } from "./entry-list.tsx";
-import { GeneratorPage, GroupsPage, NotFoundPage, SettingsPage } from "./pages.tsx";
+import { GeneratorPage, GroupsPage, NotFoundPage } from "./pages.tsx";
 import { Rail } from "./rail.tsx";
+import { SettingsChild, SettingsPage, type SettingsProps } from "./settings-page.tsx";
 import { type CompanySwitch, Sidebar } from "./sidebar.tsx";
 import { TabBar } from "./tab-bar.tsx";
 
-export const Frame = (props: {
+type FrameProps = {
   nav: Navigation;
   onLock: () => void;
   onLocale: (locale: Locale) => void;
@@ -65,9 +66,40 @@ export const Frame = (props: {
   noAccess?: ((vaultId: string) => JSX.Element | undefined) | undefined;
   /** The bell and the page of the notifications (K-602) */
   notifications?: FrameNotifications | undefined;
-}) => {
+};
+
+/** What the settings link to: only the pages the app hands to the frame */
+// The devices go apart from these: the spread is read anew on every change, which would build
+// their sections anew and lose what they show (a passkey just set up)
+const settingsLinks = (props: FrameProps): Omit<SettingsProps, "devices"> => ({
+  onLock: props.onLock,
+  onLocale: props.onLocale,
+  onAddDevice: props.onAddDevice,
+  onMembers: props.members ? () => props.nav.go("/members") : undefined,
+  onVaults: props.vaultsPage ? () => props.nav.go("/vaults") : undefined,
+  onImport: props.importPage ? () => props.nav.go("/import") : undefined,
+  onExport: props.exportPage && props.canExport ? () => props.nav.go("/export") : undefined,
+  onEmergency: props.emergencyPage ? () => props.nav.go("/emergency") : undefined,
+  onLinks: props.linksPage ? () => props.nav.go("/links") : undefined,
+  onSecurity: props.securityPage ? () => props.nav.go("/security") : undefined,
+  onRenew: props.renewPage ? () => props.nav.go("/renew") : undefined,
+  onCompanies: props.companiesPage ? () => props.nav.go("/companies") : undefined,
+  onPrivacy: props.privacyPage ? () => props.nav.go("/privacy") : undefined,
+});
+
+export const Frame = (props: FrameProps) => {
   const toasts = createToasts();
   const route = () => props.nav.route();
+  /** The sidebar beside the pages it links to, so a click there stays in the same frame */
+  const sidebar = () => (
+    <Sidebar
+      nav={props.nav}
+      vaults={props.vaults?.()}
+      entries={props.entries?.()}
+      security={Boolean(props.securityPage)}
+      companies={props.companies}
+    />
+  );
   return (
     <div class="flex h-dvh flex-col md:flex-row">
       <Rail
@@ -105,6 +137,7 @@ export const Frame = (props: {
                       filter={entries().filter}
                       selected={entries().entry}
                       vaults={props.vaults?.()}
+                      security={Boolean(props.securityPage)}
                     />
                     <EntryDetail
                       entries={props.entries?.()}
@@ -143,64 +176,50 @@ export const Frame = (props: {
           </main>
         </Match>
         <Match when={route().page === "groups"}>
+          {sidebar()}
           <main class="flex min-h-0 flex-1">
             {props.groupsPage ? props.groupsPage() : <GroupsPage />}
           </main>
         </Match>
         <Match when={route().page === "settings"}>
           <main class="flex min-h-0 flex-1">
-            <SettingsPage
-              onLock={props.onLock}
-              onLocale={props.onLocale}
-              onAddDevice={props.onAddDevice}
-              onMembers={props.members ? () => props.nav.go("/members") : undefined}
-              onVaults={props.vaultsPage ? () => props.nav.go("/vaults") : undefined}
-              onImport={props.importPage ? () => props.nav.go("/import") : undefined}
-              onExport={
-                props.exportPage && props.canExport ? () => props.nav.go("/export") : undefined
-              }
-              onEmergency={props.emergencyPage ? () => props.nav.go("/emergency") : undefined}
-              onLinks={props.linksPage ? () => props.nav.go("/links") : undefined}
-              onSecurity={props.securityPage ? () => props.nav.go("/security") : undefined}
-              onRenew={props.renewPage ? () => props.nav.go("/renew") : undefined}
-              onCompanies={props.companiesPage ? () => props.nav.go("/companies") : undefined}
-              onPrivacy={props.privacyPage ? () => props.nav.go("/privacy") : undefined}
-              devices={props.devices}
-            />
+            <SettingsPage {...settingsLinks(props)} devices={props.devices} />
           </main>
         </Match>
         <Match when={route().page === "members" && props.members}>
-          <main class="flex min-h-0 flex-1">{props.members?.()}</main>
+          <SettingsChild nav={props.nav}>{props.members?.()}</SettingsChild>
         </Match>
         <Match when={route().page === "vaults" && props.vaultsPage}>
+          {sidebar()}
           <main class="flex min-h-0 flex-1">{props.vaultsPage?.()}</main>
         </Match>
         <Match when={route().page === "import" && props.importPage}>
-          <main class="flex min-h-0 flex-1">{props.importPage?.()}</main>
+          <SettingsChild nav={props.nav}>{props.importPage?.()}</SettingsChild>
         </Match>
         <Match when={route().page === "export" && props.exportPage}>
-          <main class="flex min-h-0 flex-1">{props.exportPage?.()}</main>
+          <SettingsChild nav={props.nav}>{props.exportPage?.()}</SettingsChild>
         </Match>
         <Match when={route().page === "emergency" && props.emergencyPage}>
-          <main class="flex min-h-0 flex-1">{props.emergencyPage?.(toasts)}</main>
+          <SettingsChild nav={props.nav}>{props.emergencyPage?.(toasts)}</SettingsChild>
         </Match>
         <Match when={route().page === "links" && props.linksPage}>
-          <main class="flex min-h-0 flex-1">{props.linksPage?.()}</main>
+          <SettingsChild nav={props.nav}>{props.linksPage?.()}</SettingsChild>
         </Match>
         <Match when={route().page === "notifications" && props.notifications}>
           <main class="flex min-h-0 flex-1">{props.notifications?.page()}</main>
         </Match>
         <Match when={route().page === "security" && props.securityPage}>
+          {sidebar()}
           <main class="flex min-h-0 flex-1">{props.securityPage?.()}</main>
         </Match>
         <Match when={route().page === "companies" && props.companiesPage}>
-          <main class="flex min-h-0 flex-1">{props.companiesPage?.()}</main>
+          <SettingsChild nav={props.nav}>{props.companiesPage?.()}</SettingsChild>
         </Match>
         <Match when={route().page === "privacy" && props.privacyPage}>
-          <main class="flex min-h-0 flex-1">{props.privacyPage?.()}</main>
+          <SettingsChild nav={props.nav}>{props.privacyPage?.()}</SettingsChild>
         </Match>
         <Match when={route().page === "renew" && props.renewPage}>
-          <main class="flex min-h-0 flex-1">{props.renewPage?.()}</main>
+          <SettingsChild nav={props.nav}>{props.renewPage?.()}</SettingsChild>
         </Match>
         <Match when={route().page === "not-found"}>
           <main class="flex min-h-0 flex-1">

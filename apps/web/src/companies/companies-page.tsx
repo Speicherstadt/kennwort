@@ -5,7 +5,7 @@
  * that they belong together from anything but the requests of one device.
  */
 import type { StateDeps } from "@kennwort/client/session/state-sync.ts";
-import { Badge, Button, Icon, Input, m } from "@kennwort/ui";
+import { Badge, Button, Icon, Input, m, pageClass } from "@kennwort/ui";
 import { Building2 } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { createSignal, For, Show } from "solid-js";
@@ -105,7 +105,7 @@ export const CompaniesPage = (props: {
   };
   const linked = (accountId: string) => void props.switcher.switchTo(accountId);
   return (
-    <section aria-labelledby="page-title" class="min-h-0 flex-1 overflow-auto p-4 md:p-6">
+    <section aria-labelledby="page-title" class={pageClass()}>
       <h1 id="page-title" class="mb-4 text-[28px] font-semibold md:text-lg">
         {m.companies_title()}
       </h1>

@@ -6,7 +6,7 @@
 
 import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
 import { idKey, type MemberView } from "@kennwort/core";
-import { Button, Icon, Input, m, selectClass } from "@kennwort/ui";
+import { Button, Icon, Input, m, pageClass, selectClass } from "@kennwort/ui";
 import { Users } from "@kennwort/ui/icons";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, For, Loading, Show } from "solid-js";
@@ -158,7 +158,7 @@ export const GroupsPage = (props: {
   };
   const { api, session } = props;
   return (
-    <section aria-labelledby="page-title" class="min-h-0 flex-1 overflow-auto p-4 md:p-6">
+    <section aria-labelledby="page-title" class={pageClass()}>
       <h1 id="page-title" class="mb-4 text-[28px] font-semibold md:text-lg">
         {m.nav_groups()}
       </h1>

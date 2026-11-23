@@ -1,7 +1,7 @@
 // The shared interface of the web app, the extension and the mobile app: components (K-301,
 // DESIGN.md) and the texts, compiled by Paraglide from messages/de.json and messages/en.json.
 
-export { Badge, type BadgeProps } from "./components/badge.tsx";
+export { Badge, type BadgeProps, type BadgeVariant, badgeVariants } from "./components/badge.tsx";
 export { Button, type ButtonProps, buttonClass, IconButton } from "./components/button.tsx";
 export { Combobox, type ComboboxProps, matching } from "./components/combobox.tsx";
 export { Dialog, type DialogProps } from "./components/dialog.tsx";
@@ -15,6 +15,7 @@ export {
 } from "./components/input.tsx";
 export { List, type ListItem, type ListProps } from "./components/list.tsx";
 export { Menu, type MenuItem, type MenuProps } from "./components/menu.tsx";
+export { introClass, pageClass, panelClass, panelTitleClass } from "./components/page.ts";
 export { Popover, type PopoverProps } from "./components/popover.tsx";
 export { selectClass } from "./components/select.ts";
 export { type Tab, Tabs, type TabsProps } from "./components/tabs.tsx";

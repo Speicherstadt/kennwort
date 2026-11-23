@@ -11,7 +11,7 @@ import {
   replaceRoot,
 } from "@kennwort/client/root/root-change.ts";
 import { comparisonCode } from "@kennwort/crypto";
-import { Button, Dialog, m } from "@kennwort/ui";
+import { Button, Dialog, m, panelClass, panelTitleClass } from "@kennwort/ui";
 import { createSignal, Show } from "solid-js";
 import type { Session } from "../session/session.ts";
 import type { PendingRoot } from "./members.ts";
@@ -101,8 +101,8 @@ export const RootSection = (props: {
     await props.onReplaced();
   };
   return (
-    <section aria-labelledby="root-title" class="grid gap-3">
-      <h2 id="root-title" class="text-xs font-medium">
+    <section aria-labelledby="root-title" class={panelClass}>
+      <h2 id="root-title" class={panelTitleClass}>
         {m.root_title()}
       </h2>
       <p class="text-[13px] text-muted-foreground">{m.root_code_text()}</p>

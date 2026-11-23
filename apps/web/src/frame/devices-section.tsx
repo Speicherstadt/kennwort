@@ -5,7 +5,7 @@
 
 import type { DevicesApi } from "@kennwort/client/session/devices-api.ts";
 import type { DeviceEntry } from "@kennwort/core";
-import { Button, m } from "@kennwort/ui";
+import { Button, m, panelClass, panelTitleClass } from "@kennwort/ui";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createEffect, createSignal, For, Loading, Show } from "solid-js";
 import { queryKeys } from "../queries.ts";
@@ -74,8 +74,8 @@ export const DevicesSection = (props: {
     await reload();
   };
   return (
-    <section aria-labelledby="devices-title" class="grid gap-2">
-      <h2 id="devices-title" class="text-xs font-medium">
+    <section aria-labelledby="devices-title" class={panelClass}>
+      <h2 id="devices-title" class={panelTitleClass}>
         {m.devices_title()}
       </h2>
       <Loading>

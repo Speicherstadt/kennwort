@@ -5,7 +5,7 @@
  * the file takes to make; the file itself goes straight to a download (export.ts).
  */
 import type { ExportFormat, ExportScope } from "@kennwort/core";
-import { Button, Input, m, selectClass } from "@kennwort/ui";
+import { Button, Input, m, pageClass, selectClass } from "@kennwort/ui";
 import { createSignal, createUniqueId, For, Match, Show, Switch } from "solid-js";
 import { Alert } from "../import/import-steps.tsx";
 import { type ExportDeps, type ExportOutcome, MIN_PASSPHRASE, runExport } from "./export.ts";
@@ -206,7 +206,7 @@ export const ExportPage = (props: { deps: ExportPageDeps }) => {
   const [scope, setScope] = createSignal(ALL);
   const choice = { format, setFormat, scope, setScope };
   return (
-    <section aria-labelledby="page-title" class="min-h-0 flex-1 overflow-auto p-4 md:p-6">
+    <section aria-labelledby="page-title" class={pageClass()}>
       <h1 id="page-title" class="mb-2 text-[28px] font-semibold md:text-lg">
         {m.export_title()}
       </h1>

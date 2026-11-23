@@ -2,7 +2,7 @@
  * The tags of an entry in its dialog (K-306 part 5): each as a chip with a button to remove it,
  * a field to add one with Enter or the button; the search finds an entry by its tags
  */
-import { Button, Icon, IconButton, Input, m } from "@kennwort/ui";
+import { Button, badgeVariants, cn, Icon, IconButton, Input, m } from "@kennwort/ui";
 import { Plus, X } from "@kennwort/ui/icons";
 import { createSignal, For } from "solid-js";
 import { withTag } from "./entry-input.ts";
@@ -22,7 +22,7 @@ export const TagsInput = (props: { tags: string[]; onChange: (tags: string[]) =>
       <ul class="flex flex-wrap gap-1.5 empty:hidden">
         <For each={props.tags}>
           {(tag) => (
-            <li class="flex items-center gap-0.5 rounded-full bg-accent pl-2.5 text-[13px]">
+            <li class={cn(badgeVariants({ variant: "secondary" }), "gap-0.5 py-0 pr-0.5")}>
               {tag}
               <IconButton
                 type="button"
