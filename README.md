@@ -23,6 +23,21 @@ Open Source, ohne Kosten pro Benutzer, sicher auch dann, wenn der Server selbst 
 > [!WARNING]
 > **In Entwicklung:** Kennwort ist noch nicht veröffentlicht und nicht extern geprüft; die App fürs Handy fehlt noch. Bitte noch keine echten Passwörter damit verwalten. Ausprobieren ohne Server: in der [Demo](https://kennwort.app/demo/) mit Testdaten.
 
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/entry-desktop-dark.webp">
+  <img src="docs/assets/screenshots/entry-desktop-light.webp" alt="Kennwort mit den Testdaten von Weber Haustechnik: Liste der Einträge und der Eintrag Sparkasse" width="720">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/entries-phone-dark.webp">
+  <img src="docs/assets/screenshots/entries-phone-light.webp" alt="Liste der Einträge am Handy" width="160">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/popup-extension-dark.webp">
+  <img src="docs/assets/screenshots/popup-extension-light.webp" alt="Das Popup der Extension" width="160">
+</picture>
+</p>
+
 ## Warum Kennwort?
 
 In vielen Betrieben liegen die gemeinsamen Zugänge in einer Excel-Liste, auf Zetteln oder in einem Abo-Tool, das pro
