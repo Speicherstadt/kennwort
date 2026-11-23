@@ -25,7 +25,7 @@ class FillFlowTest {
     assertEquals("app", json.getJSONObject("target").getString("kind"))
     assertEquals("com.heizungsapp.monteur", json.getJSONObject("target").getString("id"))
     assertEquals(listOf("username", "password"), offer.fields)
-    assertEquals(setOf("version", "requestId", "target", "fields"), json.keySet())
+    assertEquals(setOf("version", "requestId", "target", "fields"), json.keys().asSequence().toSet()) // keys(): Android's org.json has no keySet()
   }
 
   @Test
