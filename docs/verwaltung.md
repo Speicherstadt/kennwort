@@ -33,7 +33,7 @@ Firmenschlüssel unterschrieben; der Server kann sie nicht ändern.
 Tresore ordnen die Zugänge, Gruppen fassen Personen zusammen. Wer einen Tresor verwaltet, gibt
 Zugriff, auch auf Zeit, beantwortet Zugriffsanfragen und nimmt Personen wieder heraus; danach
 wechselt Kennwort den Tresor-Schlüssel und setzt alles, was die Person lesen konnte, auf
-„Zum Ändern“. Mehr unter [Tresore](tresore.md).
+„Zum Ändern“. Mehr unter [Tresore](tresore.md) und [Team](team.md).
 
 ## Nachvollziehen und prüfen
 
