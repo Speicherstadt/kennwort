@@ -7,7 +7,7 @@ import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { entryIcon } from "@kennwort/client/entries/entry-icon.ts";
 import { typeLabel } from "@kennwort/client/entries/entry-types.ts";
 import { Button, cn, getLocale, Icon, m, type Toasts } from "@kennwort/ui";
-import { ArrowLeft, Link2, Pencil, QrCode, Share2 } from "@kennwort/ui/icons";
+import { ArrowLeft, KeyRound, Link2, Pencil, QrCode, Share2 } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { For, Show } from "solid-js";
 import { entries as demoEntries, vaultName as demoVaultName } from "../demo.ts";
@@ -201,9 +201,12 @@ const Shown = (
         when={entry()}
         keyed
         fallback={
-          <p class="grid h-full place-items-center p-8 text-muted-foreground">
-            {props.selected ? m.detail_not_found() : m.detail_none()}
-          </p>
+          <div class="grid h-full place-content-center justify-items-center gap-3 p-8 text-center text-[13px] text-muted-foreground">
+            <span class="grid size-12 place-items-center rounded-xl border border-dashed border-border">
+              <Icon icon={KeyRound} size={20} />
+            </span>
+            <p>{props.selected ? m.detail_not_found() : m.detail_none()}</p>
+          </div>
         }
       >
         {(found) => (

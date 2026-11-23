@@ -42,7 +42,7 @@ const Item = (props: {
       href={props.href}
       current={current()}
       class={cn(
-        "flex items-center gap-2 rounded-md px-2 py-1.5",
+        "flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors",
         current() ? "bg-accent text-foreground" : "hover:bg-accent",
       )}
     >
@@ -144,7 +144,7 @@ export const Sidebar = (props: {
           href="/security"
           current={props.nav.route().page === "security"}
           class={cn(
-            "flex items-center gap-2 rounded-md px-2 py-1.5",
+            "flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors",
             props.nav.route().page === "security" ? "bg-accent text-foreground" : "hover:bg-accent",
           )}
         >
@@ -170,7 +170,7 @@ export const Sidebar = (props: {
           href="/vaults"
           current={props.nav.route().page === "vaults"}
           class={cn(
-            "flex items-center gap-2 rounded-md px-2 py-1.5",
+            "flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors",
             props.nav.route().page === "vaults"
               ? "bg-accent text-foreground"
               : "text-muted-foreground hover:bg-accent",
@@ -188,7 +188,7 @@ export const Sidebar = (props: {
             href="/groups"
             current={props.nav.route().page === "groups"}
             class={cn(
-              "flex items-center gap-2 rounded-md px-2 py-1.5",
+              "flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors",
               props.nav.route().page === "groups"
                 ? "bg-accent text-foreground"
                 : "text-muted-foreground hover:bg-accent",
@@ -203,7 +203,7 @@ export const Sidebar = (props: {
             <Link
               nav={props.nav}
               href="/groups"
-              class="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent"
+              class="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent"
             >
               <span class="flex-1 truncate">{group.name}</span>
             </Link>
