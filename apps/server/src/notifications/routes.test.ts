@@ -12,6 +12,9 @@ import { pushHostAllowed } from "./push.ts";
 import { MAX_SUBSCRIPTIONS } from "./routes.ts";
 import { importVapid } from "./vapid.ts";
 
+// Long enough that the random VAPID token cannot contain it by chance, as a short "v1" sometimes did
+const SUBJECT = "vault-heizung-mueller";
+
 const PHONE = "https://fcm.googleapis.com/fcm/send/anna-phone";
 const LAPTOP = "https://updates.push.services.mozilla.com/wpush/v2/anna-laptop";
 
@@ -49,7 +52,7 @@ const setup = async (statuses: Record<string, number> = {}) => {
       companyId: "weber",
       recipients: [anna.id],
       kind,
-      subject: "v1",
+      subject: SUBJECT,
       actor: jonas.id,
     });
   /** The pushes run after the route answered; one turn of the event loop lets them finish */
@@ -164,7 +167,7 @@ describe("Web Push", () => {
     ).toBe(true);
     // Nothing of the notification goes to the push service: no kind, subject or account
     const everything = JSON.stringify({ url, headers: [...headers] });
-    for (const leak of ["vault-added", "v1", s.anna.id, s.jonas.id])
+    for (const leak of ["vault-added", SUBJECT, s.anna.id, s.jonas.id])
       expect(everything).not.toContain(leak);
   });
 
@@ -282,7 +285,7 @@ describe("the live channel", () => {
     const next = (await reader?.read())?.value ?? "";
     expect(next).toContain("event: notification");
     expect(next).not.toContain("vault-added");
-    expect(next).not.toContain("v1");
+    expect(next).not.toContain(SUBJECT);
     await reader?.cancel();
   });
 });
