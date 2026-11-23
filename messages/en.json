@@ -1192,5 +1192,9 @@
   "demo_notice": "Runs only in your browser, without a server. Don't enter real passwords; a reload starts over.",
   "demo_passphrase": "Passphrase:",
   "demo_preparing": "Setting up the demo company Weber Haustechnik …",
-  "demo_failed": "The demo could not start. Reload the page."
+  "demo_failed": "The demo could not start. Reload the page.",
+  "mobile_server_title": "Connect to your server",
+  "mobile_server_text": "Enter the address of your company's Kennwort server; it is in your recovery kit. From then on the app talks to this server only.",
+  "mobile_server_submit": "Connect",
+  "mobile_server_storage_failed": "The app could not save the address. Restart it and try again."
 }

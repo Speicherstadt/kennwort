@@ -17,8 +17,17 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "=3.0.0-alpha.4", features = [] }
 
 [dependencies]
-tauri = { version = "=3.0.0-alpha.6", features = [] }
-tauri-runtime-wry = "=3.0.0-alpha.6"
+tauri = { version = "=3.0.0-alpha.6", features = [], optional = true }
+tauri-runtime-wry = { version = "=3.0.0-alpha.6", optional = true }
+# Both already in the tree through tauri; named here for the server bridge (server.rs, bridge.rs)
+serde = { version = "=1.0.229", features = ["derive"] }
+url = "=2.5.9"
+
+# The shell (Tauri and its webview) is on by default. Without it only the pure server rules build,
+# so `cargo test --lib --no-default-features` runs their tests on a machine without GTK or an SDK
+[features]
+default = ["shell"]
+shell = ["dep:tauri", "dep:tauri-runtime-wry"]
 
 [profile.release]
 codegen-units = 1

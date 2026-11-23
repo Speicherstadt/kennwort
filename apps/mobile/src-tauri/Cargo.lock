@@ -1710,9 +1710,11 @@ dependencies = [
 name = "kennwort-mobile"
 version = "0.0.1"
 dependencies = [
+ "serde",
  "tauri",
  "tauri-build",
  "tauri-runtime-wry",
+ "url",
 ]
 
 [[package]]

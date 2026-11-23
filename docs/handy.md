@@ -15,7 +15,7 @@ Android läuft zusätzlich die [Browser-Extension](extension.md).
 | --- | --- | --- |
 | Web-App (PWA) | da | Kopieren mit einem Tipp |
 | Extension in Firefox für Android ab 142 | da | Inline-Menü zeigt Treffer; kopieren aus dem Popup |
-| App für Android und iOS | Gerüst da, noch nicht nutzbar (letzte Bauphase) | systemweit in allen Apps und Browsern, dazu Passkeys |
+| App für Android und iOS | Gerüst da, unter Android mit dem Server verbunden (letzte Bauphase) | systemweit in allen Apps und Browsern, dazu Passkeys |
 
 ## Die Web-App
 
@@ -51,9 +51,25 @@ Bis dahin ist die Web-App der Weg am Handy.
 
 Das Gerüst steht: eine Tauri-3-App (3.0.0-alpha.6; Tauri 3 ist noch nicht stabil) in
 `apps/mobile`, die genau den Build der Web-App zeigt, keine eigene Oberfläche. Das Android-Projekt
-und das iOS-Projekt sind angelegt. Noch fehlt die Verbindung zum Kennwort-Server: Die Web-App
-spricht ihren Server unter derselben Adresse an, von der sie geladen wurde, und in der App ist das
-die App selbst. Solange das offen ist, startet die App, meldet sich aber bei keinem Server an.
+und das iOS-Projekt sind angelegt.
+
+### Mit dem Server verbinden
+
+Beim ersten Start fragt die App nach der Adresse deines Kennwort-Servers, wie die
+[Extension](extension.md): Sie steht in deinem Recovery-Kit, etwa
+`https://kennwort.weber-haustechnik.de`. Nur HTTPS geht; die App merkt sich nur den Server selbst
+(Schema, Host und Port), nicht den Pfad. Danach meldest du dich an wie in der Web-App.
+
+Die App spricht von da an nur mit diesem einen Server. Die Oberfläche schickt ihre Anfragen nicht
+selbst ins Netz, sondern an den Kern der App, und der sendet sie nur an den eingerichteten Server,
+nur an dessen Schnittstelle und ohne einer Weiterleitung zu folgen; das Zertifikat prüft Android
+wie bei jeder anderen App. Ihre Inhaltsrichtlinie erlaubt deshalb weiterhin keine Verbindung zu
+irgendeinem Host. Für einen **anderen Server** löschst du die Daten der App (unter Android
+**Einstellungen → Apps → Kennwort → Speicher → Daten löschen**) und richtest sie neu ein.
+
+Noch nicht in der App: die Anmeldung über den Identitätsanbieter deiner Firma (OIDC) und die
+Live-Aktualisierung; Änderungen anderer siehst du nach dem nächsten Abgleich. Auf dem iPhone fehlt
+die Verbindung noch ganz, sie kommt mit dem Bau auf dem Mac.
 
 ### Updates der App
 
@@ -67,7 +83,7 @@ keinen Service Worker: Der Weg, auf dem die Web-App signierte Releases annimmt
 unverändert. Mit dem Server tauscht die App wie die Web-App nur verschlüsselte Daten.
 
 Die Inhaltsrichtlinie (CSP) der App ist mindestens so streng wie die der Web-App: dieselben Regeln,
-dazu nur der interne Kanal zwischen Oberfläche und App. Ein Test vergleicht beide bei jedem Lauf.
+dazu nur der interne Kanal zwischen Oberfläche und App; der Server kommt darin nicht vor. Ein Test vergleicht beide bei jedem Lauf.
 
 ### Selbst bauen
 
@@ -77,6 +93,7 @@ Die App baut aus dem Repository heraus:
 bun install
 bun run --cwd apps/mobile build          # Web-App im Modus "mobile" nach apps/mobile/dist
 bun run --cwd apps/mobile android:debug  # Debug-APK, braucht Android SDK, NDK und Rust
+cd apps/mobile/src-tauri && cargo test --lib --no-default-features  # Regeln für den Server, ohne SDK
 ```
 
 Für Android brauchst du Rust mit den Zielen `aarch64-linux-android` und `x86_64-linux-android`,

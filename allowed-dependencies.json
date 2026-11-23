@@ -86,6 +86,14 @@
     "tauri-runtime-wry": {
       "reason": "Tauri 3's webview runtime on wry (Android WebView, WKWebView), a separate crate since 3.0 that the app must name; same project and release as tauri",
       "workspaces": ["apps/mobile"]
+    },
+    "serde": {
+      "reason": "Reads and writes the server bridge's requests and answers between webview, Rust and the Kotlin HTTP client (src-tauri/src/bridge.rs); already linked through tauri, the same version, only named so the bridge can derive its types",
+      "workspaces": ["apps/mobile"]
+    },
+    "url": {
+      "reason": "Parses the server address and builds each API address on the one stored origin (src-tauri/src/server.rs); already linked through tauri (it is tauri::Url), named so the rules build and test without the shell",
+      "workspaces": ["apps/mobile"]
     }
   }
 }
