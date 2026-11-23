@@ -75,8 +75,11 @@ Atom-Feed.
 
 ## Wie ein Release entsteht
 
-Ein Tag `vX.Y.Z` auf `main` startet `.github/workflows/release.yml` (nach dem Muster von
-firsttris/workflows):
+Ein Release startest du unter **Actions → Bump version → Run workflow** mit `patch`, `minor` oder
+`major` (Release Candidates mit `preminor` und danach `prerelease`). Der Workflow hebt die Version in
+`package.json`, setzt das Tag `vX.Y.Z` mit dem Deploy Key und startet damit
+`.github/workflows/release.yml` (nach dem Muster von firsttris/workflows); Server und Extension lesen
+ihre Version aus derselben `package.json`:
 
 1. CI läuft noch einmal vollständig; das Tag muss zur Version in `package.json` passen.
 2. Aus der Geschichte des Commits kommt die Folgenummer des Releases (deshalb holt der Workflow die

@@ -4,6 +4,7 @@
  * themselves; everything the popup shows comes from Paraglide like in the web app.
  */
 import type { ManifestV3Export } from "@crxjs/vite-plugin";
+import rootPackage from "../../../package.json" with { type: "json" };
 import { MENU_PAGE } from "./fill/messages.ts";
 import { PROMPT_PAGE } from "./save/messages.ts";
 
@@ -80,7 +81,8 @@ const common = {
   name: "__MSG_extension_name__",
   description: "__MSG_extension_description__", // i18n-ignore: a reference into _locales
   default_locale: "de",
-  version: "0.1.0",
+  // Browsers take only dotted numbers: a release candidate (0.2.0-rc.1) ships as 0.2.0
+  version: rootPackage.version.split("-")[0] ?? rootPackage.version,
   action: { default_popup: "popup.html", default_title: "__MSG_extension_action__" },
   // The session area for unlocked keys, the lock alarm, the address of the active tab only after
   // a click on the button (activeTab), and the browser's frame tree, from which the service worker
