@@ -41,7 +41,7 @@ export const ServerSetup = (props: { server: AppServer; onReady: (origin: string
           type="url"
           inputmode="url"
           autocomplete="url"
-          placeholder="https://kennwort.example.com"
+          placeholder={m.mobile_server_placeholder()}
           required
           onInput={(event) => setTyped(event.currentTarget.value)}
         />
