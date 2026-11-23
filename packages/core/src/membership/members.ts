@@ -44,6 +44,11 @@ export const MembersWire = z.object({
        * its old keys signed must still verify
        */
       previous: z.array(CertificateWire).optional(),
+      /**
+       * The account enrolled through the identity provider (K-604, P-25): no invitation, so an owner
+       * or admin compares the code of its keys with the person; the mark only picks that check
+       */
+      oidc: z.boolean().optional(),
     }),
   ),
 });
@@ -57,9 +62,18 @@ type MemberWire = z.infer<typeof MembersWire>["members"][number];
  *   owner or admin compares the new bundle's code with the person and certifies it
  * - former: a certificate by a root the company replaced (K-307 part f, P-07): the account left
  *   before the change, so nobody certified it anew; it counts only for what was signed before
+ * - enrolled: the account came through the identity provider (K-604) and has no certificate yet; an
+ *   owner or admin compares its code with the person and certifies it as a member
  * - invalid: a certificate that does not check out, or an invitation shown for two accounts
  */
-export type MemberStatus = "certified" | "pending" | "waiting" | "renewed" | "former" | "invalid";
+export type MemberStatus =
+  | "certified"
+  | "pending"
+  | "waiting"
+  | "renewed"
+  | "enrolled"
+  | "former"
+  | "invalid";
 
 /** A root the account replaced, with the time of its change (P-07) */
 type Retired = { publicKey: Uint8Array; until: number };
@@ -87,6 +101,8 @@ export type MemberView = {
   pending?: PendingMember;
   /** The new bundle, while the status is renewed */
   renewed?: RenewedBundle;
+  /** The bundle of an account that enrolled through the identity provider, while it waits */
+  enrolled?: RenewedBundle;
   /** Earlier certificates the pinned root signed for this account, older than the current one */
   previous?: Certificate[];
   /**
@@ -123,6 +139,16 @@ const pendingOf = (member: MemberWire): PendingMember | undefined =>
       }
     : undefined;
 
+/** The keys of an account that enrolled through the identity provider (K-604) */
+const enrolledOf = (member: MemberWire): RenewedBundle | undefined =>
+  member.oidc && member.xwingPublicKey && member.edPublicKey
+    ? {
+        accountId: member.id,
+        xwingPublicKey: member.xwingPublicKey,
+        edPublicKey: member.edPublicKey,
+      }
+    : undefined;
+
 /** The new keys of an account that has an earlier certificate but no current one (P-12) */
 const renewedOf = (member: MemberWire, previous: Certificate[]): RenewedBundle | undefined =>
   previous.length > 0 && member.xwingPublicKey && member.edPublicKey
@@ -140,7 +166,7 @@ const statusOf = (
   shared: boolean,
   seen: number,
   previous: Certificate[],
-): Pick<MemberView, "status" | "certificate" | "pending" | "renewed"> => {
+): Pick<MemberView, "status" | "certificate" | "pending" | "renewed" | "enrolled"> => {
   const certificate = member.certificate;
   if (certificate) {
     if (certifiedFor(root, certificate, member, seen)) return { status: "certified", certificate };
@@ -154,7 +180,9 @@ const statusOf = (
   const pending = pendingOf(member);
   if (pending) return { status: "pending", pending };
   const renewed = renewedOf(member, previous);
-  return renewed ? { status: "renewed", renewed } : { status: "waiting" };
+  if (renewed) return { status: "renewed", renewed };
+  const enrolled = enrolledOf(member);
+  return enrolled ? { status: "enrolled", enrolled } : { status: "waiting" };
 };
 
 /**
@@ -259,3 +287,18 @@ export const certifyRenewed = (
     issuedAt: Math.max(now, latest + 1),
   });
 };
+
+/**
+ * The certificate for an account that enrolled through the identity provider (K-604, P-25), once an
+ * owner or admin compared its code with the person: always as a member, whatever role the server
+ * lists, as an invitation makes one (P-08); a higher role is an owner's own step
+ */
+export const certifyEnrolled = (
+  rootSecretKey: Uint8Array,
+  view: MemberView,
+  companyId: Uint8Array,
+  now: number,
+): Certificate | undefined =>
+  view.status === "enrolled" && view.enrolled
+    ? certify(rootSecretKey, { ...view.enrolled, companyId, role: "member", issuedAt: now })
+    : undefined;

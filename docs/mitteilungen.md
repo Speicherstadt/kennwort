@@ -35,6 +35,8 @@ löscht eine Mitteilung. Kennwort hebt für jedes Konto die neuesten 200 auf.
 | „Jonas hat auf deine Bitte um Notfallzugriff geantwortet.“ / „… hat dir Notfallzugriff gegeben.“ | du Vertrauensperson bist |
 | „Jonas hat dein Konto auf einem neuen Gerät wiederhergestellt.“ | ein Inhaber dein Konto über die Firmen-Recovery wiederherstellt |
 | „Einer deiner Einmal-Links wurde abgerufen.“ | jemand einen deiner Einmal-Links öffnet |
+| „Sandra hat sich über den Anmeldedienst angemeldet und wartet auf den Code-Vergleich.“ | du Inhaber oder Admin bist und jemand über den [Anmeldedienst](anmeldedienst.md) beigetreten ist |
+| „Sandra ist beim Anmeldedienst nicht mehr in der Gruppe von Büro. …“ | du einen Tresor verwaltest und jemand darin beim Anmeldedienst die verknüpfte Gruppe verlassen hat – entferne die Person, wenn der Zugriff enden soll |
 
 Die Namen setzt deine App selbst ein, aus dem, was sie geprüft hat; der Server schickt nur IDs.
 Kennt sie jemanden noch nicht, steht dort „Jemand“.

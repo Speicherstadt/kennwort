@@ -48,6 +48,7 @@ const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-d
 
 const Status = (props: {
   view: MemberView;
+  isMe: boolean;
   canConfirm: boolean;
   busy: boolean;
   onConfirm: () => void;
@@ -71,6 +72,14 @@ const Status = (props: {
     </Match>
     <Match when={props.view.status === "renewed"}>
       <Badge>{m.members_renewed()}</Badge>
+    </Match>
+    <Match when={props.view.status === "enrolled" && (props.canConfirm || props.isMe)}>
+      <Button size="sm" class="h-11 md:h-7" disabled={props.busy} onClick={() => props.onCheck()}>
+        {props.isMe ? m.oidc_waiting_own() : m.members_enrolled_check()}
+      </Button>
+    </Match>
+    <Match when={props.view.status === "enrolled"}>
+      <Badge>{m.members_enrolled()}</Badge>
     </Match>
     <Match when={props.view.status === "former"}>
       <Badge>{m.members_former()}</Badge>
@@ -313,7 +322,7 @@ export const MembersPage = (props: {
                   </For>
                 </ul>
                 <ExitDialogs leaving={leaving} />
-                <RenewedCheck check={renewal} me={list().me} />
+                <RenewedCheck check={renewal} me={list().me} session={props.session} />
                 <CompanySections
                   session={props.session}
                   api={props.api}

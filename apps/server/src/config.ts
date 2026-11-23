@@ -1,5 +1,6 @@
 /** The server's settings from the environment, parsed with Zod like every other boundary */
 import { z } from "zod";
+import { type OidcSettings, readOidcSettings } from "./oidc/settings.ts";
 
 const Config = z.object({
   KENNWORT_PORT: z
@@ -56,15 +57,23 @@ export type Config = {
   push: { subject: string; extraHosts: string[] } | undefined;
   /** The leak check's range address, or undefined when the operator turned it off */
   pwnedUrl: string | undefined;
+  /** Sign-in with OpenID Connect (K-604), undefined without an issuer */
+  oidc: OidcSettings | undefined;
 };
 
 export const readConfig = (env: Record<string, string | undefined>) => {
   const parsed = Config.safeParse(env);
-  if (!parsed.success)
+  const oidc = readOidcSettings(env);
+  if (!parsed.success || !oidc.ok)
     // Each setting once, though a union reports one issue per branch
     return {
       ok: false as const,
-      error: [...new Set(parsed.error.issues.map((issue) => issue.path.join(".")))],
+      error: [
+        ...new Set([
+          ...(parsed.error?.issues.map((issue) => issue.path.join(".")) ?? []),
+          ...(oidc.ok ? [] : oidc.error),
+        ]),
+      ],
     };
   const data = parsed.data;
   const value: Config = {
@@ -85,6 +94,7 @@ export const readConfig = (env: Record<string, string | undefined>) => {
           }
         : undefined,
     pwnedUrl: data.KENNWORT_PWNED_URL === "off" ? undefined : data.KENNWORT_PWNED_URL,
+    oidc: oidc.value,
   };
   return { ok: true as const, value };
 };

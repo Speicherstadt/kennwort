@@ -6,6 +6,7 @@
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import type { Db } from "../db/database.ts";
 import { groupMembers, vaultGroups, vaultRequests } from "../db/schema.ts";
+import { currentMembers } from "./vault-chain.ts";
 
 const RANK = { read: 0, edit: 1, manage: 2 } as const;
 type Role = keyof typeof RANK;
@@ -60,6 +61,30 @@ export const pruneGroupRequests = (db: Db, vaultIds: string[]) => {
     if (groupId) db.update(vaultRequests).set({ viaGroup: groupId }).where(row).run();
     else db.delete(vaultRequests).where(row).run();
   }
+};
+
+/**
+ * Requests, filed by the group, for those of `accounts` who are no current members of the vault;
+ * returns who got a new one
+ */
+export const askForGroup = (
+  db: Db,
+  now: number,
+  vaultId: string,
+  accounts: readonly string[],
+  groupId: string,
+) => {
+  const members = currentMembers(db, vaultId, Math.floor(now / 1000));
+  return accounts.filter(
+    (accountId) =>
+      !members.has(accountId) &&
+      db
+        .insert(vaultRequests)
+        .values({ vaultId, accountId, requestedAt: now, viaGroup: groupId })
+        .onConflictDoNothing()
+        .returning()
+        .get() !== undefined,
+  );
 };
 
 /** The vaults a group is linked to */

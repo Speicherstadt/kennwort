@@ -26,6 +26,7 @@ import { groupCalls } from "./groups-api.ts";
 import { linkCalls } from "./links-api.ts";
 import { memberCalls } from "./members-api.ts";
 import { notificationCalls } from "./notifications-api.ts";
+import { oidcCalls } from "./oidc-api.ts";
 import { pairingCalls } from "./pairing-api.ts";
 import { policyCalls } from "./policy-api.ts";
 import { pwnedCalls } from "./pwned-api.ts";
@@ -99,14 +100,16 @@ export const callerOf =
     return { status: response.status, json: await response.json().catch(() => undefined) };
   };
 
+/** The session token of a sign-up answer (setup or invitation), or why there is none */
+const session = (answer: { status: number; json: unknown }): Answer<string> => {
+  const parsed = SessionWire.safeParse(answer.json);
+  return answer.status === 201 && parsed.success
+    ? { ok: true, value: parsed.data.token }
+    : { ok: false, error: errorOf(answer.status) };
+};
+
 export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity) => {
   const call = callerOf(send, identity);
-  const session = (answer: { status: number; json: unknown }): Answer<string> => {
-    const parsed = SessionWire.safeParse(answer.json);
-    return answer.status === 201 && parsed.success
-      ? { ok: true, value: parsed.data.token }
-      : { ok: false, error: errorOf(answer.status) };
-  };
   const post: Post = (path, body) => call("POST", path, body);
   /** fetch for the sync (K-306): every request names the device, as the API's own calls do */
   const syncFetch: typeof fetch = (input, init = {}) =>
@@ -130,6 +133,7 @@ export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity)
     ...linkCalls(call),
     ...notificationCalls(call),
     ...pwnedCalls(call),
+    ...oidcCalls(call),
     /** The root key's public half goes along, for every member to check certificates (P-07) */
     setup: async (
       code: string,
@@ -218,4 +222,5 @@ export type AccountApi = Omit<
   | keyof ReturnType<typeof linkCalls>
   | keyof ReturnType<typeof notificationCalls>
   | keyof ReturnType<typeof pwnedCalls>
+  | Exclude<keyof ReturnType<typeof oidcCalls>, "enrolOidc">
 >;

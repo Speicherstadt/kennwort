@@ -11,9 +11,10 @@ type Page = Route["page"];
 
 /**
  * The pages whose link carries a secret in its fragment: the kit's (unlock, P-12), the pairing
- * link (link, P-04), the invitation (invite, P-08) and a one-time link (secret, P-18)
+ * link (link, P-04), the invitation (invite, P-08), a one-time link (secret, P-18) and the ticket
+ * of a login through the identity provider (oidc, P-25)
  */
-const secretPages: ReadonlySet<Page> = new Set(["unlock", "link", "invite", "secret"]);
+const secretPages: ReadonlySet<Page> = new Set(["unlock", "link", "invite", "secret", "oidc"]);
 
 /** A secret fragment taken from the address, and the page it was meant for */
 export type TakenFragment = { page: Page; hash: string };

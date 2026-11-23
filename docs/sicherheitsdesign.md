@@ -97,7 +97,7 @@ gleich.
 | Phishing-Seite will Autofill | [P-17](#p-17-ausfullen) | E-14 |
 | Clickjacking auf das Autofill-Menü (DEF CON 2025) | [P-17](#p-17-ausfullen) | – |
 | Supply-Chain im Client | [P-16](#p-16-ausgelieferter-code) | E-22 |
-| SSO-Konto übernommen | [P-02](#p-02-anmelden), [P-03](#p-03-entsperren) | E-03, E-27 |
+| SSO-Konto übernommen | [P-02](#p-02-anmelden), [P-03](#p-03-entsperren), [P-25](#p-25-anmeldung-uber-openid-connect-und-gruppen) | E-03, E-27 |
 | Mitarbeiter verlässt Firma | [P-11](#p-11-austritt-und-schlusselwechsel) | E-26 |
 | Malware auf dem Gerät | [P-03](#p-03-entsperren) (Sperren, Schlüssel nur im Speicher) | – |
 | Passwort bleibt am Handy in der Zwischenablage | [P-17](#p-17-ausfullen) | – |
@@ -108,7 +108,7 @@ gleich.
 | Firmen-Wurzelschlüssel | [P-07](#p-07-firmen-wurzelschlussel-und-zertifikate) | E-02, E-05, E-10 |
 | Austritt | [P-11](#p-11-austritt-und-schlusselwechsel) | E-26 |
 | Neues Gerät | [P-04](#p-04-neues-gerat) | E-09, E-25 |
-| Login per Passkey/SSO | [P-02](#p-02-anmelden) | E-24, E-27 |
+| Login per Passkey/SSO | [P-02](#p-02-anmelden), [P-25](#p-25-anmeldung-uber-openid-connect-und-gruppen) | E-24, E-27 |
 | Symmetrisch | [F-01](#f-01-geheimtext-v1) | E-17 |
 | Schlüssel verpacken | [F-02](#f-02-an-einen-offentlichen-schlussel-verpackt-v1) | E-05, E-16 |
 | Signaturen | [F-03](#f-03-signatur-v1) | E-07, E-19 |
@@ -149,6 +149,7 @@ nennt seinen Angriff, und der Client muss ihn ablehnen und sagen, warum.
 | E-08, E-26 Mitglied vom Wechsel ferngehalten, seine Versionen unter dem alten Schlüssel nach dem Wechsel ausgeliefert | `adversary/epoch-order.test.ts`, gegen die Offline-Kopie `apps/web/src/offline/local-copy.test.ts` | ältere Epoche, kein Bearbeiter |
 | E-10 Wurzelschlüssel gegabelt (zweiter Wechsel vom alten Schlüssel), Wechsel wiederholt oder in eine andere Firma getragen, alter Wurzelschlüssel weiter ausgeliefert, nach dem Wechsel ausgestelltes Zertifikat des alten | `apps/server/src/adversary/root-attacks.test.ts`, `membership/root-change.test.ts`, `membership/verify-log.root.test.ts`, `apps/server/src/account/root.test.ts` | Gabelung, ersetzter Wurzelschlüssel, passt nicht, ungültig, nicht zertifizierter Unterzeichner |
 | E-20 Einmal-Link mitgelesen, fremder Geheimtext untergeschoben, Passphrase abgestreift, öfter ausgeliefert als erlaubt | `apps/server/src/adversary/link-attacks.test.ts`, `packages/crypto/src/one-time-link.test.ts`, `apps/server/src/links/links.test.ts` | Schlüssel und Inhalt nie beim Server; passt nicht (falscher Schlüssel); öfter ausgeliefert öffnet weiter – Restrisiko, siehe [P-18](#p-18-einmal-links) |
+| E-27 Gruppe beim Anmeldedienst gemeldet, E-03 Anmeldedienst gibt sich als Schlüsseldienst aus, E-02 Konto über den Anmeldedienst eingeschrieben | `apps/server/src/adversary/oidc-attacks.test.ts`, `apps/server/src/oidc/groups.test.ts`, `membership/members.enrolled.test.ts`, `e2e/oidc.spec.ts` | nur Anfrage, kein Tresor; keine Sitzung, kein Schlüssel; ohne Zertifikat bis zum Codevergleich |
 | E-01, E-05 nach einem Kit in fremden Händen: altes Bündel weiter ausgeliefert, neues Zertifikat zurückgehalten, altes Kit nach dem Wechsel, Tresor ohne Erneuerung oder Wechsel | `adversary/rekey.test.ts`, `membership/verify-log.rekey.test.ts`, `apps/server/src/account/rekey.test.ts` | ungültig, nicht zertifiziert, Wechsel steht aus, falsche Signatur, Rückfall, neuere Epoche |
 
 Die übrigen folgen mit den Funktionen, die sie betreffen (Konto-Recovery, Teilen, Geräte, Austritt,
@@ -589,8 +590,9 @@ Anmelden (beim Server) und Entsperren (der Schlüssel) sind getrennt; Anmelden g
 Geheimtexten.
 
 - **Passkey** über Better Auth (WebAuthn); derselbe Passkey kann zugleich per PRF entsperren.
-- **OpenID Connect**: Der Anmeldedienst bestätigt nur, wer jemand ist. Er entschlüsselt nichts; ein
-  Gruppenwechsel erzeugt eine Zugriffsanfrage, die ein Verwalter freigibt
+- **OpenID Connect** ([P-25](#p-25-anmeldung-uber-openid-connect-und-gruppen)): Der Anmeldedienst
+  bestätigt nur, wer jemand ist. Er entschlüsselt nichts und gibt einem bestehenden Konto keine
+  Sitzung; ein Gruppenwechsel erzeugt eine Zugriffsanfrage, die ein Verwalter freigibt
   ([P-05](#p-05-tresor-anlegen-und-mitglieder-aufnehmen)).
 - **Notweg Passphrase**: Aus `anmelden` (F-05) wird ein Ed25519-Schlüssel; der Server kennt nur
   dessen öffentlichen Teil und schickt eine Herausforderung. Die Passphrase und `p₁` verlassen nie
@@ -1761,6 +1763,7 @@ Restrisiken:
 | Eintrags-IDs, Versionen, Größen, Zeitpunkte, Autor | Titel, URLs, Benutzernamen, Passwörter, TOTP, Notizen, Tags, Favoriten, Anhänge |
 | öffentliche Schlüssel, Zertifikate, Fingerabdrücke | Recovery Key, Einladungsgeheimnis, Schlüssel von Einmal-Links |
 | Audit-Ereignisse (wer, was, wann) | Inhalte der Ereignisse, die Einträge betreffen |
+| mit OpenID Connect: Issuer, `sub` und Name der Person beim Anmeldedienst, die Gruppennamen ihres Claims bei der Anmeldung ([P-25](#p-25-anmeldung-uber-openid-connect-und-gruppen)) | Token des Anmeldedienstes (nicht gespeichert); einen Schlüssel gibt der Anmeldedienst nie |
 | Mitteilungen: Art, IDs, Zeit, gelesen; Push-Adressen der Geräte ([P-24](#p-24-mitteilungen-und-web-push)) | Namen von Tresoren und Einträgen in Mitteilungen; einen Inhalt in Pushes gibt es nicht |
 | nur bei eingeschalteter Datenleck-Prüfung: die ersten 5 Hex-Zeichen von SHA-1 je Passwort, von welchem Konto ([P-23](#p-23-sicherheits-ubersicht-und-datenleck-prufung)) | Passwörter, ihre vollen Hashes, Treffer; die Wahl selbst steht versiegelt im Kontozustand (er sieht nur, ob Anfragen kommen) |
 
@@ -2738,7 +2741,7 @@ ohnehin bearbeitet, und nur mit dem, was er ohnehin weiß:
 
 | Art | Wer sie bekommt | Betreff | Ausgelöst von |
 | --- | --- | --- | --- |
-| `access-requested` | die Verwalter des Tresors (gespeichertes Log), nur bei einer neuen Anfrage, nicht bei jeder Wiederholung | Tresor-ID | wer anfragt |
+| `access-requested` | die Verwalter des Tresors (gespeichertes Log), nur bei einer neuen Anfrage, nicht bei jeder Wiederholung; auch wenn der Anmeldedienst eine verknüpfte Gruppe meldet (P-25) | Tresor-ID | wer anfragt |
 | `vault-added` | wer aufgenommen wurde (Eintrag `add` im Log) | Tresor-ID | der Verwalter |
 | `share-received` | wem ein Eintrag zum ersten Mal geteilt wurde | Eintrags-ID | wer teilt |
 | `invitation-accepted` | wer die Einladung erstellt hat | Einladungs-ID | das neue Konto |
@@ -2750,6 +2753,8 @@ ohnehin bearbeitet, und nur mit dem, was er ohnehin weiß:
 | `account-recovered` | wessen Konto ein Inhaber wiederhergestellt hat (P-13) | – | der Inhaber |
 | `link-opened` | wer den Einmal-Link erstellt hat | Link-ID (nicht die Abruf-ID) | – |
 | `security-report` | (reserviert für den Monatsbericht aus [P-23](#p-23-sicherheits-ubersicht-und-datenleck-prufung); den rechnet das Gerät selbst aus, der Server schreibt die Art noch nicht) | – | – |
+| `member-enrolled` | Inhaber und Admins (sie vergleichen den Code, [P-25](#p-25-anmeldung-uber-openid-connect-und-gruppen)) | Konto-ID | das neue Konto |
+| `group-left` | die Verwalter eines verknüpften Tresors, in dem die Person noch ist ([P-25](#p-25-anmeldung-uber-openid-connect-und-gruppen)) | Tresor-ID | die Person |
 
 Eine Mitteilung ist eine Zeile mit Art, Betreff-ID, Auslöser-ID, Zeit und „gelesen“. Namen von
 Tresoren und Einträgen kennt der Server nicht (sie sind verschlüsselt, P-15), und auch Namen, die er
@@ -2824,5 +2829,126 @@ Umgesetzt in `packages/core/src/notifications/` (Zod-Schemas, nur IDs), `apps/se
 (Tabellen, Schreiben aus den Ereignissen, Routen, SSE, VAPID, leerer Push),
 `packages/client/src/session/notifications-api.ts`, `apps/web/src/notifications/` (Glocke, Seite,
 Push-Einstellungen) und `apps/web/src/sw/push.ts` (Text und Klick im Service Worker).
+
+**Wehrt ab:** E-14.
+
+### P-25 Anmeldung über OpenID Connect und Gruppen
+
+Firmen, die schon einen Anmeldedienst haben (Keycloak, Authentik, Entra ID, in der Suite Kontext),
+können ihn mit Kennwort verbinden (K-604). Der Grundsatz: **Die Ende-zu-Ende-Verschlüsselung hängt
+nicht am Anmeldedienst.** Er bestätigt nur, wer sich anmeldet, und meldet Gruppen. Er sieht und
+verteilt nie einen Schlüssel, kein Gerät bekommt von ihm einen, und was er meldet, wird nie von
+selbst zu Zugriff.
+
+**Client nach OpenID Connect Core 1.0**, im Server (`apps/server/src/oidc/`), ohne neues Paket:
+
+1. Konfiguration über `KENNWORT_OIDC_ISSUER`, `KENNWORT_OIDC_CLIENT_ID`,
+   `KENNWORT_OIDC_CLIENT_SECRET`, `KENNWORT_OIDC_SCOPES` (muss `openid` enthalten),
+   `KENNWORT_OIDC_GROUPS_CLAIM` (Vorgabe `groups`) und `KENNWORT_OIDC_NAME` (Beschriftung des
+   Knopfs). Der Issuer braucht TLS, außer auf dem eigenen Rechner (Tests). Das Client-Geheimnis
+   steht nie im Log und geht nie an einen Client.
+2. Discovery: Die Konfiguration muss genau den eingestellten Issuer nennen (Discovery §4.3), ihre
+   Adressen brauchen TLS. Der Server hält sie eine Stunde, die Schlüssel (JWKS) ebenso und fragt
+   bei einem unbekannten `kid` höchstens einmal in der Minute neu.
+3. `GET /auth/oidc/start`: Authorization Code mit PKCE (S256, RFC 7636), `state` und `nonce` (je 256
+   Bit). Der Server hält vom `state` nur einen Hash, Nonce und Verifier bei sich; der Browser bekommt
+   ein Cookie (`HttpOnly`, `SameSite=Lax`, nur `/auth/oidc`, zehn Minuten), dessen Hash zum Ablauf
+   passen muss. Ein Rückruf aus einem anderen Browser (Login-CSRF), ein zweiter Rückruf mit
+   demselben `state` und einer nach zehn Minuten finden nichts.
+4. `GET /auth/oidc/callback`: Der Server tauscht den Code mit dem Verifier ein (bei vertraulichem
+   Client mit `client_secret_basic`) und prüft das ID-Token nach Core §3.1.3.7: Signatur mit einem
+   Schlüssel aus dem JWKS, nur RS256, PS256, ES256 und EdDSA (nie `none`, nie HMAC, dessen Geheimnis
+   sonst der öffentliche Schlüssel wäre), der Schlüssel muss zu Algorithmus, `kid` und Zweck `sig`
+   passen, kein unbekanntes `crit`; dann `iss` genau, `aud` enthält die Client-ID, bei mehreren
+   Empfängern oder gesetztem `azp` muss `azp` die Client-ID sein, `exp` nicht abgelaufen, `iat`
+   nicht in der Zukunft und höchstens zehn Minuten alt (je 60 s Spiel), `nonce` genau die des
+   Ablaufs. WebCrypto prüft die Signatur; ein eigenes Verfahren gibt es nicht.
+5. Die Person ist **Issuer und `sub`**, nie eine Mail-Adresse und nie ein Name: Ein Konto wird nur
+   über ein gespeichertes Paar aus Issuer und `sub` gefunden (`oidc_identities`, eindeutig). Wer
+   dieselbe Mail-Adresse unter einem anderen `sub` hat, ist jemand anderes.
+6. Das Ergebnis geht als Einmal-Ticket (256 Bit, der Server hält nur einen Hash, 15 Minuten) im
+   Fragment einer Weiterleitung an `/oidc` der App (P-16: ein Anmeldeablauf über `/auth` endet mit
+   einer Weiterleitung). Die App nimmt das Fragment vor dem ersten Rendern aus Adresse und Verlauf,
+   wie bei Einladung und Einmal-Link.
+
+**Ein bestehendes Konto bekommt keine Sitzung vom Anmeldedienst.** Das Ticket nennt nur die
+Konto-ID; die App geht zum Entsperren, und das Konto meldet sich wie immer mit dem Schlüssel aus der
+Passphrase an ([P-02](#p-02-anmelden)). Ein gekaperter oder bösartiger Anmeldedienst kann so weder
+Geheimtexte abholen noch mit der Sitzung eines Admins Mitglieder entfernen. Verknüpft wird ein
+Konto nur aus einer eigenen Sitzung heraus (`POST /api/oidc/link`, dann derselbe Ablauf), einmal und
+nur mit einer Person, die noch keinem anderen Konto gehört.
+
+**Aufnahme neuer Personen**, wie eine Einladung ([P-08](#p-08-einladung)), nur ohne Geheimnis im
+Link, darum mit Codevergleich:
+
+1. Ein Inhaber oder Admin erlaubt sie für seine Firma (`PUT /api/oidc/enrolment`) und gibt den Link
+   zum Beitreten weiter (`/auth/oidc/start?company=<Firmen-ID>`; erlaubt nur eine Firma auf dem
+   Server die Aufnahme, geht es auch ohne). Ohne Erlaubnis bekommt eine unbekannte Person nichts.
+2. Für eine unbekannte Person nennt das Ticket den öffentlichen Wurzelschlüssel der Firma. Das Gerät
+   merkt ihn sich beim ersten Kontakt (TOFU), wählt Konto-ID, Secret Key und Passphrase selbst und
+   legt das Konto an wie ein Eingeladener ([P-01](#p-01-konto-anlegen)); zum Server gehen nur IDs,
+   der öffentliche Anmelde-Schlüssel und die Geheimtexte. Das Konto ist ein Mitglied ohne Zertifikat
+   und ohne Tresor; Inhaber und Admins bekommen die Mitteilung `member-enrolled`.
+3. Das Gerät zeigt zwei Codes (F-04, 60 Ziffern): den des eigenen Bündels und den des gemerkten
+   Wurzelschlüssels. Der Inhaber oder Admin sieht in der Mitgliederliste dieselben beiden („Code
+   vergleichen“) und vergleicht sie mit der Person, persönlich oder am Telefon. Erst dann
+   zertifiziert sein Client das Bündel, immer als Mitglied (`certifyEnrolled`), gleich welche Rolle
+   der Server nennt; das Bündel merkt er sich im Kontozustand wie bei einer Einladung, ein anderes
+   Bündel für dasselbe Konto lehnt er ab.
+
+Ein Bündel, das der Server oder der Anmeldedienst unterschiebt, hat einen anderen Code; ein
+Wurzelschlüssel, den der Server dem neuen Gerät unterschiebt, auch. Der Server markiert ein solches
+Konto in der Mitgliederliste (`oidc`); die Markierung wählt nur den Weg der Prüfung, sie ersetzt sie
+nicht.
+
+**Gruppen als Anfragen**: Bei jeder Anmeldung über den Anmeldedienst gleicht der Server die Gruppen
+des Kontos mit dem Claim ab. Eine Gruppe der Firma mit demselben Namen wie im Claim (ein führendes
+`/` von Keycloak fällt weg) tritt das Konto bei; das legt für jeden mit der Gruppe verknüpften Tresor
+nur eine Zugriffsanfrage an ([P-05](#p-05-tresor-anlegen-und-mitglieder-aufnehmen), Schritt 4), und
+die Verwalter bekommen `access-requested`. Zugriff gibt erst ein Verwalter mit seinem signierten
+Log-Eintrag und dem an das Zertifikat verpackten Tresor-Schlüssel. Nennt der Claim eine Gruppe nicht
+mehr, die der Anmeldedienst gegeben hat, verlässt das Konto sie: Anfragen, die sie gestellt hat,
+fallen weg, und die Verwalter der verknüpften Tresore, in denen die Person noch ist, bekommen
+`group-left`. Entfernen und den Schlüsselwechsel macht der Client eines Verwalters
+([P-11](#p-11-austritt-und-schlusselwechsel)); der Server kann es nicht. Gruppen, die ein Admin von
+Hand vergeben hat, rührt der Abgleich nicht an.
+
+Was der Server zusätzlich speichert: Issuer, `sub` und den Namen, den der Anmeldedienst nennt (eine
+Beschriftung wie die einer Einladung, sie bestätigt nichts), welche Firmen die Aufnahme erlauben,
+laufende Abläufe (Hashes, Nonce, Verifier, zehn Minuten) und Tickets (Hash, Gruppennamen, 15
+Minuten). Kein Token des Anmeldedienstes wird gespeichert.
+
+Restrisiko:
+
+- Ein bösartiger Anmeldedienst kann Konten anlegen lassen, die auf einen Codevergleich warten, und
+  Gruppen melden, die Anfragen auslösen. Beides braucht einen Menschen, der vergleicht oder freigibt.
+- Wer den Codevergleich überspringt, zertifiziert auch ein untergeschobenes Bündel; wie bei jedem
+  Vergleichscode schützt nur der Vergleich. Das TOFU des Wurzelschlüssels deckt der zweite Code ab
+  ([P-07](#p-07-firmen-wurzelschlussel-und-zertifikate), Restrisiko des ersten Kontakts).
+- Sperrt der Anmeldedienst jemanden, kommt die Person über ihre Passphrase weiter in Kennwort, bis
+  ein Admin sie aus der Firma entfernt (K-307). Eine Abmeldung beim Anmeldedienst entzieht nichts;
+  SCIM, das das melden würde, ist zurückgestellt (Bauliste).
+- Der Abgleich der Gruppen läuft nur, wenn sich die Person über den Anmeldedienst anmeldet.
+
+Umgesetzt in `apps/server/src/oidc/` (`settings.ts`, `provider.ts`, `jwt.ts`, `store.ts`,
+`callback.ts`, `routes.ts`, `api-routes.ts`, `groups.ts`), `apps/server/src/db/oidc-schema.ts`,
+`packages/core/src/auth/oidc.ts` (Schemas), `packages/core/src/membership/members.ts`
+(`enrolled`, `certifyEnrolled`), `packages/client/src/session/oidc-api.ts` und in der Web-App in
+`apps/web/src/oidc/` und `apps/web/src/members/enrolled.ts`. Getestet gegen einen nachgebauten
+Anmeldedienst (`apps/server/src/testing/fake-idp.ts`), auch in Playwright.
+
+**Wehrt ab:** E-02, E-03, E-06, E-27.
+
+### P-26 Deep Links
+
+Andere Apps verweisen auf einen Eintrag oder Tresor nur über offene Wege (K-604): die Adressen der
+App (`/vaults/<id>`, `/vaults/<id>/<eintrag>`, `/entries/<eintrag>`) und das Schema
+`web+kennwort:` (`protocol_handlers` im Manifest; der Browser gibt es an `/open?link=…`), später in
+der Mobile-App `kennwort:`. Ein Link trägt nur IDs (base64url, höchstens 64 Zeichen), nie ein
+Geheimnis; `/open` nimmt nur `vault/<id>`, `vault/<id>/entry/<id>` und `entry/<id>` und führt alles
+andere zu allen Einträgen. Ein Link öffnet nichts von selbst: Gesperrt zeigt die App das Entsperren,
+und danach nur, was das Konto lesen darf.
+
+Umgesetzt in `apps/web/src/deep-link.ts` und `apps/web/public/manifest.webmanifest`.
 
 **Wehrt ab:** E-14.

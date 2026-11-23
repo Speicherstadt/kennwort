@@ -136,6 +136,17 @@ describe("the fragment the app was opened with", () => {
     expect(nav.route()).toEqual({ page: "secret", id: "AQEBAQEBAQEBAQEBAQEBAQ" });
   });
 
+  it("leaves the address and the history at once on the identity provider's ticket (K-604)", async () => {
+    const nav = openAt("/oidc#ticket=T1CK3T");
+    expect(takeStartFragment(nav, window)).toBe("#ticket=T1CK3T");
+    expect(address()).toBe("/oidc");
+    expect(remembered()).not.toContain("T1CK3T");
+    await app?.router.load();
+    flush();
+    expect(remembered()).not.toContain("T1CK3T");
+    expect(nav.route()).toEqual({ page: "oidc" });
+  });
+
   it("stays anywhere else", () => {
     const nav = openAt("/entries#x");
     expect(takeStartFragment(nav, window)).toBe("#x");
@@ -155,6 +166,7 @@ describe("a fragment that arrives while the app is open", () => {
       ["/unlock", "unlock"],
       ["/invite/abc", "invite"],
       ["/s/AQEBAQEBAQEBAQEBAQEBAQ", "secret"],
+      ["/oidc", "oidc"],
     ] as const) {
       const nav = openAt(path);
       const taken: unknown[] = [];

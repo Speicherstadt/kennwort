@@ -26,6 +26,7 @@ import {
   entryShares,
   groupMembers,
   invitations,
+  oidcIdentities,
   recoveryDeposits,
   recoveryGrants,
   rootGrants,
@@ -67,18 +68,29 @@ const membersOf = (db: Db, companyId: string, me: string) => {
       .map((row) => [row.accountId, row]),
   );
   const previous = supersededOf(db, ids);
+  // Enrolled through the identity provider (K-604): the admin's client compares a code instead
+  const linked = new Map(
+    db
+      .select({ id: oidcIdentities.accountId, name: oidcIdentities.name })
+      .from(oidcIdentities)
+      .where(inArray(oidcIdentities.accountId, ids))
+      .all()
+      .map((row) => [row.id, row.name]),
+  );
   return rows.map((row) => {
     const key = keys.get(row.id);
     return {
       id: row.id,
       role: row.role,
-      name: invited.get(row.id)?.label ?? null,
+      // The inviter's label, else the provider's name for the person (K-604); a label, never trust
+      name: invited.get(row.id)?.label ?? linked.get(row.id) ?? null,
       xwingPublicKey: key ? encodeBytes(key.xwingPublicKey) : null,
       edPublicKey: key ? encodeBytes(key.edPublicKey) : null,
       certificate: key?.certificate ? JSON.parse(key.certificate) : null,
       invitation: pending(me, key, invited.get(row.id)),
       leftAt: row.leftAt,
       previous: previous.get(row.id) ?? [],
+      oidc: linked.has(row.id),
     };
   });
 };

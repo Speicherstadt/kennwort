@@ -32,6 +32,8 @@ describe("routes", () => {
       ["/recover-company", { page: "recover-company" }],
       ["/pair", { page: "pair" }],
       ["/link", { page: "link" }],
+      ["/oidc", { page: "oidc" }],
+      ["/open", { page: "open" }],
       ["/invite/abc%2Fd", { page: "invite", id: "abc/d" }],
       ["/links", { page: "links" }],
       ["/notifications", { page: "notifications" }],

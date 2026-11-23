@@ -8,6 +8,7 @@ import { migrate, openDatabase } from "../db/database.ts";
 import { accounts, companies } from "../db/schema.ts";
 import { createLog, type Log } from "../log.ts";
 import type { PushDeps } from "../notifications/push.ts";
+import type { Provider } from "../oidc/provider.ts";
 
 export const SECRET = "test-secret-of-at-least-thirty-two-chars";
 
@@ -30,6 +31,8 @@ export const signInSetup = async (
     log?: Log;
     /** Web Push with a fake push service (K-602) */
     push?: PushDeps;
+    /** Sign-in with OpenID Connect against a provider such as testing/fake-idp.ts (K-604) */
+    oidc?: (now: () => number) => Provider;
   } = {},
 ) => {
   const db = openDatabase(":memory:");
@@ -46,6 +49,7 @@ export const signInSetup = async (
     allow: rateLimiter(options.rateLimit ?? 1000, 60_000, clock.now),
     address: clientAddress(options.behindProxy ?? false),
     setupCode: options.setupCode,
+    oidc: options.oidc ? { provider: options.oidc(clock.now), publicUrl: origin } : undefined,
   };
   const app = createApp({
     db,

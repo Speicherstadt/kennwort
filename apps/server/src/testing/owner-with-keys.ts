@@ -13,8 +13,9 @@ export const ownerWithKeys = async (
   passphrase: string,
   uploadKeys = true,
   apiClock = false,
+  more: Parameters<typeof signInSetup>[0] = {},
 ) => {
-  const setup = await signInSetup({ setupCode: code, empty: true, apiClock });
+  const setup = await signInSetup({ ...more, setupCode: code, empty: true, apiClock });
   const company = createCompany(passphrase, { derive: quick });
   const { owner } = company;
   const response = await setup.request("/auth/setup", {

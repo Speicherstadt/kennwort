@@ -31,6 +31,7 @@ describe("the query cache", () => {
       "members",
       "notifications",
       "notification-prefs",
+      "oidc",
       "policy",
       "recovery",
     ]);

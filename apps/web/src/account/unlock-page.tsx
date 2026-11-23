@@ -6,6 +6,7 @@ import { parseSecretKey } from "@kennwort/crypto";
 import { Button, Input, m } from "@kennwort/ui";
 import { createSignal, Show } from "solid-js";
 import type { Navigation } from "../navigation.ts";
+import { OidcSignIn } from "../oidc/sign-in-button.tsx";
 import type { Session } from "../session/session.ts";
 import { Card, errorText } from "./form.tsx";
 
@@ -24,6 +25,8 @@ export const UnlockPage = (props: {
   session: Session;
   link?: DeviceLink | undefined;
   onUnlocked?: () => void;
+  /** The identity provider's name, when the server has one (K-604) */
+  oidc?: string | undefined;
 }) => {
   const [passphrase, setPassphrase] = createSignal("");
   const [accountId, setAccountId] = createSignal(props.link?.accountId ?? "");
@@ -80,12 +83,18 @@ export const UnlockPage = (props: {
         <Button variant="ghost" class="w-fit" onClick={() => props.nav.go("/recover-company")}>
           {m.recovery_start()}
         </Button>
+        <OidcSignIn name={props.oidc} />
       </div>
     </Card>
   );
 };
 
-export const WelcomePage = (props: { nav: Navigation; onUnlock: () => void }) => (
+export const WelcomePage = (props: {
+  nav: Navigation;
+  onUnlock: () => void;
+  /** The identity provider's name, when the server has one (K-604) */
+  oidc?: string | undefined;
+}) => (
   <Card title={m.welcome_title()}>
     <p class="text-[13px] text-muted-foreground">{m.welcome_text()}</p>
     <div class="flex flex-wrap gap-2">
@@ -94,6 +103,7 @@ export const WelcomePage = (props: { nav: Navigation; onUnlock: () => void }) =>
       </Button>
       <Button onClick={() => props.nav.go("/pair")}>{m.welcome_pair()}</Button>
       <Button onClick={() => props.onUnlock()}>{m.unlock_other()}</Button>
+      <OidcSignIn name={props.oidc} />
     </div>
     <Button variant="ghost" class="w-fit" onClick={() => props.nav.go("/recover-company")}>
       {m.recovery_start()}

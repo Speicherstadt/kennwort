@@ -504,8 +504,35 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   und nach dem Einschalten ein geleaktes Passwort, „Jetzt ändern“ öffnet die well-known-Adresse,
   der Bericht verschwindet nach „Gelesen“ auch nach dem Neuladen. Zustellung des Berichts per Push
   oder Mail kommt mit K-602.
-- [ ] **K-604 OpenID Connect und SCIM** – allgemeiner OIDC-Client mit groups-Claim, Gruppenwechsel
+- [x] **K-604 OpenID Connect und SCIM** – allgemeiner OIDC-Client mit groups-Claim, Gruppenwechsel
   als Anfrage, optional SCIM, Deep Links.
+  Fertig, wenn: der Server mit `KENNWORT_OIDC_*` einen Anmeldedienst per Discovery anspricht (der
+  Issuer muss genau passen, TLS außer auf dem eigenen Rechner), mit Authorization Code, PKCE (S256),
+  `state`, `nonce` und einem Cookie gegen Login-CSRF anmeldet und das ID-Token mit WebCrypto prüft
+  (nur RS256, PS256, ES256, EdDSA; `iss`, `aud`, `azp`, `exp`, `iat`, `nonce`, Schlüssel aus dem
+  JWKS nach `kid`, einmal neu geladen), ohne neues Paket; falscher Issuer, falsche Audience,
+  abgelaufenes Token, falsche Nonce, `none`, HS256 mit dem öffentlichen Schlüssel, unbekannter
+  `kid`, falsche Signatur, fremdes oder fehlendes Cookie, wiederholter Rückruf und wiederholter Code
+  scheitern (Server-Tests gegen einen nachgebauten Anmeldedienst); ein Konto nur über Issuer und
+  `sub` gefunden und nur aus der eigenen Sitzung verknüpft wird, nie über die Mail-Adresse; ein
+  bestehendes Konto vom Anmeldedienst keine Sitzung bekommt, nur seine ID, und weiter mit der
+  Passphrase entsperrt; eine unbekannte Person nur in einer Firma, deren Inhaber oder Admin es
+  erlaubt hat, ein Konto als Mitglied ohne Zertifikat und ohne Tresor anlegt (Wurzelschlüssel beim
+  ersten Kontakt, Inhaber und Admins bekommen `member-enrolled`) und erst nach dem Vergleich zweier
+  Codes (Bündel und Firma) als Mitglied zertifiziert wird (`certifyEnrolled`, Mutation-Tests der
+  geänderten Dateien in `packages/core` bei 100 %); eine Gruppe gleichen Namens im groups-Claim
+  (Name des Claims einstellbar) nur Zugriffsanfragen mit `access-requested` an die Verwalter
+  anlegt, eine nicht mehr genannte Gruppe ihre Anfragen zurücknimmt und den Verwaltern eines Tresors,
+  in dem die Person noch ist, `group-left` meldet, und von Hand vergebene Gruppen bleiben; ein Test
+  des bösartigen Anmeldedienstes zeigt, dass eine gemeldete Gruppe keinen Tresor, kein Log und keinen
+  Schlüssel gibt; `/open` Deep Links `web+kennwort:` (`protocol_handlers`) nur mit IDs auf Tresor und
+  Eintrag führt; Einstellungen → Anmeldedienst Verknüpfen, Aufnahme, Link zum Beitreten und die
+  Gruppen zeigt, auf Deutsch und Englisch; P-25 und P-26 im Sicherheitsdesign, Entscheidungen im
+  Projektplan, eine Seite für Nutzer und Betreiber mit Keycloak, Authentik und Entra ID; Playwright
+  desktop und `@phone` mit dem nachgebauten Anmeldedienst: Sandra tritt über den Link bei, Jonas
+  bestätigt sie erst nach dem Codevergleich, eine später gemeldete Gruppe erscheint bei Jonas als
+  Anfrage, und ein Deep Link öffnet einen Tresor erst nach dem Entsperren. SCIM ist zurückgestellt
+  (unten).
 - [ ] **K-605 Handwerk und IT-Dienstleister** – QR-Etiketten, Übergabe an den Kunden, mehrere Firmen
   in einem Konto.
 - [ ] **K-606 CLI** – Anmelden, Suchen, Lesen per Bestätigung, `bun build --compile`.
@@ -548,6 +575,15 @@ Punkte, die dreimal gescheitert sind, mit Grund; der Loop kommt am Ende auf sie 
   Wieder aufnehmen mit einer Kontaktadresse je Konto (etwa aus OpenID Connect, K-604): dann
   `KENNWORT_SMTP_*`, aus und nur mit einem festen Text und einem Link zur App, und `mail` als
   zweiter Kanal neben `push` in den Einstellungen.
+
+- **K-604 SCIM** – nicht gescheitert, aber bewusst ausgelassen: Mit Ende-zu-Ende-Verschlüsselung
+  kann der Server ein Konto weder wirklich anlegen (die Schlüssel macht das Gerät) noch entfernen
+  (den Schlüsselwechsel macht der Client eines Verwalters, K-307). SCIM (RFC 7643/7644) brächte
+  Tokens je Firma, eine zweite Schnittstelle, über die Konten entstehen, und am Ende nur Markierungen,
+  die ein Admin ohnehin selbst ausführt. Wieder aufnehmen, wenn ein Betrieb es braucht: `/scim/v2`
+  mit `Users` und `Groups`, Bearer-Token je Firma (nur als Hash gespeichert), Gruppen wie beim
+  groups-Claim als Anfragen und `active=false` als Markierung „aus der Firma entfernen“ mit Mitteilung
+  an Inhaber und Admins.
 
 ## Schritte für Menschen
 
