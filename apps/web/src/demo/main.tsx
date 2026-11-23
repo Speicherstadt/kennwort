@@ -19,7 +19,7 @@ import { createAppRouter } from "../router.ts";
 import { rememberDevice } from "../session/device.ts";
 import { createSession, type Session } from "../session/session.ts";
 import { applyTheme, readTheme } from "../theme.ts";
-import { DemoBanner } from "./demo-banner.tsx";
+import { DemoBanner, DemoUnavailable } from "./demo-banner.tsx";
 import { demoFetch } from "./demo-fetch.ts";
 import { seedDemo } from "./seed.ts";
 
@@ -35,11 +35,11 @@ const tabStorage = () => {
 
 type Ready = { session: Session; api: ReturnType<typeof createApi> };
 
-const start = async (): Promise<Ready> => {
+const start = async (onUnavailable: () => void): Promise<Ready> => {
   const seeded = await seedDemo();
   const storage = tabStorage();
   rememberDevice(storage, seeded.accountId, seeded.secretKey);
-  const api = createApi(demoFetch(seeded.store));
+  const api = createApi(demoFetch(seeded.store, onUnavailable));
   return { session: createSession({ api, storage }), api };
 };
 
@@ -50,11 +50,13 @@ if (root) {
   // Addresses stay in memory: GitHub Pages knows only /demo/, and a reload starts over anyway
   const nav = createNavigation(window, createAppRouter(createMemoryHistory()));
   const [ready, setReady] = createSignal<Ready | "failed">();
-  start().then(setReady, () => setReady("failed"));
+  const [unavailable, setUnavailable] = createSignal(false);
+  start(() => setUnavailable(true)).then(setReady, () => setReady("failed"));
   render(
     () => (
       <>
         <DemoBanner />
+        <DemoUnavailable shown={unavailable()} onClose={() => setUnavailable(false)} />
         <div class="demo-app">
           <Switch fallback={<p class="p-6 text-sm text-muted-foreground">{m.demo_preparing()}</p>}>
             <Match when={ready() === "failed"}>

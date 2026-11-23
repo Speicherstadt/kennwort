@@ -7,6 +7,7 @@
 import { bytes, encodeBytes } from "@kennwort/core";
 import { randomBytes, verify } from "@kennwort/crypto";
 import { type DemoAccount, type DemoStore, membersOfLog, type WireLogEntry } from "./demo-store.ts";
+import { teamRoutes } from "./demo-team-routes.ts";
 
 export type Answer = { status: number; json: unknown };
 export type Request = {
@@ -16,8 +17,8 @@ export type Request = {
   /** The account the bearer token names, if any */
   caller: string | undefined;
 };
-type Handler = (request: Request) => Answer;
-type Route = { method: string; pattern: RegExp; handler: Handler; open?: boolean };
+export type Handler = (request: Request) => Answer;
+export type Route = { method: string; pattern: RegExp; handler: Handler; open?: boolean };
 
 const answer = (status: number, json: unknown = {}): Answer => ({ status, json });
 const text = (value: unknown) => (typeof value === "string" ? value : "");
@@ -253,9 +254,13 @@ const routes: Route[] = [
   { method: "PUT", pattern: new RegExp(`^/api/vaults/${ID}/name$`), handler: renameVault },
   { method: "GET", pattern: new RegExp(`^/api/vaults/${ID}/records$`), handler: pullRecords },
   { method: "PUT", pattern: new RegExp(`^/api/vaults/${ID}/records$`), handler: pushRecord },
+  ...teamRoutes,
 ];
 
-/** The answer of the stand-in; what the demo does not offer is "not-found", as on a real server */
+/**
+ * The answer of the stand-in. A write the demo does not offer answers 501 "demo-unavailable", so
+ * the demo can say so instead of failing silently (demo-fetch.ts)
+ */
 export const route = (
   store: DemoStore,
   method: string,
@@ -270,5 +275,8 @@ export const route = (
     if (!open && !caller) return answer(401, { error: "unauthorized" });
     return handler({ store, params: match.slice(1), body, caller });
   }
-  return answer(404, { error: "not-found" });
+  // A read stays "not-found" as on a real server: some clients take that for "none yet"
+  return method === "GET"
+    ? answer(404, { error: "not-found" })
+    : answer(501, { error: "demo-unavailable" });
 };

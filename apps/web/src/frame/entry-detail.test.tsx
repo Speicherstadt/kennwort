@@ -7,6 +7,15 @@ import { EntryDetail } from "./entry-detail.tsx";
 
 // K-305 part 6b (P-10): "Teilen" works for who may edit the entry's vault, never for a reader or
 // on an entry someone shared with this account, which says who shared it instead of its vault
+// happy-dom has no Popover API; Playwright checks the real one. „Teilen“ and „Einmal-Link“ sit in
+// the ⋯ menu, which hides itself when an item is chosen
+HTMLElement.prototype.showPopover ??= function (this: HTMLElement) {
+  this.dataset.open = "";
+};
+HTMLElement.prototype.hidePopover ??= function (this: HTMLElement) {
+  delete this.dataset.open;
+};
+
 let dispose = () => {};
 afterEach(() => {
   dispose();
@@ -48,11 +57,20 @@ const shownIn = (found: ShownEntry, onShare: (e: ShownEntry) => void) => {
   return { root, button };
 };
 
+/** Opens the ⋯ menu as a person does, before choosing an item in it */
+const openMore = () => {
+  const more = document.querySelector<HTMLButtonElement>('[aria-haspopup="menu"]');
+  expect(more).not.toBeNull();
+  more?.click();
+  document.getElementById(more?.getAttribute("popovertarget") ?? "")?.showPopover();
+};
+
 describe("entry detail: sharing", () => {
   it("opens sharing for an entry of a vault this account may edit", () => {
     const asked: string[] = [];
     const { button } = shownIn(entry("edit"), (e) => asked.push(e.id));
     expect(button?.disabled).toBe(false);
+    openMore();
     button?.click();
     expect(asked).toEqual(["e1"]);
   });
