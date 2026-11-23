@@ -16,9 +16,7 @@ import {
   Lock,
   Plus,
   RefreshCw,
-  ShieldCheck,
   ShieldUser,
-  Users,
 } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { createMemo, createSignal, createUniqueId, For, Show } from "solid-js";
@@ -30,12 +28,9 @@ export type SettingsProps = {
   onLock: () => void;
   onLocale: (locale: Locale) => void;
   onAddDevice: () => void;
-  /** The team page (members, groups, vaults), moved out of the settings */
-  onTeam?: (() => void) | undefined;
   onImport?: (() => void) | undefined;
   onExport?: (() => void) | undefined;
   onEmergency?: (() => void) | undefined;
-  onSecurity?: (() => void) | undefined;
   onRenew?: (() => void) | undefined;
   onCompanies?: (() => void) | undefined;
   onPrivacy?: (() => void) | undefined;
@@ -199,18 +194,6 @@ const groups = (props: SettingsProps) => ({
       help: m.settings_companies_help(),
       icon: Building2,
       open: props.onCompanies,
-    },
-    {
-      label: m.settings_team(),
-      help: m.settings_team_help(),
-      icon: Users,
-      open: props.onTeam,
-    },
-    {
-      label: m.nav_security(),
-      help: m.settings_security_help(),
-      icon: ShieldCheck,
-      open: props.onSecurity,
     },
   ],
   data: [

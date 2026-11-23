@@ -93,17 +93,12 @@ describe("App frame", () => {
     expect(open("/entries/unknown").textContent).toContain("Diesen Eintrag gibt es hier nicht.");
   });
 
-  it("opens the team page from the settings, on the members where the app gives them", () => {
+  it("keeps Team and Sicherheit out of the settings, which have their own places", () => {
     const root = open("/settings", "de", () => <h1>Mitglieder-Seite</h1>);
-    const toTeam = [...root.querySelectorAll("button")].find((b) =>
-      b.textContent?.includes("Team"),
-    );
-    expect(
-      [...root.querySelectorAll("button")].some((b) => b.textContent?.includes("Mitglieder")),
-    ).toBe(false);
-    click(toTeam);
-    expect(window.location.pathname).toBe("/team");
-    expect(heading(root)).toBe("Mitglieder-Seite");
+    const buttons = [...root.querySelectorAll("button")].map((b) => b.textContent ?? "");
+    expect(buttons.some((t) => /Team|Mitglieder|Sicherheit/.test(t))).toBe(false);
+    dispose();
+    expect(heading(open("/team", "de", () => <h1>Mitglieder-Seite</h1>))).toBe("Mitglieder-Seite");
     // The old address lands on the same tab
     dispose();
     expect(heading(open("/members", "de", () => <h1>Mitglieder-Seite</h1>))).toBe(
