@@ -3,11 +3,10 @@
 # dark, at deviceScaleFactor 2, and the extension's popup at 360 × 600; turns them into WebP under
 # docs/assets/screenshots/. Only by hand (Actions → Update screenshots → Run workflow), never in CI.
 #
-# Never onto main: the workflow commits to the branch screenshots/update and opens (or updates) a
-# pull request with GITHUB_TOKEN, so a person looks at the pictures before they are merged. The
-# pictures are also uploaded as an artifact. Pull requests opened with GITHUB_TOKEN start no other
-# workflows; push an empty commit to the branch or close and reopen the pull request to run CI.
-# Prerequisite: Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests".
+# Like Haben (firsttris/workflows screenshots.yml): the workflow commits the changed pictures straight
+# to main as "Screenshots erneuert". The ruleset on main refuses pushes with GITHUB_TOKEN; the deploy
+# key BUMP_DEPLOY_KEY is on its bypass list, and a push with it starts CI on main. The pictures are
+# also uploaded as an artifact.
 name: Update screenshots
 
 on:
@@ -25,12 +24,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      contents: write
-      pull-requests: write
-    env:
-      BRANCH: screenshots/update
+      contents: read
     steps:
       - uses: actions/checkout@v7
+        with:
+          ssh-key: ${{ secrets.BUMP_DEPLOY_KEY }}
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
@@ -51,9 +49,7 @@ jobs:
         with:
           name: screenshots
           path: docs/assets/screenshots/
-      - name: Commit to screenshots/update and open a pull request
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Commit to main
         run: |
           if git diff --quiet -- docs/assets/screenshots && \
              test -z "$(git ls-files --others --exclude-standard docs/assets/screenshots)"; then
@@ -62,13 +58,6 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898+github-actions[bot]@users.noreply.github.com"
-          git switch -C "$BRANCH"
           git add docs/assets/screenshots
-          git commit -m "Update screenshots" -m "Taken by the workflow Update screenshots from ${GITHUB_SHA}."
-          # The branch belongs to this workflow alone: it starts again from the current main each run
-          git push --force origin "HEAD:refs/heads/$BRANCH"
-          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]; then
-            gh pr create --base "${{ github.event.repository.default_branch }}" --head "$BRANCH" \
-              --title "Update screenshots" \
-              --body "Neue Screenshots aus dem Workflow „Update screenshots“ (${GITHUB_SHA}). Bitte die Bilder ansehen, bevor du mergst."
-          fi
+          git commit -m "Screenshots erneuert" -m "Taken by the workflow Update screenshots from ${GITHUB_SHA}."
+          git push origin "HEAD:${{ github.event.repository.default_branch }}"
