@@ -50,7 +50,7 @@ export const LabelDialog = (props: {
   const link = () => labelLink(props.origin, props.entry.vault, props.entry.id);
   return (
     <Dialog open onClose={props.onClose} title={m.label_title()} description={m.label_intro()}>
-      <div class="grid gap-3 p-4 pt-2">
+      <div class="grid gap-3 p-4 pt-2 sm:grid-cols-2">
         <Input
           label={m.label_caption()}
           value={text()}
@@ -78,15 +78,19 @@ export const LabelDialog = (props: {
         </div>
         <Show
           when={link()}
-          fallback={<p class="text-[13px] text-danger">{m.label_unavailable()}</p>}
+          fallback={<p class="text-[13px] text-danger sm:col-span-2">{m.label_unavailable()}</p>}
         >
           {(shown) => (
             <>
-              <div class="overflow-auto rounded-lg border border-border bg-muted p-3">
+              <div class="grid place-items-center overflow-auto rounded-lg border border-dashed border-border bg-muted p-6 sm:col-span-2">
                 <LabelView link={shown()} caption={text()} size={size()} />
               </div>
-              <p class="text-xs text-muted-foreground">{m.label_no_secret()}</p>
-              <Button variant="primary" class="w-fit" onClick={() => (props.print ?? print)()}>
+              <p class="text-xs text-muted-foreground sm:col-span-2">{m.label_no_secret()}</p>
+              <Button
+                variant="primary"
+                class="w-fit justify-self-end sm:col-span-2"
+                onClick={() => (props.print ?? print)()}
+              >
                 <Icon icon={Printer} /> {m.label_print()}
               </Button>
               {/* What the printer gets: the label alone, outside the app (label.css) */}

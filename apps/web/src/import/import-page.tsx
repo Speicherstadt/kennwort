@@ -10,7 +10,7 @@
  */
 import type { ImportWrite } from "@kennwort/client/entries/entry-import.ts";
 import { type Columns, csvColumns, type ImportedEntry, type ImportResult } from "@kennwort/core";
-import { m, pageClass } from "@kennwort/ui";
+import { introClass, m, pageClass } from "@kennwort/ui";
 import { createSignal, Match, onCleanup, Switch } from "solid-js";
 import type { Navigation } from "../navigation.ts";
 import { DoneStep, PreviewStep, ProgressStep, type TargetVault } from "./import-preview.tsx";
@@ -180,10 +180,10 @@ export const ImportPage = (props: { nav: Navigation; deps: ImportDeps }) => {
     createImportFlow(() => props.deps.save());
   return (
     <section aria-labelledby="page-title" class={pageClass()}>
-      <h1 id="page-title" class="mb-2 text-[28px] font-semibold md:text-lg">
+      <h1 id="page-title" class="mb-1 text-[28px] font-semibold md:text-lg">
         {m.import_title()}
       </h1>
-      <p class="mb-4 max-w-xl text-muted-foreground">{m.import_intro()}</p>
+      <p class={introClass}>{m.import_intro()}</p>
       <Switch>
         <Match when={at(step(), "vendor")}>
           <VendorStep

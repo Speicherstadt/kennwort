@@ -17,9 +17,10 @@ import { type OpenedVault, openReleased } from "@kennwort/client/emergency/open.
 import type { RecoveryApi } from "@kennwort/client/session/recovery-api.ts";
 import type { Vault } from "@kennwort/client/vaults/vaults.ts";
 import { encodeBytes } from "@kennwort/core";
-import { m, pageClass, type Toasts } from "@kennwort/ui";
+import { introClass, m, pageClass, type Toasts } from "@kennwort/ui";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, Loading, Show } from "solid-js";
+import { alertClass } from "../blocks/blocks.tsx";
 import { queryKeys } from "../queries.ts";
 import type { Opened, Session } from "../session/session.ts";
 import { emergencyQuery } from "./emergency.ts";
@@ -28,7 +29,6 @@ import { GivenList, ReceivedList } from "./grant-lists.tsx";
 
 export type EmergencyPageApi = EmergencyDeps & RecoveryApi;
 
-const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
 const seconds = () => Math.floor(Date.now() / 1000);
 const keyOf = (received: Received) => encodeBytes(received.grant.grantor);
 
@@ -81,11 +81,11 @@ export const EmergencyPage = (props: {
     );
   };
   return (
-    <section aria-labelledby="page-title" class={pageClass()}>
-      <h1 id="page-title" class="mb-4 text-[28px] font-semibold md:text-lg">
+    <section aria-labelledby="page-title" class={pageClass("wide")}>
+      <h1 id="page-title" class="mb-1 text-[28px] font-semibold md:text-lg">
         {m.emergency_title()}
       </h1>
-      <p class="mb-4 max-w-prose text-muted-foreground">{m.emergency_intro()}</p>
+      <p class={introClass}>{m.emergency_intro()}</p>
       <Loading>
         <Show when={problem() ?? (overview.data === null ? m.emergency_load_failed() : undefined)}>
           {(text) => (
@@ -96,25 +96,27 @@ export const EmergencyPage = (props: {
         </Show>
         <Show when={overview.data}>
           {(shown) => (
-            <div class="grid max-w-2xl gap-6">
-              <ReceivedList
-                received={shown().received}
-                now={seconds()}
-                busy={busy()}
-                opened={(key) => opened()[key]}
-                keyOf={keyOf}
-                toasts={props.toasts}
-                onRequest={(r) => run((a) => requestAccess(props.api, a, r.grant))}
-                onOpen={open}
-              />
-              <GivenList
-                given={shown().given}
-                now={seconds()}
-                busy={busy()}
-                onObject={(g) => run((a) => objectTo(props.api, a, g))}
-                onApprove={(g) => run((a) => approveEarly(props.api, a, g))}
-                onRevoke={(g) => run((a) => revoke(props.api, a, g.grant))}
-              />
+            <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+              <div class="grid gap-6">
+                <ReceivedList
+                  received={shown().received}
+                  now={seconds()}
+                  busy={busy()}
+                  opened={(key) => opened()[key]}
+                  keyOf={keyOf}
+                  toasts={props.toasts}
+                  onRequest={(r) => run((a) => requestAccess(props.api, a, r.grant))}
+                  onOpen={open}
+                />
+                <GivenList
+                  given={shown().given}
+                  now={seconds()}
+                  busy={busy()}
+                  onObject={(g) => run((a) => objectTo(props.api, a, g))}
+                  onApprove={(g) => run((a) => approveEarly(props.api, a, g))}
+                  onRevoke={(g) => run((a) => revoke(props.api, a, g.grant))}
+                />
+              </div>
               <GiveForm
                 people={colleagues()}
                 vaults={props.vaults() ?? []}

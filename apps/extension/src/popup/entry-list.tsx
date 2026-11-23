@@ -25,9 +25,9 @@ const CopyButton = (props: {
 );
 
 const EntryRow = (props: { entry: ShownEntry; toasts: Toasts }) => (
-  <li class="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent">
-    <span class="grid size-7 shrink-0 place-items-center rounded-md border border-border">
-      <Icon icon={entryIcon[props.entry.type]} size={14} />
+  <li class="flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-accent">
+    <span class="grid size-8 shrink-0 place-items-center rounded-lg border border-border bg-background">
+      <Icon icon={entryIcon[props.entry.type]} size={15} />
     </span>
     <span class="grid min-w-0 flex-1">
       <span class="flex items-center gap-1 truncate text-[13px] font-medium">
@@ -81,7 +81,11 @@ export const EntrySection = (props: {
       </h2>
       <Show
         when={props.entries.length > 0}
-        fallback={<p class="px-2 text-xs text-muted-foreground">{props.empty}</p>}
+        fallback={
+          <p class="mx-2 rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
+            {props.empty}
+          </p>
+        }
       >
         <ul class="grid gap-0.5">
           <For each={props.entries}>

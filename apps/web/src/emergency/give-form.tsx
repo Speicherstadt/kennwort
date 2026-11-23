@@ -5,7 +5,7 @@
 import type { Terms } from "@kennwort/client/emergency/emergency.ts";
 import type { Vault } from "@kennwort/client/vaults/vaults.ts";
 import { encodeBytes, type MemberView } from "@kennwort/core";
-import { Button, m, selectClass } from "@kennwort/ui";
+import { Button, m, panelClass, panelTitleClass, selectClass } from "@kennwort/ui";
 import { createSignal, For, Show } from "solid-js";
 import { DAY_SECONDS, DEFAULT_WAIT_DAYS, WAIT_DAYS } from "./emergency.ts";
 
@@ -35,8 +35,8 @@ export const GiveForm = (props: {
     props.onGive({ granteeId: grantee.accountId, terms });
   };
   return (
-    <form class="grid max-w-md gap-3" onSubmit={submit} aria-labelledby="emergency-give-title">
-      <h2 id="emergency-give-title" class="font-semibold">
+    <form class={panelClass} onSubmit={submit} aria-labelledby="emergency-give-title">
+      <h2 id="emergency-give-title" class={panelTitleClass}>
         {m.emergency_give_title()}
       </h2>
       <label class="grid gap-1.5 text-xs font-medium">
@@ -105,7 +105,7 @@ export const GiveForm = (props: {
       <p class="text-xs text-muted-foreground">
         {scope() === "full" ? m.emergency_full_hint() : m.emergency_view_hint()}
       </p>
-      <Button type="submit" class="w-fit" disabled={props.busy || !ready()}>
+      <Button type="submit" variant="primary" class="w-fit" disabled={props.busy || !ready()}>
         {m.emergency_give()}
       </Button>
     </form>

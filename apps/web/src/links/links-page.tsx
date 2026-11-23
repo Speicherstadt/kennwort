@@ -10,8 +10,21 @@ import {
   type LinkSummary,
   linkContentOfText,
 } from "@kennwort/core";
-import { Button, Input, m, pageClass, TextArea } from "@kennwort/ui";
+import {
+  Badge,
+  Button,
+  Icon,
+  Input,
+  introClass,
+  m,
+  pageClass,
+  panelClass,
+  panelTitleClass,
+  TextArea,
+} from "@kennwort/ui";
+import { Link2 } from "@kennwort/ui/icons";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { alertClass, EmptyState } from "../blocks/blocks.tsx";
 import { dateTime, LinkOptionsForm, MadeLinkView, makeErrorText } from "./link-form.tsx";
 import { type LinkOptions, type MadeLink, type MakeError, makeLink } from "./links.ts";
 
@@ -21,18 +34,25 @@ export type LinksPageDeps = {
   origin: string;
 };
 
-const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
-
 const LinkRow = (props: { link: LinkSummary; busy: boolean; onRevoke: () => void }) => (
-  <li class="flex flex-wrap items-center gap-2 px-3 py-2">
-    <span class="grid flex-1 gap-0.5">
-      <span>{m.links_created({ date: dateTime(props.link.createdAt) })}</span>
-      <span class="text-xs text-muted-foreground">
-        {m.links_left({ remaining: props.link.remaining, max: props.link.maxFetches })} ·{" "}
+  <li class="flex flex-wrap items-center gap-3 px-4 py-3">
+    <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-muted-foreground">
+      <Icon icon={Link2} />
+    </span>
+    <span class="grid min-w-0 flex-1 gap-1">
+      <span class="text-[13px] font-medium">
+        {m.links_created({ date: dateTime(props.link.createdAt) })}
+      </span>
+      <span class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <Badge>
+          {m.links_left({ remaining: props.link.remaining, max: props.link.maxFetches })}
+        </Badge>
         {m.links_until({ date: dateTime(props.link.expiresAt) })}
       </span>
     </span>
     <Button
+      variant="ghost"
+      class="text-danger"
       aria-label={m.links_revoke_of({ date: dateTime(props.link.createdAt) })}
       disabled={props.busy}
       onClick={props.onRevoke}
@@ -116,15 +136,22 @@ export const LinksPage = (props: { deps: LinksPageDeps }) => {
     setBusy(false);
   };
   return (
-    <section aria-labelledby="page-title" class={pageClass()}>
-      <h1 id="page-title" class="mb-2 text-[28px] font-semibold md:text-lg">
+    <section aria-labelledby="page-title" class={pageClass("wide")}>
+      <h1 id="page-title" class="mb-1 text-[28px] font-semibold md:text-lg">
         {m.links_title()}
       </h1>
-      <p class="mb-4 max-w-md text-[13px] text-muted-foreground">{m.links_intro()}</p>
-      <div class="grid max-w-md gap-6">
-        <TextLinkForm deps={props.deps} onMade={() => void reload()} />
-        <div class="grid gap-2">
-          <h2 class="text-sm font-semibold">{m.links_active()}</h2>
+      <p class={introClass}>{m.links_intro()}</p>
+      <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
+        <section class={panelClass} aria-labelledby="links-new-title">
+          <h2 id="links-new-title" class={panelTitleClass}>
+            {m.links_new_title()}
+          </h2>
+          <TextLinkForm deps={props.deps} onMade={() => void reload()} />
+        </section>
+        <section class="grid gap-3" aria-labelledby="links-active-title">
+          <h2 id="links-active-title" class={panelTitleClass}>
+            {m.links_active()}
+          </h2>
           <Show when={failed()}>
             <p role="alert" class={alertClass}>
               {m.links_failed()}
@@ -132,11 +159,11 @@ export const LinksPage = (props: { deps: LinksPageDeps }) => {
           </Show>
           <Show
             when={(links() ?? []).length > 0}
-            fallback={<p class="text-[13px] text-muted-foreground">{m.links_none()}</p>}
+            fallback={<EmptyState icon={Link2} text={m.links_none()} />}
           >
             <ul
               aria-label={m.links_active()}
-              class="divide-y divide-border rounded-xl border border-border"
+              class="divide-y divide-border overflow-hidden rounded-xl border border-border"
             >
               <For each={links()}>
                 {(link) => (
@@ -145,7 +172,7 @@ export const LinksPage = (props: { deps: LinksPageDeps }) => {
               </For>
             </ul>
           </Show>
-        </div>
+        </section>
       </div>
     </section>
   );
