@@ -1,5 +1,15 @@
 // The company's membership: certificates, policy, the logs, recovery, emergency access and the
 // company root with its changes (K-307 part f)
+
+export {
+  companyFate,
+  type DeletionAccount,
+  type DeletionMember,
+  type DeletionPlan,
+  deletionPlan,
+  type VaultFate,
+  vaultFate,
+} from "./account-deletion.ts";
 export {
   type Certificate,
   type CompanyRole,

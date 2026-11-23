@@ -583,7 +583,27 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   Haustechnik laufen lässt: `--help`, `login` auf einem Pseudo-Terminal ohne Echo von Secret Key und
   Passphrase, `search` ohne Geheimnisse, `get` mit Bestätigung, eine abgelehnte Bestätigung ohne
   Geheimnis in der Ausgabe, keine Sitzung der CLI bleibt auf dem Server; `docs/cli.md` und README.
-- [ ] **K-607 DSGVO** – Konto löschen, Daten exportieren, Datenschutz-Seite.
+- [x] **K-607 DSGVO** – Konto löschen, Daten exportieren, Datenschutz-Seite.
+  Fertig, wenn: eine Person unter „Einstellungen → Datenschutz“ ihr Konto löscht, bestätigt mit der
+  Passphrase (erst an der eigenen AK-Kopie geprüft, dann eine Antwort des Anmeldeschlüssels unter dem
+  Zweck `delete-account` auf eine Challenge nur dieser Sitzung, die nie anmeldet; falsche, fremde
+  und Anmelde-Challenges scheitern, Server-Tests); `deletionPlan` und `companyFate` in
+  `packages/core` (Mutation-Tests bei 100 %) auf Gerät und Server dasselbe entscheiden: ein Tresor
+  ohne andere Mitglieder geht mit, in einem mitverwalteten signiert das Gerät sein `entfernen`
+  selbst und ein Verwalter-Client wechselt den Schlüssel (P-11), der einzige Verwalter eines
+  geteilten Tresors und der letzte Inhaber warten, das letzte Konto nimmt die Firma mit; Sitzungen,
+  Geräte, Passkeys, Push-Adressen, Mitteilungen, Anmeldeschlüssel, Schlüsselbund und Kontozustand
+  gelöscht werden, Konto-ID, öffentliche Schlüssel und Zertifikate bleiben (Server-Test); vom
+  Stammkonto aus die weiteren Firmen (K-605) zuerst geprüft und gelöscht werden, das Stammkonto
+  zuletzt, und keine Firma etwas der anderen berührt (Mandanten-Test mit echter Anmeldung); ein Test
+  des bösartigen Servers zeigt, dass ein erfundenes oder falsch signiertes `entfernen`, die
+  Wiederaufnahme durch das gelöschte Konto und ein zurückgespieltes Log auffallen;
+  `GET /api/account/export` alles, was der Server über das Konto hält, als JSON liefert, ohne
+  Sitzungs-Token und Daten anderer, mit dem Verweis auf den Export der Einträge (K-504); Texte
+  de/en, P-28 im Sicherheitsdesign, Entscheidungen im Projektplan, `docs/datenschutz.md` und das
+  README; Playwright desktop und `@phone`: Jonas als letzter Inhaber darf nicht löschen, Anna lädt
+  ihre Daten herunter, ein Tippfehler löscht nichts, sie löscht ihr Konto, und Jonas' Client nimmt
+  sie aus Büro und wechselt den Schlüssel; allein in seiner Firma löscht Jonas sie mit seinem Konto.
 
 ## Phase 7 – Härtung
 

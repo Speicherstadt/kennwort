@@ -151,6 +151,7 @@ nennt seinen Angriff, und der Client muss ihn ablehnen und sagen, warum.
 | E-20 Einmal-Link mitgelesen, fremder Geheimtext untergeschoben, Passphrase abgestreift, öfter ausgeliefert als erlaubt | `apps/server/src/adversary/link-attacks.test.ts`, `packages/crypto/src/one-time-link.test.ts`, `apps/server/src/links/links.test.ts` | Schlüssel und Inhalt nie beim Server; passt nicht (falscher Schlüssel); öfter ausgeliefert öffnet weiter – Restrisiko, siehe [P-18](#p-18-einmal-links) |
 | E-27 Gruppe beim Anmeldedienst gemeldet, E-03 Anmeldedienst gibt sich als Schlüsseldienst aus, E-02 Konto über den Anmeldedienst eingeschrieben | `apps/server/src/adversary/oidc-attacks.test.ts`, `apps/server/src/oidc/groups.test.ts`, `membership/members.enrolled.test.ts`, `e2e/oidc.spec.ts` | nur Anfrage, kein Tresor; keine Sitzung, kein Schlüssel; ohne Zertifikat bis zum Codevergleich |
 | E-01, E-05 nach einem Kit in fremden Händen: altes Bündel weiter ausgeliefert, neues Zertifikat zurückgehalten, altes Kit nach dem Wechsel, Tresor ohne Erneuerung oder Wechsel | `adversary/rekey.test.ts`, `membership/verify-log.rekey.test.ts`, `apps/server/src/account/rekey.test.ts` | ungültig, nicht zertifiziert, Wechsel steht aus, falsche Signatur, Rückfall, neuere Epoche |
+| E-06, E-07 beim Löschen eines Kontos: Austritt im Namen eines anderen erfunden oder mit falscher Signatur, das gelöschte Konto nimmt sich wieder auf, Log auf vor das Löschen zurückgespielt; Lösch-Challenge als Anmeldung, fremde Challenge, falsche Passphrase | `adversary/account-deletion.test.ts`, `apps/server/src/account/deletion.test.ts` | kein Verwalter, falsche Signatur, Rückfall; 401 |
 | E-06, E-07, E-08 nach einer Übergabe: der Handwerker macht sich selbst wieder zum Verwalter, das Log auf vor seine Herabstufung zurückgespielt oder gegabelt; Daten einer Firma in der Sitzung der anderen Firma derselben Person | `adversary/handover.test.ts`, `apps/server/src/tenancy/linked-accounts.test.ts`, `apps/server/src/oidc/oidc-companies.test.ts` | kein Verwalter, Rückfall, Gabelung; 404 |
 
 Die übrigen folgen mit den Funktionen, die sie betreffen (Konto-Recovery, Teilen, Geräte, Austritt,
@@ -1776,6 +1777,7 @@ Restrisiken:
 | mit OpenID Connect: Issuer, `sub` und Name der Person beim Anmeldedienst, die Gruppennamen ihres Claims bei der Anmeldung ([P-25](#p-25-anmeldung-uber-openid-connect-und-gruppen)) | Token des Anmeldedienstes (nicht gespeichert); einen Schlüssel gibt der Anmeldedienst nie |
 | Mitteilungen: Art, IDs, Zeit, gelesen; Push-Adressen der Geräte ([P-24](#p-24-mitteilungen-und-web-push)) | Namen von Tresoren und Einträgen in Mitteilungen; einen Inhalt in Pushes gibt es nicht |
 | mehrere Firmen in einem Konto: je Firma ein eigenes Konto; dass sie einer Person gehören, nur aus Geräte-ID, Adresse und Zeit ([P-27](#p-27-mehrere-firmen-ubergabe-an-den-kunden-und-qr-etiketten)) | die Zugänge zu den weiteren Konten (versiegelt im Kontozustand des Stammkontos), die Namen der Firmen |
+| nach dem Löschen eines Kontos: Konto-ID, Firma, Rolle, Austrittszeit, öffentliche Schlüssel und Zertifikate, Audit-Ereignisse mit der Konto-ID ([P-28](#p-28-konto-loschen-und-daten-herunterladen)) | alles andere des Kontos: gelöscht |
 | nur bei eingeschalteter Datenleck-Prüfung: die ersten 5 Hex-Zeichen von SHA-1 je Passwort, von welchem Konto ([P-23](#p-23-sicherheits-ubersicht-und-datenleck-prufung)) | Passwörter, ihre vollen Hashes, Treffer; die Wahl selbst steht versiegelt im Kontozustand (er sieht nur, ob Anfragen kommen) |
 
 Ein Server kann viele Firmen tragen (Projektplan, Entscheidungen). Sie sind dort strikt getrennt:
@@ -3031,7 +3033,8 @@ sein Client den Schlüssel und schreibt jeden Eintrag unter seiner eigenen Signa
 ([P-11](#p-11-austritt-und-schlusselwechsel)). Einen Log-Eintrag, mit dem sich der Handwerker selbst
 wieder zum Verwalter macht, nimmt kein Client (kein Verwalter); ein Log, das der Server auf vor die
 Herabstufung zurückspielt oder gabelt, ist ein Rückfall bzw. eine Gabelung. Der Tresor in der
-eigenen Firma bleibt unverändert; Kennwort löscht keine Tresore.
+eigenen Firma bleibt unverändert; gelöscht wird ein Tresor nur, wenn die letzte Person darin ihr
+Konto löscht ([P-28](#p-28-konto-loschen-und-daten-herunterladen)).
 
 **QR-Etiketten.** Ein Etikett für das Gerät oder die Anlage eines Eintrags trägt im QR-Code nur
 dessen Adresse in der App, `https://<server>/vaults/<tresor-ID>/<eintrag-ID>` ([P-26](#p-26-deep-links)),
@@ -3057,3 +3060,78 @@ Umgesetzt in `packages/core/src/account/linked.ts` (Zugänge, Zusammenführen, G
 `apps/server/src/oidc/oidc-companies.test.ts` und `e2e/handwerk.spec.ts`.
 
 **Wehrt ab:** E-06, E-07, E-08, E-10, E-14.
+
+### P-28 Konto löschen und Daten herunterladen
+
+Eine Person löscht ihr Konto selbst (K-607, Art. 17 DSGVO) und lädt herunter, was der Server über
+sie speichert (Art. 15 und 20). Der Server kann ein Konto aus der Ende-zu-Ende-Verschlüsselung nicht
+allein entfernen: Die Tresor-Schlüssel wechselt nur der Client eines Verwalters (P-11). Darum geht
+das Löschen über dieselben signierten Mitgliedschaftsänderungen wie ein Austritt.
+
+1. **Passphrase**: Das Gerät prüft die Passphrase zuerst an der eigenen versiegelten Kopie von AK
+   (`unlockWithPassphrase`); ein Tippfehler löscht nichts und zählt nicht als Fehlversuch. Dann holt
+   es mit der Sitzung eine Challenge (`POST /api/account/deletion/challenge`, zwei Minuten gültig,
+   nur für dieses Konto, `way = delete`) und antwortet mit dem Anmeldeschlüssel aus Passphrase und
+   Secret Key (F-05) unter dem Zweck `delete-account` (F-03). Eine solche Antwort meldet nie an, eine
+   Anmelde-Antwort löscht nie, und `POST /auth/login-key/verify` nimmt keine Lösch-Challenge. Eine
+   gestohlene Sitzung allein löscht also nichts; eine falsche Antwort zählt wie eine falsche
+   Anmeldung zur Sperre.
+2. **Was wird aus jedem Tresor** (`deletionPlan`, `packages/core/src/membership/account-deletion.ts`):
+   Ist niemand sonst im Log, wird der Tresor mit allen Versionen gelöscht (`drop`). Bleibt ein
+   anderer Verwalter, signiert das Gerät selbst sein `entfernen` (`leave`); der Verwalter-Client holt
+   den `schlüsselwechsel` nach, weil das Log nun einen Wechsel schuldet (`rotationDue`, P-11).
+   Verwaltet die Person den Tresor nicht, entfernt sie der nächste Verwalter-Client nach der
+   Mitgliederliste des Servers (`await`), wie beim Austritt. Ist sie die einzige Verwalterin eines
+   Tresors, in dem andere bleiben, wartet das Löschen (`sole-manager`): Ohne Verwalter könnte
+   niemand mehr den Schlüssel wechseln.
+3. **Was wird aus der Firma** (`companyFate`): Bleibt niemand sonst, geht die ganze Firma mit allen
+   Tresoren, Konten, Gruppen, dem Audit-Log und den Wurzelwechseln (`erase`). Bleiben andere, aber
+   kein anderer Inhaber, wartet das Löschen (`last-owner`), wie ein Inhaber sich nicht selbst
+   herabstufen kann.
+4. **Server**: `DELETE /api/account` prüft Challenge und Signatur, rechnet Schritt 2 und 3 nach den
+   gespeicherten Logs mit denselben Funktionen nach und löscht in einer Transaktion: Sitzungen,
+   Geräte, Passkeys, Anmeldeschlüssel, Push-Adressen, Mitteilungen, die Person beim Anmeldedienst,
+   Schlüsselbund, Kontozustand und beide AK-Kopien (geleert), verpackte Wurzel- und
+   Recovery-Schlüssel, die Hinterlegung, Notfallzugriffe, Einmal-Links, die eigene Einladung (ihre
+   Beschriftung nennt die Person) und offene Einladungen der Person, Anfragen, Gruppen, Freigaben an
+   sie und an sie verpackte Tresor-Schlüssel. Das Konto bleibt als ausgetreten stehen (`leftAt`), mit
+   öffentlichen Schlüsseln und Zertifikaten: Ohne sie verifizierte kein Log und kein Eintrag mehr,
+   den die Person signiert hat. Das Audit-Log bekommt `member-left` mit der Person als Handelnder und
+   Betroffener.
+5. **Mehrere Firmen** (P-27): Gelöscht wird nur vom Stammkonto aus. Das Gerät meldet sich mit den
+   gespeicherten Zugängen bei jedem weiteren Konto an, prüft alle, löscht dann jedes weitere Konto
+   mit dessen eigener Passphrase und zuletzt das Stammkonto, damit nie ein Konto übrig bleibt, dessen
+   Zugang nur das gelöschte Stammkonto kannte. Danach vergisst das Gerät das Konto samt Offline-Kopie.
+6. **Daten herunterladen**: `GET /api/account/export` liefert als JSON (`kennwort-privacy-export`,
+   Version 1) Konto, öffentliche Schlüssel und Zertifikate, die versiegelten Daten so, wie sie liegen,
+   Geräte mit Adresse und Browser, Passkeys, die Person beim Anmeldedienst, Fehlversuche,
+   Mitteilungen, Push-Adressen, die Tresore, deren Log die Person nennt, mit ihrer Rolle, Gruppen,
+   Anfragen, Freigaben, Notfallzugriffe, Einmal-Links, Einladungen und die Audit-Ereignisse, in denen
+   sie handelt oder betroffen ist. Nicht darin sind Sitzungs-Token und Daten anderer Personen; die
+   Einträge stehen im verschlüsselten Export der App (P-19).
+
+**Was andere Clients prüfen.** Ein selbst signiertes `entfernen` nimmt jeder Client nur von einem
+Verwalter zur signierten Zeit an; ein vom Server erfundenes im Namen eines anderen Mitglieds ist
+`not-manager`, eines mit falscher Signatur `bad-signature`. Mit ihrem alten Schlüssel nimmt sich die
+gelöschte Person nicht wieder auf (`not-manager`), und ein Log, das der Server auf vor ihr
+`entfernen` zurückspielt, ist ein Rückfall. Der neue Tresor-Schlüssel geht nur an die, die bleiben.
+
+Restrisiken:
+
+- In Tresoren, die die Person nicht verwaltet hat, entscheidet bis zum Wechsel wie beim Austritt die
+  unsignierte Mitgliederliste des Servers (P-11).
+- Was die Person vor dem Löschen entschlüsselt hat, kennt sie weiter; die Markierung „Zum Ändern“
+  zeigt den anderen, was sie lesen konnte.
+- Konto-ID, öffentliche Schlüssel, Zertifikate und das Audit-Log der Firma bleiben, solange die Firma
+  besteht; sie tragen keinen Namen. In Backups des Servers bleibt alles bis zu deren Löschung.
+- Schlägt nach dem Löschen eines weiteren Kontos das des Stammkontos fehl, ist die weitere Firma
+  schon weg; das Stammkonto bleibt und lässt sich erneut löschen.
+
+Umgesetzt in `packages/core/src/membership/account-deletion.ts` (Mutation-Tests bei 100 %),
+`packages/core/src/auth/sign-in.ts` (`answerDeletionChallenge`), `apps/server/src/account/deletion.ts`,
+`erase.ts` und `privacy-export.ts`, `packages/client/src/account/deletion.ts` und
+`apps/web/src/privacy/`; getestet in `packages/core/src/adversary/account-deletion.test.ts`,
+`apps/server/src/account/deletion.test.ts`, `privacy-export.test.ts`,
+`apps/server/src/tenancy/linked-accounts.test.ts` und `e2e/privacy.spec.ts`.
+
+**Wehrt ab:** E-06, E-07, E-24.
