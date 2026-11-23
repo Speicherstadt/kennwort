@@ -73,7 +73,7 @@ const FormatChoice = (props: { value: ExportFormat; onChange: (format: ExportFor
       <legend class="mb-2 text-xs font-medium">{m.export_format()}</legend>
       <For each={FORMATS}>
         {(choice) => (
-          <label class="flex min-h-11 cursor-pointer items-start gap-2 rounded-lg border border-border p-3 transition-colors hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-accent">
+          <label class="group flex min-h-11 cursor-pointer items-start gap-2 rounded-lg border border-border p-3 transition-colors hover:border-primary/60 has-[:checked]:border-primary has-[:checked]:bg-accent">
             <input
               type="radio"
               name={`${id}-format`}
@@ -84,7 +84,9 @@ const FormatChoice = (props: { value: ExportFormat; onChange: (format: ExportFor
             />
             <span class="grid">
               <span class="text-[13px] font-medium">{choice.label()}</span>
-              <span class="text-xs text-muted-foreground">{choice.hint()}</span>
+              <span class="text-xs text-muted-foreground group-has-[:checked]:text-foreground">
+                {choice.hint()}
+              </span>
             </span>
           </label>
         )}
