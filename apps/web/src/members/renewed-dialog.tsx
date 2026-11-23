@@ -20,24 +20,26 @@ export const RenewedDialog = (props: {
   onConfirm: () => void;
   onClose: () => void;
 }) => (
-  <Dialog open onClose={props.onClose} title={m.members_renewed_of({ name: props.name })}>
-    <div class="grid gap-4">
-      <p class="text-[13px]">{m.members_renewed_text({ name: props.name })}</p>
-      <p
-        class="rounded-lg bg-muted px-3 py-2 font-mono text-[15px] tracking-wide"
-        data-testid="renewed-code"
-      >
-        {renewedCode(props.view)}
-      </p>
-      <Button
-        variant="primary"
-        class="h-11 w-fit md:h-8"
-        disabled={props.busy}
-        onClick={() => props.onConfirm()}
-      >
-        {props.busy ? m.working() : m.members_renewed_confirm()}
-      </Button>
-    </div>
+  <Dialog
+    open
+    onClose={props.onClose}
+    title={m.members_renewed_of({ name: props.name })}
+    description={m.members_renewed_text({ name: props.name })}
+    footer={
+      <>
+        <Button onClick={() => props.onClose()}>{m.ui_cancel()}</Button>
+        <Button variant="primary" disabled={props.busy} onClick={() => props.onConfirm()}>
+          {props.busy ? m.working() : m.members_renewed_confirm()}
+        </Button>
+      </>
+    }
+  >
+    <p
+      class="rounded-lg bg-muted px-3 py-2 font-mono text-[15px] tracking-wide"
+      data-testid="renewed-code"
+    >
+      {renewedCode(props.view)}
+    </p>
   </Dialog>
 );
 

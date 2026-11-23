@@ -5,7 +5,7 @@ export { Badge, type BadgeProps, type BadgeVariant, badgeVariants } from "./comp
 export { Button, type ButtonProps, buttonClass, IconButton } from "./components/button.tsx";
 export { Checkbox, type CheckboxProps, Switch } from "./components/checkbox.tsx";
 export { Combobox, type ComboboxProps, matching } from "./components/combobox.tsx";
-export { Dialog, type DialogProps } from "./components/dialog.tsx";
+export { Dialog, DialogFooter, type DialogProps, dialogClass } from "./components/dialog.tsx";
 export { Icon, type IconProps } from "./components/icon.tsx";
 export {
   Input,

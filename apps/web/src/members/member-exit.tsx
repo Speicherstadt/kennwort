@@ -28,19 +28,22 @@ export const LeaveDialog = (props: {
   onConfirm: () => void;
   onClose: () => void;
 }) => (
-  <Dialog open onClose={props.onClose} title={m.members_leave_of({ name: props.name })}>
-    <div class="grid gap-4">
-      <p class="text-[13px]">{m.members_leave_text({ name: props.name })}</p>
-      <Button
-        variant="primary"
-        class="h-11 w-fit md:h-8"
-        disabled={props.busy}
-        onClick={() => props.onConfirm()}
-      >
-        {props.busy ? m.working() : m.members_leave_confirm()}
-      </Button>
-    </div>
-  </Dialog>
+  <Dialog
+    open
+    onClose={props.onClose}
+    title={m.members_leave_of({ name: props.name })}
+    description={m.members_leave_text({ name: props.name })}
+    variant="destructive"
+    size="sm"
+    footer={
+      <>
+        <Button onClick={() => props.onClose()}>{m.ui_cancel()}</Button>
+        <Button variant="danger" disabled={props.busy} onClick={() => props.onConfirm()}>
+          {props.busy ? m.working() : m.members_leave_confirm()}
+        </Button>
+      </>
+    }
+  />
 );
 
 const period = (vault: ReportVault) =>
@@ -85,6 +88,7 @@ export const ExitReportDialog = (props: {
     onClose={props.onClose}
     title={m.members_report_of({ name: props.name })}
     description={m.report_intro()}
+    size="lg"
   >
     <Show
       when={props.vaults.length > 0}

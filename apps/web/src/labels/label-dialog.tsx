@@ -5,7 +5,7 @@
  * (label.css), drawn on this device.
  */
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
-import { Button, Dialog, Icon, Input, m, selectClass } from "@kennwort/ui";
+import { Button, Dialog, DialogFooter, Icon, Input, m, selectClass } from "@kennwort/ui";
 import { Printer } from "@kennwort/ui/icons";
 import { Portal } from "@solidjs/web";
 import { createSignal, createUniqueId, For, Show, untrack } from "solid-js";
@@ -49,8 +49,14 @@ export const LabelDialog = (props: {
   const sizeId = createUniqueId();
   const link = () => labelLink(props.origin, props.entry.vault, props.entry.id);
   return (
-    <Dialog open onClose={props.onClose} title={m.label_title()} description={m.label_intro()}>
-      <div class="grid gap-3 p-4 pt-2 sm:grid-cols-2">
+    <Dialog
+      open
+      onClose={props.onClose}
+      title={m.label_title()}
+      description={m.label_intro()}
+      size="lg"
+    >
+      <div class="grid gap-3 sm:grid-cols-2">
         <Input
           label={m.label_caption()}
           value={text()}
@@ -86,13 +92,12 @@ export const LabelDialog = (props: {
                 <LabelView link={shown()} caption={text()} size={size()} />
               </div>
               <p class="text-xs text-muted-foreground sm:col-span-2">{m.label_no_secret()}</p>
-              <Button
-                variant="primary"
-                class="w-fit justify-self-end sm:col-span-2"
-                onClick={() => (props.print ?? print)()}
-              >
-                <Icon icon={Printer} /> {m.label_print()}
-              </Button>
+              <DialogFooter class="sm:col-span-2">
+                <Button onClick={() => props.onClose()}>{m.ui_cancel()}</Button>
+                <Button variant="primary" onClick={() => (props.print ?? print)()}>
+                  <Icon icon={Printer} /> {m.label_print()}
+                </Button>
+              </DialogFooter>
               {/* What the printer gets: the label alone, outside the app (label.css) */}
               <Portal mount={document.body}>
                 <div class="kennwort-print">

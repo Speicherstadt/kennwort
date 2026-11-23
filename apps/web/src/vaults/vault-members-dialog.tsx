@@ -161,6 +161,7 @@ export const VaultMembersDialog = (props: {
       open={props.open}
       onClose={props.onClose}
       title={m.vault_members_title({ name: props.vault.name ?? m.vaults_unnamed() })}
+      size="lg"
     >
       <ul
         class="mb-4 divide-y divide-border rounded-xl border border-border"

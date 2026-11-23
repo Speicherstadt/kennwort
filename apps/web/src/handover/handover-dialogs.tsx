@@ -5,7 +5,7 @@
  */
 import type { Vault } from "@kennwort/client/vaults/vaults.ts";
 import type { Certificate, MemberView } from "@kennwort/core";
-import { Button, Dialog, Icon, m } from "@kennwort/ui";
+import { Button, Dialog, DialogFooter, Icon, m } from "@kennwort/ui";
 import { Building2, User } from "@kennwort/ui/icons";
 import { createSignal, For, Show } from "solid-js";
 import { alertClass, choiceCardClass } from "../blocks/blocks.tsx";
@@ -37,7 +37,7 @@ export const HandoverStart = (props: {
       title={m.handover_title({ name: name() })}
       description={m.handover_intro()}
     >
-      <div class="grid gap-3 p-4 pt-2">
+      <div class="grid gap-3">
         <fieldset class="grid gap-2">
           <legend class="mb-2 text-xs font-medium">{m.handover_target()}</legend>
           <For each={props.companies}>
@@ -59,17 +59,19 @@ export const HandoverStart = (props: {
           <p class="text-[13px] font-medium">{m.handover_count({ count: props.count })}</p>
           <p class="text-xs text-muted-foreground">{m.handover_stays()}</p>
         </div>
-        <Button
-          variant="primary"
-          class="w-fit justify-self-end"
-          disabled={!target() || props.busy}
-          onClick={() => {
-            const chosen = target();
-            if (chosen) props.onStart(chosen);
-          }}
-        >
-          {props.busy ? m.companies_switching() : m.handover_next()}
-        </Button>
+        <DialogFooter>
+          <Button onClick={() => props.onClose()}>{m.handover_cancel()}</Button>
+          <Button
+            variant="primary"
+            disabled={!target() || props.busy}
+            onClick={() => {
+              const chosen = target();
+              if (chosen) props.onStart(chosen);
+            }}
+          >
+            {props.busy ? m.companies_switching() : m.handover_next()}
+          </Button>
+        </DialogFooter>
       </div>
     </Dialog>
   );
@@ -102,7 +104,7 @@ export const HandoverFinish = (props: {
       title={m.handover_finish_title({ name: props.vaultName })}
       description={m.handover_finish_intro({ count: props.count })}
     >
-      <div class="grid gap-3 p-4 pt-2">
+      <div class="grid gap-3">
         <Show
           when={chosen().length > 0}
           fallback={
@@ -139,14 +141,14 @@ export const HandoverFinish = (props: {
             </p>
           )}
         </Show>
-        <div class="flex flex-wrap justify-end gap-2">
+        <DialogFooter>
           <Button disabled={busy()} onClick={() => props.onCancel()}>
             {m.handover_cancel()}
           </Button>
           <Button variant="primary" disabled={!customer() || busy()} onClick={() => void submit()}>
             {busy() ? m.working() : m.handover_submit()}
           </Button>
-        </div>
+        </DialogFooter>
       </div>
     </Dialog>
   );

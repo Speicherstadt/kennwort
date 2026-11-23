@@ -139,6 +139,7 @@ export const ShareDialog = (props: ShareDialogProps) => {
       onClose={props.onClose}
       title={m.share_title({ title: props.entry.title })}
       description={m.share_intro()}
+      size="lg"
     >
       <h3 class="mb-1 text-sm font-semibold">{m.share_list()}</h3>
       <Show

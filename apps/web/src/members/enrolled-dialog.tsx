@@ -4,7 +4,7 @@
  * confirms only after both match; the person sees the same dialog without the confirmation.
  */
 import type { MemberView } from "@kennwort/core";
-import { Button, Dialog, m } from "@kennwort/ui";
+import { Button, Dialog, DialogFooter, m } from "@kennwort/ui";
 import { Show } from "solid-js";
 import type { Session } from "../session/session.ts";
 import { companyCode, enrolledCode, ownCodes } from "./enrolled.ts";
@@ -40,14 +40,12 @@ export const EnrolledDialog = (props: {
         {companyCode(props.session)}
       </p>
       <Show when={!props.mine}>
-        <Button
-          variant="primary"
-          class="h-11 w-fit md:h-8"
-          disabled={props.busy}
-          onClick={() => props.onConfirm()}
-        >
-          {props.busy ? m.working() : m.members_renewed_confirm()}
-        </Button>
+        <DialogFooter>
+          <Button onClick={() => props.onClose()}>{m.ui_cancel()}</Button>
+          <Button variant="primary" disabled={props.busy} onClick={() => props.onConfirm()}>
+            {props.busy ? m.working() : m.members_renewed_confirm()}
+          </Button>
+        </DialogFooter>
       </Show>
     </div>
   </Dialog>

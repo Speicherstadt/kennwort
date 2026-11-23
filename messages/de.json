@@ -1278,5 +1278,6 @@
   "push_desc_emergency_answered": "Deine Bitte um Notfallzugriff wurde beantwortet.",
   "push_desc_emergency_granted": "Du hast Notfallzugriff erhalten.",
   "push_desc_account_recovered": "Dein Konto wurde wiederhergestellt.",
-  "push_desc_update_available": "Eine neue Version von Kennwort ist bereit."
+  "push_desc_update_available": "Eine neue Version von Kennwort ist bereit.",
+  "ui_cancel": "Abbrechen"
 }

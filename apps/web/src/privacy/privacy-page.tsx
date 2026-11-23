@@ -5,7 +5,7 @@
  * passphrase. The passphrase is read from the field when the form is sent and the form is reset at
  * once, like the export's (export-page.tsx).
  */
-import { Button, Dialog, Icon, Input, m, pageClass } from "@kennwort/ui";
+import { Button, Dialog, DialogFooter, Icon, Input, m, pageClass } from "@kennwort/ui";
 import { Download, Trash2 } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { createSignal, For, Show } from "solid-js";
@@ -81,6 +81,7 @@ const DeleteDialog = (props: {
       onClose={props.onClose}
       title={m.privacy_delete_title()}
       description={m.privacy_delete_warning()}
+      variant="destructive"
     >
       <form class="grid gap-3" onSubmit={submit}>
         <Show when={props.linked.length > 0}>
@@ -101,9 +102,12 @@ const DeleteDialog = (props: {
             </p>
           )}
         </Show>
-        <Button type="submit" variant="danger" class="w-fit" disabled={busy()}>
-          <Icon icon={Trash2} /> {busy() ? m.working() : m.privacy_delete_confirm()}
-        </Button>
+        <DialogFooter>
+          <Button onClick={() => props.onClose()}>{m.ui_cancel()}</Button>
+          <Button type="submit" variant="danger" disabled={busy()}>
+            <Icon icon={Trash2} /> {busy() ? m.working() : m.privacy_delete_confirm()}
+          </Button>
+        </DialogFooter>
       </form>
     </Dialog>
   );
