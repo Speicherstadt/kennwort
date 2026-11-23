@@ -123,6 +123,19 @@ describe("the groups claim at login", () => {
     expect(membership(s, groupId, anna)).toMatchObject({ viaIdp: false });
   });
 
+  it("keeps a membership an admin confirmed after the provider gave it", async () => {
+    const { s, groupId, anna } = await setUp();
+    await s.login({ sub: "anna", groups: ["Technik"] }, { token: s.w.annaToken });
+    expect(membership(s, groupId, anna)).toMatchObject({ viaIdp: true });
+    // The admin adds her by hand as well: from now on the membership is the admin's
+    await s.request(`/api/groups/${groupId}/members/${anna}`, {
+      method: "PUT",
+      token: s.w.o.token,
+    });
+    await s.login({ sub: "anna", groups: [] });
+    expect(membership(s, groupId, anna)).toMatchObject({ viaIdp: false });
+  });
+
   it("reads the claim the operator named", async () => {
     const s = await oidcWeber({ groupsClaim: "roles" });
     const made = await s.request("/api/groups", { token: s.w.o.token, body: { name: "Lager" } });
