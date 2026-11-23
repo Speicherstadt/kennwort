@@ -252,6 +252,27 @@ describe("zip bombs", () => {
     expect(await read(bomb.bytes, everything, limits({ ratio: 2000 }))).toHaveLength(1);
   });
 
+  it("stop inflating without a stray rejection when junk follows the deflate data", async () => {
+    // Node 24's DecompressionStream rejects the cancel it was stopped with when junk follows the
+    // stream's end (ERR_TRAILING_JUNK_AFTER_STREAM_END); left unhandled, that would crash a server
+    const data = new TextEncoder().encode(CSV);
+    const junk = new Uint8Array([1, 2, 3]);
+    const packed = new Uint8Array([...deflateRawSync(data), ...junk]);
+    const built = buildZip([{ name: "a.txt", data: packed, method: "stored" }]);
+    const at = built.central[0] ?? 0;
+    const lying = patched(patched(built.bytes, at + 10, 8, 2), at + 24, 1, 4);
+    const stray: unknown[] = [];
+    const listener = (reason: unknown) => stray.push(reason);
+    process.on("unhandledRejection", listener);
+    try {
+      expect(await read(lying)).toBe("bad-zip");
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    } finally {
+      process.off("unhandledRejection", listener);
+    }
+    expect(stray).toEqual([]);
+  });
+
   it("stop inflating at the declared size when the directory lies", async () => {
     const bomb = buildZip([{ name: "export.data", data: "a".repeat(5_000_000) }]);
     const at = bomb.central[0] ?? 0;
