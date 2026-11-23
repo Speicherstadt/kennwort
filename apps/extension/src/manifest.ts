@@ -80,7 +80,7 @@ const common = {
   name: "__MSG_extension_name__",
   description: "__MSG_extension_description__", // i18n-ignore: a reference into _locales
   default_locale: "de",
-  version: "0.0.0",
+  version: "0.1.0",
   action: { default_popup: "popup.html", default_title: "__MSG_extension_action__" },
   // The session area for unlocked keys, the lock alarm, the address of the active tab only after
   // a click on the button (activeTab), and the browser's frame tree, from which the service worker
