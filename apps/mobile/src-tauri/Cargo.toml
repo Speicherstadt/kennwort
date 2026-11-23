@@ -19,6 +19,9 @@ tauri-build = { version = "=3.0.0-alpha.4", features = [] }
 [dependencies]
 tauri = { version = "=3.0.0-alpha.6", features = [] }
 tauri-runtime-wry = "=3.0.0-alpha.6"
+# K-803: arguments of the Android clipboard plugin; both already in the lock file through tauri
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.154"
 
 [profile.release]
 codegen-units = 1

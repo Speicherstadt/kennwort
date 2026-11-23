@@ -86,6 +86,14 @@
     "tauri-runtime-wry": {
       "reason": "Tauri 3's webview runtime on wry (Android WebView, WKWebView), a separate crate since 3.0 that the app must name; same project and release as tauri",
       "workspaces": ["apps/mobile"]
+    },
+    "serde": {
+      "reason": "serializes the arguments the Rust command copy_secret hands to the Android clipboard plugin (K-803); already linked as a dependency of tauri, so the binary gains nothing",
+      "workspaces": ["apps/mobile"]
+    },
+    "serde_json": {
+      "reason": "the JSON value an Android plugin call answers with (PluginHandle::run_mobile_plugin, K-803); already linked as a dependency of tauri, so the binary gains nothing",
+      "workspaces": ["apps/mobile"]
     }
   }
 }

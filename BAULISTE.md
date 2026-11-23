@@ -671,7 +671,7 @@ Ganz am Schluss, damit Tauri 3 bis dahin möglichst stabil ist. iOS baut der Loo
   Workflow „Android“. Offen: die Verbindung der App zu ihrem Server (Offene Fragen im Projektplan).
 - [ ] **K-802 Android-Autofill** – `AutofillService`, Biometrie, Keystore.
   Fertig, wenn: der Autofill-Dienst im Android-Emulator in CI ausfüllt.
-- [ ] **K-803 Zwischenablage und Bildschirmschutz** – Leeren nach 30 s, sensibel markiert.
+- [x] **K-803 Zwischenablage und Bildschirmschutz** – Leeren nach 30 s, sensibel markiert.
 
 ## Zurückgestellt
 
