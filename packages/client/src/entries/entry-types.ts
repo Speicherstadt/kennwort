@@ -4,7 +4,8 @@
  * app's language when shown. Fields beyond these are the owner's own.
  */
 import type { EntryContent } from "@kennwort/core";
-import { m } from "@kennwort/ui";
+// The texts alone, without the components: the CLI loads this module too (K-606)
+import { m } from "@kennwort/ui/messages";
 
 export type EntryType = EntryContent["type"];
 export type FieldKindChoice = "text" | "secret" | "url" | "email" | "note" | "totp";

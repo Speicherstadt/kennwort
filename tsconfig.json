@@ -12,6 +12,7 @@
     { "path": "apps/web/scripts" },
     { "path": "apps/extension" },
     { "path": "apps/server" },
+    { "path": "apps/cli" },
     { "path": "e2e" }
   ]
 }
