@@ -1,4 +1,4 @@
-// Notifications (K-602, docs/sicherheitsdesign.md P-23): rows per account written from events the
+// Notifications (K-602, docs/sicherheitsdesign.md P-24): rows per account written from events the
 // server handles anyway, which kinds go out as push, the devices' push addresses and the VAPID key.
 // IDs only: a vault's or an entry's name never reaches the server, the client finds it locally.
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";

@@ -1,5 +1,5 @@
 /**
- * Web Push on this device (K-602, P-23), with the browser passed in: turned on only by a click, as
+ * Web Push on this device (K-602, P-24), with the browser passed in: turned on only by a click, as
  * the browsers ask, with the server's VAPID key; only the push service's address goes to the
  * server. The service worker shows a fixed text for each push (sw/push.ts).
  */

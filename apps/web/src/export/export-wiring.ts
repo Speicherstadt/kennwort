@@ -14,7 +14,7 @@ import { download, mayExport } from "./export.ts";
 import type { ExportPageDeps } from "./export-page.tsx";
 
 /** This account in the company's members list, as the pinned root confirmed it */
-const meOf = (store: VaultStore, session: Session) => {
+export const meOf = (store: VaultStore, session: Session) => {
   const shown = store.shown();
   const id = session.opened()?.accountId;
   if (shown.state !== "ready" || !id) return undefined;

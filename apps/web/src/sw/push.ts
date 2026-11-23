@@ -1,5 +1,5 @@
 /**
- * What the service worker does with a push (K-602, P-23): the push is empty, so it shows one fixed
+ * What the service worker does with a push (K-602, P-24): the push is empty, so it shows one fixed
  * text in the browser's language and, on a click, brings an open window of the app to the
  * notifications or opens one there. Nothing of the push is read: there is nothing in it.
  */

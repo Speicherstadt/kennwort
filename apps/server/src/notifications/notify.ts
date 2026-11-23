@@ -1,5 +1,5 @@
 /**
- * Writes notifications (K-602, P-23) from events the server handles anyway: one row per
+ * Writes notifications (K-602, P-24) from events the server handles anyway: one row per
  * recipient, IDs only, then a tickle on the account's live channel and, where the account wants
  * this kind as push, an empty push to its devices. Recipients outside the event's company, who
  * left, or who caused the event themselves get nothing. Each account keeps its newest rows only.

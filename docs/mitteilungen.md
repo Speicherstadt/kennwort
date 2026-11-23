@@ -62,7 +62,7 @@ der App erscheinen immer alle.
   Safari, Microsoft bei Edge) bekommt einen leeren Push. Er sieht, dass und wann Kennwort deinem
   Gerät etwas schickt, aber nicht, was, von wem oder zu welchem Tresor.
 
-Einzelheiten stehen im [Sicherheitsdesign, P-23](sicherheitsdesign.md#p-23-mitteilungen-und-web-push).
+Einzelheiten stehen im [Sicherheitsdesign, P-24](sicherheitsdesign.md#p-24-mitteilungen-und-web-push).
 
 ## Mail
 

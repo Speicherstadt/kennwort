@@ -1,5 +1,5 @@
 /**
- * Notifications on the server (K-602, P-23): the account's list, marking read, deleting, which
+ * Notifications on the server (K-602, P-24): the account's list, marking read, deleting, which
  * kinds go out as push, and this device's push subscription. Only IDs come back; every answer is
  * parsed before it is used. The live channel only says that something is new (watchNotifications).
  */

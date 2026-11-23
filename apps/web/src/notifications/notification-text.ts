@@ -1,5 +1,5 @@
 /**
- * What a notification says and where it leads (K-602, P-23). The server names only IDs; the names
+ * What a notification says and where it leads (K-602, P-24). The server names only IDs; the names
  * of people and vaults come from what this device loaded and checked itself. An ID it does not know
  * stays nameless ("Jemand", "einen Tresor"): the server's word never becomes a name on screen.
  */
@@ -50,7 +50,7 @@ const hrefOf = (note: Notification): string => {
     case "link-opened":
       return "/links";
     case "security-report":
-      return "/to-change";
+      return "/security";
   }
 };
 

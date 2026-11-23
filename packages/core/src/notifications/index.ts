@@ -1,4 +1,4 @@
-// Notifications (K-602, P-23): what client and server exchange, IDs only
+// Notifications (K-602, P-24): what client and server exchange, IDs only
 export {
   defaultNotificationPrefs,
   NOTIFICATION_KINDS,

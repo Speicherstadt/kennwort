@@ -741,6 +741,12 @@ const cases: Record<string, () => Promise<void>> = {
     expect((await jonasSends("DELETE", "/api/links/max-link", undefined)).status).toBe(404);
     maxLinkStays();
   },
+  // The leak check's proxy holds no company data at all; this server has it turned off
+  "GET /api/pwned/:prefix": async () => {
+    const answer = await asJonas("/api/pwned/5BAA6");
+    expect(answer.status).toBe(404);
+    expect(await answer.json()).toEqual({ error: "leak-check-off" });
+  },
   "POST /api/vaults/:vaultId/log": async () => {
     expect((await jonasSends("POST", `/api/vaults/${muellerVault}/log`, {})).status).toBe(404);
   },

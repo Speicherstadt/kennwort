@@ -1,5 +1,5 @@
 /**
- * „Mitteilungen“ (K-602, P-23): the account's notifications, newest first, each with what happened
+ * „Mitteilungen“ (K-602, P-24): the account's notifications, newest first, each with what happened
  * in the names this device knows and a link to where the person checks it; read one or all, delete
  * one. Below, push on this device and which kinds go out as push.
  */

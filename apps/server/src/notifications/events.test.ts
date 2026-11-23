@@ -1,4 +1,4 @@
-// K-602 (P-23): the events the server handles anyway write notifications for the right accounts,
+// K-602 (P-24): the events the server handles anyway write notifications for the right accounts,
 // with IDs only. Weber Haustechnik: Jonas invites Anna, she asks for access to Büro, he adds her;
 // he names her for emergency access, she asks for it, he objects; a one-time link is fetched.
 import { describe, expect, it } from "bun:test";

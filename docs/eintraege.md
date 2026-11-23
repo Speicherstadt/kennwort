@@ -149,7 +149,7 @@ Das ist eine grobe Schätzung. Die Liste stammt aus englischsprachigen Datenleck
 wie „Passwort“ oder „Hallo“, Namen, die deutsche Tastaturreihe „qwertz“ oder Daten erkennt sie
 nicht. „Sommer2019“ fällt nur wegen seiner Länge auf, „Sommer2019!xyz“ nicht. Ein Passwort, das hier nicht auftaucht, ist darum nicht
 sicher stark; der Generator macht eines, das es ist. Ob ein Passwort in einem Datenleck
-aufgetaucht ist, prüft Kennwort noch nicht.
+aufgetaucht ist, prüft auf Wunsch die [Sicherheits-Übersicht](sicherheit.md#prufung-gegen-datenlecks).
 
 **Doppelt** ist ein Passwort, das genau so in mindestens einem anderen Eintrag steht, auch in
 einem, der mit dir geteilt ist. Dein Gerät vergleicht die entschlüsselten Einträge im Speicher,

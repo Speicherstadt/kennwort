@@ -12,6 +12,7 @@ import type { EmergencyApi } from "@kennwort/client/session/emergency-api.ts";
 import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
 import type { LinkApi } from "@kennwort/client/session/links-api.ts";
 import type { NotificationApi } from "@kennwort/client/session/notifications-api.ts";
+import type { PwnedApi } from "@kennwort/client/session/pwned-api.ts";
 import type { ShareApi } from "@kennwort/client/session/shares-api.ts";
 import type { VaultApi } from "@kennwort/client/session/vaults-api.ts";
 import type { Vault } from "@kennwort/client/vaults/vaults.ts";
@@ -50,6 +51,7 @@ import { OfflineNotice } from "./offline/offline-notice.tsx";
 import { createOfflineView } from "./offline/offline-view.ts";
 import { ApplyPolicy } from "./policy/policy-section.tsx";
 import { createAccountQueries } from "./queries.ts";
+import { createSecurity } from "./security/security-wiring.tsx";
 import type { Session } from "./session/session.ts";
 import { createSharing } from "./shares/shares-wiring.tsx";
 import { createExits } from "./vaults/exit.ts";
@@ -69,6 +71,7 @@ export type AppApi = PairDeps &
   EmergencyApi &
   LinkApi &
   NotificationApi &
+  PwnedApi &
   Pick<AccountApi, "replaceUnlock"> &
   Pick<Api, "rekey"> & { syncFetch: typeof fetch };
 
@@ -156,6 +159,7 @@ const OpenedFrame = (props: {
   const allEntries = createMemo(() =>
     markToChange(namedMarks([...entries.entries(), ...sharing.entries()], peopleOf(store))),
   );
+  const security = createSecurity({ ...props, store, entries: allEntries, vaultName });
   const memberExits: MemberExits = {
     onLeft: reload,
     report: (accountId) => exitReport(accountId, entries.seen()),
@@ -188,6 +192,7 @@ const OpenedFrame = (props: {
         onShareEntry={online(sharing.start)}
         onLinkEntry={online(links.start)}
         linksPage={links.page}
+        securityPage={security.page}
         noAccess={noAccessFor(props, store)}
         notifications={notifications}
         groupsPage={() => (

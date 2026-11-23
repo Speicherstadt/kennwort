@@ -29,6 +29,7 @@ const simplePages = [
   "emergency",
   "links",
   "notifications",
+  "security",
   "renew",
   "setup",
   "unlock",

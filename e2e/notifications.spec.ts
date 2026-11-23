@@ -3,7 +3,7 @@ import { expect, type Page } from "@playwright/test";
 import { setUpCompany, test, unlock } from "./account.ts";
 import { annaJoins, heading, openVaults } from "./company.ts";
 
-// K-602 (P-23): what happens to one account shows up in the bell of the other, live, by IDs the
+// K-602 (P-24): what happens to one account shows up in the bell of the other, live, by IDs the
 // device names itself; marking it read clears the count. Push is tested on the server only
 // (apps/server/src/notifications/routes.test.ts): a browser under Playwright gets no real push.
 test.use({ locale: "de-DE" });

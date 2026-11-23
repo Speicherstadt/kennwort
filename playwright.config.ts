@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { PWNED_PORT } from "./e2e/pwned.ts";
 import { SETUP_CODE } from "./e2e/setup-code.ts";
 
 // What a user does, on the desktop and on a phone: every spec runs on `desktop`, specs tagged
@@ -41,7 +42,15 @@ export default defineConfig({
         KENNWORT_SETUP_CODE: SETUP_CODE,
         // Every test sends its own X-Forwarded-For as its client address (e2e/account.ts)
         KENNWORT_BEHIND_PROXY: "true",
+        // The leak check (K-603) asks the stand-in below, never the real service
+        KENNWORT_PWNED_URL: `http://localhost:${PWNED_PORT}/range/`,
       },
+    },
+    {
+      // The stand-in for Have I Been Pwned's Pwned Passwords (e2e/pwned.ts)
+      command: "bun e2e/pwned-server.ts",
+      port: PWNED_PORT,
+      reuseExistingServer: false,
     },
     {
       // The showcase of packages/ui is built for these tests only (apps/web/vite.config.ts); the

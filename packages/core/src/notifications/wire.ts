@@ -1,5 +1,5 @@
 /**
- * Notifications between client and server (K-602, docs/sicherheitsdesign.md P-23). The server
+ * Notifications between client and server (K-602, docs/sicherheitsdesign.md P-24). The server
  * writes them only from events it handles anyway and names only IDs: the kind, the subject (a
  * vault, an entry, an invitation, a link or an account) and who caused it. Names of vaults and
  * entries are encrypted and never reach it; the client finds them locally. A notification is a
@@ -65,7 +65,7 @@ export const wantsPush = (prefs: NotificationPrefs, kind: NotificationKind) =>
 
 /**
  * A device's push subscription: only the address of the push service. The push carries no
- * content (P-23), so the keys for encrypting one (RFC 8291) are neither sent nor kept.
+ * content (P-24), so the keys for encrypting one (RFC 8291) are neither sent nor kept.
  */
 export const PushSubscriptionWire = z.object({
   endpoint: z.url({ protocol: /^https$/ }).max(2048),

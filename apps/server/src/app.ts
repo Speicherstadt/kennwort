@@ -24,6 +24,7 @@ import { type Log, pathForLog } from "./log.ts";
 import { createNotifier, type NotificationHub } from "./notifications/notify.ts";
 import { createPusher, type PushDeps } from "./notifications/push.ts";
 import { notificationRoutes } from "./notifications/routes.ts";
+import { type PwnedDeps, pwnedRoutes } from "./pwned/routes.ts";
 import { groupRoutes } from "./sync/group-routes.ts";
 import { createHub, type Hub } from "./sync/hub.ts";
 import { logRoutes } from "./sync/log-routes.ts";
@@ -57,6 +58,8 @@ export type Deps = {
   push?: PushDeps | undefined;
   now?: () => number;
   keepAliveMs?: number;
+  /** The leak check's proxy (K-603); without it the route answers that the check is off */
+  pwned?: PwnedDeps | undefined;
 };
 
 const hasLeft = (db: Db, accountId: string) =>
@@ -82,6 +85,7 @@ export const createApp = ({
   push,
   now = Date.now,
   keepAliveMs,
+  pwned,
 }: Deps) => {
   const app = new Hono();
   // Notifications (K-602) from events the routes handle anyway, IDs only
@@ -143,6 +147,7 @@ export const createApp = ({
   api.route("/", requestRoutes({ db, now, notify }));
   api.route("/", groupRoutes({ db, now }));
   api.route("/", shareRoutes({ db, now, notify }));
+  api.route("/", pwnedRoutes(pwned));
   api.route("/", syncRoutes({ db, hub, now, ...(keepAliveMs ? { keepAliveMs } : {}) }));
   api.route(
     "/",

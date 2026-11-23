@@ -1,4 +1,4 @@
-// K-602 (P-23): the notification routes and Web Push with a fake push service. Anna of Weber
+// K-602 (P-24): the notification routes and Web Push with a fake push service. Anna of Weber
 // Haustechnik lists, reads and deletes her notifications, chooses which kinds go out as push and
 // turns push on for her phone; the push carries no content, and a dropped subscription goes.
 import { describe, expect, it } from "bun:test";

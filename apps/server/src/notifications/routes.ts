@@ -1,5 +1,5 @@
 /**
- * Notifications under /api (K-602, P-23): the account's own list, marking read, deleting, which
+ * Notifications under /api (K-602, P-24): the account's own list, marking read, deleting, which
  * kinds go out as push, a live channel (SSE) that only says "something new", and the device's push
  * subscription. Each route reads and writes only rows of the session's account; a row of anyone
  * else answers like one that does not exist.

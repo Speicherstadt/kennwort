@@ -10,6 +10,8 @@ import { migrate, openDatabase } from "./db/database.ts";
 import { createLog } from "./log.ts";
 import { PUSH_HOSTS, pushHostAllowed } from "./notifications/push.ts";
 import { loadVapid } from "./notifications/vapid.ts";
+import { PWNED_LIMIT } from "./pwned/routes.ts";
+import { upstreamRanges } from "./pwned/upstream.ts";
 
 const config = readConfig(process.env);
 if (!config.ok) {
@@ -18,7 +20,8 @@ if (!config.ok) {
   console.error(JSON.stringify(failure));
   process.exit(1);
 }
-const { port, database, logLevel, publicUrl, authSecret, behindProxy, setupCode } = config.value;
+const { port, database, logLevel, publicUrl, authSecret, behindProxy, setupCode, pwnedUrl } =
+  config.value;
 const log = createLog(logLevel, (line) => console.log(line));
 
 if (database !== ":memory:") mkdirSync(dirname(database), { recursive: true });
@@ -52,7 +55,14 @@ const push =
         allowHost: pushHostAllowed([...PUSH_HOSTS, ...pushConfig.extraHosts]),
       }
     : undefined;
-const app = createApp({ db, log, authenticate: authenticateWith(auth), signIn, push });
+// The leak check's proxy (K-603) asks the configured service with nothing but a SHA-1 prefix
+const pwned = pwnedUrl
+  ? {
+      ranges: upstreamRanges({ url: pwnedUrl, fetch, now: Date.now }),
+      allow: rateLimiter(PWNED_LIMIT.max, PWNED_LIMIT.windowMs),
+    }
+  : undefined;
+const app = createApp({ db, log, authenticate: authenticateWith(auth), signIn, push, pwned });
 // The peer address goes to the app as its environment; the rate limits count it
 const server = Bun.serve({
   port,

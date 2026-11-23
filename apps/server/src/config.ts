@@ -31,6 +31,11 @@ const Config = z.object({
     .string()
     .regex(/^[a-z0-9.-]+(,[a-z0-9.-]+)*$/)
     .optional(),
+  // Where the leak check (K-603) gets its ranges: the address up to the prefix, ending in "/",
+  // such as a mirror of Pwned Passwords; "off" turns the check off for everyone on this server
+  KENNWORT_PWNED_URL: z
+    .union([z.literal("off"), z.url({ protocol: /^https?$/ }).regex(/\/$/)])
+    .default("https://api.pwnedpasswords.com/range/"),
 });
 
 export type Config = {
@@ -43,12 +48,18 @@ export type Config = {
   setupCode: string | undefined;
   /** Web Push (K-602): undefined when turned off */
   push: { subject: string; extraHosts: string[] } | undefined;
+  /** The leak check's range address, or undefined when the operator turned it off */
+  pwnedUrl: string | undefined;
 };
 
 export const readConfig = (env: Record<string, string | undefined>) => {
   const parsed = Config.safeParse(env);
   if (!parsed.success)
-    return { ok: false as const, error: parsed.error.issues.map((issue) => issue.path.join(".")) };
+    // Each setting once, though a union reports one issue per branch
+    return {
+      ok: false as const,
+      error: [...new Set(parsed.error.issues.map((issue) => issue.path.join(".")))],
+    };
   const data = parsed.data;
   const value: Config = {
     port: data.KENNWORT_PORT,
@@ -65,6 +76,7 @@ export const readConfig = (env: Record<string, string | undefined>) => {
             extraHosts: data.KENNWORT_PUSH_HOSTS?.split(",") ?? [],
           }
         : undefined,
+    pwnedUrl: data.KENNWORT_PWNED_URL === "off" ? undefined : data.KENNWORT_PWNED_URL,
   };
   return { ok: true as const, value };
 };

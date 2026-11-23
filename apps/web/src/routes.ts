@@ -22,6 +22,8 @@ export type Route =
   | { page: "emergency" }
   | { page: "links" }
   | { page: "notifications" }
+  /** The security overview (K-603) */
+  | { page: "security" }
   | { page: "renew" }
   | { page: "setup" }
   | { page: "unlock" }
