@@ -201,3 +201,22 @@ describe("upstreamRanges", () => {
     expect(upstream.asked[0]?.url).toBe("http://pwned.weber.test:8080/range/ABCDE");
   });
 });
+
+describe("upstreamRanges, an answer without end (review of K-603)", () => {
+  it("stops reading a range past its limit instead of holding all of it in memory", async () => {
+    // A service (or anyone between) that sends range lines without end
+    const chunk = new TextEncoder().encode(`${"A".repeat(35)}:1\r\n`.repeat(1024));
+    let sent = 0;
+    const endless = new ReadableStream<Uint8Array>({
+      pull: (controller) => {
+        sent += chunk.length;
+        if (sent > 64 * MAX_RANGE_LENGTH) controller.close();
+        else controller.enqueue(chunk);
+      },
+    });
+    const upstream = service(() => new Response(endless));
+    const ranges = upstreamRanges(deps({ fetch: upstream.fetch }));
+    expect(await ranges("5BAA6")).toBeUndefined();
+    expect(sent).toBeLessThanOrEqual(MAX_RANGE_LENGTH + 2 * chunk.length);
+  });
+});

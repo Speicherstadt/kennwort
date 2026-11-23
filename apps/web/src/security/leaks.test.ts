@@ -83,3 +83,37 @@ describe("createLeaks", () => {
     expect(leaks.state()).toEqual({ kind: "off" });
   });
 });
+
+describe("createLeaks, switched off during a run (review of K-603)", () => {
+  it("sends no further prefix once the check is switched off while a batch is out", async () => {
+    // Twelve own passwords: three batches of LEAK_CONCURRENCY prefixes
+    const many = markToChange(
+      Array.from({ length: 12 }, (_, i) => login(`E${i}`, `Weber-Haustechnik-${i}-Rohr!`)),
+    );
+    const held: (() => void)[] = [];
+    const { asked, leaks } = service(
+      (prefix) =>
+        new Promise((resolve) => {
+          held.push(() => resolve({ ok: true, value: `${prefix.repeat(7)}:0` }));
+        }),
+    );
+    const first = leaks.refresh(many, true);
+    await settle();
+    expect(asked).toHaveLength(4);
+    // The person switches the check off while the first batch is out
+    const off = leaks.refresh(many, false);
+    await off;
+    let done = false;
+    void first.then(() => {
+      done = true;
+    });
+    for (let round = 0; round < 10 && !done; round++) {
+      for (const release of held.splice(0)) release();
+      await settle();
+    }
+    await first;
+    await settle();
+    expect(leaks.state()).toEqual({ kind: "off" });
+    expect(asked).toHaveLength(4);
+  });
+});
