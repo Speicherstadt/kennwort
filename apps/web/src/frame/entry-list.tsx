@@ -114,7 +114,12 @@ export const EntryList = (props: {
                 current={props.filter.kind === chip.kind}
                 class="flex min-h-11 items-center"
               >
-                <span class={toggleVariants()}>{chip.label}</span>
+                <span
+                  class={toggleVariants()}
+                  data-state={props.filter.kind === chip.kind ? "on" : "off"}
+                >
+                  {chip.label}
+                </span>
               </Link>
             )}
           </For>
