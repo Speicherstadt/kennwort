@@ -447,4 +447,34 @@ describe("deleting one's own account (K-607, P-28)", () => {
     ).json();
     expect(plan).toMatchObject({ vaults: { leave: [shared] }, refused: null });
   });
+
+  it("counts a manager who has left the company as gone, not as the one who stays", async () => {
+    const w = await withAnnaLogin();
+    const shared = await annasVault(w, true);
+    const entries = await logOf(w, shared);
+    if (!Array.isArray(entries)) throw new Error("log");
+    const state = stateOf(w, bytes(16).parse(shared), entries);
+    if (!state.ok) throw new Error(state.error);
+    const signer = { accountId: w.annaId, edSecretKey: w.annaEd.secretKey };
+    const promote = changeAccess(
+      signer,
+      state.value,
+      bytes(16).parse(shared),
+      w.o.owner.accountId,
+      { role: "manage", validUntil: 0 },
+      NOW + 3,
+    );
+    expect((await post(w, shared, { entry: toWire(promote) }, w.annaToken)).status).toBe(201);
+    // Jonas leaves the company; the log still names him until a manager removes him (P-11)
+    const db = w.o.setup.db;
+    db.update(accounts).set({ role: "owner" }).where(eq(accounts.id, annaId(w))).run();
+    db.update(accounts).set({ leftAt: NOW + 4 }).where(eq(accounts.id, jonasId(w))).run();
+    const plan = await (
+      await w.o.setup.request("/api/account/deletion", { token: w.annaToken })
+    ).json();
+    expect(plan.vaults.leave).not.toContain(shared);
+    expect((await annaDeletes(w)).status).toBe(200);
+    // Nobody is left to manage or remove anyone: the vault goes with her
+    expect(db.select().from(vaults).where(eq(vaults.id, shared)).all()).toEqual([]);
+  });
 });
