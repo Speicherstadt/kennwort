@@ -6,7 +6,7 @@ name: Release
 # platform with arm64 on GitHub's native ARM runner, pushed by digest and joined into one
 # multi-arch tag (x.y.z, x.y, latest; a pre-release vX.Y.Z-rc.N gets x.y.z-rc.N and next), the
 # build cache in the registry. The GitHub release itself comes from firsttris/workflows'
-# github-release.yml. Unlike docker-release.yml the image goes to ghcr.io only (no Docker Hub).
+# github-release.yml. The image goes to ghcr.io and, as in docker-release.yml, to Docker Hub (tristanteu/kennwort).
 #
 # Signed with the loop's TEST release key (apps/web/scripts/release-build.ts): the real key is a
 # step for people (BAULISTE.md, "Schritte für Menschen"); until then a release says so.
@@ -96,7 +96,17 @@ jobs:
           tar --sort=name --mtime="@$SOURCE_DATE_EPOCH" --owner=0 --group=0 --numeric-owner \
             -C apps/web/dist -czf "release/kennwort-web-$VERSION.tar.gz" .
           cp apps/web/dist/release.json apps/web/dist/release.sig release/
-          (cd release && sha256sum -- * > SHA256SUMS)
+      # The extension from the same build (bun run build builds every browser): one ZIP per browser
+      # to load by hand or hand to the stores; Safari's folder goes through Xcode on a Mac
+      - name: Browser extension as ZIP files
+        run: |
+          set -euo pipefail
+          for browser in chrome firefox safari; do
+            (cd "apps/extension/dist/$browser" && \
+              find . -exec touch -d "@$SOURCE_DATE_EPOCH" {} + && \
+              zip -X -q -r "$GITHUB_WORKSPACE/release/kennwort-extension-$VERSION-$browser.zip" .)
+          done
+      - run: (cd release && sha256sum -- * > SHA256SUMS)
       - uses: actions/upload-artifact@v7
         with:
           name: kennwort-release
@@ -130,10 +140,18 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      # Docker Hub as in every project (firsttris/workflows docker-release.yml, Haben: tristanteu/haben):
+      # the same manifest under a second name, copied from ghcr.io by imagetools
+      - uses: docker/login-action@v4
+        with:
+          username: tristanteu
+          password: ${{ secrets.DOCKER_PAT }}
       - id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ needs.prepare.outputs.image }}
+          images: |
+            ${{ needs.prepare.outputs.image }}
+            docker.io/tristanteu/kennwort
       # The web build in the image must be the published one, byte for byte
       - name: Web build of the image
         uses: docker/build-push-action@v7
@@ -220,7 +238,9 @@ jobs:
     with:
       release-artifact: kennwort-release
       notes: >-
-        Image: `${{ needs.prepare.outputs.image }}:${{ needs.prepare.outputs.version }}`.
+        Image: `${{ needs.prepare.outputs.image }}:${{ needs.prepare.outputs.version }}` and
+        `tristanteu/kennwort:${{ needs.prepare.outputs.version }}` on Docker Hub. Browser extension:
+        the ZIP for Chrome/Edge or Firefox, loaded by hand until it is in the stores.
         The web build is signed with the TEST release key until the release key is made
         (BAULISTE.md, "Schritte für Menschen"); rebuild and compare it with
         `bun run reproducible --release release.json` (docs/sicherheitsdesign.md, K-408).
