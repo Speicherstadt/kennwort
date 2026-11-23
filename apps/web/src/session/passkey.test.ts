@@ -64,7 +64,9 @@ const setUp = (
           return path === "/api/devices"
             ? {
                 status: 200,
-                json: { devices: [{ id: "s-1", name: null, signedInAt: 1, lastSeenAt: 1, current: true }] },
+                json: {
+                  devices: [{ id: "s-1", name: null, signedInAt: 1, lastSeenAt: 1, current: true }],
+                },
               }
             : { status: 0, json: undefined };
         },
