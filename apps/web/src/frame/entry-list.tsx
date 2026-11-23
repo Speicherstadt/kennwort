@@ -127,7 +127,11 @@ export const EntryList = (props: {
     >
       <div class="grid gap-3 p-4 pb-2 md:p-3">
         <div class="flex items-center gap-2">
-          <h1 id="list-title" class="flex-1 text-[28px] font-semibold md:text-[15px]">
+          <h1
+            id="list-title"
+            class="min-w-0 flex-1 truncate text-[28px] font-semibold md:text-[15px]"
+            title={listTitle(props.filter, props.vaults)}
+          >
             {listTitle(props.filter, props.vaults)}
           </h1>
           <VaultAccess nav={props.nav} filter={props.filter} vaults={props.vaults} />
