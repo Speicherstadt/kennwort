@@ -69,6 +69,7 @@ nav:
   - Anmeldedienst und Deep Links: anmeldedienst.md
   - Sicherheits-Übersicht: sicherheit.md
   - Browser-Extension: extension.md
+  - Kommandozeile: cli.md
   - Import und Export: import-export.md
   - Sicherheitsdesign: sicherheitsdesign.md
   - Entwicklung:

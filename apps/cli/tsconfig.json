@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "../../node_modules/.tsbuild/cli", "types": ["bun"] },
+  "include": ["src"],
+  "references": [
+    { "path": "../../packages/ui" },
+    { "path": "../../packages/client" },
+    { "path": "../../packages/core" },
+    { "path": "../../packages/crypto" }
+  ]
+}
