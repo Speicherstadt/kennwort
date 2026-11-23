@@ -37,6 +37,8 @@ const fakeSession = (state: { opened?: boolean; device?: boolean }) => {
     device: () => (state.device ? { accountId: "x", secretKey: new Uint8Array(16) } : undefined),
     lock: () => setOpened(undefined),
     touch: () => touches.push(1),
+    // No passkey set up on this device (K-707)
+    passkey: { offered: () => undefined, thisDevice: () => undefined },
     setLockAfter: () => {},
     // One company: the home is the one on screen (K-605)
     companies: {

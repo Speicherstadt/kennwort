@@ -1192,5 +1192,18 @@
   "demo_notice": "Läuft nur in deinem Browser, ohne Server. Gib keine echten Passwörter ein; beim Neuladen beginnt alles von vorn.",
   "demo_passphrase": "Passphrase:",
   "demo_preparing": "Die Demo-Firma Weber Haustechnik wird angelegt …",
-  "demo_failed": "Die Demo konnte nicht starten. Lade die Seite neu."
+  "demo_failed": "Die Demo konnte nicht starten. Lade die Seite neu.",
+  "passkey_title": "Entsperren mit Passkey",
+  "passkey_text": "Mit einem Passkey entsperrst du Kennwort auf diesem Gerät ohne Passphrase. Passphrase und Secret Key funktionieren weiter.",
+  "passkey_set_up": "Passkey zum Entsperren einrichten",
+  "passkey_set_up_done": "Der Passkey entsperrt Kennwort jetzt auf diesem Gerät.",
+  "passkey_name": "Passkey",
+  "passkey_added": "Eingerichtet am {date}",
+  "passkey_remove": "Entfernen",
+  "passkey_unlock": "Mit Passkey entsperren",
+  "passkey_or_passphrase": "oder mit deiner Passphrase",
+  "error_passkey_no_prf": "Dieser Browser oder dieser Passkey kann Kennwort nicht entsperren, weil ihm die PRF-Erweiterung fehlt. Es wurde nichts eingerichtet; entsperre weiter mit deiner Passphrase.",
+  "error_passkey_cancelled": "Abgebrochen. Versuch es noch einmal oder entsperre mit deiner Passphrase.",
+  "error_passkey_wrong": "Der Passkey konnte Kennwort nicht entsperren. Entsperre mit deiner Passphrase.",
+  "error_passkey_removed": "Dieser Passkey entsperrt nicht mehr. Entsperre mit deiner Passphrase."
 }

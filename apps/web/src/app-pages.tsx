@@ -4,8 +4,10 @@
  */
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import type { Vault, VaultDeps } from "@kennwort/client/vaults/vaults.ts";
+import { encodeBytes } from "@kennwort/core";
 import type { Toasts } from "@kennwort/ui";
 import { onSettled, Show } from "solid-js";
+import { PasskeySection } from "./account/passkey-section.tsx";
 import { openTarget } from "./deep-link.ts";
 import { EmergencyPage } from "./emergency/emergency-page.tsx";
 import { writableVaults } from "./entries/entries-wiring.tsx";
@@ -23,14 +25,25 @@ type DevicesApi = Parameters<typeof DevicesSection>[0]["api"] &
   Parameters<typeof OidcSection>[0]["api"];
 
 /**
- * The identity provider and the device list in the settings (K-303, K-604), with the session's
- * token; signing this device out forgets the account here
+ * The identity provider, the passkeys that unlock and the device list in the settings (K-303,
+ * K-604, K-707), with the session's token; signing this device out forgets the account here.
+ * Passkeys only for the account this device unlocks, not a further company's (K-605)
  */
 export const devicesFor = (props: { api: DevicesApi; session: Session; nav: Navigation }) => () => (
   <Show when={props.session.opened()?.token}>
     {(token) => (
       <>
         <OidcSection token={token()} api={props.api} />
+        <Show
+          when={(() => {
+            const opened = props.session.opened();
+            return opened && encodeBytes(opened.accountId) === props.session.device()?.accountId
+              ? opened.state.passkeys
+              : undefined;
+          })()}
+        >
+          {(passkeys) => <PasskeySection passkeys={passkeys()} unlock={props.session.passkey} />}
+        </Show>
         <DevicesSection
           token={token()}
           api={props.api}

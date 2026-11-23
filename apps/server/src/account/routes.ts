@@ -23,6 +23,7 @@ import { z } from "zod";
 import type { Db } from "../db/database.ts";
 import { accountKeys, accounts, invitations, loginKeys } from "../db/schema.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
+import { passkeyWays, unlockPasskeyRoutes } from "./unlock-passkeys.ts";
 
 const KeysUpload = z.object({
   xwingPublicKey: bytes(1216),
@@ -148,6 +149,7 @@ export const accountRoutes = ({ db, now }: { db: Db; now: () => number }) =>
         unlock: {
           passphrase: encodeBytes(row.unlockPassphrase),
           recovery: encodeBytes(row.unlockRecovery),
+          passkeys: passkeyWays(db, accountId),
         },
         state: encodeBytes(row.state),
         stateCounter: row.stateCounter,
@@ -213,4 +215,5 @@ export const accountRoutes = ({ db, now }: { db: Db; now: () => number }) =>
       return current
         ? c.json({ error: "stale", stateCounter: current.stateCounter }, 409)
         : c.json({ error: "not-found" }, 404);
-    });
+    })
+    .route("/", unlockPasskeyRoutes({ db, now }));

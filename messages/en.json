@@ -1192,5 +1192,18 @@
   "demo_notice": "Runs only in your browser, without a server. Don't enter real passwords; a reload starts over.",
   "demo_passphrase": "Passphrase:",
   "demo_preparing": "Setting up the demo company Weber Haustechnik …",
-  "demo_failed": "The demo could not start. Reload the page."
+  "demo_failed": "The demo could not start. Reload the page.",
+  "passkey_title": "Unlock with a passkey",
+  "passkey_text": "With a passkey you unlock Kennwort on this device without your passphrase. Passphrase and Secret Key keep working.",
+  "passkey_set_up": "Set up a passkey to unlock",
+  "passkey_set_up_done": "The passkey now unlocks Kennwort on this device.",
+  "passkey_name": "Passkey",
+  "passkey_added": "Set up on {date}",
+  "passkey_remove": "Remove",
+  "passkey_unlock": "Unlock with passkey",
+  "passkey_or_passphrase": "or with your passphrase",
+  "error_passkey_no_prf": "This browser or this passkey cannot unlock Kennwort because it lacks the PRF extension. Nothing was set up; keep unlocking with your passphrase.",
+  "error_passkey_cancelled": "Cancelled. Try again or unlock with your passphrase.",
+  "error_passkey_wrong": "The passkey could not unlock Kennwort. Unlock with your passphrase.",
+  "error_passkey_removed": "This passkey no longer unlocks. Unlock with your passphrase."
 }

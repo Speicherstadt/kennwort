@@ -11,6 +11,7 @@ import { App } from "./app.tsx";
 import { createNavigation, takeStartFragment } from "./navigation.ts";
 import { indexedDbKeyValue } from "./offline/idb.ts";
 import { createLocalCopy } from "./offline/local-copy.ts";
+import { browserWebAuthn } from "./session/passkey.ts";
 import { createSession } from "./session/session.ts";
 import { watchForUpdates } from "./sw/register.ts";
 import { UpdateNotice } from "./sw/update-notice.tsx";
@@ -28,7 +29,12 @@ if (root) {
   const copy = createLocalCopy(indexedDbKeyValue(globalThis.indexedDB));
   const identity = deviceIdentity(globalThis.localStorage, navigator.userAgent);
   const api = createApi(copy.fetch(fetch), identity);
-  const session = createSession({ api, storage: globalThis.localStorage, copy });
+  const session = createSession({
+    api,
+    storage: globalThis.localStorage,
+    copy,
+    passkeys: { call: callerOf(fetch, identity), webAuthn: browserWebAuthn(), api },
+  });
   // A one-time link is fetched without the device naming itself: the recipient has no account
   const { fetchLink } = linkCalls(callerOf(fetch, undefined));
   const [updateReady, setUpdateReady] = createSignal(false);

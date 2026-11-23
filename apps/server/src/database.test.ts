@@ -54,6 +54,7 @@ describe("database", () => {
       "server_keys",
       "sqlite_sequence",
       "superseded_certificates",
+      "unlock_passkeys",
       "vault_groups",
       "vault_keys",
       "vault_log",
