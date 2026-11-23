@@ -3,8 +3,9 @@
  * page in the active tab, all entries or the favorites, the generator, and a footer with the lock
  * time and a link to the web app. Vaults and entries load as account/load-entries.ts describes.
  */
-import { Button, badgeVariants, m, SearchInput, type Toasts } from "@kennwort/ui";
+import { Button, badgeVariants, Icon, m, SearchInput, type Toasts } from "@kennwort/ui";
 import { GeneratorPanel } from "@kennwort/ui/generator/generator-panel.tsx";
+import { WandSparkles } from "@kennwort/ui/icons";
 import { createMemo, createSignal, Match, onSettled, Show, Switch } from "solid-js";
 import { createEntryLoad } from "../account/load-entries.ts";
 import type { PopupAccount } from "../account/popup-account.ts";
@@ -105,7 +106,7 @@ export const VaultScreen = (props: {
                   <Show
                     when={props.host()}
                     fallback={
-                      <p class="px-2 pt-2 pb-3 text-xs text-muted-foreground">
+                      <p class="mx-2 mt-2 mb-3 rounded-lg bg-accent px-3 py-2 text-xs text-muted-foreground">
                         {m.popup_no_page()}
                       </p>
                     }
@@ -131,13 +132,14 @@ export const VaultScreen = (props: {
           </div>
         </Show>
       </main>
-      <footer class="flex items-center gap-2 border-t border-border bg-muted px-3 py-2 text-xs">
+      <footer class="flex items-center gap-2 border-t border-border bg-muted/60 px-3 py-2 text-xs">
         <Button
           size="sm"
           variant="ghost"
           aria-pressed={generator() ? "true" : "false"}
           onClick={() => setGenerator(!generator())}
         >
+          <Icon icon={WandSparkles} />
           {m.nav_generator()}
         </Button>
         <span class="min-w-0 flex-1 truncate text-muted-foreground">

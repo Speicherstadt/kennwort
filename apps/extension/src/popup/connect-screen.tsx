@@ -3,7 +3,8 @@
  * the recovery kit, and the passphrase. The extension keeps the first three in its session area
  * until the browser closes (account/records.ts); the passphrase only for this one unlock.
  */
-import { Button, Input, m } from "@kennwort/ui";
+import { Button, Icon, Input, m } from "@kennwort/ui";
+import { Link2 } from "@kennwort/ui/icons";
 import { createSignal } from "solid-js";
 import type { ConnectInput, PopupOutcome } from "../account/popup-account.ts";
 import { errorText } from "./error-text.ts";
@@ -31,11 +32,16 @@ export const ConnectScreen = (props: {
     setError(result.ok ? undefined : errorText(result.error));
   };
   return (
-    <main aria-labelledby="connect-title" class="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
-      <h1 id="connect-title" class="text-[17px] font-semibold">
-        {m.popup_connect_title()}
-      </h1>
-      <p class="text-xs text-muted-foreground">{m.popup_connect_text()}</p>
+    <main aria-labelledby="connect-title" class="flex flex-1 flex-col gap-4 overflow-y-auto p-5">
+      <div class="grid gap-2">
+        <span class="grid size-10 place-items-center rounded-full bg-accent">
+          <Icon icon={Link2} size={18} />
+        </span>
+        <h1 id="connect-title" class="text-[17px] font-semibold">
+          {m.popup_connect_title()}
+        </h1>
+        <p class="text-xs text-muted-foreground">{m.popup_connect_text()}</p>
+      </div>
       <ErrorNote text={error()} />
       <form class="grid gap-3" onSubmit={submit}>
         <Input
@@ -64,7 +70,7 @@ export const ConnectScreen = (props: {
           required
           onInput={(event) => setPassphrase(event.currentTarget.value)}
         />
-        <Button type="submit" variant="primary" disabled={busy()}>
+        <Button type="submit" variant="primary" class="mt-1 w-full" disabled={busy()}>
           {busy() ? m.working() : m.popup_connect_submit()}
         </Button>
       </form>
