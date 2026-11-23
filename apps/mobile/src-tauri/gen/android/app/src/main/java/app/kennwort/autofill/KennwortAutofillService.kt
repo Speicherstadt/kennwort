@@ -31,7 +31,8 @@ class KennwortAutofillService : AutofillService() {
     val context = request.fillContexts.lastOrNull() ?: return callback.onSuccess(null)
     val structure = context.structure
     val detected = detect(StructureReader.read(structure))
-    val target = FillTargets.of(structure.activityComponent.packageName, packageName, detected)
+    val requester = structure.activityComponent.packageName
+    val target = FillTargets.of(requester, packageName, detected, Signers.of(packageManager, requester))
       ?: return callback.onSuccess(null)
     val offer = FillPlan.offer(detected, target, UUID.randomUUID().toString()) { it.id as? AutofillId }
       ?: return callback.onSuccess(null)
@@ -77,7 +78,8 @@ class KennwortAutofillService : AutofillService() {
   override fun onSaveRequest(request: SaveRequest, callback: SaveCallback) {
     val structure = request.fillContexts.lastOrNull()?.structure ?: return callback.onSuccess()
     val detected = detect(StructureReader.read(structure, withText = true))
-    val target = FillTargets.of(structure.activityComponent.packageName, packageName, detected)
+    val requester = structure.activityComponent.packageName
+    val target = FillTargets.of(requester, packageName, detected, Signers.of(packageManager, requester))
     val password = detected.passwords.firstNotNullOfOrNull { it.text?.takeIf(String::isNotEmpty) }
     if (target == null || password == null) return callback.onSuccess()
     val username = detected.usernames.firstNotNullOfOrNull { it.text }.orEmpty()

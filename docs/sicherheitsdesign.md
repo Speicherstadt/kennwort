@@ -2370,14 +2370,17 @@ durch etwas Gleichwertiges ersetzt; wo nicht, steht das Restrisiko hier.
   eine ältere Anfrage oder ein Abbruch füllt nichts. Die App listet die Einträge erst im geöffneten
   Konto, also nach dem normalen Entsperren, und füllt erst nach dem Tippen auf einen Eintrag.
 - Nur bei exakt passendem Ziel: Eine Website erkennt der Dienst an der Web-Domain, die ein
-  bekannter Browser meldet (`FillTarget.kt`); jede andere App bekommt ihr eigenes Paket als Ziel,
+  bekannter Browser meldet (`FillTarget.kt`), und nur, wenn die App mit dem Zertifikat dieses
+  Browsers signiert ist (SHA-256 der Signaturzertifikate aus dem `PackageManager`, `Signers.kt`,
+  gegen die Liste in `FillTarget.kt`); jede andere App bekommt ihr eigenes Paket als Ziel,
   auch wenn sie eine Web-Domain an ihre Ansichten schreibt, denn das kann jede App. Den Host
   gleicht die App mit derselben Funktion ab wie die Extension (`packages/client/src/autofill`),
   eine App über `android://Paketname` in einem Adressfeld des Eintrags, nur genau dieses Paket.
   Eine Seite, die der Browser als http meldet, bekommt nichts; meldet er kein Schema (vor Android
   9), zählt nur die Domain.
 - Nie in einen fremden Frame: Liegt ein erkanntes Feld in einem anderen Dokument als dem obersten
-  (ein Frame einer anderen Domain), füllt der Dienst gar nichts.
+  (ein Frame einer anderen Domain oder eines anderen Schemas, etwa ein http-Frame auf einer
+  https-Seite), füllt der Dienst gar nichts.
 - Nur die angefragten Felder: Die Antwort trägt nur Benutzername und Passwort, soweit angefragt;
   Kotlin prüft das ein zweites Mal (`BridgeJson.kt`). Einmal-Codes füllt der Dienst nie.
 - Speichern: Bestätigt die Person Androids „In Kennwort speichern?“, hält der Dienst die Daten im
@@ -2386,10 +2389,10 @@ durch etwas Gleichwertiges ersetzt; wo nicht, steht das Restrisiko hier.
   Keystore nutzt er noch nicht: Ein Geheimnis hinter Biometrie im Keystore wäre ein neuer Weg zu
   AK, den P-03 nicht vorsieht („nie AK“ auf dem Gerät); er kommt nur mit einem eigenen Abschnitt
   hier und einem Review. Bis dahin entsperrt die App mit Passphrase oder Passkey wie die Web-App.
-- Restrisiko: Eine App, die sich unter dem Paketnamen eines bekannten Browsers installiert, wenn
-  dieser fehlt, kann eine Web-Domain behaupten; der Dienst prüft das Signaturzertifikat des
-  Browsers nicht. Sie bekommt nur Einträge für die Domain, die sie nennt, und erst, nachdem die
-  Person entsperrt und gewählt hat.
+- Eine App unter dem Paketnamen eines bekannten Browsers, aber mit einem anderen Zertifikat
+  signiert, gilt nicht als Browser: Sie bekommt ihr Paket als Ziel, nie eine Web-Domain.
+  Restrisiko: Signiert ein Browser-Hersteller mit einem neuen Zertifikat, füllt Kennwort in diesem
+  Browser nichts, bis die Liste nachgezogen ist.
 
 **Wehrt ab:** E-14.
 
