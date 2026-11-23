@@ -1,3 +1,4 @@
+| Auswahl | natives `<select>` mit `selectClass` | wie die Eingabefelder: 32 px hoch (44 px am Handy), Radius 8 px, Rahmen in `--border`, eigener Chevron rechts statt des Browser-Pfeils; die Liste bleibt die des Browsers |
 # Design
 
 Wie Kennwort aussieht und sich bedient, für Menschen und Agenten. Vorbild ist das Mockup „Kennwort
@@ -59,8 +60,10 @@ Badge) und Avatar · Seitenleiste (232 px,
 ab `lg`) mit Firma, „Alle Einträge“, „Favoriten“, „Zum Ändern“, „Mit mir geteilt“ (sobald jemand
 etwas geteilt hat), Tresoren und Gruppen, unten der
 Hinweis zur Verschlüsselung · Liste (340 px) mit Titel, Suche (`/`) und Einträgen · Detail mit
-Kopfzeile (Icon, Titel, Tresor, letzte Änderung; rechts daneben Stern und „Bearbeiten“ als einzige
-Hauptaktion), darunter eine ruhige Zeile kleiner Knöpfe (Teilen, Einmal-Link, Etikett), Feldkarte
+Kopfzeile in einer Reihe (Icon, Titel, darunter Art, Tresor und letzte Änderung; rechts Stern,
+„Bearbeiten“ als einzige Hauptaktion und „⋯“ mit Teilen, Einmal-Link und Etikett als Menü auf der
+Popover-API), Feldkarte (höchstens `max-w-2xl`, Zeilen mindestens 56 px hoch, Kopieren und Aufdecken
+als Ghost-Icon-Knöpfe mit Tooltip)
 und – sobald der Bereich mindestens 768 px breit ist (Container-Query, nicht die Fensterbreite) –
 rechts Zugriff und Verlauf.
 

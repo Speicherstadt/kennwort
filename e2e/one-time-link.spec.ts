@@ -57,7 +57,8 @@ test.describe("one-time links", { tag: "@phone" }, () => {
     await setUpCompany(page);
     await addEntry(page, { title: "WLAN Baustelle", username: "weber-gast", password: SECRET });
     const sent = recordRequests(page);
-    await page.getByRole("button", { name: "Einmal-Link" }).filter({ visible: true }).click();
+    await page.getByRole("button", { name: "Weitere Aktionen" }).filter({ visible: true }).click();
+    await page.getByRole("menuitem", { name: "Einmal-Link" }).click();
     const dialog = page.getByRole("dialog", { name: "Einmal-Link für WLAN Baustelle" });
     await expect(dialog).toContainText("Im Link: Benutzername, Passwort");
     await dialog.getByLabel("Abrufe").selectOption("2");

@@ -4,7 +4,7 @@
  * the code, never the key (DESIGN.md: Einmalcode 18 px, 22 px on a phone)
  */
 import { totpCode } from "@kennwort/core";
-import { copyText, Icon, IconButton, m, type Toasts } from "@kennwort/ui";
+import { copyText, Icon, m, type Toasts, TooltipIconButton } from "@kennwort/ui";
 import { Copy } from "@kennwort/ui/icons";
 import { createSignal, onSettled, Show } from "solid-js";
 
@@ -35,9 +35,9 @@ export const TotpField = (props: {
   });
   const current = () => totpCode(props.value, time());
   return (
-    <div class="flex items-center gap-2 px-3.5 py-2.5">
+    <div class="flex min-h-14 items-center gap-1 px-4 py-2">
       <div class="grid min-w-0 flex-1 gap-0.5">
-        <span class="text-xs text-muted-foreground">{props.label}</span>
+        <span class="text-xs font-medium text-muted-foreground">{props.label}</span>
         <Show
           when={current()}
           keyed
@@ -58,7 +58,7 @@ export const TotpField = (props: {
         </Show>
       </div>
       <Show when={current().ok}>
-        <IconButton
+        <TooltipIconButton
           label={m.field_copy({ field: props.label })}
           onClick={() => {
             // The code at the click, not at the last tick
@@ -67,7 +67,7 @@ export const TotpField = (props: {
           }}
         >
           <Icon icon={Copy} />
-        </IconButton>
+        </TooltipIconButton>
       </Show>
     </div>
   );

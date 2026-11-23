@@ -1,5 +1,5 @@
 /** A field of the entry; a secret shows as dots until revealed, copy and reveal are own buttons (DESIGN.md) */
-import { cn, copyText, Icon, IconButton, m, type Toasts } from "@kennwort/ui";
+import { cn, copyText, Icon, m, type Toasts, TooltipIconButton } from "@kennwort/ui";
 import { Copy, Eye, EyeOff } from "@kennwort/ui/icons";
 import { createSignal, Show } from "solid-js";
 
@@ -16,9 +16,9 @@ export type FieldProps = {
 export const Field = (props: FieldProps) => {
   const [revealed, setRevealed] = createSignal(false);
   return (
-    <div class="flex items-center gap-2 px-3.5 py-2.5">
+    <div class="flex min-h-14 items-center gap-1 px-4 py-2">
       <div class="grid min-w-0 flex-1 gap-0.5">
-        <span class="text-xs text-muted-foreground">{props.label}</span>
+        <span class="text-xs font-medium text-muted-foreground">{props.label}</span>
         <span
           class={cn(
             props.multiline ? "break-words whitespace-pre-wrap" : "truncate",
@@ -29,7 +29,7 @@ export const Field = (props: FieldProps) => {
         </span>
       </div>
       <Show when={props.secret}>
-        <IconButton
+        <TooltipIconButton
           label={
             revealed()
               ? m.field_hide({ field: props.label })
@@ -39,14 +39,14 @@ export const Field = (props: FieldProps) => {
           onClick={() => setRevealed(!revealed())}
         >
           <Icon icon={revealed() ? EyeOff : Eye} />
-        </IconButton>
+        </TooltipIconButton>
       </Show>
-      <IconButton
+      <TooltipIconButton
         label={m.field_copy({ field: props.label })}
         onClick={() => copyText(props.value, props.label, props.toasts)}
       >
         <Icon icon={Copy} />
-      </IconButton>
+      </TooltipIconButton>
     </div>
   );
 };
