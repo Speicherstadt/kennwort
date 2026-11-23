@@ -657,6 +657,53 @@ gesehen oder geschrieben hat, hält sie unter AK versiegelt ebenfalls in `chrome
 zurückspielt, wirft sie nicht zurück (E-07, E-13). Beim Sperren überschreibt das Popup AK im Speicher.
 Entsperrt wird mit demselben Code wie in der Web-App (`packages/client/src/session/unlock.ts`).
 
+**Entsperren mit Passkey (K-707).** Entsperrt richtet ein Gerät unter **Einstellungen → Entsperren
+mit Passkey** einen Passkey ein: Es meldet ihn bei Better Auth an (WebAuthn, Attestation „none“) und
+fragt dabei die PRF-Erweiterung für ein zufälliges `credSalt` (32 Byte) dieses Passkeys ab (WebAuthn
+Level 3, `prf.eval.first`; gibt die Registrierung nur `enabled` zurück, folgt eine zweite Zeremonie
+für denselben Passkey). Mit der PRF-Ausgabe versiegelt es AK nach der Tabelle oben
+(`sealAccountKey`, Weg `passkey`, die Credential-ID in der AAD) und überschreibt sie gleich danach.
+Zum Server gehen nur die Credential-ID und der versiegelte AK (`PUT /api/account/unlock-passkeys`,
+73 Byte, nur für einen Passkey dieses Kontos und nur einmal); der Kontozustand nennt den Passkey mit
+seinem `credSalt` und dem Datum (`passkeys`, mit Grabstein beim Entfernen wie `linked`). Das Gerät
+merkt sich neben Konto-ID und Secret Key die Credential-ID und das `credSalt` (`kennwort-passkey`
+im `localStorage`), beides kein Geheimnis; der Server kennt das `credSalt` nicht. Die Anmeldung mit
+dem Passkey (P-02) und das Entsperren sind eine Zeremonie: Der Sperrbildschirm bietet **Mit Passkey
+entsperren** nur für das Konto, das das Gerät kennt, fragt genau diesen Passkey mit PRF für sein
+`credSalt` an, meldet sich mit der Antwort bei Better Auth an, lädt die Geheimtexte und öffnet AK.
+Danach muss der Kontozustand diesen Passkey mit genau diesem `credSalt` nennen, und nach dem
+Zusammenführen mit dem Kontozustand, den das Gerät behalten hat, immer noch; sonst bleibt es
+gesperrt und vergisst den Passkey (E-01, E-03, E-07). Passphrase und Secret Key bleiben daneben.
+
+- **Was nie zum Server geht:** die PRF-Ausgabe, AK und alles daraus Abgeleitete. Die Antwort an
+  Better Auth schreibt der Client selbst (`packages/client/src/session/webauthn-json.ts`), mit leeren
+  `clientExtensionResults`: `toJSON()` des Browsers trüge die PRF-Ausgabe mit.
+- **Ohne PRF** (Browser oder Authenticator): Fehlt nach der Registrierung jede PRF-Antwort, bricht der
+  Client ab, bevor der Server etwas angemeldet hat; der Passkey bleibt nur auf dem Authenticator und
+  öffnet nichts. Scheitert ein späterer Schritt (Speichern des versiegelten AK, Kontozustand), löscht
+  der Client den Passkey wieder.
+- **Entfernen:** zuerst aus dem Kontozustand, dann auf dem Server mit dem versiegelten AK
+  (`DELETE /api/account/unlock-passkeys/:credentialId`, löscht den Passkey bei Better Auth und über
+  `ON DELETE CASCADE` den versiegelten AK).
+- **Passphrase und AK:** AK bleibt bei einer neuen Passphrase nach dem Recovery Key (P-12) derselbe,
+  der Passkey entsperrt weiter. Neue Schlüssel (P-12, `PUT /api/account/rekey`) löschen alle Passkeys
+  des Kontos und damit jeden versiegelten AK; das erneuernde Gerät vergisst seinen Passkey, die
+  anderen spätestens beim nächsten Versuch.
+- **Herkunft:** Die Web-App erlaubt WebAuthn nur sich selbst (`Permissions-Policy`), und Better Auth
+  prüft Origin und rpId. Der Passkey gilt darum nur, wenn die Web-App vom Server selbst kommt.
+
+Umgesetzt in `packages/core/src/account/passkeys.ts` und `passkey-unlock.ts`,
+`packages/client/src/session/passkey-unlock.ts`, `apps/server/src/account/unlock-passkeys.ts` und
+`apps/web/src/session/passkey.ts`.
+
+**Restrisiko:** Wer Gerät und Authenticator zugleich hat, entsperrt ohne Passphrase; das ist der
+Zweck, die Sperrzeit gilt wie sonst. Ein Server, der den versiegelten AK und den Kontozustand von vor
+dem Entfernen zurückspielt, öffnet einem Gerät ohne behaltenen Kontozustand, das das `credSalt` noch
+kennt, das Konto mit diesem Passkey – mit dem echten AK, nicht mit einem untergeschobenen. Ein Gerät,
+das nach neuen Schlüsseln nicht neu gekoppelt wurde, sieht wie bei der Passphrase alte Stände. Die
+Extension kann sich als Passkey-Anbieter vor die Zeremonie stellen (K-406); ein dort gespeicherter
+Passkey hat kein PRF und endet in der Meldung ohne PRF.
+
 Die Mobile-App entsperrt wie die Web-App; auch für das Ausfüllen unter Android (K-802) legt sie
 keinen Schlüssel hinter Biometrie im Keystore ab ([P-17](#p-17-ausfullen)).
 
@@ -1970,7 +2017,7 @@ Die übrigen Kopfzeilen, auf jeder Antwort:
 | `Cross-Origin-Opener-Policy` | `same-origin`: ein Fenster, das die App öffnet oder das sie öffnet, bekommt keinen Griff auf sie |
 | `Cross-Origin-Resource-Policy` | `same-origin`: fremde Seiten binden keine Datei der App und keine Antwort des Servers ein; die Extension ruft die API mit CORS, das davon nicht betroffen ist |
 | `X-Frame-Options` | `DENY`, für Browser ohne `frame-ancestors` |
-| `Permissions-Policy` | alles verboten außer `camera=(self)` für den QR-Scanner, `clipboard-write=(self)` zum Kopieren und `autoplay=(self)` für das stumme Kamerabild, das erst nach der Freigabe der Kamera startet, oft lange nach dem Klick. `publickey-credentials-get` und `-create` sind verboten: Die Web-App ruft selbst kein WebAuthn auf, Passkeys sind bei ihr nur Einträge |
+| `Permissions-Policy` | alles verboten außer `camera=(self)` für den QR-Scanner, `clipboard-write=(self)` zum Kopieren, `autoplay=(self)` für das stumme Kamerabild, das erst nach der Freigabe der Kamera startet, oft lange nach dem Klick, und `publickey-credentials-get=(self)` und `-create=(self)` für das Entsperren mit Passkey (K-707); ein Frame anderer Herkunft bekommt kein WebAuthn |
 | `Strict-Transport-Security` | `max-age=31536000`, nur wenn `KENNWORT_PUBLIC_URL` mit `https://` beginnt; ohne `includeSubDomains`, weil andere Hosts unter der Domain des Betreibers vielleicht kein https haben |
 
 Antworten des Servers, die der Service Worker bei einer Navigation weitergibt (`/api`, `/auth`,

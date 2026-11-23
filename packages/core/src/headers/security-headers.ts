@@ -41,11 +41,18 @@ export const API_POLICY = "default-src 'none'; frame-ancestors 'none'; sandbox";
 
 /**
  * Every feature Chromium knows denied, but the camera for the QR scan (K-306), copying to the
- * clipboard, and autoplay for the scan's muted camera video, which starts after the camera
- * permission, possibly long after the click. Passkeys are entry data here, the web app calls no
- * WebAuthn itself; unknown names would only cost a console error.
+ * clipboard, autoplay for the scan's muted camera video, which starts after the camera
+ * permission, possibly long after the click, and WebAuthn on the app's own origin for unlocking
+ * with a passkey (K-707); a frame of another origin gets none of them. Unknown names would only
+ * cost a console error.
  */
-const ALLOWED_FEATURES = new Set(["autoplay", "camera", "clipboard-write"]);
+const ALLOWED_FEATURES = new Set([
+  "autoplay",
+  "camera",
+  "clipboard-write",
+  "publickey-credentials-create",
+  "publickey-credentials-get",
+]);
 const FEATURES = [
   "accelerometer",
   "autoplay",

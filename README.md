@@ -46,7 +46,7 @@ deinem eigenen Server betreibst.
 
 - **Nur ihr könnt es lesen**: Ende-zu-Ende-verschlüsselt, mit Post-Quanten-Schutz; der Server sieht nur
   Verschlüsseltes und kann niemandem heimlich Zugriff geben.
-- **Anmelden mit Passkey**: entsperrt wird mit Passphrase und Secret Key, die dein Gerät nie verlassen; Passkeys für Websites speichert Kennwort gleich mit.
+- **Entsperren mit Passkey**: in der Web-App mit einem Passkey (WebAuthn PRF) statt der Passphrase, die daneben weiter funktioniert; der Server sieht nur den mit dem Passkey verschlüsselten Kontoschlüssel. Passkeys für Websites speichert Kennwort gleich mit.
 - **Für Teams gebaut**: Tresore, Gruppen, Rechte, Zugriff auf Zeit, Freigabe durch Verwalter, Audit-Log.
 - **Für Handwerk und IT-Dienstleister**: QR-Etiketten für Geräte, Übergabe der Zugänge an den Kunden, mehrere
   Firmen in einem Konto.

@@ -83,6 +83,24 @@ export const authPasskey = sqliteTable(
 );
 
 /**
+ * AK sealed under a passkey's PRF output (K-707, P-03), one per passkey that may unlock. The
+ * server never sees the PRF output or AK; the account state says which passkeys may unlock. Gone
+ * with the passkey (removed, or every passkey of the account at renewal, P-12).
+ */
+export const unlockPasskeys = sqliteTable(
+  "unlock_passkeys",
+  {
+    passkeyId: text("passkey_id")
+      .primaryKey()
+      .references(() => authPasskey.id, { onDelete: "cascade" }),
+    accountId: text("account_id").notNull(),
+    sealed: blob("sealed", { mode: "buffer" }).notNull(),
+    createdAt: integer("created_at").notNull(),
+  },
+  (table) => [index("unlock_passkeys_account").on(table.accountId)],
+);
+
+/**
  * The notweg sign-in key (P-02): an Ed25519 public key derived on the device from passphrase and
  * Secret Key; the server stores the key and the account salt, never anything to guess from. Next
  * to it the public key the Recovery Key gives (P-12), set when the account uploads its keys.

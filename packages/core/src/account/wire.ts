@@ -8,7 +8,11 @@ export const StoredWire = z.object({
   keyBlock: bytes(),
   state: bytes(),
   stateCounter: z.number().int().nonnegative(),
-  unlock: z.object({ passphrase: bytes(), recovery: bytes() }),
+  unlock: z.object({
+    passphrase: bytes(),
+    recovery: bytes(),
+    passkeys: z.array(z.object({ credentialId: bytes(), sealed: bytes() })).optional(),
+  }),
 });
 
 export const SessionWire = z.object({ accountId: z.string(), token: z.string().min(1) });

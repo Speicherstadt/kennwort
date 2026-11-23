@@ -30,14 +30,14 @@ describe("API_POLICY", () => {
 });
 
 describe("PERMISSIONS_POLICY", () => {
-  it("allows the camera (QR scan), copying and the muted camera video, and denies the rest", () => {
+  it("allows the camera (QR scan), copying, the muted camera video and WebAuthn (K-707), and denies the rest", () => {
     expect(PERMISSIONS_POLICY).toBe(
       "accelerometer=(), autoplay=(self), bluetooth=(), browsing-topics=(), camera=(self), " +
         "clipboard-read=(), clipboard-write=(self), display-capture=(), encrypted-media=(), " +
         "fullscreen=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), " +
         "local-fonts=(), magnetometer=(), microphone=(), midi=(), otp-credentials=(), " +
-        "payment=(), picture-in-picture=(), publickey-credentials-create=(), " +
-        "publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), " +
+        "payment=(), picture-in-picture=(), publickey-credentials-create=(self), " +
+        "publickey-credentials-get=(self), screen-wake-lock=(), serial=(), usb=(), " +
         "window-management=(), xr-spatial-tracking=()",
     );
   });

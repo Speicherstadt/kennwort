@@ -141,6 +141,27 @@ die Passphrase. Auf einem neuen Gerät wählst du **Anderes Konto** und gibst Ko
 Passphrase ein, oder du scannst den QR-Code auf dem Recovery-Kit; danach kennt auch dieses Gerät
 dein Konto.
 
+### Mit Passkey entsperren
+
+Statt der Passphrase kann ein Passkey dein Konto entsperren, etwa mit Fingerabdruck oder
+Gesichtserkennung deines Laptops oder Handys.
+
+1. Entsperre Kennwort und öffne **Einstellungen → Entsperren mit Passkey**.
+2. Wähle **Passkey zum Entsperren einrichten** und bestätige im Dialog deines Browsers.
+3. Ab jetzt zeigt der Sperrbildschirm auf diesem Gerät **Mit Passkey entsperren**. Passphrase und
+   Secret Key funktionieren weiter, zum Beispiel wenn du den Passkey gerade nicht zur Hand hast.
+
+Dafür muss der Passkey die PRF-Erweiterung beherrschen. Das können aktuelle Versionen von Chrome,
+Edge, Safari und Firefox mit den meisten Passkeys, aber nicht jeder Browser und nicht jeder
+Sicherheitsschlüssel. Fehlt sie, sagt Kennwort das und richtet nichts ein. Ein Passkey, den die
+Kennwort-Extension für dich speichern möchte, kann das nicht; wähle im Dialog den Browser oder das
+Gerät.
+
+Unter **Einstellungen → Entsperren mit Passkey** siehst du jeden Passkey, der dein Konto entsperrt,
+und entfernst ihn mit **Entfernen**. Der Server bekommt dabei nie etwas, mit dem er dein Konto öffnen
+könnte: nur deinen Kontoschlüssel, verschlüsselt mit dem Passkey. Erneuerst du deine Schlüssel,
+werden alle Passkeys entfernt; richte sie danach neu ein.
+
 ## Neues Gerät verbinden
 
 Ohne Konto-ID und Secret Key abzutippen: Wähle auf dem neuen Gerät **Mit einem anderen Gerät
@@ -205,8 +226,8 @@ Was sonst passiert:
 
 - Deine anderen Geräte werden abgemeldet. Verbinde sie neu über **Mit einem anderen Gerät
   verbinden** oder mit dem neuen Recovery-Kit; der alte Secret Key passt nicht mehr. Auch Passkeys,
-  die zu deinem Konto angemeldet sind, werden gelöscht: Wer das alte Kit hatte, könnte einen eigenen
-  angelegt haben.
+  die zu deinem Konto angemeldet sind, werden gelöscht, auch die zum Entsperren: Wer das alte Kit
+  hatte, könnte einen eigenen angelegt haben.
 - Freigaben einzelner Einträge und Notfallzugriffe, die du gegeben hast, gelten nicht mehr; gib sie
   neu. Wer mit dem alten Kit deine alten Schlüssel hat, könnte sonst in deinem Namen welche fälschen.
   Ebenso enden Freigaben und Notfallzugriffe an dich; die anderen geben sie dir neu.

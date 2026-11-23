@@ -65,7 +65,9 @@ test.describe("an account", { tag: "@phone" }, () => {
     await expect(heading(page, "Alle Einträge")).toBeVisible();
 
     // The rail on the desktop, the settings on a phone
-    const lock = page.getByRole("button", { name: "Sperren" }).filter({ visible: true });
+    const lock = page
+      .getByRole("button", { name: "Sperren", exact: true })
+      .filter({ visible: true });
     if ((await lock.count()) === 0)
       await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).click();
     // Unlocking returns to the page that was locked
@@ -125,7 +127,9 @@ test.describe("an account", { tag: "@phone" }, () => {
   }) => {
     const owner = await setUpCompany(page);
     const { accountId } = JSON.parse(owner.device) as { accountId: string };
-    const lock = page.getByRole("button", { name: "Sperren" }).filter({ visible: true });
+    const lock = page
+      .getByRole("button", { name: "Sperren", exact: true })
+      .filter({ visible: true });
     if ((await lock.count()) === 0)
       await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).click();
     await lock.first().click();

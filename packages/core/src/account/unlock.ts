@@ -14,7 +14,12 @@ export type Stored = {
   keyBlock: Uint8Array;
   state: Uint8Array;
   stateCounter: number;
-  unlock: { passphrase: Uint8Array; recovery: Uint8Array };
+  unlock: {
+    passphrase: Uint8Array;
+    recovery: Uint8Array;
+    /** AK under each passkey set up to unlock (K-707); the account state says which may */
+    passkeys?: { credentialId: Uint8Array; sealed: Uint8Array }[] | undefined;
+  };
 };
 
 export type Unlocked = { accountKey: Uint8Array; keyBlock: KeyBlock; state: AccountState };

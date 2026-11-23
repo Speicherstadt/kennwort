@@ -653,6 +653,25 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   README aktuell.
 - [x] **K-705 Screenshots** – Workflow „Update screenshots“, hell und dunkel.
 - [x] **K-706 Demo ohne Server** – unter `/demo/` mit Testdaten „Weber Haustechnik“.
+- [x] **K-707 Entsperren mit Passkey** – die Web-App entsperrt mit einem Passkey (WebAuthn PRF) über
+  den PRF-Weg aus K-107, neben Passphrase und Secret Key. nach: K-107, K-203.
+  Fertig, wenn: **Einstellungen → Entsperren mit Passkey** entsperrt mit „Passkey zum Entsperren
+  einrichten“ einen Passkey bei Better Auth mit PRF für ein zufälliges `credSalt` anmeldet, AK unter
+  `kdf(prf, credSalt, "kennwort/unlock-passkey/v1", credential-ID)` versiegelt und zum Server nur
+  Credential-ID und versiegelten AK schickt (`PUT /api/account/unlock-passkeys`, nur für einen
+  eigenen Passkey, einmal), der Kontozustand den Passkey mit `credSalt` nennt und das Gerät
+  Credential-ID und `credSalt` behält; der Sperrbildschirm dann „Mit Passkey entsperren“ zeigt, mit
+  einer Zeremonie anmeldet und entsperrt und nur entsperrt, wenn der Kontozustand den Passkey mit
+  diesem `credSalt` nennt, Passphrase und Secret Key daneben bleiben; ohne PRF eine klare Meldung
+  kommt und der Server nichts angemeldet hat, ein späterer Fehler den Passkey zurücknimmt; Entfernen
+  ihn aus Kontozustand und Server nimmt und neue Schlüssel (P-12) alle versiegelten AK löschen; keine
+  Anfrage die PRF-Ausgabe, AK oder etwas daraus trägt (`clientExtensionResults` leer); die
+  `Permissions-Policy` WebAuthn nur der eigenen Herkunft erlaubt; Vitest für Core, Client, Server und
+  Oberfläche, Angreifer-Tests mit verändertem versiegeltem AK, Stryker 100 % auf den geänderten
+  Dateien in `packages/core`; Playwright desktop und `@phone` mit dem virtuellen Authenticator von
+  Chromium (CDP, `hasPrf`): einrichten, sperren, mit dem Passkey entsperren, entfernen, der Fall ohne
+  PRF und ein Server, der den versiegelten AK verändert; Texte de/en, `docs/konto.md`, P-03 im
+  Sicherheitsdesign und das README.
 
 ## Phase 8 – Mobile-App (Android)
 

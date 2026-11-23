@@ -11,6 +11,7 @@ import { bytes, encodeBytes } from "../sync/bytes.ts";
 import { parseJson } from "../sync/record.ts";
 import { EmergencySeen, mergeEmergency } from "./emergency-seen.ts";
 import { LinkedCompanies, linkedToJson, mergeLinked } from "./linked.ts";
+import { mergePasskeys, passkeysToJson, UnlockPasskeys } from "./passkeys.ts";
 import { LeakCheckChoice, mergeSecurityPrefs, ReportMonth } from "./security-prefs.ts";
 
 const Remembered = z.object({ seq: z.number().int().nonnegative(), hash: bytes(32) });
@@ -77,6 +78,11 @@ export const AccountState = z.object({
    * its account ID; a removed one keeps a tombstone without a way in (linked.ts)
    */
   linked: LinkedCompanies.default({}),
+  /**
+   * The passkeys that may unlock this account (K-707, P-03), with their PRF salts; a removed one
+   * keeps a tombstone (passkeys.ts)
+   */
+  passkeys: UnlockPasskeys.default({}),
 });
 export type AccountState = z.infer<typeof AccountState>;
 
@@ -105,6 +111,7 @@ const toJson = (state: AccountState) =>
       until: r.until,
     })),
     linked: linkedToJson(state.linked),
+    passkeys: passkeysToJson(state.passkeys),
   });
 
 export const sealState = (
@@ -252,6 +259,7 @@ export const mergeStates = (
     retiredRoots,
     ...mergeSecurityPrefs(mine, theirs),
     linked: mergeLinked(mine.linked, theirs.linked),
+    passkeys: mergePasskeys(mine.passkeys, theirs.passkeys),
   });
 };
 
@@ -277,4 +285,5 @@ export const emptyState = (
   emergency: {},
   retiredRoots: [],
   linked: {},
+  passkeys: {},
 });
