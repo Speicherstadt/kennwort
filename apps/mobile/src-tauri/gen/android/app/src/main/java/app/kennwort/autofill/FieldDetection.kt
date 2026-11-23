@@ -137,7 +137,8 @@ fun detect(roots: List<FormNode>): Detected {
     }
   }
   val found = users + passwords
-  val mixed = found.any { it.domain != top?.domain }
+  // A document is its domain and its scheme: an http frame of an https page is another one (P-17)
+  val mixed = found.any { it.domain != top?.domain || it.scheme != top?.scheme }
   return Detected(
     usernames = users.map { it.node },
     passwords = passwords.map { it.node },
