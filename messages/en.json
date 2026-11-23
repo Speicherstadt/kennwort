@@ -1195,6 +1195,8 @@
   "demo_passphrase": "Passphrase:",
   "demo_preparing": "Setting up the demo company Weber Haustechnik …",
   "demo_failed": "The demo could not start. Reload the page.",
+  "demo_unavailable": "Not available in the demo: this needs a real server.",
+  "demo_unavailable_close": "Close",
   "passkey_title": "Unlock with a passkey",
   "passkey_text": "With a passkey you unlock Kennwort on this device without your passphrase. Passphrase and Secret Key keep working.",
   "passkey_set_up": "Set up a passkey to unlock",
