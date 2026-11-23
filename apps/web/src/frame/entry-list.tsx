@@ -5,7 +5,7 @@
 
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { entryIcon } from "@kennwort/client/entries/entry-icon.ts";
-import { Badge, Button, badgeVariants, cn, Icon, List, m, SearchInput } from "@kennwort/ui";
+import { Badge, Button, cn, Icon, List, m, SearchInput, toggleVariants } from "@kennwort/ui";
 import { Plus } from "@kennwort/ui/icons";
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { entries as demoEntries, vaultName } from "../demo.ts";
@@ -114,16 +114,7 @@ export const EntryList = (props: {
                 current={props.filter.kind === chip.kind}
                 class="flex min-h-11 items-center"
               >
-                <span
-                  class={cn(
-                    badgeVariants({
-                      variant: props.filter.kind === chip.kind ? "default" : "outline",
-                    }),
-                    "px-3 py-1 text-[13px]",
-                  )}
-                >
-                  {chip.label}
-                </span>
+                <span class={toggleVariants()}>{chip.label}</span>
               </Link>
             )}
           </For>

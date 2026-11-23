@@ -3,19 +3,13 @@
  * and as the fifth tab on a phone. Its name says the count, the badge only shows it. Until the
  * first load it shows without a count.
  */
-import { cn, Icon, m } from "@kennwort/ui";
+import { CountDot, cn, Icon, m } from "@kennwort/ui";
 import { Bell } from "@kennwort/ui/icons";
 import { useQuery } from "@tanstack/solid-query";
 import { Loading, Show } from "solid-js";
 import { Link } from "../frame/link.tsx";
 import type { Navigation } from "../navigation.ts";
 import { type NotificationsDeps, notificationsQuery } from "./notifications-query.ts";
-
-const countClass =
-  "absolute -top-1 -right-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground";
-
-/** "99+" past 99: the badge stays small */
-const shownCount = (count: number) => (count > 99 ? "99+" : String(count));
 
 type Variant = "rail" | "tab";
 
@@ -42,7 +36,7 @@ const BellLink = (props: { nav: Navigation; variant: Variant; unread: number }) 
       <span class="relative" aria-hidden="true">
         <Icon icon={Bell} size={props.variant === "rail" ? 18 : 22} />
         <Show when={props.unread > 0}>
-          <span class={countClass}>{shownCount(props.unread)}</span>
+          <CountDot count={props.unread} />
         </Show>
       </span>
       <Show when={props.variant === "tab"}>
