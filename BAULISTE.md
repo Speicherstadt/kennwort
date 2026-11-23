@@ -649,7 +649,7 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   Hinweis darauf anlegt; CI das Image nur baut und startet, wenn ein Pull Request `docker/` ändert;
   Seiten Installation, Backups und Updates und ein Abschnitt im README. Lokal ohne Docker-Daemon und
   ohne Caddy gebaut: Image, `caddy validate` und Release-Workflow laufen erst auf GitHub.
-- [ ] **K-704 Doku und Website** – alle Seiten aus dem Projektplan, Startseite als Produkt-Website,
+- [x] **K-704 Doku und Website** – alle Seiten aus dem Projektplan, Startseite als Produkt-Website,
   README aktuell.
 - [ ] **K-705 Screenshots** – Workflow „Update screenshots“, hell und dunkel.
 - [ ] **K-706 Demo ohne Server** – unter `/demo/` mit Testdaten „Weber Haustechnik“.

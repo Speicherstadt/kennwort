@@ -72,12 +72,15 @@ nav:
   - Sicherheits-Übersicht: sicherheit.md
   - Browser-Extension: extension.md
   - Kommandozeile: cli.md
+  - Handy und App: handy.md
   - Import und Export: import-export.md
   - Betrieb:
       - Installation: installation.md
+      - Verwaltung: verwaltung.md
       - Backups: backup.md
       - Updates: updates.md
       - Lasttest: lasttest.md
   - Sicherheitsdesign: sicherheitsdesign.md
+  - FAQ: faq.md
   - Entwicklung:
       - Projektplan: plan.md
