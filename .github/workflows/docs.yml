@@ -14,6 +14,10 @@ on:
       - "overrides/**"
       - "requirements-docs.txt"
       - ".github/workflows/docs.yml"
+      # The demo under /demo/ (K-706) is the web app's own build
+      - "apps/web/**"
+      - "packages/**"
+      - "messages/**"
   pull_request:
     paths:
       - "docs/**"
@@ -21,6 +25,10 @@ on:
       - "overrides/**"
       - "requirements-docs.txt"
       - ".github/workflows/docs.yml"
+      # The demo under /demo/ (K-706) is the web app's own build
+      - "apps/web/**"
+      - "packages/**"
+      - "messages/**"
   workflow_dispatch:
 
 permissions:
@@ -49,6 +57,12 @@ jobs:
         with:
           enablement: true
       - run: zensical build --strict
+      # The demo without a server (K-706): the web app over a stand-in in the browser, at /demo/
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: bun run --cwd apps/web build:demo && cp -r apps/web/dist-demo site/demo
       # Every page has its own description for search engines
       - run: test -z "$(grep -L '^description:' docs/*.md)"
       - uses: actions/upload-pages-artifact@v5

@@ -20,6 +20,16 @@ Ende-zu-Ende-verschlüsselt, mit Post-Quanten-Schutz, Open Source und ohne Koste
     Kennwort ist fertig gebaut bis auf die App fürs Handy, aber noch ohne externes Audit. Bitte
     noch keine echten Passwörter damit verwalten. In der Demo gibst du ohnehin nur Testdaten ein.
 
+!!! tip "Ausprobieren ohne Server"
+    Die [Demo](https://kennwort.app/demo/) zeigt die Web-App mit der Beispielfirma „Weber
+    Haustechnik“ (Jonas, Anna, Sandra und Max). Sie läuft ganz in deinem Browser: Ein Ersatz für den
+    Server hält die verschlüsselten Daten nur im Speicher des Tabs, beim Neuladen beginnt alles von
+    vorn, und die Seite darf keinen Server erreichen (CSP `connect-src 'none'`). Die Verschlüsselung
+    ist dieselbe wie in der echten App, auch Argon2id mit den festen Parametern; deshalb dauert das
+    Entsperren ein, zwei Sekunden. Die Passphrase steht oben auf der Seite und ist absichtlich
+    schwach. Entsperren kann nur Jonas; Anna, Sandra und Max sind bestätigte Mitglieder, deren
+    Passphrase niemand kennt. Gib dort keine echten Passwörter ein.
+
 ## Was Kennwort kann
 
 - **Tresore fürs Team**: Logins, Notizen, WLAN, Karten, SSH- und API-Schlüssel, Einmal-Codes und

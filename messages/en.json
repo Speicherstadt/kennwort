@@ -1187,5 +1187,10 @@
   "privacy_error_sole_manager": "You are the only manager of a shared vault. Make someone else a manager first.",
   "privacy_error_linked": "A linked company cannot be reached right now. Nothing was deleted.",
   "privacy_error_failed": "That did not work. Try again.",
-  "privacy_error_in_company": "{company}: {text}"
+  "privacy_error_in_company": "{company}: {text}",
+  "demo_badge": "Demo",
+  "demo_notice": "Runs only in your browser, without a server. Don't enter real passwords; a reload starts over.",
+  "demo_passphrase": "Passphrase:",
+  "demo_preparing": "Setting up the demo company Weber Haustechnik …",
+  "demo_failed": "The demo could not start. Reload the page."
 }
