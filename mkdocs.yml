@@ -62,6 +62,7 @@ exclude_docs: |
 nav:
   - Kennwort: index.md
   - Konto und Entsperren: konto.md
+  - Team: team.md
   - Tresore: tresore.md
   - Einträge: eintraege.md
   - Einmal-Links: einmal-links.md
