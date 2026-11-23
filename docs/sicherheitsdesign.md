@@ -2632,7 +2632,7 @@ ohnehin bearbeitet, und nur mit dem, was er ohnehin weiß:
 
 | Art | Wer sie bekommt | Betreff | Ausgelöst von |
 | --- | --- | --- | --- |
-| `access-requested` | die Verwalter des Tresors (gespeichertes Log) | Tresor-ID | wer anfragt |
+| `access-requested` | die Verwalter des Tresors (gespeichertes Log), nur bei einer neuen Anfrage, nicht bei jeder Wiederholung | Tresor-ID | wer anfragt |
 | `vault-added` | wer aufgenommen wurde (Eintrag `add` im Log) | Tresor-ID | der Verwalter |
 | `share-received` | wem ein Eintrag zum ersten Mal geteilt wurde | Eintrags-ID | wer teilt |
 | `invitation-accepted` | wer die Einladung erstellt hat | Einladungs-ID | das neue Konto |
@@ -2650,7 +2650,9 @@ Tresoren und Einträgen kennt der Server nicht (sie sind verschlüsselt, P-15), 
 kennt, etwa die Bezeichnung einer Einladung, schreibt er nicht hinein. Der Client setzt die Namen aus
 dem ein, was er selbst geladen und geprüft hat; eine ID, die er nicht kennt, bleibt namenlos
 („Jemand“, „einen Tresor“). Ein Konto, das die Firma verlassen hat, ein Konto einer anderen Firma
-und wer das Ereignis selbst ausgelöst hat, bekommen nichts. Jedes Konto behält die neuesten 200.
+und wer das Ereignis selbst ausgelöst hat, bekommen nichts. Jedes Konto behält die neuesten 200;
+damit niemand mit Wiederholungen ältere Zeilen verdrängt, etwa eine Bitte um Notfallzugriff, die in
+der Wartezeit gesehen werden muss, schreibt eine wiederholte Zugriffsanfrage keine neue Zeile.
 „Zum Ändern“ rechnet nur das Gerät aus (K-306 Teil 5); davon erfährt der Server nichts, also auch
 keine Mitteilung.
 
