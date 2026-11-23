@@ -117,6 +117,11 @@ export const OidcPage = (props: {
     fragment.ticket ? { kind: "checking" } : errorOf(fragment.error ?? "state"),
   );
   const [error, setError] = createSignal<string>();
+  /** The shown step if it is of this kind, for a Match to narrow */
+  const step = <K extends Shown["kind"]>(kind: K) => {
+    const current = shown();
+    return current.kind === kind ? (current as Extract<Shown, { kind: K }>) : undefined;
+  };
   onSettled(() => {
     const ticket = fragment.ticket;
     if (!ticket) return;
@@ -135,12 +140,12 @@ export const OidcPage = (props: {
   };
   return (
     <Switch>
-      <Match when={shown().kind === "checking"}>
+      <Match when={step("checking")}>
         <Card title={m.oidc_title()}>
           <p class="text-[13px] text-muted-foreground">{m.oidc_working()}</p>
         </Card>
       </Match>
-      <Match when={shown().kind === "error" && (shown() as { text: string })}>
+      <Match when={step("error")}>
         {(failed) => (
           <Card title={m.oidc_title()} error={failed().text}>
             <Button class="w-fit" onClick={() => props.nav.replace("/")}>
@@ -149,7 +154,7 @@ export const OidcPage = (props: {
           </Card>
         )}
       </Match>
-      <Match when={shown().kind === "enrol" && (shown() as Extract<Shown, { kind: "enrol" }>)}>
+      <Match when={step("enrol")}>
         {(form) => (
           <EnrolForm
             person={form().person}
@@ -158,10 +163,10 @@ export const OidcPage = (props: {
           />
         )}
       </Match>
-      <Match when={shown().kind === "kit" && (shown() as Extract<Shown, { kind: "kit" }>)}>
+      <Match when={step("kit")}>
         {(kit) => <Kit keys={kit().keys} onDone={() => setShown({ kind: "waiting" })} />}
       </Match>
-      <Match when={shown().kind === "waiting"}>
+      <Match when={step("waiting")}>
         <Waiting session={props.session} onDone={() => props.nav.go("/entries")} />
       </Match>
     </Switch>
