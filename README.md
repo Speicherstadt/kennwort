@@ -12,7 +12,7 @@
 Bank, Lieferantenportale, WLAN und Kundengeräte an einem Ort: im Browser, als Extension, am Handy und im Terminal.
 Open Source, ohne Kosten pro Benutzer, mit Post-Quanten-Schutz und sicher auch dann, wenn der Server selbst angegriffen wird.
 
-![Status: in Entwicklung](https://img.shields.io/badge/Status-in%20Entwicklung-orange)
+![Version 0.1](https://img.shields.io/badge/Version-0.1%20zum%20Ausprobieren-orange)
 [![CI](https://github.com/Speicherstadt/kennwort/actions/workflows/ci.yml/badge.svg)](https://github.com/Speicherstadt/kennwort/actions/workflows/ci.yml)
 [![Lizenz: AGPL-3.0](https://img.shields.io/badge/Lizenz-AGPL--3.0-blue)](LICENSE)
 [![Doku](https://img.shields.io/badge/Doku-kennwort.app-4f46e5?logo=zensical&logoColor=white)](https://kennwort.app/)
@@ -34,9 +34,17 @@ Open Source, ohne Kosten pro Benutzer, mit Post-Quanten-Schutz und sicher auch d
 </div>
 
 > [!WARNING]
-> **In Entwicklung:** Kennwort ist noch nicht veröffentlicht und nicht extern geprüft; die App für Android ist eine
-> Alpha ohne Release, die iOS-App fehlt noch. Bitte noch keine echten Passwörter damit verwalten. Ausprobieren ohne
-> Server: in der [Demo](https://kennwort.app/demo/) mit Testdaten.
+> **Version 0.1: zum Ausprobieren, noch nicht extern geprüft.** Die Kryptografie folgt offenen Standards (X-Wing,
+> XChaCha20-Poly1305, Argon2id) und nutzt nur geprüfte Bibliotheken; die 27 Angriffe der ETH-Studie laufen als Tests,
+> die Krypto-Bausteine zusätzlich mit Testvektoren und Mutation-Tests
+> ([Kryptografie](https://kennwort.app/kryptografie.html), [Sicherheitsdesign](https://kennwort.app/sicherheitsdesign.html)).
+> Ein externer Audit fehlt aber noch, und Tests finden nicht jede Schwachstelle. Wer Kennwort schon nutzt, behält bitte
+> eine zweite Kopie seiner Passwörter, etwa einen verschlüsselten Export. Schwachstellen bitte vertraulich melden
+> ([SECURITY.md](SECURITY.md)). Ohne Gewährleistung, siehe [Lizenz](LICENSE).
+>
+> **Apps:** Die Android-App wird in CI gebaut, ist aber noch auf keinem Gerät erprobt; der Code für iOS liegt im Repo,
+> wurde aber noch nie gebaut. Web-App, Browser-Extension und CLI sind der erprobte Weg. Ausprobieren ohne Server: die
+> [Demo](https://kennwort.app/demo/) mit Testdaten.
 
 ## Warum Kennwort?
 
@@ -76,7 +84,7 @@ ganz im Browser und ohne Server.
 | 🔗 [Einmal-Links](https://kennwort.app/einmal-links.html) | Ein Eintrag oder freier Text für Externe ohne Konto, bis zu sieben Tage und zehn Abrufe, auf Wunsch mit Passphrase, jederzeit widerrufbar |
 | 🧩 [Browser-Extension](https://kennwort.app/extension.html) | Chrome und Edge, Firefox ab 140 (auch Android), Safari ab 18; Popup mit Treffern für den exakten Host, Inline-Menü, das erst nach Klick ausfüllt und nie in fremde iFrames; neue Logins speichern, Phishing-Warnung, Passkey-Anbieter für Websites |
 | ⌨️ [Kommandozeile](https://kennwort.app/cli.html) | `kennwort` für Terminal und Skripte: suchen, Passwort oder Einmal-Code erst nach Bestätigung ausgeben; entsperrt je Befehl, nichts bleibt entsperrt |
-| 📱 [Handy und App](https://kennwort.app/handy.html) | Web-App zum Installieren (PWA), die nur signierte Updates annimmt und offline entsperrt; App für Android (Alpha, noch ohne Release) mit eigenem Server, Live-Sync und Autofill-Dienst, der erst nach Tippen, Entsperren und Wahl eines Eintrags ausfüllt; iOS folgt |
+| 📱 [Handy und App](https://kennwort.app/handy.html) | Web-App zum Installieren (PWA), die nur signierte Updates annimmt und offline entsperrt; App für Android (in CI gebaut, noch auf keinem Gerät erprobt) mit eigenem Server, Live-Sync und Autofill-Dienst, der erst nach Tippen, Entsperren und Wahl eines Eintrags ausfüllt; der Code für iOS mit AutoFill liegt bereit, gebaut wird er auf einem Mac |
 | 🔁 [Import und Export](https://kennwort.app/import-export.html) | Import aus Bitwarden (auch passwortgeschützt), LastPass, 1Password, KeePass (KDBX), Team Password Manager, Passbolt, FIDO CXF (auch Passkeys), den Browsern, Tabellen und Authenticator-Apps, alles auf dem Gerät; Export als verschlüsseltes JSON, KDBX 4 oder CSV, im Audit-Log |
 | 🛡️ [Sicherheits-Übersicht](https://kennwort.app/sicherheit.html) | Schwache, mehrfach verwendete und geleakte Passwörter mit „Jetzt ändern“; Prüfung gegen Datenlecks nur auf Wunsch, per k-Anonymität; Monatsbericht für Inhaber und Admins |
 | 🗂️ [Datenschutz](https://kennwort.app/datenschutz.html) | Was der Server sieht, gespeicherte Daten als JSON herunterladen, Konto löschen mit der Passphrase |
