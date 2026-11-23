@@ -6,8 +6,8 @@
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { entryIcon } from "@kennwort/client/entries/entry-icon.ts";
 import { typeLabel } from "@kennwort/client/entries/entry-types.ts";
-import { Button, cn, getLocale, Icon, m, type Toasts } from "@kennwort/ui";
-import { ArrowLeft, KeyRound, Link2, Pencil, QrCode, Share2 } from "@kennwort/ui/icons";
+import { Button, buttonClass, cn, getLocale, Icon, Menu, m, type Toasts } from "@kennwort/ui";
+import { ArrowLeft, Ellipsis, KeyRound, Link2, Pencil, QrCode, Share2 } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { For, Show } from "solid-js";
 import { entries as demoEntries, vaultName as demoVaultName } from "../demo.ts";
@@ -29,34 +29,36 @@ const date = (time: number) =>
   new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }).format(time);
 
 /**
- * The detail's buttons: the star and „Bearbeiten“ (the one primary action) beside the title, the
- * ways to pass the entry on in a quiet row below; each greyed out where this account may not use it
+ * The ways to pass the entry on, behind „⋯“ beside the star and „Bearbeiten“ (the one primary
+ * action); each greyed out where this account may not use it
  */
-const SecondaryActions = (props: {
+const MoreActions = (props: {
   onShare?: (() => void) | undefined;
   onLink?: (() => void) | undefined;
   onLabel?: (() => void) | undefined;
 }) => (
-  <div class="flex flex-wrap gap-1.5">
-    <Button
-      size="sm"
-      class="h-11 md:h-7"
-      disabled={!props.onShare}
-      onClick={() => props.onShare?.()}
-    >
-      <Icon icon={Share2} /> {m.detail_share()}
-    </Button>
-    <Button size="sm" class="h-11 md:h-7" disabled={!props.onLink} onClick={() => props.onLink?.()}>
-      <Icon icon={Link2} /> {m.detail_link()}
-    </Button>
-    <Show when={props.onLabel}>
-      {(open) => (
-        <Button size="sm" class="h-11 md:h-7" onClick={() => open()()}>
-          <Icon icon={QrCode} /> {m.detail_label()}
-        </Button>
-      )}
-    </Show>
-  </div>
+  <Menu
+    label={m.detail_more()}
+    trigger={<Icon icon={Ellipsis} />}
+    triggerClass={cn(buttonClass({ variant: "outline", size: "icon" }), "size-11 md:size-8")}
+    items={[
+      {
+        label: m.detail_share(),
+        icon: Share2,
+        disabled: !props.onShare,
+        onSelect: () => props.onShare?.(),
+      },
+      {
+        label: m.detail_link(),
+        icon: Link2,
+        disabled: !props.onLink,
+        onSelect: () => props.onLink?.(),
+      },
+      ...(props.onLabel
+        ? [{ label: m.detail_label(), icon: QrCode, onSelect: () => props.onLabel?.() }]
+        : []),
+    ]}
+  />
 );
 
 const Detail = (props: {
@@ -69,15 +71,15 @@ const Detail = (props: {
   onLabel?: (() => void) | undefined;
   onFavorite?: (() => Promise<Saved> | undefined) | undefined;
 }) => (
-  <div class="mx-auto grid w-full max-w-5xl gap-5 p-4 md:p-6 @3xl:grid-cols-[minmax(0,1fr)_16rem]">
-    <div class="grid content-start gap-5">
-      <div class="flex flex-wrap items-center gap-3">
-        <span class="grid size-14 place-items-center rounded-xl border border-border md:size-10">
+  <div class="mx-auto grid w-full max-w-[60rem] gap-6 p-4 md:p-6 @3xl:grid-cols-[minmax(0,42rem)_16rem] @3xl:justify-center">
+    <div class="grid w-full max-w-2xl content-start gap-5">
+      <div class="flex items-center gap-3">
+        <span class="grid size-14 shrink-0 place-items-center rounded-xl border border-border md:size-10">
           <Icon icon={entryIcon[props.entry.type]} size={22} />
         </span>
-        <div class="grid min-w-0 flex-1 basis-48">
+        <div class="grid min-w-0 flex-1 gap-0.5">
           <h1 class="truncate text-[28px] font-semibold md:text-lg">{props.entry.title}</h1>
-          <p class="text-xs text-muted-foreground">
+          <p class="truncate text-xs text-muted-foreground">
             {typeLabel(props.entry.type)} ·{" "}
             {props.entry.sharedBy === undefined
               ? m.detail_in_vault({ name: props.vaultName(props.entry.vault) })
@@ -88,7 +90,7 @@ const Detail = (props: {
             </Show>
           </p>
         </div>
-        <div class="flex items-center gap-1">
+        <div class="flex shrink-0 items-center gap-1.5">
           <FavoriteButton
             favorite={props.entry.favorite}
             toasts={props.toasts}
@@ -102,9 +104,9 @@ const Detail = (props: {
           >
             <Icon icon={Pencil} /> {m.detail_edit()}
           </Button>
+          <MoreActions onShare={props.onShare} onLink={props.onLink} onLabel={props.onLabel} />
         </div>
       </div>
-      <SecondaryActions onShare={props.onShare} onLink={props.onLink} onLabel={props.onLabel} />
       <TagList tags={props.entry.tags} />
       <ToChangeNote entry={props.entry} />
       <Card title={m.detail_fields()}>

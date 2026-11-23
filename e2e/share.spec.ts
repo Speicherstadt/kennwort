@@ -49,7 +49,8 @@ test.describe("sharing a single entry", { tag: "@phone" }, () => {
     const anna = await annaJoins(page, browser);
     await sparkasseInBuero(page);
 
-    await page.getByRole("button", { name: "Teilen" }).click();
+    await page.getByRole("button", { name: "Weitere Aktionen" }).filter({ visible: true }).click();
+    await page.getByRole("menuitem", { name: "Teilen" }).click();
     const dialog = page.getByRole("dialog", { name: "Sparkasse teilen" });
     await expect(dialog).toContainText("Noch mit niemandem geteilt.");
     await dialog.getByLabel("Person").selectOption({ label: "Anna" });
@@ -71,7 +72,9 @@ test.describe("sharing a single entry", { tag: "@phone" }, () => {
     await anna.getByRole("button", { name: "Passwort aufdecken" }).click();
     await expect(anna.getByText("Rohr-Ventil-2026!")).toBeVisible();
     await expect(anna.getByRole("button", { name: "Bearbeiten" })).toBeDisabled();
-    await expect(anna.getByRole("button", { name: "Teilen" })).toBeDisabled();
+    await anna.getByRole("button", { name: "Weitere Aktionen" }).filter({ visible: true }).click();
+    await expect(anna.getByRole("menuitem", { name: "Teilen" })).toBeDisabled();
+    await anna.keyboard.press("Escape");
     await goInApp(anna, "/entries");
     await expect(anna.getByText("Keine Einträge")).toBeVisible();
 

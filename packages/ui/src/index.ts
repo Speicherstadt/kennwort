@@ -22,6 +22,7 @@ export { selectClass } from "./components/select.ts";
 export { type Tab, Tabs, type TabsProps } from "./components/tabs.tsx";
 export { createToasts, TOAST_MS, type Toast, Toaster, type Toasts } from "./components/toast.tsx";
 export { Tooltip, type TooltipProps } from "./components/tooltip.tsx";
+export { TooltipIconButton } from "./components/tooltip-button.tsx";
 export { cn } from "./lib/cn.ts";
 export { copyText } from "./lib/copy.ts";
 export { nextIndex, type Orientation } from "./lib/keys.ts";

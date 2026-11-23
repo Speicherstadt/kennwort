@@ -1281,5 +1281,6 @@
   "push_desc_emergency_granted": "You were granted emergency access.",
   "push_desc_account_recovered": "Your account was recovered.",
   "push_desc_update_available": "A new version of Kennwort is ready.",
-  "ui_cancel": "Cancel"
+  "ui_cancel": "Cancel",
+  "detail_more": "More actions"
 }

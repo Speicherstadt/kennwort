@@ -13,14 +13,29 @@ import { buttonClass } from "./button.tsx";
 import { Icon } from "./icon.tsx";
 import { floatingClass } from "./popover.tsx";
 
-export type MenuItem = { label: string; icon?: IconNode; danger?: boolean; onSelect: () => void };
-export type MenuProps = { trigger: JSX.Element; label?: string; items: MenuItem[] };
+export type MenuItem = {
+  label: string;
+  icon?: IconNode;
+  danger?: boolean;
+  /** Shown but not chosen: this account may not use it here */
+  disabled?: boolean;
+  onSelect: () => void;
+};
+export type MenuProps = {
+  trigger: JSX.Element;
+  label?: string;
+  items: MenuItem[];
+  /** The trigger's look, an outline button unless given */
+  triggerClass?: string;
+};
 
 export const Menu = (props: MenuProps) => {
   const id = createUniqueId();
   let menu: HTMLDivElement | undefined;
   let button: HTMLButtonElement | undefined;
-  const items = () => [...(menu?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
+  const items = () => [
+    ...(menu?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])') ?? []),
+  ];
   const close = () => {
     menu?.hidePopover();
     button?.focus();
@@ -48,7 +63,7 @@ export const Menu = (props: MenuProps) => {
         aria-haspopup="menu"
         aria-controls={id}
         aria-label={props.label}
-        class={buttonClass()}
+        class={props.triggerClass ?? buttonClass()}
         style={anchorName(id)}
       >
         {props.trigger}
@@ -74,8 +89,9 @@ export const Menu = (props: MenuProps) => {
               type="button"
               role="menuitem"
               tabindex="-1"
+              disabled={item.disabled}
               class={cn(
-                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] hover:bg-accent focus:bg-accent focus:outline-none",
+                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] hover:bg-accent focus:bg-accent focus:outline-none disabled:pointer-events-none disabled:opacity-50",
                 item.danger && "text-danger",
               )}
               onClick={() => {

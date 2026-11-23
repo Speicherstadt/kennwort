@@ -6,7 +6,7 @@
  */
 import type { MemberView } from "@kennwort/core";
 import { encodeBytes } from "@kennwort/core";
-import { Badge, Button, Icon, introClass, m, pageClass } from "@kennwort/ui";
+import { Badge, Button, cn, Icon, introClass, m, pageClass, selectClass } from "@kennwort/ui";
 import { ShieldCheck } from "@kennwort/ui/icons";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, For, Loading, Match, onSettled, resolve, Show, Switch } from "solid-js";
@@ -109,7 +109,7 @@ const Role = (props: {
   >
     <select
       aria-label={m.members_role_of({ name: props.name })}
-      class="mt-1 h-11 rounded-md border border-border bg-background px-2 text-xs md:h-7"
+      class={cn(selectClass, "mt-1")}
       disabled={props.busy}
       value={props.view.role}
       onChange={(event) => props.onRole(event.currentTarget.value as MemberView["role"])}

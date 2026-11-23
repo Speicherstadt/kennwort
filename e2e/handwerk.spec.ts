@@ -53,7 +53,8 @@ test.describe("QR labels", { tag: "@phone" }, () => {
       username: "admin",
       password: "Kessel-Anlage-2026",
     });
-    await page.getByRole("button", { name: "Etikett" }).filter({ visible: true }).click();
+    await page.getByRole("button", { name: "Weitere Aktionen" }).filter({ visible: true }).click();
+    await page.getByRole("menuitem", { name: "Etikett" }).click();
     const dialog = page.getByRole("dialog", { name: "QR-Etikett drucken" });
     await expect(dialog.getByLabel("Beschriftung")).toHaveValue("Router Heizung Müller");
     await dialog.getByLabel("Größe").selectOption({ label: "89 × 36 mm" });
