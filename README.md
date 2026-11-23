@@ -160,7 +160,7 @@ docker compose up -d
 
 Öffne **https://deine-domain**, leg mit dem Einrichtungs-Code deine Firma an und druck das Recovery-Kit aus.
 
-Das Image `ghcr.io/speicherstadt/kennwort` (amd64, arm64) läuft ohne root und ohne Shell, schreibt nur in sein
+Das Image `ghcr.io/speicherstadt/kennwort` (auch auf Docker Hub als `tristanteu/kennwort`; amd64, arm64) läuft ohne root und ohne Shell, schreibt nur in sein
 Volume und trägt dieselbe signierte Web-App wie das Release. Mehr: [Installation](https://kennwort.app/installation.html),
 [Verwaltung](https://kennwort.app/verwaltung.html), [Backups](https://kennwort.app/backup.html),
 [Updates](https://kennwort.app/updates.html).
