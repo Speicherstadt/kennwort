@@ -10,16 +10,20 @@ class FillTargetTest {
   private val password = FormNode(id = "p", fillable = true, htmlType = "password")
   private fun detected(domain: String? = null, scheme: String? = null, mixed: Boolean = false) =
     Detected(emptyList(), listOf(password), domain, scheme, mixed)
+  // The SHA-256 digests of the release signing certificates (bitwarden/android
+  // fido2_privileged_google.json at c5b18b5)
+  private val chrome = setOf("F0:FD:6C:5B:41:0F:25:CB:25:C3:B5:33:46:C8:97:2F:AE:30:F8:EE:74:11:DF:91:04:80:AD:6B:2D:60:DB:83")
+  private val firefox = setOf("A7:8B:62:A5:16:5B:44:94:B2:FE:AD:9E:76:A2:80:D2:2D:93:7F:EE:62:51:AE:CE:59:94:46:B2:EA:31:9B:04")
 
   @Test
   fun takesTheHostFromABrowser() {
     assertEquals(
       FillTarget.Web("portal.weber-haustechnik.test"),
-      FillTargets.of("com.android.chrome", own, detected("Portal.Weber-Haustechnik.test.", "https")),
+      FillTargets.of("com.android.chrome", own, detected("Portal.Weber-Haustechnik.test.", "https"), chrome),
     )
     assertEquals(
       FillTarget.Web("portal.weber-haustechnik.test"),
-      FillTargets.of("org.mozilla.firefox", own, detected("portal.weber-haustechnik.test")),
+      FillTargets.of("org.mozilla.firefox", own, detected("portal.weber-haustechnik.test"), firefox),
     )
   }
 
@@ -28,35 +32,52 @@ class FillTargetTest {
     // Any app can claim a webDomain for its views: it gets its own package, never the bank's host
     assertEquals(
       FillTarget.App("com.evil.game"),
-      FillTargets.of("com.evil.game", own, detected("bank.test", "https")),
+      FillTargets.of("com.evil.game", own, detected("bank.test", "https"), chrome),
     )
   }
 
   @Test
   fun takesTheAppPackage() {
-    assertEquals(FillTarget.App("com.heizungsapp.monteur"), FillTargets.of("com.heizungsapp.monteur", own, detected()))
+    assertEquals(FillTarget.App("com.heizungsapp.monteur"), FillTargets.of("com.heizungsapp.monteur", own, detected(), emptySet()))
   }
 
   @Test
   fun fillsNothingForAPageOverHttp() {
-    assertNull(FillTargets.of("com.android.chrome", own, detected("portal.weber-haustechnik.test", "http")))
+    assertNull(FillTargets.of("com.android.chrome", own, detected("portal.weber-haustechnik.test", "http"), chrome))
   }
 
   @Test
   fun fillsNothingIntoAFrameOfAnotherDocument() {
-    assertNull(FillTargets.of("com.android.chrome", own, detected("portal.weber-haustechnik.test", "https", mixed = true)))
-    assertNull(FillTargets.of("com.heizungsapp.monteur", own, detected(mixed = true)))
+    assertNull(FillTargets.of("com.android.chrome", own, detected("portal.weber-haustechnik.test", "https", mixed = true), chrome))
+    assertNull(FillTargets.of("com.heizungsapp.monteur", own, detected(mixed = true), emptySet()))
   }
 
   @Test
   fun fillsNothingIntoKennwortItselfOrWithoutFields() {
-    assertNull(FillTargets.of(own, own, detected()))
-    assertNull(FillTargets.of("com.heizungsapp.monteur", own, Detected(emptyList(), emptyList(), null, null, false)))
+    assertNull(FillTargets.of(own, own, detected(), emptySet()))
+    assertNull(FillTargets.of("com.heizungsapp.monteur", own, Detected(emptyList(), emptyList(), null, null, false), emptySet()))
   }
 
   @Test
   fun refusesHostsAndPackagesTheBridgeWouldRefuse() {
-    assertNull(FillTargets.of("com.android.chrome", own, detected("evil host.test")))
-    assertNull(FillTargets.of("monteur", own, detected()))
+    assertNull(FillTargets.of("com.android.chrome", own, detected("evil host.test"), chrome))
+    assertNull(FillTargets.of("monteur", own, detected(), emptySet()))
+  }
+
+  @Test
+  fun believesADomainOnlyFromABrowserSignedByItsPublisher() {
+    // An app installed under Chrome's package name but signed by someone else is not Chrome
+    assertEquals(
+      FillTarget.App("com.android.chrome"),
+      FillTargets.of("com.android.chrome", own, detected("bank.test", "https"), setOf("00:11:22")),
+    )
+    assertEquals(
+      FillTarget.App("com.android.chrome"),
+      FillTargets.of("com.android.chrome", own, detected("bank.test", "https"), firefox),
+    )
+    assertEquals(
+      FillTarget.App("com.android.chrome"),
+      FillTargets.of("com.android.chrome", own, detected("bank.test", "https"), emptySet()),
+    )
   }
 }
