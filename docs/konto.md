@@ -27,7 +27,7 @@ Firma öffnet der Code nicht: In eine Firma kommt man nur mit einer Einladung.
 
 ## Mitglieder einladen
 
-Unter **Einstellungen → Mitglieder** stehen alle Konten deiner Firma mit ihrer Rolle. **Bestätigt**
+Unter **Team → Mitglieder** stehen alle Konten deiner Firma mit ihrer Rolle. **Bestätigt**
 heißt: Dein Gerät hat geprüft, dass der Firmenschlüssel genau diese Schlüssel für genau dieses Konto
 und diese Rolle unterschrieben hat. Was es nicht prüfen kann, steht als **Wartet auf Bestätigung**
 oder **Nicht vertrauenswürdig** da.
@@ -90,7 +90,7 @@ Wer das eigene Konto löschen will, findet das unter [Datenschutz](datenschutz.m
 Wer als Inhaber oder Admin geht oder zum Mitarbeiter wird, hat den alten Firmenschlüssel noch. Darum
 legt das Gerät des Inhabers, der ihn entfernt oder herabstuft, sofort einen neuen an, bestätigt
 damit alle, die bleiben, neu und signiert die Firmen-Richtlinie neu. Von Hand geht das unter
-**Einstellungen → Mitglieder → Firmenschlüssel → Neuen Firmenschlüssel anlegen**, etwa wenn das
+**Team → Mitglieder → Firmenschlüssel → Neuen Firmenschlüssel anlegen**, etwa wenn das
 Recovery-Kit eines Inhabers in fremde Hände geraten ist.
 
 Unter **Firmenschlüssel** sieht jedes Mitglied den Vergleichscode des Schlüssels, den sein Konto
@@ -243,7 +243,7 @@ Wie das geschützt ist, steht im [Sicherheitsdesign](sicherheitsdesign.md#p-12-r
 Hast du Passphrase, Recovery-Kit und Geräte zugleich verloren, holt dich ein Inhaber deiner Firma
 zurück – wenn die Firma Firmen-Recovery eingeschaltet hat.
 
-**Einschalten (Inhaber).** Unter **Einstellungen → Mitglieder → Firmen-Recovery** schaltet ein
+**Einschalten (Inhaber).** Unter **Team → Mitglieder → Firmen-Recovery** schaltet ein
 Inhaber sie mit **Firmen-Recovery einschalten** ein. Sein Gerät erzeugt dafür einen
 Recovery-Schlüssel, gibt ihn verschlüsselt jedem Inhaber und nennt ihn in den signierten
 Firmen-Richtlinien. **Firmen-Recovery ausschalten** löscht Schlüssel und alle Hinterlegungen auf dem
@@ -318,7 +318,7 @@ im Audit-Log.
 
 Kennwort sperrt sich nach zehn Minuten ohne Tastendruck oder Klick, und sofort mit **Sperren** in der
 Seitenleiste oder in den Einstellungen. Die Zeit legt ein Inhaber für die ganze Firma fest, unter
-**Einstellungen → Mitglieder → Firmen-Richtlinien**, zwischen einer und sechzig Minuten; sie gilt
+**Team → Mitglieder → Firmen-Richtlinien**, zwischen einer und sechzig Minuten; sie gilt
 auf allen Geräten aller Mitglieder. Die Richtlinie ist mit dem Firmenschlüssel unterschrieben, der
 Server kann sie nicht ändern. Beim Sperren löscht Kennwort die Schlüssel aus dem Speicher;
 nach dem Entsperren bist du wieder auf derselben Seite. Auch ein Neuladen der Seite sperrt, denn die

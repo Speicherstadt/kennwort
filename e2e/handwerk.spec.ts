@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { newDevice, setUpCompany, test, unlock } from "./account.ts";
-import { heading, openVaults } from "./company.ts";
+import { heading, openTeam, openVaults } from "./company.ts";
 import { addEntry } from "./entries.ts";
 
 // K-605: Jonas of Weber Haustechnik prints a QR label for a customer's heating, joins the customer's
@@ -89,7 +89,7 @@ test.describe("several companies and the handover", { tag: "@phone" }, () => {
     // Max sets up his company Müller Elektro and invites Jonas, his heating installer
     const max = await newDevice(browser);
     await setUpCompany(max, "Max Elektro Kabel Schalter");
-    await openSettings(max, "Mitglieder", "Mitglieder");
+    await openTeam(max, "Mitglieder");
     await max.getByLabel("Name").fill("Jonas");
     await max.getByRole("button", { name: "Einladen" }).click();
     const invitation = await max.getByLabel("Einladungslink").inputValue();
@@ -118,7 +118,7 @@ test.describe("several companies and the handover", { tag: "@phone" }, () => {
     await axe(page);
 
     // Max confirms Jonas's keys in his company
-    await openSettings(max, "Mitglieder", "Mitglieder");
+    await openTeam(max, "Mitglieder");
     const jonasRow = max
       .getByRole("list", { name: "Mitglieder" })
       .getByRole("listitem")

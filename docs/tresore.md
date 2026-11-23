@@ -19,7 +19,8 @@ bestätigt sind – einmal, auch wenn du mehrere Geräte zugleich öffnest. In i
 
 ## Einen Tresor anlegen
 
-Unter **Einstellungen → Tresore** (auf dem Desktop auch über **Alle Tresore** in der Seitenleiste)
+Unter **Team → Tresore** (Team ist der dritte Punkt der Navigation; auf dem Desktop auch über
+**Alle Tresore** in der Seitenleiste)
 stehen alle Tresore, in denen du Mitglied bist, mit deiner Rolle darin:
 
 - **Lesen**: Einträge ansehen und kopieren.
@@ -41,6 +42,9 @@ verwaltet, kann dort:
 - ein Mitglied **aus dem Tresor entfernen**. Was es vorher entschlüsselt hat, kann es behalten
   haben; deshalb wechselt dein Gerät dabei gleich den Tresor-Schlüssel (siehe
   [Wenn jemand geht](#wenn-jemand-geht)).
+
+Ist ein geteilter Tresor in den Einträgen offen, zeigt **Zugriff** über der Liste, wie viele ihn sehen,
+und führt zu ihm im Team.
 
 Beim Aufnehmen kannst du unter **Zugriff bis** einen Tag wählen. Nach diesem Tag öffnet kein Gerät
 den Tresor mehr für die Person, und der Server gibt ihr das Protokoll und den Schlüssel nicht mehr;
@@ -90,7 +94,7 @@ wenn deine Schlüssel schon bestätigt sind.
 
 ## Gruppen
 
-Unter **Gruppen** legen Inhaber und Admins Gruppen an, etwa „Büro-Team“, und nehmen Personen der
+Unter **Team → Gruppen** legen Inhaber und Admins Gruppen an, etwa „Büro-Team“, und nehmen Personen der
 Firma auf oder heraus. Eine Gruppe gibt selbst keinen Zugriff: Ein Verwalter verknüpft sie im
 Dialog **Mitglieder** eines Tresors mit einer Rolle. Danach erscheint jedes Gruppenmitglied, das
 noch nicht im Tresor ist, unter **Anfragen** – auch wer der Gruppe später beitritt – und kommt erst

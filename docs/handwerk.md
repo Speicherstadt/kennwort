@@ -67,7 +67,7 @@ Am Ende eines Auftrags gehören die Zugänge dem Kunden. So gibst du ihm einen T
 
 1. Der Kunde hat eine eigene Firma in Kennwort, und du bist dort Mitglied und bestätigt (siehe
    oben). Der Kunde selbst ist dort ebenfalls bestätigt.
-2. In deiner Firma wählst du unter **Einstellungen → Tresore** beim Tresor **Übergeben** und dann
+2. In deiner Firma wählst du unter **Team → Tresore** beim Tresor **Übergeben** und dann
    die Firma des Kunden.
 3. Kennwort wechselt in die Firma des Kunden. Wähle, wer den Tresor übernimmt, und dann
    **Übergeben**.

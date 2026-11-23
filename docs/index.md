@@ -50,8 +50,11 @@ Ende-zu-Ende-verschlüsselt, mit Post-Quanten-Schutz, Open Source und ohne Koste
 
 ## Rundgang
 
-Die Web-App zeigt am Rechner Liste und Eintrag nebeneinander, mit der Seitenleiste für Tresore; am
-Handy einen Bildschirm nach dem anderen mit der Tab-Leiste unten ([Handy und App](handy.md)). Die
+Die Web-App zeigt am Rechner Liste und Eintrag nebeneinander, mit der Seitenleiste für Tresore (dein
+persönlicher zuerst, dann die geteilten mit der Zahl ihrer Personen); am Handy einen Bildschirm nach
+dem anderen mit der Tab-Leiste unten. Die Navigation hat fünf Punkte: Einträge, Generator, Team
+(Mitglieder, Gruppen und Tresore auf einer eigenen Seite), Einstellungen und Mitteilungen; unten am
+Rand **Sperren** (Strg+L) und dein Konto ([Handy und App](handy.md)). Die
 Extension öffnet ein Popup mit den Treffern der Seite und legt ein Menü unter Login-Felder. Am
 schnellsten siehst du es in der <a href="/demo/">Demo</a>.
 

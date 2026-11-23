@@ -23,6 +23,7 @@ const simplePages = [
   "groups",
   "settings",
   "members",
+  "team",
   "vaults",
   "import",
   "export",

@@ -5,8 +5,18 @@
 
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { entryIcon } from "@kennwort/client/entries/entry-icon.ts";
-import { Badge, Button, badgeVariants, cn, Icon, List, m, SearchInput } from "@kennwort/ui";
-import { Plus } from "@kennwort/ui/icons";
+import {
+  Badge,
+  Button,
+  badgeVariants,
+  buttonClass,
+  cn,
+  Icon,
+  List,
+  m,
+  SearchInput,
+} from "@kennwort/ui";
+import { Plus, Users } from "@kennwort/ui/icons";
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { entries as demoEntries, vaultName } from "../demo.ts";
 import { toChange } from "../entries/to-change.ts";
@@ -17,6 +27,36 @@ import { Link } from "./link.tsx";
 
 /** A vault the app loaded (K-305); the demo vaults stand in where there is none */
 export type ShownVault = { idText: string; name: string | undefined };
+
+/** How many people a vault has, where the app loaded its log; one (personal) where not */
+export const membersOf = (vault: ShownVault) =>
+  (vault as { log?: { members?: ReadonlyMap<string, unknown> } }).log?.members?.size ?? 1;
+
+/** A shared vault's „Zugriff“: who sees it, on its tab of the team page */
+const VaultAccess = (props: {
+  nav: Navigation;
+  filter: ListFilter;
+  vaults?: ShownVault[] | undefined;
+}) => {
+  const vault = () => {
+    const f = props.filter;
+    return f.kind === "vault" ? props.vaults?.find((v) => v.idText === f.id) : undefined;
+  };
+  return (
+    <Show when={vault() && membersOf(vault() as ShownVault) > 1 ? vault() : undefined}>
+      {(shared) => (
+        <Link
+          nav={props.nav}
+          href="/vaults"
+          label={m.vault_access_of({ name: shared().name ?? m.vaults_unnamed() })}
+          class={cn(buttonClass({ size: "sm" }), "h-11 md:h-7")}
+        >
+          <Icon icon={Users} /> {m.vault_access()} · {membersOf(shared())}
+        </Link>
+      )}
+    </Show>
+  );
+};
 
 export const listTitle = (filter: ListFilter, vaults: ShownVault[] = []) =>
   filter.kind === "all"
@@ -90,6 +130,7 @@ export const EntryList = (props: {
           <h1 id="list-title" class="flex-1 text-[28px] font-semibold md:text-[15px]">
             {listTitle(props.filter, props.vaults)}
           </h1>
+          <VaultAccess nav={props.nav} filter={props.filter} vaults={props.vaults} />
           <Show when={props.onNew}>
             {(onNew) => (
               <Button onClick={() => onNew()()}>

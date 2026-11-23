@@ -55,11 +55,14 @@ einziges Merkmal: dazu immer Text oder Icon.
 
 ## Aufbau
 
-**Desktop (ab `md`, 768 px)**: Rail (56 px) mit Logo, Bereichen, Glocke der Mitteilungen (Zähler als
-Badge) und Avatar · Seitenleiste (232 px,
+**Desktop (ab `md`, 768 px)**: Rail (56 px) ohne Logo mit Einträgen, Generator, Team, Einstellungen und der Glocke der
+Mitteilungen (Zähler als Badge), jeder Punkt mit seinem Namen als Tooltip; unten abgesetzt „Sperren“
+(umrandet, Tooltip „Sperren (Strg+L)“, Strg/Cmd+L sperrt überall) und der Avatar · Seitenleiste (232 px,
 ab `lg`) mit Firma, „Alle Einträge“, „Favoriten“, „Zum Ändern“, „Mit mir geteilt“ (sobald jemand
-etwas geteilt hat), Tresoren und Gruppen, unten der
-Hinweis zur Verschlüsselung · Liste (340 px) mit Titel, Suche (`/`) und Einträgen · Detail mit
+etwas geteilt hat), Tresoren (der persönliche zuerst, geteilte mit Users-Icon und Zahl der Personen;
+keine Gruppen), unten der
+Hinweis zur Verschlüsselung · Liste (340 px) mit Titel (bei einem geteilten Tresor daneben „Zugriff · N“, das zu ihm im Team
+führt), Suche (`/`) und Einträgen · Detail mit
 Kopfzeile in einer Reihe (Icon, Titel, darunter Art, Tresor und letzte Änderung; rechts Stern,
 „Bearbeiten“ als einzige Hauptaktion und „⋯“ mit Teilen, Einmal-Link und Etikett als Menü auf der
 Popover-API), Feldkarte (höchstens `max-w-2xl`, Zeilen mindestens 56 px hoch, Kopieren und Aufdecken
@@ -87,9 +90,13 @@ den Listen in zwei Spalten (ab `lg`). Kopf jeder Seite: Titel, darunter ein Satz
 Rahmen, Radius 12 px, 16–20 px innen, Titel 14 px halbfett. Leere Listen stehen in einem gestrichelten
 Rahmen statt als loser Satz.
 
-**Im Fluss bleiben**: Sicherheit, Tresore und Gruppen behalten die Seitenleiste, der Punkt dort ist
+**Team**: eine eigene Seite ohne Liste und Seitenleiste, mit drei Reitern Mitglieder, Gruppen und
+Tresore; ihre Adressen bleiben `/members`, `/groups` und `/vaults`, `/team` öffnet die Mitglieder. Rail
+und Tab-Leiste markieren „Team“ auf allen dreien.
+
+**Im Fluss bleiben**: Sicherheit behält die Seitenleiste, der Punkt dort ist
 markiert, und in der Rail bleibt „Einträge“ aktiv; „Sicherheit“ ist am Handy ein Filter-Chip neben
-„Zum Ändern“. Die Seiten unter den Einstellungen (Mitglieder, Import, Export, Notfallzugriff,
+„Zum Ändern“. Die Seiten unter den Einstellungen (Import, Export, Notfallzugriff,
 Einmal-Links, Firmen, Datenschutz, Schlüssel erneuern) markieren „Einstellungen“ in Rail und Tab-Leiste
 und haben oben den Link „← Einstellungen“.
 
@@ -109,9 +116,13 @@ den Listen in zwei Spalten (ab `lg`). Kopf jeder Seite: Titel, darunter ein Satz
 Rahmen, Radius 12 px, 16–20 px innen, Titel 14 px halbfett. Leere Listen stehen in einem gestrichelten
 Rahmen statt als loser Satz.
 
-**Im Fluss bleiben**: Sicherheit, Tresore und Gruppen behalten die Seitenleiste, der Punkt dort ist
+**Team**: eine eigene Seite ohne Liste und Seitenleiste, mit drei Reitern Mitglieder, Gruppen und
+Tresore; ihre Adressen bleiben `/members`, `/groups` und `/vaults`, `/team` öffnet die Mitglieder. Rail
+und Tab-Leiste markieren „Team“ auf allen dreien.
+
+**Im Fluss bleiben**: Sicherheit behält die Seitenleiste, der Punkt dort ist
 markiert, und in der Rail bleibt „Einträge“ aktiv; „Sicherheit“ ist am Handy ein Filter-Chip neben
-„Zum Ändern“. Die Seiten unter den Einstellungen (Mitglieder, Import, Export, Notfallzugriff,
+„Zum Ändern“. Die Seiten unter den Einstellungen (Import, Export, Notfallzugriff,
 Einmal-Links, Firmen, Datenschutz, Schlüssel erneuern) markieren „Einstellungen“ in Rail und Tab-Leiste
 und haben oben den Link „← Einstellungen“.
 
@@ -129,7 +140,7 @@ der Datenleck-Abgleich und die Aufnahme über den Anmeldedienst.
 **Handy (unter `md`)**: ein Screen zur Zeit, über die URL gewählt; großer Titel, Suchfeld, Filter-Chips
 („Alle“, „Favoriten“, „Zum Ändern · 3“, „Mit mir geteilt“ wie in der Seitenleiste), Liste mit
 40-px-Icons; Eintrag mit Zurück-Link, großem Icon, Feldkarte; unten Tab-Leiste (Einträge,
-Generator, Gruppen, Einstellungen und, mit offenem Konto, Mitteilungen mit Zähler). Berührungsziele
+Generator, Team, Einstellungen und, mit offenem Konto, Mitteilungen mit Zähler). Berührungsziele
 mindestens 44 px.
 
 **Extension-Popup (360 × 600)**: Kopf mit Logo und Sperren, Suche, Filter-Chips „Alle“ und

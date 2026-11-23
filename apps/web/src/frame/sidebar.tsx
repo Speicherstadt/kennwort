@@ -1,4 +1,4 @@
-/** The sidebar from lg: company, the lists, vaults and groups, the note on encryption at the bottom */
+/** The sidebar from lg: company, the lists, the vaults (personal first), the note on encryption at the bottom */
 
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import { Badge, cn, Icon, m, selectClass } from "@kennwort/ui";
@@ -11,14 +11,15 @@ import {
   ShieldExclamationPoint,
   Star,
   TriangleExclamationPoint,
+  Users,
 } from "@kennwort/ui/icons";
 import type { JSX } from "@solidjs/web";
 import { For, Show } from "solid-js";
-import { company, entries as demoEntries, groups, vaults } from "../demo.ts";
+import { company, entries as demoEntries, vaults } from "../demo.ts";
 import { toChangeCount } from "../filter.ts";
 import type { Navigation } from "../navigation.ts";
 import type { ListFilter } from "../routes.ts";
-import type { ShownVault } from "./entry-list.tsx";
+import { membersOf, type ShownVault } from "./entry-list.tsx";
 import { Link } from "./link.tsx";
 
 const sameFilter = (a: ListFilter, b: ListFilter) =>
@@ -89,9 +90,35 @@ const Heading = (props: { children: JSX.Element }) => (
   </h2>
 );
 
-/** The vaults the app loaded, or the demo's while there are none (K-305 replaces them) */
-const sidebarVaults = (loaded: ShownVault[] | undefined) =>
-  loaded ? loaded.map((v) => ({ id: v.idText, name: v.name ?? m.vaults_unnamed() })) : vaults;
+/** A loaded vault as the sidebar names it; `log` counts its people where the app loaded it */
+type SidebarVault = { id: string; name: string; members: number };
+
+/**
+ * The vaults the app loaded, or the demo's while there are none (K-305 replaces them): the
+ * personal vault (only this account in it) first, then the shared ones
+ */
+const sidebarVaults = (loaded: ShownVault[] | undefined): SidebarVault[] => {
+  const all = loaded
+    ? loaded.map((v) => ({
+        id: v.idText,
+        name: v.name ?? m.vaults_unnamed(),
+        members: membersOf(v),
+      }))
+    : vaults.map((v) => ({ ...v, members: (v as { members?: number }).members ?? 1 }));
+  return [...all.filter((v) => v.members <= 1), ...all.filter((v) => v.members > 1)];
+};
+
+/** A shared vault's people: a small Users icon and their number, named for screen readers */
+const MemberCount = (props: { count: number }) => (
+  <span
+    class="flex items-center gap-0.5 text-xs text-muted-foreground"
+    title={m.sidebar_vault_members({ count: props.count })}
+  >
+    <Icon icon={Users} size={12} />
+    <span aria-hidden="true">{props.count}</span>
+    <span class="sr-only">{m.sidebar_vault_members({ count: props.count })}</span>
+  </span>
+);
 
 export const Sidebar = (props: {
   nav: Navigation;
@@ -159,8 +186,9 @@ export const Sidebar = (props: {
             nav={props.nav}
             href={`/vaults/${vault.id}`}
             filter={{ kind: "vault", id: vault.id }}
-            icon={Archive}
+            icon={vault.members > 1 ? Users : Archive}
             label={vault.name}
+            trailing={vault.members > 1 ? <MemberCount count={vault.members} /> : undefined}
           />
         )}
       </For>
@@ -178,37 +206,6 @@ export const Sidebar = (props: {
         >
           {m.vaults_all()}
         </Link>
-      </Show>
-      <Heading>{m.nav_groups()}</Heading>
-      <Show
-        when={!props.vaults}
-        fallback={
-          <Link
-            nav={props.nav}
-            href="/groups"
-            current={props.nav.route().page === "groups"}
-            class={cn(
-              "flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors",
-              props.nav.route().page === "groups"
-                ? "bg-accent text-foreground"
-                : "text-muted-foreground hover:bg-accent",
-            )}
-          >
-            {m.groups_all()}
-          </Link>
-        }
-      >
-        <For each={groups}>
-          {(group) => (
-            <Link
-              nav={props.nav}
-              href="/groups"
-              class="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent"
-            >
-              <span class="flex-1 truncate">{group.name}</span>
-            </Link>
-          )}
-        </For>
       </Show>
     </nav>
     <p class="mt-auto flex gap-2 px-2 text-xs text-muted-foreground">

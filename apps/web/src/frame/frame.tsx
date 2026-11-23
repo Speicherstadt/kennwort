@@ -17,6 +17,7 @@ import { Rail } from "./rail.tsx";
 import { SettingsChild, SettingsPage, type SettingsProps } from "./settings-page.tsx";
 import { type CompanySwitch, Sidebar } from "./sidebar.tsx";
 import { TabBar } from "./tab-bar.tsx";
+import { TeamPage } from "./team-page.tsx";
 
 type FrameProps = {
   nav: Navigation;
@@ -78,8 +79,7 @@ const settingsLinks = (props: FrameProps): Omit<SettingsProps, "devices"> => ({
   onLock: props.onLock,
   onLocale: props.onLocale,
   onAddDevice: props.onAddDevice,
-  onMembers: props.members ? () => props.nav.go("/members") : undefined,
-  onVaults: props.vaultsPage ? () => props.nav.go("/vaults") : undefined,
+  onTeam: () => props.nav.go("/team"),
   onImport: props.importPage ? () => props.nav.go("/import") : undefined,
   onExport: props.exportPage && props.canExport ? () => props.nav.go("/export") : undefined,
   onEmergency: props.emergencyPage ? () => props.nav.go("/emergency") : undefined,
@@ -181,22 +181,29 @@ export const Frame = (props: FrameProps) => {
           </main>
         </Match>
         <Match when={route().page === "groups"}>
-          {sidebar()}
-          <main class="flex min-h-0 flex-1">
+          <TeamPage nav={props.nav} tab="groups">
             {props.groupsPage ? props.groupsPage() : <GroupsPage />}
-          </main>
+          </TeamPage>
         </Match>
         <Match when={route().page === "settings"}>
           <main class="flex min-h-0 flex-1">
             <SettingsPage {...settingsLinks(props)} devices={props.devices} />
           </main>
         </Match>
-        <Match when={route().page === "members" && props.members}>
-          <SettingsChild nav={props.nav}>{props.members?.()}</SettingsChild>
+        <Match when={(route().page === "members" || route().page === "team") && props.members}>
+          <TeamPage nav={props.nav} tab="members">
+            {props.members?.()}
+          </TeamPage>
+        </Match>
+        <Match when={route().page === "team"}>
+          <TeamPage nav={props.nav} tab="groups">
+            {props.groupsPage ? props.groupsPage() : <GroupsPage />}
+          </TeamPage>
         </Match>
         <Match when={route().page === "vaults" && props.vaultsPage}>
-          {sidebar()}
-          <main class="flex min-h-0 flex-1">{props.vaultsPage?.()}</main>
+          <TeamPage nav={props.nav} tab="vaults">
+            {props.vaultsPage?.()}
+          </TeamPage>
         </Match>
         <Match when={route().page === "import" && props.importPage}>
           <SettingsChild nav={props.nav}>{props.importPage?.()}</SettingsChild>

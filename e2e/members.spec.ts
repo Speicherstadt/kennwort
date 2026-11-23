@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { newDevice, setUpCompany, test, unlock } from "./account.ts";
+import { openTeam } from "./company.ts";
 
 // K-304 part 2 (P-08): Jonas invites Anna from the members page, Anna accepts, Jonas confirms her
 test.use({ locale: "de-DE" });
@@ -26,7 +27,7 @@ const acceptInvitation = async (device: Page, link: string, passphrase: string) 
 };
 const openMembers = async (page: Page) => {
   await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).first().click();
-  await page.getByRole("button", { name: "Mitglieder" }).click();
+  await openTeam(page, "Mitglieder");
   await expect(heading(page, "Mitglieder")).toBeVisible();
   return page.getByRole("list", { name: "Mitglieder" });
 };

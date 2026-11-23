@@ -23,7 +23,7 @@ niemandem heimlich Zugriff geben.
 
 ## Firmen-Richtlinien
 
-Unter **Einstellungen → Mitglieder → Firmen-Richtlinien** legt ein Inhaber fest, was für alle gilt:
+Unter **Team → Mitglieder → Firmen-Richtlinien** legt ein Inhaber fest, was für alle gilt:
 die Zeit bis zum automatischen Sperren ([Automatisch sperren](konto.md#automatisch-sperren)) und
 die Firmen-Recovery ([Firmen-Recovery](konto.md#firmen-recovery)). Die Richtlinien sind mit dem
 Firmenschlüssel unterschrieben; der Server kann sie nicht ändern.

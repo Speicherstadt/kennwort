@@ -1,6 +1,6 @@
 import { type Browser, expect, type Page } from "@playwright/test";
 import { newDevice, setUpCompany, test, unlock } from "./account.ts";
-import { heading, openVaults } from "./company.ts";
+import { heading, openTeam, openVaults } from "./company.ts";
 import { unique } from "./entries.ts";
 import { OIDC_NAME } from "./oidc.ts";
 
@@ -62,7 +62,7 @@ const sandraRow = (page: Page) =>
 /** Jonas compares both codes with Sandra and confirms her */
 const jonasConfirms = async (page: Page, codes: { own: string; company: string }) => {
   await openSettings(page);
-  await page.getByRole("button", { name: "Mitglieder" }).click();
+  await openTeam(page, "Mitglieder");
   await expect(sandraRow(page)).toContainText("Code vergleichen");
   await sandraRow(page).getByRole("button", { name: "Code vergleichen" }).click();
   const dialog = page.getByRole("dialog", { name: "Sandra Weber bestätigen" });
