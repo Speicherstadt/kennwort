@@ -22,8 +22,8 @@ const PASSPHRASE = "Heizung-Wasser-Licht-Kupfer";
 export const NOW = Math.floor(Date.now() / 1000) - 600;
 
 /** Jonas with his company; Anna accepted an invitation (her keys and certificate are made up here) */
-export const weber = async () => {
-  const o = await ownerWithKeys(CODE, PASSPHRASE);
+export const weber = async (more: Parameters<typeof ownerWithKeys>[4] = {}) => {
+  const o = await ownerWithKeys(CODE, PASSPHRASE, true, false, more);
   const made = await o.setup.request("/api/invitations", {
     token: o.token,
     body: invitationBody("Anna"),

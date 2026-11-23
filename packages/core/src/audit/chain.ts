@@ -33,6 +33,9 @@ export const SERVER_ACTIONS = [
   "link-created",
   "link-opened",
   "link-revoked",
+  // OpenID Connect (K-604, P-25): someone of the identity provider enrolled or linked an account
+  "oidc-enrolled",
+  "oidc-linked",
 ] as const;
 export const CLIENT_ACTIONS = [
   "export",

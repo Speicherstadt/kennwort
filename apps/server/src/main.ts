@@ -10,6 +10,7 @@ import { migrate, openDatabase } from "./db/database.ts";
 import { createLog } from "./log.ts";
 import { PUSH_HOSTS, pushHostAllowed } from "./notifications/push.ts";
 import { loadVapid } from "./notifications/vapid.ts";
+import { createProvider } from "./oidc/provider.ts";
 import { PWNED_LIMIT } from "./pwned/routes.ts";
 import { upstreamRanges } from "./pwned/upstream.ts";
 
@@ -20,7 +21,7 @@ if (!config.ok) {
   console.error(JSON.stringify(failure));
   process.exit(1);
 }
-const { port, database, logLevel, publicUrl, authSecret, behindProxy, setupCode, pwnedUrl } =
+const { port, database, logLevel, publicUrl, authSecret, behindProxy, setupCode, pwnedUrl, oidc } =
   config.value;
 const log = createLog(logLevel, (line) => console.log(line));
 
@@ -42,6 +43,8 @@ const signIn = {
   allow: rateLimiter(20, 60_000),
   address: clientAddress(behindProxy),
   setupCode,
+  // Sign-in with OpenID Connect (K-604) where the operator configured a provider
+  oidc: oidc ? { provider: createProvider(oidc, fetch, Date.now), publicUrl } : undefined,
 };
 // Web Push (K-602): the VAPID key is made at the first start and kept in the database
 const pushConfig = config.value.push;

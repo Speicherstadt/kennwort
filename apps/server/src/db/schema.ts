@@ -47,6 +47,7 @@ export * from "./auth-schema.ts";
 export * from "./emergency-schema.ts";
 export * from "./link-schema.ts";
 export * from "./notification-schema.ts";
+export * from "./oidc-schema.ts";
 export * from "./recovery-schema.ts";
 export * from "./sync-schema.ts";
 

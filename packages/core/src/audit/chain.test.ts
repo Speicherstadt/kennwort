@@ -13,6 +13,7 @@ import {
   auditHash,
   CLIENT_ACTIONS,
   chainAudit,
+  isClientAction,
   SERVER_ACTIONS,
   signAudit,
   verifyAudit,
@@ -283,5 +284,12 @@ describe("server actions", () => {
   it("name the steps of a one-time link the server records (K-601)", () => {
     for (const action of ["link-created", "link-opened", "link-revoked"])
       expect(SERVER_ACTIONS).toContain(action);
+  });
+
+  it("name an enrolment and a link through OpenID Connect, which only the server sees (K-604)", () => {
+    for (const action of ["oidc-enrolled", "oidc-linked"]) {
+      expect(SERVER_ACTIONS).toContain(action);
+      expect(isClientAction(action as AuditAction)).toBe(false);
+    }
   });
 });

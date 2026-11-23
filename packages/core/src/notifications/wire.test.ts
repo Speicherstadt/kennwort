@@ -23,7 +23,7 @@ const row = (over: Record<string, unknown> = {}) => ({
 });
 
 describe("kinds", () => {
-  it("are the twelve kinds, frozen, with the K-603 report as the last", () => {
+  it("are the fourteen kinds, frozen, with the K-604 ones last", () => {
     expect(NOTIFICATION_KINDS).toEqual([
       "access-requested",
       "vault-added",
@@ -37,6 +37,8 @@ describe("kinds", () => {
       "account-recovered",
       "link-opened",
       "security-report",
+      "member-enrolled",
+      "group-left",
     ]);
     expect(Object.isFrozen(NOTIFICATION_KINDS)).toBe(true);
   });

@@ -117,6 +117,11 @@ export const groupMembers = sqliteTable(
       .notNull()
       .references(() => groups.id),
     accountId: text("account_id").notNull(),
+    /**
+     * Joined because the identity provider's groups claim named the group (K-604): such a
+     * membership ends when the claim no longer names it; one an admin made stays
+     */
+    viaIdp: integer("via_idp", { mode: "boolean" }).notNull().default(false),
   },
   (table) => [primaryKey({ columns: [table.groupId, table.accountId] })],
 );

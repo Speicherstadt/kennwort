@@ -22,6 +22,9 @@ export const NOTIFICATION_KINDS = Object.freeze([
   "account-recovered",
   "link-opened",
   "security-report",
+  // OpenID Connect (K-604, P-25): to admins, someone enrolled; to managers, a member left a group
+  "member-enrolled",
+  "group-left",
 ] as const);
 export const NotificationKind = z.enum(NOTIFICATION_KINDS);
 export type NotificationKind = z.infer<typeof NotificationKind>;

@@ -24,6 +24,9 @@ import { type Log, pathForLog } from "./log.ts";
 import { createNotifier, type NotificationHub } from "./notifications/notify.ts";
 import { createPusher, type PushDeps } from "./notifications/push.ts";
 import { notificationRoutes } from "./notifications/routes.ts";
+import { oidcApiRoutes } from "./oidc/api-routes.ts";
+import type { Provider } from "./oidc/provider.ts";
+import { oidcPublicRoutes } from "./oidc/routes.ts";
 import { type PwnedDeps, pwnedRoutes } from "./pwned/routes.ts";
 import { groupRoutes } from "./sync/group-routes.ts";
 import { createHub, type Hub } from "./sync/hub.ts";
@@ -44,6 +47,8 @@ export type SignIn = {
   allow: (key: string) => boolean;
   address: ClientAddress;
   setupCode?: string | undefined;
+  /** Sign-in with OpenID Connect (K-604): the provider and the address people open */
+  oidc?: { provider: Provider; publicUrl: string } | undefined;
 };
 
 export type Deps = {
@@ -171,6 +176,11 @@ export const createApp = ({
     app.route("/auth/links", linkPublicRoutes(deps));
     app.route("/auth", acceptInvitationRoute(deps));
     app.route("/auth", setupRoute({ ...deps, setupCode: signIn.setupCode }));
+    if (signIn.oidc) {
+      const oidc = { ...deps, ...signIn.oidc, log };
+      app.route("/auth", oidcPublicRoutes(oidc));
+      api.route("/", oidcApiRoutes(oidc));
+    }
     app.on(["GET", "POST"], "/auth/*", (c) => {
       // Better Auth's rate limit reads the client address from this header only; a value a
       // client sent itself is replaced (review of K-203)

@@ -11,9 +11,9 @@ import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { Db } from "../db/database.ts";
-import { groupMembers, groups, vaultGroups, vaultRequests, vaults } from "../db/schema.ts";
+import { groupMembers, groups, vaultGroups, vaults } from "../db/schema.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
-import { pruneGroupRequests, vaultsOfGroup } from "./group-links.ts";
+import { askForGroup, pruneGroupRequests, vaultsOfGroup } from "./group-links.ts";
 import { currentMembers } from "./vault-chain.ts";
 
 type Deps = { db: Db; now: () => number };
@@ -41,14 +41,8 @@ const store = (deps: Deps) => {
       .where(and(eq(vaults.id, vaultId), eq(vaults.companyId, c.var.session.companyId)))
       .get();
   /** Requests, filed by the group, for those of `accounts` who are no current members */
-  const ask = (vaultId: string, accounts: string[], groupId: string) => {
-    const members = currentMembers(db, vaultId, seconds());
-    for (const accountId of accounts.filter((a) => !members.has(a)))
-      db.insert(vaultRequests)
-        .values({ vaultId, accountId, requestedAt: deps.now(), viaGroup: groupId })
-        .onConflictDoNothing()
-        .run();
-  };
+  const ask = (vaultId: string, accounts: string[], groupId: string) =>
+    askForGroup(db, deps.now(), vaultId, accounts, groupId);
   const membersOfGroup = (groupId: string) =>
     db
       .select()
