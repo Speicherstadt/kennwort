@@ -285,7 +285,7 @@ Hinweise für Mitwirkende und Agenten stehen in [CLAUDE.md](CLAUDE.md), was als 
 ## Mehr von uns
 
 Kennwort gehört zur Speicherstadt: Open-Source-Apps für deinen eigenen Server, etwa
-[Haben](https://github.com/Speicherstadt/haben) für die Buchhaltung. Mehr auf **[speicherstadt.app](https://speicherstadt.app)**.
+[Haben](https://github.com/Speicherstadt/haben) für die Buchhaltung. Mehr auf **[speicherstadt.org](https://speicherstadt.org)**.
 
 ## Mitwirken
 
