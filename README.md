@@ -12,7 +12,7 @@
 Bank, Lieferantenportale, WLAN und Kundengeräte an einem Ort: im Browser, als Extension, am Handy und im Terminal.
 Open Source, ohne Kosten pro Benutzer, mit Post-Quanten-Schutz und sicher auch dann, wenn der Server selbst angegriffen wird.
 
-![Version 0.1](https://img.shields.io/badge/Version-0.1%20zum%20Ausprobieren-orange)
+![Status: In Entwicklung](https://img.shields.io/badge/Status-In%20Entwicklung-red)
 [![CI](https://github.com/Speicherstadt/kennwort/actions/workflows/ci.yml/badge.svg)](https://github.com/Speicherstadt/kennwort/actions/workflows/ci.yml)
 [![Lizenz: AGPL-3.0](https://img.shields.io/badge/Lizenz-AGPL--3.0-blue)](LICENSE)
 [![Doku](https://img.shields.io/badge/Doku-kennwort.app-4f46e5?logo=zensical&logoColor=white)](https://kennwort.app/)
@@ -34,7 +34,7 @@ Open Source, ohne Kosten pro Benutzer, mit Post-Quanten-Schutz und sicher auch d
 </div>
 
 > [!WARNING]
-> **Version 0.1: zum Ausprobieren, noch nicht extern geprüft.** Die Kryptografie folgt offenen Standards (X-Wing,
+> **In Entwicklung: zum Ausprobieren, noch nicht extern geprüft.** Die Kryptografie folgt offenen Standards (X-Wing,
 > XChaCha20-Poly1305, Argon2id) und nutzt nur geprüfte Bibliotheken; die 27 Angriffe der ETH-Studie laufen als Tests,
 > die Krypto-Bausteine zusätzlich mit Testvektoren und Mutation-Tests
 > ([Kryptografie](https://kennwort.app/kryptografie.html), [Sicherheitsdesign](https://kennwort.app/sicherheitsdesign.html)).
