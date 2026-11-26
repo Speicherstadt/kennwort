@@ -39,7 +39,7 @@ const loginInBuero = async (page: Page, title: string, password: string) => {
 /** Jonas creates Büro, takes Anna in to edit and writes the Sparkasse login; Anna reads it */
 const annaInBuero = async (page: Page, anna: Page) => {
   await openVaults(page);
-  await page.getByLabel("Name").fill("Büro");
+  await page.getByLabel("Name", { exact: true }).fill("Büro");
   await page.getByRole("button", { name: "Tresor anlegen" }).click();
   await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
   const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });

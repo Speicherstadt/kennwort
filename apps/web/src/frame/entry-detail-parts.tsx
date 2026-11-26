@@ -9,6 +9,7 @@ import { Badge, getLocale, Icon, IconButton, m, type Toasts } from "@kennwort/ui
 import { Star, TriangleExclamationPoint } from "@kennwort/ui/icons";
 import { createSignal, For, Show } from "solid-js";
 import { toChange } from "../entries/to-change.ts";
+import { sectionTitleClass } from "./pane-layout.ts";
 import { Field } from "./secret-field.tsx";
 
 export type Saved = { ok: true; value: string } | { ok: false; error: SaveError };
@@ -18,9 +19,7 @@ const date = (time: number) =>
 
 export const Card = (props: { title: string; children: unknown }) => (
   <section class="grid gap-1" aria-label={props.title}>
-    <h2 class="text-[11px] font-semibold tracking-[.04em] text-muted-foreground uppercase">
-      {props.title}
-    </h2>
+    <h2 class={sectionTitleClass}>{props.title}</h2>
     <div class="divide-y divide-border rounded-xl border border-border">
       {props.children as never}
     </div>

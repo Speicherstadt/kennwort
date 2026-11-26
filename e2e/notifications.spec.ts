@@ -40,7 +40,7 @@ test.describe("notifications", { tag: "@phone" }, () => {
 
     // Anna asks for access to Büro; Jonas's device names the vault and Anna itself
     await openVaults(page);
-    await page.getByLabel("Name").fill("Büro");
+    await page.getByLabel("Name", { exact: true }).fill("Büro");
     await page.getByRole("button", { name: "Tresor anlegen" }).click();
     await page.getByRole("main").getByRole("link", { name: /Büro/ }).click();
     const link = page.url();

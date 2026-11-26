@@ -30,7 +30,7 @@ const received = (page: Page) => page.getByRole("list", { name: "Für dich" });
 /** Jonas creates Büro and writes the Sparkasse login into it */
 const sparkasseInBuero = async (page: Page) => {
   await openVaults(page);
-  await page.getByLabel("Name").fill("Büro");
+  await page.getByLabel("Name", { exact: true }).fill("Büro");
   await page.getByRole("button", { name: "Tresor anlegen" }).click();
   await expect(page.getByRole("main").getByRole("list")).toContainText("Büro");
   await visibleLink(page, "Einträge").click();

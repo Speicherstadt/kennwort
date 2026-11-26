@@ -99,7 +99,7 @@ export const OwnField = (props: {
   onRemove: () => void;
   generate: () => string;
 }) => (
-  <fieldset class="grid gap-2 rounded-lg border border-border p-2.5">
+  <fieldset class="grid gap-2">
     <div class="flex items-end gap-2">
       <div class="grid flex-1">
         <Input

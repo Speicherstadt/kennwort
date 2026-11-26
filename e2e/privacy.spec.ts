@@ -48,7 +48,7 @@ const deleteWith = async (page: Page, passphrase: string) => {
 /** Jonas creates Büro and takes Anna in to edit */
 const annaInBuero = async (page: Page) => {
   await openVaults(page);
-  await page.getByLabel("Name").fill("Büro");
+  await page.getByLabel("Name", { exact: true }).fill("Büro");
   await page.getByRole("button", { name: "Tresor anlegen" }).click();
   await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
   const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });

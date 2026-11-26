@@ -90,14 +90,14 @@ test.describe("several companies and the handover", { tag: "@phone" }, () => {
     const max = await newDevice(browser);
     await setUpCompany(max, "Max Elektro Kabel Schalter");
     await openTeam(max, "Mitglieder");
-    await max.getByLabel("Name").fill("Jonas");
+    await max.getByLabel("Name", { exact: true }).fill("Jonas");
     await max.getByRole("button", { name: "Einladen" }).click();
     const invitation = await max.getByLabel("Einladungslink").inputValue();
 
     // Jonas runs Weber Haustechnik and keeps the heating's passwords in the vault Heizung Müller
     await setUpCompany(page);
     await openVaults(page);
-    await page.getByLabel("Name").fill("Heizung Müller");
+    await page.getByLabel("Name", { exact: true }).fill("Heizung Müller");
     await page.getByRole("button", { name: "Tresor anlegen" }).click();
     await expect(page.getByRole("main").getByRole("list")).toContainText("Heizung Müller");
     await page.getByRole("link", { name: "Einträge" }).filter({ visible: true }).first().click();

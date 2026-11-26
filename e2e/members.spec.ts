@@ -43,7 +43,7 @@ test.describe("members", { tag: "@phone" }, () => {
     await expect(members.getByRole("listitem").first()).toContainText("Inhaber");
     await expect(members.getByRole("listitem").first()).toContainText("Bestätigt");
 
-    await page.getByLabel("Name").fill("Anna");
+    await page.getByLabel("Name", { exact: true }).fill("Anna");
     await page.getByRole("button", { name: "Einladen" }).click();
     const link = await page.getByLabel("Einladungslink").inputValue();
     expect(link).toMatch(/\/invite\/[\w-]{22}#token=.+&s=[\w-]{43}&root=[\w-]{43}$/);
@@ -90,7 +90,7 @@ test.describe("members", { tag: "@phone" }, () => {
   }) => {
     await setUpCompany(page);
     await openMembers(page);
-    await page.getByLabel("Name").fill("Anna");
+    await page.getByLabel("Name", { exact: true }).fill("Anna");
     await page.getByRole("button", { name: "Einladen" }).click();
     const link = await page.getByLabel("Einladungslink").inputValue();
     const anna = await newDevice(browser);
@@ -112,7 +112,7 @@ test.describe("members", { tag: "@phone" }, () => {
 
     // Anna's client takes the root key Jonas wrapped to her, so she can confirm whom she invites
     await openMembers(anna);
-    await anna.getByLabel("Name").fill("Max");
+    await anna.getByLabel("Name", { exact: true }).fill("Max");
     await anna.getByRole("button", { name: "Einladen" }).click();
     const maxLink = await anna.getByLabel("Einladungslink").inputValue();
     const max = await newDevice(browser);
@@ -149,7 +149,7 @@ test.describe("members", { tag: "@phone" }, () => {
     // A member sees the time the company set, without a form to change it
     await unlock(page);
     await openMembers(page);
-    await page.getByLabel("Name").fill("Anna");
+    await page.getByLabel("Name", { exact: true }).fill("Anna");
     await page.getByRole("button", { name: "Einladen" }).click();
     const anna = await newDevice(browser);
     await acceptInvitation(
