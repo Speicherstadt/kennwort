@@ -26,7 +26,7 @@ const openEnrolment = async (page: Page) => {
 /** The provider's login form, as a person fills it in */
 const signInAtProvider = async (person: Page, sub: string, groups = "") => {
   await person.getByLabel("User").fill(sub);
-  await person.getByLabel("Name").fill("Sandra Weber");
+  await person.getByLabel("Name", { exact: true }).fill("Sandra Weber");
   await person.getByLabel("Groups").fill(groups);
   await person.getByRole("button", { name: "Sign in" }).click();
 };
@@ -95,7 +95,7 @@ test.describe("OpenID Connect", { tag: "@phone" }, () => {
     await page.getByLabel("Name der Gruppe").fill("Technik");
     await page.getByRole("button", { name: "Gruppe anlegen" }).click();
     await openVaults(page);
-    await page.getByLabel("Name").fill("Büro");
+    await page.getByLabel("Name", { exact: true }).fill("Büro");
     await page.getByRole("button", { name: "Tresor anlegen" }).click();
     await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
     const members = page.getByRole("dialog", { name: "Mitglieder von Büro" });

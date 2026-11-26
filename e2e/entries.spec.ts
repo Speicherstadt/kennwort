@@ -23,7 +23,7 @@ test.describe("entries", { tag: "@phone" }, () => {
     await setUpCompany(page);
     const anna = await annaJoins(page, browser);
     await openVaults(page);
-    await page.getByLabel("Name").fill("Büro");
+    await page.getByLabel("Name", { exact: true }).fill("Büro");
     await page.getByRole("button", { name: "Tresor anlegen" }).click();
     await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
     const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });

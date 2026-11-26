@@ -31,7 +31,7 @@ const rootCode = async (page: Page) => (await page.getByTestId("root-code").text
 /** Jonas invites Max, Max accepts on his own device, Jonas confirms him and makes him admin */
 const maxBecomesAdmin = async (page: Page, browser: Parameters<typeof newDevice>[0]) => {
   await openMembers(page);
-  await page.getByLabel("Name").fill("Max");
+  await page.getByLabel("Name", { exact: true }).fill("Max");
   await page.getByRole("button", { name: "Einladen" }).click();
   const link = await page.getByLabel("Einladungslink").inputValue();
   const max = await newDevice(browser);

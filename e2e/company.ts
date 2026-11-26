@@ -28,7 +28,7 @@ export const annaJoins = async (
 ) => {
   await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).first().click();
   await openTeam(page, "Mitglieder");
-  await page.getByLabel("Name").fill("Anna");
+  await page.getByLabel("Name", { exact: true }).fill("Anna");
   await page.getByRole("button", { name: "Einladen" }).click();
   const link = await page.getByLabel("Einladungslink").inputValue();
   const anna = await newDevice(browser);
