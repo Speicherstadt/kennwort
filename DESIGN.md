@@ -71,7 +71,9 @@ und – sobald der Bereich mindestens 768 px breit ist (Container-Query, nicht d
 rechts Zugriff und Verlauf.
 
 **Eintrag bearbeiten und anlegen**: kein Dialog, sondern ein Formular an Ort und Stelle im Bereich
-des Eintrags; am Handy ein eigener Screen ohne Liste. Titel (`h1`, „Neuer Eintrag“ oder „Eintrag
+des Eintrags, in denselben Spalten wie die Anzeige (nichts springt beim Öffnen), mit demselben Kopf
+(Symbol, Titel) und denselben Abschnitten (Überschrift klein in Großbuchstaben, Rahmen darunter);
+am Handy ein eigener Screen ohne Liste. Titel (`h1`, „Neuer Eintrag“ oder „Eintrag
 bearbeiten“) mit dem Tastenhinweis darunter, dann Panels: Allgemein (Tresor und Art beim Anlegen,
 Titel), Felder (mit „Feld hinzufügen“ als Ghost-Knopf), Tags. Unten klebt die Leiste mit dem Badge
 „Nicht gespeichert“, sobald sich etwas geändert hat, „Abbrechen“ und dem Hauptknopf „Speichern“.
