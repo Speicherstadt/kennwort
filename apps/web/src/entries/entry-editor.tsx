@@ -107,8 +107,12 @@ const createLeaving = (opts: {
   return { asking, setAsking, leave, close };
 };
 
-/** The body of an editor section: a frame like the entry's cards, with room for inputs */
-const sectionBodyClass = "grid content-start gap-3 rounded-xl border border-border p-3.5";
+/**
+ * The body of an editor section: the rows of the entry's cards (frame, dividers, muted labels),
+ * so that reading and editing an entry look alike
+ */
+const sectionBodyClass =
+  "divide-y divide-border rounded-xl border border-border *:px-4 *:py-3 [&_label]:text-muted-foreground [&_legend]:text-muted-foreground";
 
 /** The fields of the entry: the type's, then the owner's own, and a way to add one */
 const FieldsPanel = (props: {

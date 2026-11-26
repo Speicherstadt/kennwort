@@ -72,7 +72,7 @@ rechts Zugriff und Verlauf.
 
 **Eintrag bearbeiten und anlegen**: kein Dialog, sondern ein Formular an Ort und Stelle im Bereich
 des Eintrags, mittig in derselben Spalte wie die Anzeige (nichts springt beim Öffnen; zwei Spalten nur, wenn der Eintrag Zugriff und Verlauf zeigt), mit demselben Kopf
-(Symbol, Titel) und denselben Abschnitten (Überschrift klein in Großbuchstaben, Rahmen darunter);
+(Symbol, Titel) und denselben Abschnitten (Überschrift klein in Großbuchstaben, darunter eine Karte mit einer Zeile je Feld, Trennlinien und grauen Labels wie in der Anzeige);
 am Handy ein eigener Screen ohne Liste. Titel (`h1`, „Neuer Eintrag“ oder „Eintrag
 bearbeiten“) mit dem Tastenhinweis darunter, dann Panels: Allgemein (Tresor und Art beim Anlegen,
 Titel), Felder (mit „Feld hinzufügen“ als Ghost-Knopf), Tags. Unten klebt die Leiste mit dem Badge
