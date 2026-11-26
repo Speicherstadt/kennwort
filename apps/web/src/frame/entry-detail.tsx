@@ -22,7 +22,7 @@ import {
   ToChangeNote,
 } from "./entry-detail-parts.tsx";
 import { Link } from "./link.tsx";
-import { paneGridClass, paneMainClass } from "./pane-layout.ts";
+import { paneGridClass, paneGridSideClass, paneMainClass } from "./pane-layout.ts";
 import { Field } from "./secret-field.tsx";
 import { TotpField } from "./totp-field.tsx";
 
@@ -72,7 +72,11 @@ const Detail = (props: {
   onLabel?: (() => void) | undefined;
   onFavorite?: (() => Promise<Saved> | undefined) | undefined;
 }) => (
-  <div class={paneGridClass}>
+  <div
+    class={
+      props.entry.access.length > 0 || props.entry.changedAt > 0 ? paneGridSideClass : paneGridClass
+    }
+  >
     <div class={paneMainClass}>
       <div class="flex items-center gap-3">
         <span class="grid size-12 shrink-0 place-items-center rounded-xl border border-border md:size-10">

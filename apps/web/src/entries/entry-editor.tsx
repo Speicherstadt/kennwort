@@ -170,7 +170,7 @@ const FieldsPanel = (props: {
 const ActionBar = (props: { unsaved: boolean; busy: boolean; onCancel: () => void }) => (
   <div class="sticky bottom-0 mt-auto border-t border-border bg-background/95 backdrop-blur">
     <div class={cn(paneGridClass, "py-3 md:py-3")}>
-      <div class="flex w-full max-w-2xl items-center gap-2">
+      <div class="flex w-full items-center gap-2">
         <Show when={props.unsaved}>
           <Badge tone="warning">{m.entry_editor_unsaved()}</Badge>
         </Show>
