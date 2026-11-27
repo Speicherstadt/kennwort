@@ -3,7 +3,7 @@ name: Mutation
 # The stricter gate of packages/crypto and packages/core: every mutant of the code must be killed by a
 # test (100 %). It takes far longer than the five minutes a CI run may take (the user's rule), so it
 # runs nightly and on demand instead of in ci.yml (docs/plan.md, "Mutation-Tests nachts"). A red run
-# is fixed first, before new work in crypto or core (CLAUDE.md, "The agent loop").
+# is fixed first, before new work in crypto or core (BAULISTE.md, "So arbeitet der Loop").
 on:
   schedule:
     - cron: "17 2 * * *"

@@ -1,0 +1,31 @@
+{
+  "$kommentar": "Einstellungen für die Werkbank (https://github.com/Speicherstadt/werkbank); Standards in werkzeug/konfiguration.ts",
+  "board": null,
+  "anleitung": "https://kennwort.app/mitwirken.html#wenn-eine-pruefung-anschlaegt",
+  "uebernehmen": "https://kennwort.app/mitwirken.html#etwas-uebernehmen",
+  "konventionen": "docs/entwicklung.md, Konventionen",
+  "code": [
+    "^(apps/[^/]+/src|packages/[^/]+/src|apps/[^/]+/(scripts|build))/.*\\.[cm]?[jt]sx?$",
+    "^apps/mobile/(src-tauri/src|plugins)/.*\\.(rs|kt|swift)$",
+    "^apps/mobile/src-tauri/gen/android/app/src/main/java/.*\\.kt$"
+  ],
+  "funktionen": [
+    "^(apps/[^/]+/src|packages/[^/]+/src|apps/[^/]+/(scripts|build)|scripts)/.*\\.[cm]?[jt]sx?$"
+  ],
+  "erzeugt": ["routeTree\\.gen\\.ts$", "/paraglide/"],
+  "heikel": [
+    "^packages/crypto/",
+    "^packages/core/src/(sync|membership|links|auth|webauthn|adversary|headers)/",
+    "^packages/client/src/(account|session|root|emergency|autofill)/",
+    "^apps/server/src/(auth|oidc|tenancy|sync|adversary)/",
+    "^apps/server/src/web/security-headers\\.ts$",
+    "^apps/web/src/(session|recovery|pairing|handover|sw)/",
+    "^apps/extension/src/(content|fill|session-keys\\.ts|background\\.ts)",
+    "^apps/extension/build/storage-rules\\.ts$",
+    "^apps/mobile/plugins/autofill/",
+    "^apps/mobile/src-tauri/gen/android/app/src/main/java/app/kennwort/autofill/",
+    "^allowed-dependencies\\.json$",
+    "^scripts/allowed-dependencies\\.ts$"
+  ],
+  "erzeugteSkills": ["reactivity-diagnostics", "solid-2.0-cheatsheet"]
+}

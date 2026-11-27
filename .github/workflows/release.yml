@@ -256,3 +256,15 @@ jobs:
         The web build is signed with the TEST release key until the release key is made
         (BAULISTE.md, "Schritte für Menschen"); rebuild and compare it with
         `bun run reproducible --release release.json` (docs/sicherheitsdesign.md, K-408).
+
+  # After a finished version (not a release candidate) the implemented issues are closed with a link to the
+  # release, from the Werkbank (docs/mitwirken.md, „Vom Issue zum Release“)
+  issues-schliessen:
+    needs: release
+    uses: Speicherstadt/werkbank/.github/workflows/issues-schliessen.yml@main
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    with:
+      tag: ${{ github.ref_name }}
