@@ -56,6 +56,7 @@ const initialsOf = (name: string) =>
 const MemberRow = (props: {
   member: VaultMember;
   viaGroups: string[];
+  direct: boolean;
   outside: boolean;
   editable: boolean;
   busy: boolean;
@@ -84,6 +85,11 @@ const MemberRow = (props: {
           <Show when={props.viaGroups.length === 0 && props.outside}>
             <span class="rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-xs text-muted-foreground">
               {m.vault_groups_outside()}
+            </span>
+          </Show>
+          <Show when={props.viaGroups.length === 0 && !props.outside && props.direct}>
+            <span class="rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-xs text-muted-foreground">
+              {m.vault_groups_direct()}
             </span>
           </Show>
         </div>
@@ -205,7 +211,7 @@ export const VaultMembersDialog = (props: {
   store: VaultStore;
   onRemove: (accountId: Uint8Array) => Promise<Outcome>;
   onRole: (accountId: Uint8Array, role: VaultRole) => Promise<Outcome>;
-  onManageGroups?: (() => void) | undefined;
+  onManageGroups?: ((groupId: string | undefined) => void) | undefined;
 }) => {
   const state = createDialogState(props);
   const { busy, error, requests, run } = state;
@@ -241,6 +247,7 @@ export const VaultMembersDialog = (props: {
             <MemberRow
               member={member}
               viaGroups={linkedGroupNames(member.accountId, state.links(), state.groups())}
+              direct={state.links().length > 0}
               outside={outside().has(idKey(member.accountId))}
               editable={mayManage(props.vault)}
               busy={busy()}

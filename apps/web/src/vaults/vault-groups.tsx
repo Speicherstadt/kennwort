@@ -9,7 +9,7 @@ import type { Group, Link } from "../groups/groups.ts";
 export const VaultGroups = (props: {
   groups: Group[];
   links: Link[];
-  onManage?: (() => void) | undefined;
+  onManage?: ((groupId: string | undefined) => void) | undefined;
 }) => {
   const names = () =>
     props.links
@@ -26,7 +26,7 @@ export const VaultGroups = (props: {
             <button
               type="button"
               class="font-medium text-foreground underline-offset-4 hover:underline"
-              onClick={() => go()()}
+              onClick={() => go()(props.links[0]?.groupId)}
             >
               {m.vault_groups_edit()}
             </button>

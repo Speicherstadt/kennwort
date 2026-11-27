@@ -157,14 +157,21 @@ export const GroupDetail = (props: {
   const linkOf = (vault: Vault) => props.links.find((l) => l.vault.idText === vault.idText);
   const isMember = (person: MemberView) =>
     props.group.members.some((accountId) => idKey(accountId) === idKey(person.accountId));
+  const vaultCount = () =>
+    props.links.length === 1
+      ? m.groups_vault_one()
+      : m.groups_vaults_count({ count: props.links.length });
+  const memberCount = () =>
+    props.group.members.length === 1
+      ? m.groups_member_one()
+      : m.groups_members({ count: props.group.members.length });
   return (
     <div class="overflow-hidden rounded-2xl border border-border bg-card">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3.5">
         <div class="min-w-0">
           <h2 class="truncate text-sm font-semibold">{props.group.name}</h2>
           <p class="text-xs text-muted-foreground">
-            {m.groups_vaults_count({ count: props.links.length })} ·{" "}
-            {m.groups_members({ count: props.group.members.length })}
+            {memberCount()} · {vaultCount()}
           </p>
         </div>
         <Show when={props.keeper}>
@@ -177,37 +184,15 @@ export const GroupDetail = (props: {
       <div class="grid divide-y divide-border lg:grid-cols-2 lg:divide-x lg:divide-y-0">
         <div class="p-4">
           <div class="mb-2.5 flex items-center justify-between gap-2">
-            <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {m.groups_vaults_heading()}
+            <h3 class="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {m.groups_members_in({ name: props.group.name })}
             </h3>
-            <span class="text-xs text-muted-foreground">{m.groups_vaults_sub()}</span>
-          </div>
-          <Show
-            when={props.vaults.length > 0}
-            fallback={<p class="px-1 py-2 text-xs text-muted-foreground">{m.groups_no_vaults()}</p>}
-          >
-            <ul class="space-y-1.5" aria-label={m.groups_vaults_of({ name: props.group.name })}>
-              <For each={props.vaults}>
-                {(vault) => (
-                  <VaultRow
-                    vault={vault}
-                    link={linkOf(vault)}
-                    busy={props.busy}
-                    onToggle={(checked) => props.onToggleVault(vault, checked)}
-                    onRole={(role) => props.onVaultRole(vault, role)}
-                  />
-                )}
-              </For>
-            </ul>
-          </Show>
-        </div>
-
-        <div class="p-4">
-          <div class="mb-2.5 flex items-center justify-between gap-2">
-            <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {m.groups_members_heading()}
-            </h3>
-            <span class="text-xs text-muted-foreground">{m.groups_members_sub()}</span>
+            <span class="shrink-0 text-xs text-muted-foreground">
+              {m.groups_of_total({
+                active: props.group.members.length,
+                total: props.people.length,
+              })}
+            </span>
           </div>
           <Show
             when={props.people.length > 0}
@@ -224,6 +209,35 @@ export const GroupDetail = (props: {
                     keeper={props.keeper}
                     busy={props.busy}
                     onToggle={(checked) => props.onToggleMember(person, checked)}
+                  />
+                )}
+              </For>
+            </ul>
+          </Show>
+        </div>
+
+        <div class="p-4">
+          <div class="mb-2.5 flex items-center justify-between gap-2">
+            <h3 class="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {m.groups_vaults_for({ name: props.group.name })}
+            </h3>
+            <span class="shrink-0 text-xs text-muted-foreground">
+              {m.groups_of_total({ active: props.links.length, total: props.vaults.length })}
+            </span>
+          </div>
+          <Show
+            when={props.vaults.length > 0}
+            fallback={<p class="px-1 py-2 text-xs text-muted-foreground">{m.groups_no_vaults()}</p>}
+          >
+            <ul class="space-y-1.5" aria-label={m.groups_vaults_of({ name: props.group.name })}>
+              <For each={props.vaults}>
+                {(vault) => (
+                  <VaultRow
+                    vault={vault}
+                    link={linkOf(vault)}
+                    busy={props.busy}
+                    onToggle={(checked) => props.onToggleVault(vault, checked)}
+                    onRole={(role) => props.onVaultRole(vault, role)}
                   />
                 )}
               </For>
