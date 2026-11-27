@@ -51,6 +51,7 @@ test.describe("adding a device", { tag: "@phone" }, () => {
 
     const settings = page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true });
     await settings.first().click();
+    await page.getByRole("tab", { name: "Geräte und Anmeldung" }).click();
     await page.getByRole("button", { name: "Gerät hinzufügen" }).click();
     await expect(heading(page, "Gerät hinzufügen")).toBeVisible();
     await axe(page);
@@ -92,6 +93,7 @@ test.describe("adding a device", { tag: "@phone" }, () => {
     const link = await startPairing(device);
     const settings = page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true });
     await settings.first().click();
+    await page.getByRole("tab", { name: "Geräte und Anmeldung" }).click();
     await page.getByRole("button", { name: "Gerät hinzufügen" }).click();
     await expect(heading(page, "Gerät hinzufügen")).toBeVisible();
     // Only the fragment changes: the browser does not load the page anew, the account stays open
@@ -111,6 +113,7 @@ test.describe("adding a device", { tag: "@phone" }, () => {
       .filter({ visible: true })
       .first()
       .click();
+    await page.getByRole("tab", { name: "Geräte und Anmeldung" }).click();
     await page.getByRole("button", { name: "Gerät hinzufügen" }).click();
     await page
       .getByLabel("Link vom neuen Gerät")
@@ -128,6 +131,7 @@ test.describe("the device list", { tag: "@phone" }, () => {
       .filter({ visible: true })
       .first()
       .click();
+    await page.getByRole("tab", { name: "Geräte und Anmeldung" }).click();
     return page.getByRole("region", { name: "Angemeldete Geräte" });
   };
 

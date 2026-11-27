@@ -21,6 +21,7 @@ const visibleLink = (page: Page, name: string) =>
 /** Einstellungen → Notfallzugriff, anew each time: the page loads the lists when it opens */
 const openEmergency = async (page: Page) => {
   await visibleLink(page, "Einstellungen").click();
+  await page.getByRole("tab", { name: "Konto" }).click();
   await page.getByRole("button", { name: "Notfallzugriff" }).click();
   await expect(heading(page, "Notfallzugriff")).toBeVisible();
 };

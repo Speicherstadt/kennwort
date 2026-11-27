@@ -232,33 +232,50 @@ const groups = (props: SettingsProps) => ({
   ],
 });
 
-/** The list of groups beside the settings from md: a jump to each, without changing the address */
-const SectionNav = (props: { groups: Group[] }) => (
-  <nav aria-label={m.settings_sections()} class="sticky top-0 hidden self-start md:block">
-    <ul class="grid gap-0.5">
-      <For each={props.groups}>
-        {(group) => (
-          <li>
-            <a
-              href={`#${group.id}`}
-              class="block rounded-md px-2 py-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              onClick={(event) => {
-                event.preventDefault();
-                document.getElementById(group.id)?.scrollIntoView({ block: "start" });
-              }}
-            >
-              {group.title}
-            </a>
-          </li>
-        )}
-      </For>
-    </ul>
-  </nav>
+/** Tabs for the settings groups: horizontal scrollable strip on phones, vertical sidebar from md */
+const SectionTabs = (props: {
+  groups: (Group & { danger?: boolean })[];
+  active: string;
+  onSelect: (id: string) => void;
+}) => (
+  <div
+    role="tablist"
+    aria-label={m.settings_sections()}
+    class="flex gap-1 overflow-x-auto border-b border-border pb-2 md:sticky md:top-0 md:flex-col md:self-start md:overflow-visible md:border-b-0 md:pb-0"
+  >
+    <For each={props.groups}>
+      {(group) => {
+        const selected = () => props.active === group.id;
+        return (
+          <button
+            type="button"
+            role="tab"
+            id={`tab-${group.id}`}
+            aria-selected={selected() ? "true" : "false"}
+            aria-controls={group.id}
+            class={cn(
+              "shrink-0 rounded-lg px-3 py-2 text-left text-[13px] whitespace-nowrap transition-colors md:w-full md:py-1.5",
+              selected()
+                ? group.danger
+                  ? "bg-danger/10 font-medium text-danger"
+                  : "bg-accent font-medium text-foreground"
+                : group.danger
+                  ? "text-danger/80 hover:bg-danger/10 hover:text-danger"
+                  : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+            )}
+            onClick={() => props.onSelect(group.id)}
+          >
+            {group.title}
+          </button>
+        );
+      }}
+    </For>
+  </div>
 );
 
 export const SettingsPage = (props: SettingsProps) => {
   const links = createMemo(() => groups(props));
-  const shown = createMemo((): Group[] => [
+  const shown = createMemo((): (Group & { danger?: boolean })[] => [
     { id: "settings-general", title: m.settings_group_general(), help: "" },
     ...(links().company.some((l) => l.open)
       ? [{ id: "settings-company", title: m.settings_group_company(), help: "" }]
@@ -270,67 +287,83 @@ export const SettingsPage = (props: SettingsProps) => {
       ? [{ id: "settings-account", title: m.settings_group_account(), help: "" }]
       : []),
     { id: "settings-devices", title: m.settings_group_devices(), help: "" },
-    { id: "settings-danger", title: m.settings_group_danger(), help: "" },
+    { id: "settings-danger", title: m.settings_group_danger(), help: "", danger: true },
   ]);
+  const [selected, setSelected] = createSignal("settings-general");
+  const active = createMemo(() =>
+    shown().some((g) => g.id === selected()) ? selected() : "settings-general",
+  );
   return (
     <section aria-labelledby="page-title" class={pageClass("wide")}>
       <h1 id="page-title" class="mb-1 text-[28px] font-semibold md:text-lg">
         {m.nav_settings()}
       </h1>
       <p class="mb-6 text-[13px] text-muted-foreground">{m.settings_intro()}</p>
-      <div class="grid gap-10 md:grid-cols-[11rem_minmax(0,48rem)] md:gap-12">
-        <SectionNav groups={shown()} />
-        <div class="grid min-w-0 gap-10">
-          <General onLocale={props.onLocale} />
-          <LinkGroup
-            id="settings-company"
-            title={m.settings_group_company()}
-            help={m.settings_group_company_help()}
-            links={links().company}
-          />
-          <LinkGroup
-            id="settings-data"
-            title={m.settings_group_data()}
-            help={m.settings_group_data_help()}
-            links={links().data}
-          />
-          <LinkGroup
-            id="settings-account"
-            title={m.settings_group_account()}
-            help={m.settings_group_account_help()}
-            links={links().account}
-          />
-          <SettingsGroup
-            id="settings-devices"
-            title={m.settings_group_devices()}
-            help={m.settings_group_devices_help()}
-          >
-            <div class={cardClass()}>
-              <Row label={m.settings_add_device()} help={m.settings_add_device_help()}>
-                <Button class="h-11 md:h-8" onClick={() => props.onAddDevice()}>
-                  <Icon icon={Plus} /> {m.settings_add_device()}
-                </Button>
-              </Row>
-            </div>
-            <div class="grid gap-4">{props.devices?.()}</div>
-          </SettingsGroup>
-          <SettingsGroup
-            id="settings-danger"
-            title={m.settings_group_danger()}
-            help={m.settings_group_danger_help()}
-            danger
-          >
-            <div class={cardClass(true)}>
-              <Row label={m.lock()} help={m.settings_lock_help()}>
-                <Button
-                  class="h-11 border-danger/40 text-danger hover:bg-danger/10 md:h-8"
-                  onClick={() => props.onLock()}
-                >
-                  <Icon icon={Lock} /> {m.lock()}
-                </Button>
-              </Row>
-            </div>
-          </SettingsGroup>
+      <div class="grid gap-6 md:grid-cols-[12rem_minmax(0,48rem)] md:gap-10">
+        <SectionTabs groups={shown()} active={active()} onSelect={setSelected} />
+        <div role="tabpanel" aria-labelledby={`tab-${active()}`} class="grid min-w-0 gap-6">
+          <Show when={active() === "settings-general"}>
+            <General onLocale={props.onLocale} />
+          </Show>
+          <Show when={active() === "settings-company"}>
+            <LinkGroup
+              id="settings-company"
+              title={m.settings_group_company()}
+              help={m.settings_group_company_help()}
+              links={links().company}
+            />
+          </Show>
+          <Show when={active() === "settings-data"}>
+            <LinkGroup
+              id="settings-data"
+              title={m.settings_group_data()}
+              help={m.settings_group_data_help()}
+              links={links().data}
+            />
+          </Show>
+          <Show when={active() === "settings-account"}>
+            <LinkGroup
+              id="settings-account"
+              title={m.settings_group_account()}
+              help={m.settings_group_account_help()}
+              links={links().account}
+            />
+          </Show>
+          <Show when={active() === "settings-devices"}>
+            <SettingsGroup
+              id="settings-devices"
+              title={m.settings_group_devices()}
+              help={m.settings_group_devices_help()}
+            >
+              <div class={cardClass()}>
+                <Row label={m.settings_add_device()} help={m.settings_add_device_help()}>
+                  <Button class="h-11 md:h-8" onClick={() => props.onAddDevice()}>
+                    <Icon icon={Plus} /> {m.settings_add_device()}
+                  </Button>
+                </Row>
+              </div>
+              <div class="grid gap-4">{props.devices?.()}</div>
+            </SettingsGroup>
+          </Show>
+          <Show when={active() === "settings-danger"}>
+            <SettingsGroup
+              id="settings-danger"
+              title={m.settings_group_danger()}
+              help={m.settings_group_danger_help()}
+              danger
+            >
+              <div class={cardClass(true)}>
+                <Row label={m.lock()} help={m.settings_lock_help()}>
+                  <Button
+                    class="h-11 border-danger/40 text-danger hover:bg-danger/10 md:h-8"
+                    onClick={() => props.onLock()}
+                  >
+                    <Icon icon={Lock} /> {m.lock()}
+                  </Button>
+                </Row>
+              </div>
+            </SettingsGroup>
+          </Show>
         </div>
       </div>
     </section>

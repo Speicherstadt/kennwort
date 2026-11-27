@@ -108,6 +108,7 @@ test("unlocks and reads offline from the copy, and logout deletes it", {
       .filter({ visible: true })
       .first()
       .click();
+    await page.getByRole("tab", { name: "Geräte und Anmeldung" }).click();
     await page
       .getByRole("region", { name: "Angemeldete Geräte" })
       .getByRole("button", { name: "Dieses Gerät abmelden" })

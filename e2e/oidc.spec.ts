@@ -12,6 +12,7 @@ test.use({ locale: "de-DE" });
 const openSettings = async (page: Page) => {
   await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).first().click();
   await expect(heading(page, "Einstellungen")).toBeVisible();
+  await page.getByRole("tab", { name: "Geräte und Anmeldung" }).click();
 };
 
 /** Jonas lets people of the provider join and reads the link to join */
