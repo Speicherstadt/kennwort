@@ -105,6 +105,7 @@ const OpenedFrame = (props: {
     saveImport: entries.saveImport,
   });
   const labels = createLabels();
+  const [focusGroupId, setFocusGroupId] = createSignal<string>();
   return (
     <QueryClientProvider client={queries}>
       <Frame
@@ -146,6 +147,7 @@ const OpenedFrame = (props: {
             people={() => readyPeople(store)}
             store={store}
             exits={exits}
+            initialGroupId={focusGroupId()}
           />
         )}
         vaultsPage={() => (
@@ -156,6 +158,10 @@ const OpenedFrame = (props: {
             session={props.session}
             exits={exits}
             onHandOver={handover.possible() ? handover.open : undefined}
+            onManageGroup={(id) => {
+              setFocusGroupId(id);
+              props.nav.go("/groups");
+            }}
           />
         )}
         importPage={importPage(props.nav, store, allEntries, () => online(entries.saveImport))}

@@ -51,6 +51,7 @@ type GroupsProps = {
   people: () => MemberView[] | undefined;
   store?: VaultStore | undefined;
   exits?: Exits | undefined;
+  initialGroupId?: string | undefined;
 };
 
 const CreateGroupDialog = (props: {
@@ -127,7 +128,8 @@ const createGroupsState = (props: GroupsProps) => {
   const [pendingLeave, setPendingLeave] = createSignal<PendingLeave>();
   const activeGroup = createMemo(() => {
     const list = groups.data ?? [];
-    return list.find((g) => g.id === selectedId()) ?? list[0];
+    const wanted = selectedId() ?? props.initialGroupId;
+    return list.find((g) => g.id === wanted) ?? list[0];
   });
   const run = async (change: () => Promise<{ ok: boolean }>, note?: string) => {
     setBusy(true);

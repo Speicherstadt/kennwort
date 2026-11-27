@@ -80,6 +80,8 @@ export const VaultsPage = (props: {
   exits: Pick<Exits, "remove" | "changeRole">;
   /** Hands a vault this account manages over to another company of the account (K-605) */
   onHandOver?: ((vault: Vault) => void) | undefined;
+  /** Opens Team -> Groups focused on a specific group */
+  onManageGroup?: ((groupId: string | undefined) => void) | undefined;
 }) => {
   /** The vault whose members show: by ID, so the dialog stays open while the vaults load anew */
   const [membersOf, setMembersOf] = createSignal<string>();
@@ -181,9 +183,10 @@ export const VaultsPage = (props: {
                       props.exits.remove(vault(), ready().trust, accountId, ready().left)
                     }
                     onRole={(accountId, role) => props.exits.changeRole(vault(), accountId, role)}
-                    onManageGroups={() => {
+                    onManageGroups={(groupId) => {
                       setMembersOf(undefined);
-                      props.nav.go("/groups");
+                      if (props.onManageGroup) props.onManageGroup(groupId);
+                      else props.nav.go("/groups");
                     }}
                   />
                 )}
