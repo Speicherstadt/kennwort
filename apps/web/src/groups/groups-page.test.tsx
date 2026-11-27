@@ -1,4 +1,5 @@
 import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
+import type { Vault } from "@kennwort/client/vaults/vaults.ts";
 import { setLocale } from "@kennwort/ui";
 import { render } from "@solidjs/web";
 import { flush } from "solid-js";
@@ -6,6 +7,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { withQueries } from "../queries.test-kit.tsx";
 import { createQueryClient, queryKeys } from "../queries.ts";
 import type { Session } from "../session/session.ts";
+import type { DialogApi } from "../vaults/dialog-state.ts";
+import type { Exits } from "../vaults/exit.ts";
+import type { VaultStore } from "../vaults/vault-store.ts";
 import { GroupsPage } from "./groups-page.tsx";
 
 // K-305 part 5: the groups page, its list loaded through the opened account's query cache
@@ -21,27 +25,71 @@ const settle = async () => {
 };
 
 const jonas = new Uint8Array(16).fill(1);
+const anna = new Uint8Array(16).fill(2);
+const vaultId = new Uint8Array(16).fill(7);
 const session = {
   opened: () => ({ accountId: jonas, token: "tok" }),
 } as unknown as Session;
 const owner = [{ accountId: jonas, name: "Jonas", role: "owner", status: "certified" }] as never;
+const ownerAndAnna = [
+  { accountId: jonas, name: "Jonas", role: "owner", status: "certified" },
+  {
+    accountId: anna,
+    name: "Anna",
+    role: "member",
+    status: "certified",
+    certificate: { accountId: anna },
+  },
+] as never;
 
-const fakeApi = (groups: GroupApi["groups"]) =>
+const fakeApi = (groups: GroupApi["groups"], vaultGroups?: GroupApi["vaultGroups"]) =>
   ({
     groups,
     newGroup: vi.fn(async () => true),
     deleteGroup: async () => true,
-    joinGroup: async () => true,
-    leaveGroup: async () => true,
-  }) as unknown as GroupApi;
+    joinGroup: vi.fn(async () => true),
+    leaveGroup: vi.fn(async () => true),
+    vaultGroups: vaultGroups ?? (async () => []),
+    linkGroup: vi.fn(async () => true),
+    unlinkGroup: vi.fn(async () => true),
+    appendLog: vi.fn(async () => "ok"),
+  }) as unknown as DialogApi;
 
-const show = async (api: GroupApi, client = createQueryClient()) => {
+const fakeVault = (members: Map<string, { role: "read" | "edit" | "manage" }>): Vault =>
+  ({
+    idText: "v1",
+    name: "Buchhaltung",
+    role: "manage",
+    ring: { vaultId },
+    log: { members },
+  }) as unknown as Vault;
+
+const show = async (
+  api: DialogApi,
+  opts: {
+    client?: ReturnType<typeof createQueryClient>;
+    people?: never;
+    store?: VaultStore;
+    exits?: Exits;
+  } = {},
+) => {
   setLocale("de", { reload: false });
   const root = document.createElement("div");
   document.body.append(root);
   dispose = render(
     () =>
-      withQueries(() => <GroupsPage api={api} session={session} people={() => owner} />, client),
+      withQueries(
+        () => (
+          <GroupsPage
+            api={api}
+            session={session}
+            people={() => opts.people ?? owner}
+            store={opts.store}
+            exits={opts.exits}
+          />
+        ),
+        opts.client ?? createQueryClient(),
+      ),
     root,
   );
   flush();
@@ -88,11 +136,38 @@ describe("GroupsPage", () => {
     expect(cards(root).map((c) => c.includes("Werkstatt"))).toEqual([false, true]);
   });
 
+  it("shows linked vaults on the group card and previews direct access when choosing a person", async () => {
+    const vault = fakeVault(new Map([["01".repeat(16), { role: "manage" }]]));
+    const store = {
+      shown: () => ({
+        state: "ready",
+        vaults: [vault],
+        people: ownerAndAnna,
+        left: new Set(),
+        trust: {},
+      }),
+      reload: vi.fn(async () => undefined),
+    } as unknown as VaultStore;
+    const api = fakeApi(
+      async () => [{ id: "g1", name: "Büro", members: [jonas] }],
+      async () => [{ groupId: "g1", role: "read" }],
+    );
+    const root = await show(api, { people: ownerAndAnna, store });
+    expect(cards(root)[0]).toContain("Buchhaltung");
+    expect(cards(root)[0]).toContain("Lesen");
+
+    const select = root.querySelector('select[aria-label="Person für Büro"]') as HTMLSelectElement;
+    select.value = "02".repeat(16);
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    flush();
+    expect(cards(root)[0]).toContain("Gibt direkt Zugriff auf: Buchhaltung (Lesen)");
+  });
+
   it("keeps nothing secret in the query key", async () => {
     const client = createQueryClient();
     await show(
       fakeApi(async () => []),
-      client,
+      { client },
     );
     const keys = client
       .getQueryCache()

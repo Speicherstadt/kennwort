@@ -140,7 +140,13 @@ const OpenedFrame = (props: {
         noAccess={noAccessFor(props, store)}
         notifications={notifications}
         groupsPage={() => (
-          <GroupsPage api={props.api} session={props.session} people={() => readyPeople(store)} />
+          <GroupsPage
+            api={props.api}
+            session={props.session}
+            people={() => readyPeople(store)}
+            store={store}
+            exits={exits}
+          />
         )}
         vaultsPage={() => (
           <VaultsPage

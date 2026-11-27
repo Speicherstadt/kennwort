@@ -164,7 +164,7 @@ test.describe("access requests", { tag: "@phone" }, () => {
 });
 
 test.describe("groups", { tag: "@phone" }, () => {
-  test("Jonas links the group Büro-Team to Büro; Anna's joining asks, his grant lets her in", async ({
+  test("linking a group to a vault previews and directly grants verified members", async ({
     page,
     browser,
   }) => {
@@ -186,45 +186,62 @@ test.describe("groups", { tag: "@phone" }, () => {
     await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
     const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });
     await dialog.getByLabel("Gruppe", { exact: true }).selectOption({ label: "Büro-Team" });
+    await expect(dialog).toContainText("Gibt direkt Zugriff für: Anna");
     await dialog.getByRole("button", { name: "Verknüpfen" }).click();
     await expect(dialog.getByRole("list", { name: "Gruppen" })).toContainText("Büro-Team");
-    const requests = dialog.getByRole("list", { name: "Anfragen" });
-    await expect(requests).toContainText("Anna");
-    await axe(page);
-    await requests.getByRole("button", { name: "Freigeben" }).click();
     await expect(dialog.getByLabel("Rolle von Anna")).toHaveValue("read");
+    await axe(page);
 
     await openVaults(anna);
     await expect(
       anna.getByRole("main").getByRole("list").getByRole("listitem").filter({ hasText: "Büro" }),
     ).toContainText("Lesen");
   });
-  test("a request filed by a group linked as Bearbeiten offers Bearbeiten when granting", async ({
+
+  test("linking a vault on the groups page grants new members directly and offers removal on leave", async ({
     page,
     browser,
   }) => {
     await setUpCompany(page);
-    await annaJoins(page, browser);
-    await page.goto("/groups");
-    await unlock(page);
-    await page.getByLabel("Name der Gruppe").fill("Büro-Team");
-    await page.getByRole("button", { name: "Gruppe anlegen" }).click();
-    await page.getByLabel("Person für Büro-Team").selectOption({ label: "Anna" });
-    await page.getByRole("button", { name: "Hinzufügen" }).click();
-    await expect(page.getByRole("list", { name: "Büro-Team" })).toContainText("Anna");
+    const anna = await annaJoins(page, browser);
     await openVaults(page);
     await page.getByLabel("Name", { exact: true }).fill("Büro");
     await page.getByRole("button", { name: "Tresor anlegen" }).click();
-    await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-    const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });
-    await dialog.getByLabel("Gruppe", { exact: true }).selectOption({ label: "Büro-Team" });
-    await dialog.getByLabel("Rolle für die Gruppe").selectOption({ label: "Bearbeiten" });
-    await dialog.getByRole("button", { name: "Verknüpfen" }).click();
-    await expect(dialog.getByRole("list", { name: "Gruppen" })).toContainText("Bearbeiten");
-    const requests = dialog.getByRole("list", { name: "Anfragen" });
-    await expect(requests).toContainText("Anna");
-    // the link says Büro-Team is asked in with Bearbeiten; the grant should offer that role
-    await expect(requests.getByLabel("Rolle für Anna")).toHaveValue("edit");
+    await expect(page.getByRole("button", { name: "Mitglieder von Büro" })).toBeVisible();
+
+    await page
+      .getByRole("navigation", { name: "Team" })
+      .getByRole("link", { name: "Gruppen" })
+      .click();
+    await page.getByLabel("Name der Gruppe").fill("Büro-Team");
+    await page.getByRole("button", { name: "Gruppe anlegen" }).click();
+    await page.getByLabel("Tresor für Büro-Team").selectOption({ label: "Büro" });
+    await page.getByLabel("Rolle für die Gruppe").selectOption({ label: "Bearbeiten" });
+    await page.getByRole("button", { name: "Verknüpfen" }).click();
+    await expect(page.getByRole("list", { name: "Tresore von Büro-Team" })).toContainText("Büro");
+    await expect(page.getByRole("list", { name: "Tresore von Büro-Team" })).toContainText(
+      "Bearbeiten",
+    );
+
+    await page.getByLabel("Person für Büro-Team").selectOption({ label: "Anna" });
+    await expect(page.getByRole("main")).toContainText(
+      "Gibt direkt Zugriff auf: Büro (Bearbeiten)",
+    );
+    await page.getByRole("button", { name: "Hinzufügen" }).click();
+    const membersList = page.getByRole("list", { name: "Büro-Team", exact: true });
+    await expect(membersList).toContainText("Anna");
+
+    await openVaults(anna);
+    await expect(
+      anna.getByRole("main").getByRole("list").getByRole("listitem").filter({ hasText: "Büro" }),
+    ).toContainText("Bearbeiten");
+
+    // Removing Anna from the group asks whether to also remove her from Büro
+    await membersList.getByRole("button", { name: "Entfernen" }).click();
+    const confirm = page.getByRole("dialog", { name: "Anna aus „Büro-Team“ entfernen" });
+    await expect(confirm).toContainText("Büro");
+    await confirm.getByRole("button", { name: "Entfernen" }).click();
+    await expect(page.getByText("Noch keine Mitglieder.")).toBeVisible();
   });
 });
 
