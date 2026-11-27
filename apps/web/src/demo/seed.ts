@@ -116,26 +116,26 @@ export const contentOf = (entry: (typeof data.entries)[number]): EntryContent =>
 /** The company's groups, each bundling the vaults of a team; everyone in them is already in them */
 export const GROUPS = [
   {
-    name: "Büro-Team",
+    name: "Büro-Team", // i18n-ignore: demo data
     members: ["Anna", "Sandra", "Max"],
     vaults: [{ vault: "office", role: "read" as const }],
-  }, // i18n-ignore: demo data
+  },
   {
-    name: "Verwaltung",
+    name: "Verwaltung", // i18n-ignore: demo data
     members: ["Anna"],
     vaults: [
       { vault: "accounting", role: "manage" as const },
       { vault: "office", role: "manage" as const },
     ],
-  }, // i18n-ignore: demo data
+  },
   {
-    name: "Montage",
+    name: "Montage", // i18n-ignore: demo data
     members: ["Max"],
     vaults: [
       { vault: "tablets", role: "edit" as const },
       { vault: "office", role: "read" as const },
     ],
-  }, // i18n-ignore: demo data
+  },
 ] as const;
 
 /** Groups ask, never give (K-305 part 5): they go on the stand-in as the server keeps them */
