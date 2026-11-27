@@ -51,17 +51,12 @@ export type DemoStore = {
   sessions: Map<string, string>;
   challenges: Map<string, { accountId: string; way: "passphrase" | "recovery"; challenge: string }>;
   vaults: Map<string, DemoVault>;
-  /** The company's groups (K-305 part 5) with their members' account IDs */
-  groups: Map<string, DemoGroup>;
-  /** Groups linked to a vault: vault → group → the role they ask for */
-  vaultGroups: Map<string, Map<string, VaultRole>>;
-  /** Open access requests: vault → account → when, and the role a linked group asks for */
+  /** Open access requests: vault → account → when */
   requests: Map<string, Map<string, DemoRequest>>;
 };
 
 export type VaultRole = "read" | "edit" | "manage";
-export type DemoGroup = { id: string; name: string; members: Set<string> };
-export type DemoRequest = { requestedAt: number; role: VaultRole | null };
+export type DemoRequest = { requestedAt: number };
 
 export const emptyStore = (): DemoStore => ({
   company: undefined,
@@ -69,8 +64,6 @@ export const emptyStore = (): DemoStore => ({
   sessions: new Map(),
   challenges: new Map(),
   vaults: new Map(),
-  groups: new Map(),
-  vaultGroups: new Map(),
   requests: new Map(),
 });
 

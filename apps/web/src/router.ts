@@ -20,7 +20,6 @@ const lists: [string, ListFilter][] = [
 ];
 const simplePages = [
   "generator",
-  "groups",
   "settings",
   "members",
   "team",
@@ -55,6 +54,8 @@ const pages: Page[] = [
     { path: `/${name}/$entry`, route: (p) => entriesOf(filter, p.entry) },
   ]),
   ...simplePages.map((page): Page => ({ path: `/${page}`, route: () => ({ page }) })),
+  // Old links to /groups land on /vaults
+  { path: "/groups", route: () => ({ page: "vaults" }) },
   { path: "/vaults/$vault", route: (p) => entriesOf({ kind: "vault", id: p.vault ?? "" }) },
   {
     path: "/vaults/$vault/$entry",

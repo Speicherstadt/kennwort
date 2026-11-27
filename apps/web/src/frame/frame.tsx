@@ -12,7 +12,7 @@ import type { FrameNotifications } from "../notifications/notifications-wiring.t
 import { EntryDetail } from "./entry-detail.tsx";
 import type { Saved } from "./entry-detail-parts.tsx";
 import { EntryList, type ShownVault } from "./entry-list.tsx";
-import { GeneratorPage, GroupsPage, NotFoundPage } from "./pages.tsx";
+import { GeneratorPage, NotFoundPage } from "./pages.tsx";
 import { Rail } from "./rail.tsx";
 import { SettingsChild, SettingsPage, type SettingsProps } from "./settings-page.tsx";
 import { type CompanySwitch, Sidebar } from "./sidebar.tsx";
@@ -40,8 +40,6 @@ type FrameProps = {
   emergencyPage?: ((toasts: Toasts) => JSX.Element) | undefined;
   /** Konto → Schlüssel erneuern (K-307 part e); the app passes it with session, API and vaults */
   renewPage?: (() => JSX.Element) | undefined;
-  /** The company's groups (K-305 part 5); the demo's stand in where the app gives none */
-  groupsPage?: (() => JSX.Element) | undefined;
   /** The entries from the vaults (K-306) and what list and detail do with them */
   entries?: (() => ShownEntry[] | undefined) | undefined;
   vaultName?: ((id: string) => string) | undefined;
@@ -177,11 +175,6 @@ export const Frame = (props: FrameProps) => {
             <GeneratorPage toasts={toasts} />
           </main>
         </Match>
-        <Match when={route().page === "groups"}>
-          <TeamPage nav={props.nav} tab="groups">
-            {props.groupsPage ? props.groupsPage() : <GroupsPage />}
-          </TeamPage>
-        </Match>
         <Match when={route().page === "settings"}>
           <main class="flex min-h-0 flex-1">
             <SettingsPage {...settingsLinks(props)} devices={props.devices} />
@@ -199,12 +192,7 @@ export const Frame = (props: FrameProps) => {
             {props.members?.()}
           </TeamPage>
         </Match>
-        <Match when={route().page === "team"}>
-          <TeamPage nav={props.nav} tab="groups">
-            {props.groupsPage ? props.groupsPage() : <GroupsPage />}
-          </TeamPage>
-        </Match>
-        <Match when={route().page === "vaults" && props.vaultsPage}>
+        <Match when={(route().page === "team" || route().page === "vaults") && props.vaultsPage}>
           <TeamPage nav={props.nav} tab="vaults">
             {props.vaultsPage?.()}
           </TeamPage>

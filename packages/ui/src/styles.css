@@ -20,9 +20,13 @@
   --primary: #18181b;
   --primary-foreground: #fafafa;
   --success: #15803d;
+  --success-surface: #dcfce7;
   --warning: #b45309;
   --warning-surface: #fef3c7;
   --danger: #b91c1c;
+  --danger-surface: #fee2e2;
+  --info: #1d4ed8;
+  --info-surface: #dbeafe;
   color-scheme: light;
 }
 
@@ -37,9 +41,13 @@
     --primary: #fafafa;
     --primary-foreground: #18181b;
     --success: #4ade80;
+    --success-surface: #052e16;
     --warning: #fbbf24;
     --warning-surface: #422006;
     --danger: #f87171;
+    --danger-surface: #450a0a;
+    --info: #93c5fd;
+    --info-surface: #172554;
     color-scheme: dark;
   }
 }
@@ -54,9 +62,13 @@
   --primary: #fafafa;
   --primary-foreground: #18181b;
   --success: #4ade80;
+  --success-surface: #052e16;
   --warning: #fbbf24;
   --warning-surface: #422006;
   --danger: #f87171;
+  --danger-surface: #450a0a;
+  --info: #93c5fd;
+  --info-surface: #172554;
   color-scheme: dark;
 }
 
@@ -70,9 +82,13 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-success: var(--success);
+  --color-success-surface: var(--success-surface);
   --color-warning: var(--warning);
   --color-warning-surface: var(--warning-surface);
   --color-danger: var(--danger);
+  --color-danger-surface: var(--danger-surface);
+  --color-info: var(--info);
+  --color-info-surface: var(--info-surface);
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono Variable", ui-monospace, monospace;
 }

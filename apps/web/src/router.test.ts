@@ -20,7 +20,6 @@ describe("routes", () => {
         { page: "entries", filter: { kind: "vault", id: "office" }, entry: "wlan" },
       ],
       ["/generator", { page: "generator" }],
-      ["/groups", { page: "groups" }],
       ["/settings", { page: "settings" }],
       ["/members", { page: "members" }],
       ["/vaults", { page: "vaults" }],
@@ -43,6 +42,7 @@ describe("routes", () => {
       expect(parseRoute(path)).toEqual(route);
       expect(routePath(route)).toBe(path);
     }
+    expect(parseRoute("/groups")).toEqual({ page: "vaults" });
   });
 
   it("starts at all entries", () => {

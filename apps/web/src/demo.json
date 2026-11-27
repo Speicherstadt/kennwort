@@ -25,18 +25,6 @@
       "name": "Baustellen-Tablets"
     }
   ],
-  "groups": [
-    {
-      "id": "info",
-      "name": "info@",
-      "members": 3
-    },
-    {
-      "id": "invoices",
-      "name": "rechnung@",
-      "members": 2
-    }
-  ],
   "entries": [
     {
       "id": "bank",

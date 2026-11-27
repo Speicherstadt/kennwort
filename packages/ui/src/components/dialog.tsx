@@ -23,6 +23,7 @@ export type DialogProps = {
   size?: "sm" | "md" | "lg";
   /** For a question that destroys something: a warning sign beside the title */
   variant?: "default" | "destructive";
+  role?: "dialog" | "alertdialog";
   children?: JSX.Element;
 };
 
@@ -120,6 +121,7 @@ export const Dialog = (props: DialogProps) => {
       ref={(el) => {
         dialog = el;
       }}
+      role={props.role}
       aria-labelledby={`${id}-title`}
       aria-describedby={props.description ? `${id}-description` : undefined}
       data-variant={props.variant ?? "default"}

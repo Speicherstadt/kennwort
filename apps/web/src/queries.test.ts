@@ -27,7 +27,6 @@ describe("the query cache", () => {
     expect(Object.values(queryKeys).flat()).toEqual([
       "devices",
       "emergency",
-      "groups",
       "members",
       "notifications",
       "notification-prefs",

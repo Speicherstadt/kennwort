@@ -1,7 +1,7 @@
 /**
- * „Team“ (DESIGN.md, Aufbau): one page of its own, without the entries list, with three tabs –
- * Mitglieder, Gruppen, Tresore. Each tab keeps its old address (/members, /groups, /vaults), so
- * links and bookmarks land here; /team opens the members.
+ * „Team“ (DESIGN.md, Aufbau): one page of its own, without the entries list, with two tabs –
+ * Mitglieder and Tresore. Each tab keeps its address (/members, /vaults), so links and bookmarks
+ * land here; /team opens the members, /groups redirects to /vaults.
  */
 import { cn, m } from "@kennwort/ui";
 import type { JSX } from "@solidjs/web";
@@ -9,11 +9,10 @@ import { For } from "solid-js";
 import type { Navigation } from "../navigation.ts";
 import { Link } from "./link.tsx";
 
-export type TeamTab = "members" | "groups" | "vaults";
+export type TeamTab = "members" | "vaults";
 
 const tabs: { tab: TeamTab; href: string; label: () => string }[] = [
   { tab: "members", href: "/members", label: () => m.team_members() },
-  { tab: "groups", href: "/groups", label: () => m.team_groups() },
   { tab: "vaults", href: "/vaults", label: () => m.team_vaults() },
 ];
 

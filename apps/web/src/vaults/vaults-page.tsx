@@ -1,73 +1,201 @@
 /**
- * Vaults (K-305): every vault this account is a member of, with its role, and a form to create a
- * shared one. A vault whose log the client did not accept shows as such, never opened (DESIGN.md:
- * show trust, don't claim it).
+ * Team → Vaults (K-305, K-608): Master-Detail access management without groups.
+ * Responsive via container queries: 3 columns (>= 1020px), 2 columns (600–1020px), and single
+ * level list/detail navigation (< 600px). Every change is signed by a manager's device.
  */
-
-import type { CreateError, Vault } from "@kennwort/client/vaults/vaults.ts";
-import {
-  Badge,
-  Button,
-  Icon,
-  Input,
-  m,
-  pageClass,
-  panelClass,
-  panelTitleClass,
-} from "@kennwort/ui";
-import { Archive, Handshake, TriangleExclamationPoint, Users } from "@kennwort/ui/icons";
-import { createSignal, For, Match, onSettled, Show, Switch } from "solid-js";
-import { Link } from "../frame/link.tsx";
+import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
+import { type Loaded, personalVaultId, type Vault } from "@kennwort/client/vaults/vaults.ts";
+import { encodeBytes } from "@kennwort/core";
+import { cn, Icon, m } from "@kennwort/ui";
+import { Check } from "@kennwort/ui/icons";
+import { createSignal, Match, onCleanup, onSettled, Show, Switch } from "solid-js";
 import type { Navigation } from "../navigation.ts";
 import type { Session } from "../session/session.ts";
-import type { DialogApi } from "./dialog-state.ts";
-import type { Exits } from "./exit.ts";
-import { VaultMembersDialog } from "./vault-members-dialog.tsx";
+import { createVaultRequestsState, type DialogApi } from "./dialog-state.ts";
+import type { ExitError, Exits } from "./exit.ts";
+import { createVaultActions, type VaultActions } from "./vault-actions.ts";
+import { PersonalVaultDetail, VaultDetail } from "./vault-detail.tsx";
+import { CreateVaultDialog, RemoveMemberDialog, UntilMemberDialog } from "./vault-dialogs.tsx";
+import { VaultList } from "./vault-list.tsx";
+import type { Request, VaultMember } from "./vault-members.ts";
 import type { VaultStore } from "./vault-store.ts";
-import { roleText } from "./vault-text.ts";
 
-const createText = (error: CreateError) =>
-  error === "uncertified" ? m.vaults_create_uncertified() : m.vaults_create_failed();
+type AccessToast = { text: string; undo?: () => void };
 
-const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
+const alertClass = "m-6 rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
 
-const CreateForm = (props: { onCreate: (name: string) => Promise<CreateError | undefined> }) => {
-  const [name, setName] = createSignal("");
-  const [error, setError] = createSignal<CreateError>();
-  const [busy, setBusy] = createSignal(false);
-  const submit = async (event: SubmitEvent) => {
-    event.preventDefault();
-    if (!name().trim()) return;
-    setBusy(true);
-    const failed = await props.onCreate(name().trim());
-    setBusy(false);
-    setError(failed);
-    if (!failed) setName("");
-  };
-  return (
-    <form class={`mt-6 ${panelClass}`} onSubmit={submit}>
-      <div class="grid gap-1">
-        <h2 class={panelTitleClass}>{m.vaults_create_title()}</h2>
-        <p class="text-[13px] text-muted-foreground">{m.vaults_create_hint()}</p>
+const AccessToastBar = (props: { toast: AccessToast | undefined; onDismiss: () => void }) => (
+  <Show when={props.toast}>
+    {(shown) => (
+      <div
+        role="status"
+        aria-live="polite"
+        class="absolute bottom-4.5 left-1/2 z-30 flex max-w-[calc(100%-24px)] -translate-x-1/2 items-center gap-3 rounded-[10px] bg-primary px-3.5 py-2 text-[13px] whitespace-nowrap text-primary-foreground shadow-lg"
+      >
+        <Icon icon={Check} size={15} class="shrink-0 text-success" />
+        <span>{shown().text}</span>
+        <Show when={shown().undo}>
+          {(undo) => (
+            <button
+              type="button"
+              class="cursor-pointer font-semibold underline underline-offset-2"
+              onClick={() => {
+                undo()();
+                props.onDismiss();
+              }}
+            >
+              {m.vault_access_toast_undo()}
+            </button>
+          )}
+        </Show>
       </div>
-      <Input
-        label={m.vaults_create_name()}
-        value={name()}
-        maxlength={100}
-        required
-        onInput={(event) => setName(event.currentTarget.value)}
-      />
-      <Show when={error()}>
-        {(e) => (
-          <p class={alertClass} role="alert">
-            {createText(e())}
-          </p>
+    )}
+  </Show>
+);
+
+const createFeedback = () => {
+  const [toast, setToast] = createSignal<AccessToast>();
+  const [flashed, setFlashed] = createSignal<ReadonlySet<string>>(new Set());
+  const [justAdded, setJustAdded] = createSignal<ReadonlySet<string>>(new Set());
+  let toastTimer: ReturnType<typeof setTimeout> | undefined;
+  let flashTimer: ReturnType<typeof setTimeout> | undefined;
+  onCleanup(() => {
+    clearTimeout(toastTimer);
+    clearTimeout(flashTimer);
+  });
+  return {
+    toast,
+    dismissToast: () => setToast(undefined),
+    flashed,
+    justAdded,
+    clearJustAdded: () => setJustAdded(new Set<string>()),
+    showToast: (text: string, undo?: () => void) => {
+      clearTimeout(toastTimer);
+      setToast(undo ? { text, undo } : { text });
+      toastTimer = setTimeout(() => setToast(undefined), 5000);
+    },
+    flashKeys: (keys: string[], markAdded = false) => {
+      clearTimeout(flashTimer);
+      setFlashed(new Set(keys));
+      if (markAdded) setJustAdded(new Set(keys));
+      flashTimer = setTimeout(() => setFlashed(new Set()), 1900);
+    },
+  };
+};
+
+const VaultsReady = (props: {
+  ready: Loaded;
+  personalId: string | undefined;
+  me: Uint8Array;
+  entryCountOf: (vaultId: string) => number;
+  requestsOf: (vaultId: string) => Request[];
+  busy: boolean;
+  error: ExitError | undefined;
+  flashed: ReadonlySet<string>;
+  justAdded: ReadonlySet<string>;
+  actions: VaultActions;
+  onClearJustAdded: () => void;
+  onAskRemove: (member: VaultMember) => void;
+  onAskLimit: (member: VaultMember) => void;
+  onCreate: () => void;
+  onHandOver?: ((vault: Vault) => void) | undefined;
+  removing: VaultMember | undefined;
+  limiting: VaultMember | undefined;
+  onCloseDialogs: () => void;
+}) => {
+  const [selectedId, setSelectedId] = createSignal<string>();
+  const [phoneScreen, setPhoneScreen] = createSignal<"list" | "detail">("list");
+  const shared = () => props.ready.vaults.filter((v) => v.idText !== props.personalId);
+  const personal = () => props.ready.vaults.find((v) => v.idText === props.personalId);
+  const activeId = () => {
+    const picked = selectedId();
+    if (picked && props.ready.vaults.some((v) => v.idText === picked)) return picked;
+    return shared()[0]?.idText ?? personal()?.idText;
+  };
+  const activeVault = () => props.ready.vaults.find((v) => v.idText === activeId());
+
+  return (
+    <>
+      <div class="grid min-h-0 flex-1 grid-cols-[264px_minmax(0,1fr)] @max-[1020px]:grid-cols-[232px_minmax(0,1fr)] @max-[600px]:grid-cols-1">
+        <VaultList
+          shared={shared()}
+          personal={personal()}
+          refused={props.ready.refused}
+          selectedId={activeId()}
+          requestCount={(id) => props.requestsOf(id).length}
+          onSelect={(id) => {
+            setSelectedId(id);
+            setPhoneScreen("detail");
+            props.onClearJustAdded();
+          }}
+          onCreate={props.onCreate}
+          hiddenOnPhone={phoneScreen() === "detail"}
+        />
+        <div class={cn("min-w-0 overflow-auto", phoneScreen() === "list" && "@max-[600px]:hidden")}>
+          <Show
+            when={activeVault()}
+            fallback={
+              <p class="m-6 rounded-xl border border-dashed border-border px-4 py-8 text-center text-[13px] text-muted-foreground">
+                {m.vaults_empty()}
+              </p>
+            }
+          >
+            {(vault) => (
+              <Show
+                when={vault().idText !== props.personalId}
+                fallback={
+                  <PersonalVaultDetail
+                    name={vault().name ?? m.vaults_personal_name()}
+                    onBack={() => setPhoneScreen("list")}
+                  />
+                }
+              >
+                <VaultDetail
+                  vault={vault()}
+                  people={props.ready.people}
+                  me={props.me}
+                  entryCount={props.entryCountOf(vault().idText)}
+                  requests={props.requestsOf(vault().idText)}
+                  busy={props.busy}
+                  error={props.error}
+                  flashedKeys={props.flashed}
+                  justAddedKeys={props.justAdded}
+                  onBack={() => setPhoneScreen("list")}
+                  onAdd={(chosen, role, until) => props.actions.add(vault(), chosen, role, until)}
+                  onRole={(member, role) => void props.actions.role(vault(), member, role)}
+                  onUntil={props.onAskLimit}
+                  onRemove={props.onAskRemove}
+                  onGrant={(request) => void props.actions.grant(vault(), request)}
+                  onDecline={(request) => void props.actions.decline(vault(), request)}
+                  onHandOver={props.onHandOver ? () => props.onHandOver?.(vault()) : undefined}
+                />
+              </Show>
+            )}
+          </Show>
+        </div>
+      </div>
+      <Show when={activeVault()}>
+        {(vault) => (
+          <>
+            <RemoveMemberDialog
+              member={props.removing}
+              vaultName={vault().name ?? m.vaults_unnamed()}
+              entryCount={props.entryCountOf(vault().idText)}
+              busy={props.busy}
+              onClose={props.onCloseDialogs}
+              onConfirm={(member) => void props.actions.remove(vault(), member)}
+            />
+            <UntilMemberDialog
+              member={props.limiting}
+              vaultName={vault().name ?? m.vaults_unnamed()}
+              busy={props.busy}
+              onClose={props.onCloseDialogs}
+              onSave={(member, until) => void props.actions.until(vault(), member, until)}
+            />
+          </>
         )}
       </Show>
-      <Button type="submit" variant="primary" class="w-fit justify-self-end" disabled={busy()}>
-        {m.vaults_create()}
-      </Button>
-    </form>
+    </>
   );
 };
 
@@ -76,25 +204,57 @@ export const VaultsPage = (props: {
   store: VaultStore;
   api: DialogApi;
   session: Session;
-  /** Removing someone with the key rotation, and changing roles with the re-save (exit.ts) */
   exits: Pick<Exits, "remove" | "changeRole">;
-  /** Hands a vault this account manages over to another company of the account (K-605) */
+  entries?: (() => ShownEntry[]) | undefined;
   onHandOver?: ((vault: Vault) => void) | undefined;
-  /** Opens Team -> Groups focused on a specific group */
-  onManageGroup?: ((groupId: string | undefined) => void) | undefined;
 }) => {
-  /** The vault whose members show: by ID, so the dialog stays open while the vaults load anew */
-  const [membersOf, setMembersOf] = createSignal<string>();
-  // Another device may have changed a vault: the page shows them as they are now
+  const [creating, setCreating] = createSignal(false);
+  const [removing, setRemoving] = createSignal<VaultMember>();
+  const [limiting, setLimiting] = createSignal<VaultMember>();
+  const fb = createFeedback();
+  const closeDialogs = () => {
+    setRemoving(undefined);
+    setLimiting(undefined);
+  };
   onSettled(() => void props.store.reload());
+
+  const readyData = () => {
+    const shown = props.store.shown();
+    return shown.state === "ready" ? shown : undefined;
+  };
+  const reqState = createVaultRequestsState({
+    vaults: () => readyData()?.vaults ?? [],
+    people: () => readyData()?.people ?? [],
+    api: props.api,
+    session: props.session,
+    store: props.store,
+  });
+  const actions = createVaultActions({
+    api: props.api,
+    session: props.session,
+    exits: props.exits,
+    ready: readyData,
+    run: reqState.run,
+    flashKeys: fb.flashKeys,
+    showToast: fb.showToast,
+    closeDialogs,
+  });
+  const personalId = () => {
+    const opened = props.session.opened();
+    return opened ? encodeBytes(personalVaultId(opened)) : undefined;
+  };
+  const entryCountOf = (vaultId: string) =>
+    (props.entries?.() ?? []).filter((e) => e.vault === vaultId).length;
+
   return (
-    <section aria-labelledby="page-title" class={pageClass("wide")}>
-      <h1 id="page-title" class="mb-6 text-[28px] font-semibold md:text-lg">
-        {m.vaults_title()}
-      </h1>
+    <section
+      aria-label={m.vaults_title()}
+      class="@container relative flex min-h-0 flex-1 flex-col overflow-hidden"
+    >
+      <h1 class="sr-only">{m.vaults_title()}</h1>
       <Switch>
         <Match when={props.store.shown().state === "loading"}>
-          <p class="text-muted-foreground">{m.vaults_loading()}</p>
+          <p class="p-6 text-muted-foreground">{m.vaults_loading()}</p>
         </Match>
         <Match
           when={(() => {
@@ -108,112 +268,37 @@ export const VaultsPage = (props: {
             </p>
           )}
         </Match>
-        <Match
-          when={(() => {
-            const s = props.store.shown();
-            return s.state === "ready" ? s : undefined;
-          })()}
-        >
-          {(ready) => {
-            const selected = () => ready().vaults.find((v) => v.idText === membersOf());
-            return (
-              <div
-                class={
-                  selected()
-                    ? "grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)]"
-                    : ""
-                }
-              >
-                <div class={selected() ? "hidden lg:block" : ""}>
-                  <Show when={ready().vaults.length === 0 && ready().refused.length === 0}>
-                    <p class="rounded-xl border border-dashed border-border px-4 py-8 text-center text-[13px] text-muted-foreground">
-                      {m.vaults_empty()}
-                    </p>
-                  </Show>
-                  <ul class="divide-y divide-border overflow-hidden rounded-xl border border-border empty:hidden">
-                    <For each={ready().vaults}>
-                      {(vault) => (
-                        <li
-                          class={
-                            membersOf() === vault.idText
-                              ? "flex flex-wrap items-center gap-2 bg-muted/60 pr-3 transition-colors"
-                              : "flex flex-wrap items-center gap-2 pr-3 transition-colors hover:bg-muted/50"
-                          }
-                        >
-                          <Link
-                            nav={props.nav}
-                            href={`/vaults/${vault.idText}`}
-                            class="flex min-w-0 flex-1 items-center gap-3 px-4 py-3"
-                          >
-                            <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-accent">
-                              <Icon icon={Archive} />
-                            </span>
-                            <span class="flex-1 truncate font-medium">
-                              {vault.name ?? m.vaults_unnamed()}
-                            </span>
-                            <Badge variant="outline">{roleText(vault.role)}</Badge>
-                          </Link>
-                          <Button
-                            aria-label={m.vault_members_of({
-                              name: vault.name ?? m.vaults_unnamed(),
-                            })}
-                            onClick={() => setMembersOf(vault.idText)}
-                          >
-                            <Icon icon={Users} /> {m.vault_members_open()}
-                          </Button>
-                          <Show when={vault.role === "manage" ? props.onHandOver : undefined}>
-                            {(handOver) => (
-                              <Button
-                                aria-label={m.handover_open({
-                                  name: vault.name ?? m.vaults_unnamed(),
-                                })}
-                                onClick={() => handOver()(vault)}
-                              >
-                                <Icon icon={Handshake} /> {m.handover_button()}
-                              </Button>
-                            )}
-                          </Show>
-                        </li>
-                      )}
-                    </For>
-                    <For each={ready().refused}>
-                      {() => (
-                        <li class="flex items-center gap-3 px-4 py-3 text-danger">
-                          <Icon icon={TriangleExclamationPoint} />
-                          <span class="flex-1">{m.vaults_refused()}</span>
-                        </li>
-                      )}
-                    </For>
-                  </ul>
-                  <CreateForm onCreate={props.store.create} />
-                </div>
-                <Show when={selected()}>
-                  {(vault) => (
-                    <VaultMembersDialog
-                      open
-                      onClose={() => setMembersOf(undefined)}
-                      vault={vault()}
-                      people={ready().people}
-                      api={props.api}
-                      session={props.session}
-                      store={props.store}
-                      onRemove={(accountId) =>
-                        props.exits.remove(vault(), ready().trust, accountId, ready().left)
-                      }
-                      onRole={(accountId, role) => props.exits.changeRole(vault(), accountId, role)}
-                      onManageGroups={(groupId) => {
-                        setMembersOf(undefined);
-                        if (props.onManageGroup) props.onManageGroup(groupId);
-                        else props.nav.go("/groups");
-                      }}
-                    />
-                  )}
-                </Show>
-              </div>
-            );
-          }}
+        <Match when={readyData()}>
+          {(ready) => (
+            <VaultsReady
+              ready={ready()}
+              personalId={personalId()}
+              me={props.session.opened()?.accountId ?? new Uint8Array()}
+              entryCountOf={entryCountOf}
+              requestsOf={reqState.requestsOf}
+              busy={reqState.busy()}
+              error={reqState.error()}
+              flashed={fb.flashed()}
+              justAdded={fb.justAdded()}
+              actions={actions}
+              onClearJustAdded={fb.clearJustAdded}
+              onAskRemove={setRemoving}
+              onAskLimit={setLimiting}
+              onCreate={() => setCreating(true)}
+              onHandOver={props.onHandOver}
+              removing={removing()}
+              limiting={limiting()}
+              onCloseDialogs={closeDialogs}
+            />
+          )}
         </Match>
       </Switch>
+      <CreateVaultDialog
+        open={creating()}
+        onClose={() => setCreating(false)}
+        onCreate={props.store.create}
+      />
+      <AccessToastBar toast={fb.toast()} onDismiss={fb.dismissToast} />
     </section>
   );
 };

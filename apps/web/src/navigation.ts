@@ -43,9 +43,18 @@ export const createNavigation = (
     dropFragment();
     for (const listener of listeners) listener({ page, hash });
   };
+  const redirectLegacy = () => {
+    if (history.location.pathname !== "/groups") return;
+    history.replace("/vaults", history.location.state);
+    history.flush();
+  };
+  redirectLegacy();
   // Subscribed before the router loads a change: the popstate of a fragment navigation reaches the
   // history first, so the router only ever loads the address without the secret
-  const unwatch = history.subscribe(() => takeArrived(history.location));
+  const unwatch = history.subscribe(() => {
+    redirectLegacy();
+    takeArrived(history.location);
+  });
   // Browsers fire popstate before hashchange on a fragment navigation; this catches one without
   const onHashChange = () => takeArrived(win.location);
   win.addEventListener("hashchange", onHashChange);
