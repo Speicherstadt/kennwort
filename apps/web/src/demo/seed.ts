@@ -113,10 +113,29 @@ export const contentOf = (entry: (typeof data.entries)[number]): EntryContent =>
   history: [],
 });
 
-/** The company's groups, each linked to the vault of its team; everyone in them is already in it */
+/** The company's groups, each bundling the vaults of a team; everyone in them is already in them */
 export const GROUPS = [
-  { name: "Büro", members: ["Anna", "Sandra", "Max"], vault: "office", role: "read" }, // i18n-ignore: demo data
-  { name: "Buchhaltung", members: ["Anna"], vault: "accounting", role: "manage" }, // i18n-ignore: demo data
+  {
+    name: "Büro-Team",
+    members: ["Anna", "Sandra", "Max"],
+    vaults: [{ vault: "office", role: "read" as const }],
+  }, // i18n-ignore: demo data
+  {
+    name: "Verwaltung",
+    members: ["Anna"],
+    vaults: [
+      { vault: "accounting", role: "manage" as const },
+      { vault: "office", role: "manage" as const },
+    ],
+  }, // i18n-ignore: demo data
+  {
+    name: "Montage",
+    members: ["Max"],
+    vaults: [
+      { vault: "tablets", role: "edit" as const },
+      { vault: "office", role: "read" as const },
+    ],
+  }, // i18n-ignore: demo data
 ] as const;
 
 /** Groups ask, never give (K-305 part 5): they go on the stand-in as the server keeps them */
@@ -131,9 +150,11 @@ const seedGroups = (
     const id = encodeBytes(randomBytes(16));
     const members = new Set(group.members.map((name) => encodeBytes(accountOf(name))));
     store.groups.set(id, { id, name: group.name, members });
-    const vaultId = vaultIds.get(group.vault) ?? fail(`no vault ${group.vault}`);
-    const links = store.vaultGroups.get(vaultId) ?? new Map();
-    store.vaultGroups.set(vaultId, links.set(id, group.role));
+    for (const link of group.vaults) {
+      const vaultId = vaultIds.get(link.vault) ?? fail(`no vault ${link.vault}`);
+      const links = store.vaultGroups.get(vaultId) ?? new Map();
+      store.vaultGroups.set(vaultId, links.set(id, link.role));
+    }
   }
 };
 

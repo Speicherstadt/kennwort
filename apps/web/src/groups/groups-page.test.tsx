@@ -12,7 +12,7 @@ import type { Exits } from "../vaults/exit.ts";
 import type { VaultStore } from "../vaults/vault-store.ts";
 import { GroupsPage } from "./groups-page.tsx";
 
-// K-305 part 5: the groups page, its list loaded through the opened account's query cache
+// K-305 part 5: the groups page, master-detail loaded through the opened account's query cache
 let dispose = () => {};
 afterEach(() => {
   dispose();
@@ -96,14 +96,15 @@ const show = async (
   await settle();
   return root;
 };
-const cards = (root: ParentNode) =>
-  [...root.querySelectorAll("ul.grid > li")].map((li) => li.textContent ?? "");
+
+const groupButtons = (root: ParentNode) =>
+  [...root.querySelectorAll('ul[aria-label="Gruppen"] button')].map((b) => b.textContent ?? "");
 
 describe("GroupsPage", () => {
-  it("lists the company's groups", async () => {
+  it("lists the company's groups in the master-detail view", async () => {
     const root = await show(fakeApi(async () => [{ id: "g1", name: "Büro", members: [jonas] }]));
-    expect(cards(root)).toHaveLength(1);
-    expect(cards(root)[0]).toContain("Büro");
+    expect(groupButtons(root)).toHaveLength(1);
+    expect(groupButtons(root)[0]).toContain("Büro");
     expect(root.querySelector('[role="alert"]')).toBeNull();
   });
 
@@ -114,7 +115,7 @@ describe("GroupsPage", () => {
     );
   });
 
-  it("loads the groups anew after a change", async () => {
+  it("loads the groups anew after creating one in the dialog", async () => {
     let groups = [{ id: "g1", name: "Büro", members: [jonas] }];
     const listed = vi.fn(async () => groups);
     const api = fakeApi(listed);
@@ -123,9 +124,14 @@ describe("GroupsPage", () => {
       return true;
     });
     const root = await show(api);
-    const create = [...root.querySelectorAll("form")].at(-1);
+    const openBtn = [...root.querySelectorAll("button")].find((b) =>
+      b.textContent?.includes("Neue Gruppe"),
+    );
+    openBtn?.click();
+    flush();
+    const create = root.querySelector("dialog form") as HTMLFormElement | null;
     const field = create?.querySelector("input");
-    if (!create || !field) throw new Error("no form");
+    if (!create || !field) throw new Error("no dialog form");
     field.value = "Werkstatt";
     field.dispatchEvent(new InputEvent("input", { bubbles: true }));
     flush();
@@ -133,10 +139,10 @@ describe("GroupsPage", () => {
     await settle();
     expect(api.newGroup).toHaveBeenCalledWith("tok", "Werkstatt");
     expect(listed).toHaveBeenCalledTimes(2);
-    expect(cards(root).map((c) => c.includes("Werkstatt"))).toEqual([false, true]);
+    expect(groupButtons(root).map((c) => c.includes("Werkstatt"))).toEqual([false, true]);
   });
 
-  it("shows linked vaults on the group card and previews direct access when choosing a person", async () => {
+  it("shows vault and member toggles side-by-side for the selected group", async () => {
     const vault = fakeVault(new Map([["01".repeat(16), { role: "manage" }]]));
     const store = {
       shown: () => ({
@@ -149,18 +155,16 @@ describe("GroupsPage", () => {
       reload: vi.fn(async () => undefined),
     } as unknown as VaultStore;
     const api = fakeApi(
-      async () => [{ id: "g1", name: "Büro", members: [jonas] }],
+      async () => [{ id: "g1", name: "Büro-Team", members: [jonas] }],
       async () => [{ groupId: "g1", role: "read" }],
     );
     const root = await show(api, { people: ownerAndAnna, store });
-    expect(cards(root)[0]).toContain("Buchhaltung");
-    expect(cards(root)[0]).toContain("Lesen");
-
-    const select = root.querySelector('select[aria-label="Person für Büro"]') as HTMLSelectElement;
-    select.value = "02".repeat(16);
-    select.dispatchEvent(new Event("change", { bubbles: true }));
-    flush();
-    expect(cards(root)[0]).toContain("Gibt direkt Zugriff auf: Buchhaltung (Lesen)");
+    const vaultSwitch = root.querySelector(
+      'ul[aria-label="Tresore von Büro-Team"] [role="switch"]',
+    );
+    expect(vaultSwitch?.getAttribute("aria-checked")).toBe("true");
+    const memberSwitches = [...root.querySelectorAll('ul[aria-label="Büro-Team"] [role="switch"]')];
+    expect(memberSwitches.map((b) => b.getAttribute("aria-checked"))).toEqual(["true", "false"]);
   });
 
   it("keeps nothing secret in the query key", async () => {
