@@ -168,8 +168,8 @@ später).
 
 ## Stack
 
-Der Stack folgt `tech-stack.md` aus firsttris/workflows; vier Abweichungen sind begründet und
-stehen im CLAUDE.md.
+Der Stack folgt `tech-stack.md` aus firsttris/workflows; vier Abweichungen sind unten begründet,
+die Folgen für das Bauen stehen in [Entwicklung](entwicklung.md#technik).
 
 | Teil | Wahl | Begründung |
 | --- | --- | --- |

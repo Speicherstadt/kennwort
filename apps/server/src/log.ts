@@ -1,5 +1,5 @@
 /**
- * Logs as one JSON line each. A log never carries a secret (CLAUDE.md, Never): request bodies,
+ * Logs as one JSON line each. A log never carries a secret (AGENTS.md, "Nie"): request bodies,
  * headers and query strings are not logged at all, and fields with names that sound like secrets
  * are replaced before writing, in case a caller passes one by mistake.
  */

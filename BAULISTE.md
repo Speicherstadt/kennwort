@@ -12,11 +12,15 @@ und die Schritte für Menschen am Ende erledigt sind.
    Loop sie im selben Pull Request nach, bevor er Code schreibt; streichen darf er keins.
 3. Ein Punkt, ein Branch, ein Pull Request (Titel mit der Nummer, z. B. `K-104: Hybrid-KEM`). Tests
    zuerst, dann Code, Docs und Texte de/en, `bun run check` grün.
-4. **Unabhängiges Review nur für Sicherheitsrelevantes**: Berührt der Pull Request Kryptografie,
-   Sync, Mitglieder-Log, Freigaben, Anmeldung, Zugriffsprüfung, Entsperren, Schlüssel, Kopplung,
-   Autofill, das signierte Update, die CSP oder die Liste erlaubter Pakete (genaue Liste in
-   `CLAUDE.md`, „The agent loop“), prüft ihn ein eigener Sub-Agent (`tdd-review`): ein Befund braucht
-   einen fehlschlagenden Test, Befunde fixen, bis keine mehr kommen. Alles andere geht ohne Review.
+4. **Unabhängiges Review nur für Sicherheitsrelevantes**: Sicherheitsrelevant sind `packages/crypto`;
+   Sync, Mitglieder-Log, Freigaben und Signaturen in `packages/core`; Anmeldung, Sitzungen,
+   Zugriffsprüfungen und der bösartige Testserver in `apps/server`; Entsperren, Schlüssel,
+   Passphrasen, Recovery und Gerätekopplung in jedem Client, auch Links mit einem Geheimnis im
+   Fragment; Autofill sowie die Content Scripts und der Speicher der Extension; das signierte Update
+   des Service Workers; die CSP und die Liste erlaubter Pakete. Berührt der Pull Request davon
+   etwas, prüft ihn ein eigener Sub-Agent (`tdd-review`): ein Befund braucht einen fehlschlagenden
+   Test, Befunde fixen, bis keine mehr kommen; gemergt wird erst ohne offene Befunde. Alles andere
+   geht ohne Review.
 5. **CI grün → selbst mergen** (Squash), den Punkt hier im selben Pull Request abhaken. Der Loop
    wartet nie auf einen Menschen, auch nicht bei `packages/crypto`: Dort gilt statt einer Freigabe
    ein strengeres Gate – Testvektoren und Property-Tests in CI, Mutation-Tests zu 100 % jede Nacht

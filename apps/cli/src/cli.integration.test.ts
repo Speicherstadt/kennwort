@@ -1,7 +1,7 @@
 /**
  * The compiled `kennwort` against the real server (K-606): Weber Haustechnik set up through
  * packages/client, then login, search and get as Jonas would type them on a terminal. The server
- * runs on its own port (28320), clear of the dev (18100, 5175) and e2e ports (CLAUDE.md).
+ * runs on its own port (28320), clear of the dev (18100, 5175) and e2e ports (.agents/skills/checks, "Ports").
  */
 import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, statSync } from "node:fs";

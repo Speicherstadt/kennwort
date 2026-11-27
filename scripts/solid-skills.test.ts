@@ -1,5 +1,5 @@
-// The Solid 2.0 skills in .claude/skills are copies of the ones the solid-js package ships
-// (CLAUDE.md, "Solid 2.0"): when an update of solid-js changes them, this fails until they are
+// The Solid 2.0 skills in .agents/skills are copies of the ones the solid-js package ships
+// (docs/entwicklung.md, "Solid 2.0"): when an update of solid-js changes them, this fails until they are
 // copied again, so agents never read a guide for another version
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -14,7 +14,7 @@ describe("Solid 2.0 skills", () => {
   it.each(["solid-2.0", "solid-2.0-cheatsheet", "reactivity-diagnostics"])(
     "%s matches solid-js",
     (skill) => {
-      const ours = readFileSync(join(process.cwd(), ".claude/skills", skill, "SKILL.md"), "utf8");
+      const ours = readFileSync(join(process.cwd(), ".agents/skills", skill, "SKILL.md"), "utf8");
       expect(ours).toBe(readFileSync(join(solid, "skills", skill, "SKILL.md"), "utf8"));
     },
   );

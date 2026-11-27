@@ -1,5 +1,5 @@
 /**
- * The unlocked account, in memory only (CLAUDE.md, P-03): created on setup, invitation or unlock,
+ * The unlocked account, in memory only (AGENTS.md, "Nie"; P-03): created on setup, invitation or unlock,
  * dropped on lock and after a while without use. Locking overwrites the account key's bytes, so
  * nothing usable lingers once the references are gone.
  */

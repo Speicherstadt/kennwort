@@ -1,7 +1,7 @@
 /**
  * The allowlist of runtime packages (allowed-dependencies.json): every runtime dependency of a
  * workspace needs an entry with a reason that names the workspace, and packages/crypto takes
- * nothing but @noble/* (CLAUDE.md, Never). A dependency is judged by its name, so its version must
+ * nothing but @noble/* (AGENTS.md, "Nie"). A dependency is judged by its name, so its version must
  * be an exact registry version: an alias (`npm:`), a Git, file or URL source could install any
  * package under an allowed name (docs/plan.md: dependencies pinned exactly).
  */

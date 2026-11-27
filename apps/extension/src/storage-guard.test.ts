@@ -1,7 +1,7 @@
 /**
  * Unlocked keys live only in chrome.storage.session (session-keys.ts). The extension writes to no
  * area that reaches the disk, for anything: once such a store exists, a key ends up in it sooner
- * or later (CLAUDE.md, Never; docs/sicherheitsdesign.md, Schlüsselhierarchie). The rules are in
+ * or later (AGENTS.md, "Nie"; docs/sicherheitsdesign.md, Schlüsselhierarchie). The rules are in
  * build/storage-rules.ts; build/check-bundle.ts applies them to the built code as well.
  */
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";

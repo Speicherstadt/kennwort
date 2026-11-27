@@ -1,5 +1,5 @@
 // Starts a server process on a fresh database and waits for /health; for tests and the smoke check.
-// The e2e ports (server 28100 and up) keep clear of a running dev server (CLAUDE.md)
+// The e2e ports (server 28100 and up) keep clear of a running dev server (.agents/skills/checks, "Ports")
 import { spawn } from "node:child_process";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";

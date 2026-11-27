@@ -1,7 +1,7 @@
 /**
  * The only place the extension keeps unlocked keys: `chrome.storage.session`, which lives in memory
- * and is gone when the browser closes (docs/sicherheitsdesign.md, Schlüsselhierarchie; CLAUDE.md,
- * Never). The popup and the service worker both reach it, so a key survives the popup closing and
+ * and is gone when the browser closes (docs/sicherheitsdesign.md, Schlüsselhierarchie; AGENTS.md,
+ * "Nie"). The popup and the service worker both reach it, so a key survives the popup closing and
  * the worker being stopped, but never touches the disk.
  */
 

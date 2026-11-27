@@ -7,7 +7,7 @@
  * send the same JSON, so neither carries its own copy of the logic.
  *
  * A request carries no secret, only where to fill. A response carries the secret only after the
- * person unlocked and picked an entry in the app: never without a user action (CLAUDE.md, Never).
+ * person unlocked and picked an entry in the app: never without a user action (AGENTS.md, "Nie").
  */
 import type { Result } from "@kennwort/crypto";
 
