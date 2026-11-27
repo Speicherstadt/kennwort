@@ -24,17 +24,18 @@ const authenticator = async (page: Page, hasPrf: boolean) => {
   });
 };
 
-const toSettings = async (page: Page) => {
+const toSettings = async (page: Page, tab = "Geräte und Anmeldung") => {
   const link = page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true });
   await link.first().click();
   await expect(page.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeVisible();
+  await page.getByRole("tab", { name: tab }).click();
 };
 
 const lock = async (page: Page) => {
   const button = page
     .getByRole("button", { name: "Sperren", exact: true })
     .filter({ visible: true });
-  if ((await button.count()) === 0) await toSettings(page);
+  if ((await button.count()) === 0) await toSettings(page, "Gefahrenzone");
   await button.first().click();
   await expect(page.getByRole("heading", { name: "Kennwort ist gesperrt" })).toBeVisible();
 };

@@ -74,6 +74,7 @@ test.describe("renewing the account's keys", { tag: "@phone" }, () => {
 
     // Anna: Einstellungen → Schlüssel erneuern
     await openSettings(anna);
+    await anna.getByRole("tab", { name: "Konto" }).click();
     await anna.getByRole("button", { name: "Schlüssel erneuern" }).click();
     await expect(heading(anna, "Schlüssel erneuern")).toBeVisible();
     await axe(anna);

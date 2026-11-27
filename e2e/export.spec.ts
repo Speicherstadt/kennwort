@@ -17,8 +17,10 @@ const axe = async (page: Page) => {
     violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`),
   ).toEqual([]);
 };
-const settings = (page: Page) =>
-  page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).first().click();
+const settings = async (page: Page) => {
+  await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).first().click();
+  await page.getByRole("tab", { name: "Daten" }).click();
+};
 
 /** Everything the page sent to the server, as text */
 const recordRequests = (page: Page) => {

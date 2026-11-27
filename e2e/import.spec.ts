@@ -30,6 +30,7 @@ const rows = (page: Page) => page.getByRole("list", { name: "Einträge in der Da
 /** Settings, then „Importieren“, then the vendor and the file */
 const importFile = async (page: Page, vendor: string, file: string) => {
   await visibleLink(page, "Einstellungen").click();
+  await page.getByRole("tab", { name: "Daten" }).click();
   await page.getByRole("button", { name: "Importieren" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Importieren" })).toBeVisible();
   await page.getByRole("button", { name: vendor, exact: true }).click();
@@ -207,6 +208,7 @@ test.describe("import", { tag: "@phone" }, () => {
     await setUpCompany(page);
     const sent = recordRequests(page);
     await visibleLink(page, "Einstellungen").click();
+    await page.getByRole("tab", { name: "Daten" }).click();
     await page.getByRole("button", { name: "Importieren" }).click();
     await page.getByRole("button", { name: "KeePass / KeePassXC (KDBX)", exact: true }).click();
     await page
@@ -280,6 +282,7 @@ test.describe("import", { tag: "@phone" }, () => {
     await setUpCompany(page);
     const sent = recordRequests(page);
     await visibleLink(page, "Einstellungen").click();
+    await page.getByRole("tab", { name: "Daten" }).click();
     await page.getByRole("button", { name: "Importieren" }).click();
     await page.getByRole("button", { name: "Google Authenticator (QR-Code)", exact: true }).click();
     // The app has other live regions (notifications); this one counts the codes

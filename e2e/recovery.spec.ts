@@ -62,6 +62,7 @@ test.describe("company recovery", { tag: "@phone" }, () => {
       .filter({ visible: true })
       .first()
       .click();
+    await page.getByRole("tab", { name: "Geräte und Anmeldung" }).click();
     await page.getByRole("button", { name: "Gerät hinzufügen" }).click();
     await page.getByLabel("Link vom neuen Gerät").fill(link);
     await page.getByLabel("Gerät für").selectOption({ label: "Anna wiederherstellen" });

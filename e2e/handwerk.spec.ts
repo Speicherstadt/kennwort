@@ -18,6 +18,7 @@ const axe = async (page: Page) => {
 
 const openSettings = async (page: Page, button: string, title: string) => {
   await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).first().click();
+  await page.getByRole("tab", { name: "Firma" }).click();
   await page.getByRole("button", { name: button, exact: true }).click();
   await expect(heading(page, title)).toBeVisible();
 };
@@ -179,6 +180,7 @@ test.describe("several companies and the handover", { tag: "@phone" }, () => {
       .filter({ visible: true })
       .first()
       .click();
+    await page.getByRole("tab", { name: "Firma" }).click();
     await page.getByRole("button", { name: "Firmen", exact: true }).click();
     await page.getByRole("button", { name: "Zu Eigene Firma wechseln" }).click();
     await expect(heading(page, "Alle Einträge")).toBeVisible({ timeout: 30_000 });

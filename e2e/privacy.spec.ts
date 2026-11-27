@@ -20,6 +20,7 @@ const axe = async (page: Page) => {
 
 const openPrivacy = async (page: Page) => {
   await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).first().click();
+  await page.getByRole("tab", { name: "Konto" }).click();
   await page.getByRole("button", { name: "Datenschutz" }).click();
   await expect(heading(page, "Datenschutz")).toBeVisible();
 };

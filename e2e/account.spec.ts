@@ -68,8 +68,10 @@ test.describe("an account", { tag: "@phone" }, () => {
     const lock = page
       .getByRole("button", { name: "Sperren", exact: true })
       .filter({ visible: true });
-    if ((await lock.count()) === 0)
+    if ((await lock.count()) === 0) {
       await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).click();
+      await page.getByRole("tab", { name: "Gefahrenzone" }).click();
+    }
     // Unlocking returns to the page that was locked
     const where = (await page.getByRole("heading", { level: 1 }).textContent()) ?? "";
     await lock.first().click();
@@ -130,8 +132,10 @@ test.describe("an account", { tag: "@phone" }, () => {
     const lock = page
       .getByRole("button", { name: "Sperren", exact: true })
       .filter({ visible: true });
-    if ((await lock.count()) === 0)
+    if ((await lock.count()) === 0) {
       await page.getByRole("link", { name: "Einstellungen" }).filter({ visible: true }).click();
+      await page.getByRole("tab", { name: "Gefahrenzone" }).click();
+    }
     await lock.first().click();
     await page.getByRole("button", { name: "Passphrase vergessen?" }).click();
     await expect(heading(page, "Passphrase vergessen")).toBeVisible();
