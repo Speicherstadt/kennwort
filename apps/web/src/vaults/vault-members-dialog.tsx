@@ -229,28 +229,12 @@ export const VaultMembersDialog = (props: {
         }}
       >
         <div class="flex items-center justify-between gap-2 border-b border-border px-4 py-3.5 sm:px-5">
-          <div class="flex min-w-0 items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              class="lg:hidden"
-              aria-label={m.ui_close()}
-              onClick={props.onClose}
-            >
-              <Icon icon={ArrowLeft} />
-            </Button>
-            <h2 id={titleId} class="truncate text-sm font-semibold">
-              {m.vault_members_title({ name: props.vault.name ?? m.vaults_unnamed() })}
-            </h2>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            class="hidden lg:inline-flex"
-            aria-label={m.ui_close()}
-            onClick={props.onClose}
-          >
-            <Icon icon={X} />
+          <h2 id={titleId} class="truncate text-sm font-semibold">
+            {m.vault_members_title({ name: props.vault.name ?? m.vaults_unnamed() })}
+          </h2>
+          <Button variant="ghost" size="icon" aria-label={m.ui_close()} onClick={props.onClose}>
+            <Icon icon={ArrowLeft} class="lg:hidden" />
+            <Icon icon={X} class="hidden lg:block" />
           </Button>
         </div>
         <div class="p-4 sm:p-5">
