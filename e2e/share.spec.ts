@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { setUpCompany, test } from "./account.ts";
-import { annaJoins, heading, openVaults } from "./company.ts";
+import { annaJoins, createVault, heading, openVaults } from "./company.ts";
 import { goInApp } from "./entries.ts";
 
 // K-305 part 6b (P-10): Jonas shares the Sparkasse login of Büro with Anna, who is no member of
@@ -22,9 +22,7 @@ const visibleLink = (page: Page, name: string) =>
 /** Jonas creates Büro without Anna and writes the Sparkasse login into it */
 const sparkasseInBuero = async (page: Page) => {
   await openVaults(page);
-  await page.getByLabel("Name", { exact: true }).fill("Büro");
-  await page.getByRole("button", { name: "Tresor anlegen" }).click();
-  await expect(page.getByRole("main").getByRole("list")).toContainText("Büro");
+  await createVault(page, "Büro");
   await visibleLink(page, "Einträge").click();
   await page
     .getByRole("button", { name: "Neu", exact: true })
@@ -62,7 +60,7 @@ test.describe("sharing a single entry", { tag: "@phone" }, () => {
 
     // Anna loads anew: the shared login, read-only, and nothing else of Büro
     await openVaults(anna);
-    await expect(anna.getByRole("main").getByRole("list")).not.toContainText("Büro");
+    await expect(anna.getByRole("navigation", { name: "Tresore" })).not.toContainText("Büro");
     await visibleLink(anna, "Einträge").click();
     await visibleLink(anna, "Mit mir geteilt").click();
     await expect(heading(anna, "Mit mir geteilt")).toBeVisible();

@@ -1,7 +1,14 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { newDevice, setUpCompany, test, unlock } from "./account.ts";
-import { heading, openTeam, openVaults } from "./company.ts";
+import {
+  createVault,
+  heading,
+  openTeam,
+  openVaults,
+  removeVaultMember,
+  selectVault,
+} from "./company.ts";
 import { addEntry } from "./entries.ts";
 
 // K-605: Jonas of Weber Haustechnik prints a QR label for a customer's heating, joins the customer's
@@ -98,9 +105,7 @@ test.describe("several companies and the handover", { tag: "@phone" }, () => {
     // Jonas runs Weber Haustechnik and keeps the heating's passwords in the vault Heizung Müller
     await setUpCompany(page);
     await openVaults(page);
-    await page.getByLabel("Name", { exact: true }).fill("Heizung Müller");
-    await page.getByRole("button", { name: "Tresor anlegen" }).click();
-    await expect(page.getByRole("main").getByRole("list")).toContainText("Heizung Müller");
+    await createVault(page, "Heizung Müller");
     await page.getByRole("link", { name: "Einträge" }).filter({ visible: true }).first().click();
     await addEntryTo(page, "Heizung Müller", "Router Heizung", "Kessel-Anlage-2026");
 
@@ -131,7 +136,9 @@ test.describe("several companies and the handover", { tag: "@phone" }, () => {
     await page.getByRole("button", { name: "Zu Eigene Firma wechseln" }).click();
     await expect(heading(page, "Alle Einträge")).toBeVisible({ timeout: 30_000 });
     await openVaults(page);
-    await page.getByRole("button", { name: "Heizung Müller an einen Kunden übergeben" }).click();
+    await selectVault(page, "Heizung Müller");
+    await page.getByRole("button", { name: "Weitere Aktionen für Heizung Müller" }).click();
+    await page.getByRole("menuitem", { name: "Übergeben" }).click();
     const start = page.getByRole("dialog", { name: "Heizung Müller übergeben" });
     await expect(start).toContainText("1 Eintrag wird übergeben.");
     await start.getByLabel("Müller Elektro").check();
@@ -145,34 +152,25 @@ test.describe("several companies and the handover", { tag: "@phone" }, () => {
     await expect(heading(page, "Heizung Müller")).toBeVisible();
     await expect(page.getByRole("main")).toContainText("Router Heizung");
     await openVaults(page);
-    const jonasVault = page
-      .getByRole("main")
-      .getByRole("list")
-      .getByRole("listitem")
-      .filter({ hasText: "Heizung Müller" });
-    await expect(jonasVault).toContainText("Bearbeiten");
+    await selectVault(page, "Heizung Müller");
+    await expect(page.getByRole("main")).toContainText("Bearbeiten");
 
     // Max manages the vault now and sees the entry, encrypted for him on Jonas's device
     await openVaults(max);
-    const maxVault = max
-      .getByRole("main")
-      .getByRole("list")
-      .getByRole("listitem")
-      .filter({ hasText: "Heizung Müller" });
-    await expect(maxVault).toContainText("Verwalten");
-    await maxVault.getByRole("link", { name: /Heizung Müller/ }).click();
+    await selectVault(max, "Heizung Müller");
+    await expect(max.getByRole("main")).toContainText("Verwalten");
+    await max.getByRole("link", { name: "Einträge" }).filter({ visible: true }).first().click();
     await expect(max.getByRole("main")).toContainText("Router Heizung");
 
     // Max ends Jonas's access: removed with a new key, the vault is gone for Jonas
     await openVaults(max);
-    await max.getByRole("button", { name: "Mitglieder von Heizung Müller" }).click();
-    const members = max.getByRole("region", { name: "Mitglieder von Heizung Müller" });
-    await members.getByRole("button", { name: "Jonas aus dem Tresor entfernen" }).click();
-    await expect(
-      members.getByRole("list", { name: "Mitglieder des Tresors" }).getByRole("listitem"),
-    ).toHaveCount(1);
+    await selectVault(max, "Heizung Müller");
+    await removeVaultMember(max, "Jonas");
+    await expect(max.getByRole("main")).toContainText("1 Person");
     await openVaults(page);
-    await expect(page.getByRole("main").getByRole("list")).not.toContainText("Heizung Müller");
+    await expect(page.getByRole("navigation", { name: "Tresore" })).not.toContainText(
+      "Heizung Müller",
+    );
 
     // His own company still has its vault; the switch in the sidebar leads back to it
     await page
@@ -185,6 +183,6 @@ test.describe("several companies and the handover", { tag: "@phone" }, () => {
     await page.getByRole("button", { name: "Zu Eigene Firma wechseln" }).click();
     await expect(heading(page, "Alle Einträge")).toBeVisible({ timeout: 30_000 });
     await openVaults(page);
-    await expect(page.getByRole("main").getByRole("list")).toContainText("Heizung Müller");
+    await expect(page.getByRole("navigation", { name: "Tresore" })).toContainText("Heizung Müller");
   });
 });

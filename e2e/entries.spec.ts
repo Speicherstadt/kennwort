@@ -1,7 +1,14 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { setUpCompany, test } from "./account.ts";
-import { annaJoins, heading, openVaults } from "./company.ts";
+import {
+  addVaultMembers,
+  annaJoins,
+  createVault,
+  heading,
+  openVaults,
+  selectVault,
+} from "./company.ts";
 import { addEntry } from "./entries.ts";
 
 // K-306 part 1 (P-09, P-21): entries live in the vaults, sealed on the device; Jonas writes the
@@ -23,14 +30,10 @@ test.describe("entries", { tag: "@phone" }, () => {
     await setUpCompany(page);
     const anna = await annaJoins(page, browser);
     await openVaults(page);
-    await page.getByLabel("Name", { exact: true }).fill("Büro");
-    await page.getByRole("button", { name: "Tresor anlegen" }).click();
-    await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-    const dialog = page.getByRole("region", { name: "Mitglieder von Büro" });
-    await dialog.getByLabel("Person").selectOption({ label: "Anna" });
-    await dialog.getByRole("button", { name: "Aufnehmen" }).click();
-    await expect(dialog.getByLabel("Rolle von Anna")).toHaveValue("read");
-    await page.keyboard.press("Escape");
+    await createVault(page, "Büro");
+    await selectVault(page, "Büro");
+    await addVaultMembers(page, ["Anna"], "Lesen");
+    await expect(page.getByRole("region", { name: "Lesen", exact: true })).toContainText("Anna");
 
     await page.getByRole("link", { name: "Einträge" }).filter({ visible: true }).first().click();
     await page
@@ -60,7 +63,7 @@ test.describe("entries", { tag: "@phone" }, () => {
 
     // Anna's device pulls Büro, checks every record, and opens the newest version to read
     await openVaults(anna);
-    await anna.getByRole("main").getByRole("link", { name: /Büro/ }).click();
+    await anna.getByRole("link", { name: "Einträge" }).filter({ visible: true }).first().click();
     await anna.getByRole("option", { name: /Sparkasse/ }).click();
     await expect(heading(anna, "Sparkasse")).toBeVisible();
     await anna.getByRole("button", { name: "Passwort aufdecken" }).click();

@@ -78,8 +78,13 @@ const setUpWeber = async (browser: Browser): Promise<Company> => {
   for (const login of LOGINS) ids.push(await addEntry(page, login));
   await page.getByRole("button", { name: "Favorit" }).click();
   await openVaults(page);
-  await page.getByLabel("Name").fill("Büro");
-  await page.getByRole("button", { name: "Tresor anlegen" }).click();
+  await page
+    .getByRole("navigation", { name: "Tresore" })
+    .getByRole("button", { name: "Neuer Tresor" })
+    .click();
+  const dlg = page.getByRole("dialog", { name: "Neuer Tresor" });
+  await dlg.getByLabel("Name", { exact: true }).fill("Büro");
+  await dlg.getByRole("button", { name: "Tresor anlegen" }).click();
   const anna = await annaJoins(page, browser);
   await anna.context().close();
   await page.context().close();

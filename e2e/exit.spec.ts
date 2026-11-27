@@ -1,7 +1,16 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { setUpCompany, test, unlock } from "./account.ts";
-import { annaJoins, heading, openTeam, openVaults } from "./company.ts";
+import {
+  addVaultMembers,
+  annaJoins,
+  createVault,
+  heading,
+  openTeam,
+  openVaults,
+  removeVaultMember,
+  selectVault,
+} from "./company.ts";
 
 // K-307 part b (P-11): Anna leaves Büro, and then the company. Jonas's client signs remove and
 // rotate, writes every entry anew under the new key and marks what Anna could read "Zum Ändern";
@@ -39,15 +48,10 @@ const loginInBuero = async (page: Page, title: string, password: string) => {
 /** Jonas creates Büro, takes Anna in to edit and writes the Sparkasse login; Anna reads it */
 const annaInBuero = async (page: Page, anna: Page) => {
   await openVaults(page);
-  await page.getByLabel("Name", { exact: true }).fill("Büro");
-  await page.getByRole("button", { name: "Tresor anlegen" }).click();
-  await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-  const dialog = page.getByRole("region", { name: "Mitglieder von Büro" });
-  await dialog.getByLabel("Person").selectOption({ label: "Anna" });
-  await dialog.getByLabel("Rolle", { exact: true }).selectOption("edit");
-  await dialog.getByRole("button", { name: "Aufnehmen" }).click();
-  await expect(dialog.getByLabel("Rolle von Anna")).toHaveValue("edit");
-  await dialog.getByRole("button", { name: "Schließen" }).click();
+  await createVault(page, "Büro");
+  await selectVault(page, "Büro");
+  await addVaultMembers(page, ["Anna"], "Bearbeiten");
+  await expect(page.getByRole("main")).toContainText("Anna");
   await loginInBuero(page, "Sparkasse", "Rohr-Ventil-Kessel-2026!");
   await openVaults(anna);
   await visibleLink(anna, "Einträge").click();
@@ -70,9 +74,8 @@ const annaSeesNothing = async (anna: Page) => {
   await anna.reload();
   await unlock(anna, "Anna Heizung Bad Fliese");
   await openVaults(anna);
-  // With no vault left the page shows the empty state instead of an (empty, hidden) list
   const main = anna.getByRole("main");
-  await expect(main.getByRole("list").or(main.getByText("Noch keine Tresore."))).toBeVisible();
+  await expect(main.getByRole("navigation", { name: "Tresore" })).toBeVisible();
   await expect(main).not.toContainText("Büro");
   await visibleLink(anna, "Einträge").click();
   await expect(anna.getByRole("option", { name: /Neuer Zugang/ })).toHaveCount(0);
@@ -90,8 +93,7 @@ test.describe("leaving a vault", { tag: "@phone" }, () => {
 
     // Removing writes the remove, the rotation with the new key, and the login anew (P-11)
     await openVaults(page);
-    await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-    const dialog = page.getByRole("region", { name: "Mitglieder von Büro" });
+    await selectVault(page, "Büro");
     const rotation = page.waitForRequest(
       (r) =>
         r.method() === "POST" &&
@@ -101,15 +103,12 @@ test.describe("leaving a vault", { tag: "@phone" }, () => {
     const rewritten = page.waitForRequest(
       (r) => r.method() === "PUT" && r.url().endsWith("/records"),
     );
-    await dialog.getByRole("button", { name: "Anna aus dem Tresor entfernen" }).click();
+    await removeVaultMember(page, "Anna");
     expect((await rotation).postDataJSON()).toMatchObject({
       entry: { action: "rotate", epoch: 1 },
     });
     expect((await rewritten).postDataJSON()).toMatchObject({ version: 2, epoch: 1 });
-    await expect(
-      dialog.getByRole("list", { name: "Mitglieder des Tresors" }).getByRole("listitem"),
-    ).toHaveCount(1);
-    await dialog.getByRole("button", { name: "Schließen" }).click();
+    await expect(page.getByRole("main")).toContainText("1 Person");
 
     await markedForAnna(page);
     await axe(page);
@@ -158,12 +157,8 @@ test.describe("leaving the company", { tag: "@phone" }, () => {
 
     // Jonas's client takes her out of Büro and rotates by itself
     await openVaults(page);
-    await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-    const vaultDialog = page.getByRole("region", { name: "Mitglieder von Büro" });
-    await expect(
-      vaultDialog.getByRole("list", { name: "Mitglieder des Tresors" }).getByRole("listitem"),
-    ).toHaveCount(1);
-    await vaultDialog.getByRole("button", { name: "Schließen" }).click();
+    await selectVault(page, "Büro");
+    await expect(page.getByRole("main")).toContainText("1 Person");
     await markedForAnna(page);
 
     await page

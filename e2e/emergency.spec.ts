@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { setUpCompany, test } from "./account.ts";
-import { annaJoins, heading, openVaults } from "./company.ts";
+import { annaJoins, createVault, heading, openVaults } from "./company.ts";
 
 // K-307 part d (P-14): Jonas names Anna for emergency access to Büro with a week's wait; Anna asks,
 // Jonas objects, which blocks it; Anna asks again, Jonas lets it out early, and Anna reads Büro's
@@ -31,9 +31,7 @@ const received = (page: Page) => page.getByRole("list", { name: "Für dich" });
 /** Jonas creates Büro and writes the Sparkasse login into it */
 const sparkasseInBuero = async (page: Page) => {
   await openVaults(page);
-  await page.getByLabel("Name", { exact: true }).fill("Büro");
-  await page.getByRole("button", { name: "Tresor anlegen" }).click();
-  await expect(page.getByRole("main").getByRole("list")).toContainText("Büro");
+  await createVault(page, "Büro");
   await visibleLink(page, "Einträge").click();
   await page
     .getByRole("button", { name: "Neu", exact: true })
