@@ -94,14 +94,20 @@ wenn deine Schlüssel schon bestätigt sind.
 
 ## Gruppen
 
-Unter **Team → Gruppen** legen Inhaber und Admins Gruppen an, etwa „Büro-Team“, und nehmen Personen der
-Firma auf oder heraus. Eine Gruppe gibt selbst keinen Zugriff: Ein Verwalter verknüpft sie im
-Dialog **Mitglieder** eines Tresors mit einer Rolle. Danach erscheint jedes Gruppenmitglied, das
-noch nicht im Tresor ist, unter **Anfragen** – auch wer der Gruppe später beitritt – und kommt erst
-mit **Freigeben** hinein, vorgeschlagen mit der Rolle der Gruppe. Löst ein Verwalter die Gruppe
-wieder, verschwinden die Anfragen, die nur sie gestellt hat. Verlässt jemand die Gruppe, bleibt er im Tresor; der Dialog markiert ihn
-mit **in keiner verknüpften Gruppe**, damit ein Verwalter ihn entfernen kann. Gruppennamen und wer
-in welcher Gruppe ist, sieht der Server.
+Unter **Team → Gruppen** legen Inhaber und Admins Gruppen an, etwa „Büro-Team“, verknüpfen sie mit
+Tresoren (oder im Dialog **Mitglieder** eines Tresors) und nehmen Personen der Firma auf oder
+heraus. Fügst du eine bestätigte Person zu einer Gruppe hinzu – oder verknüpfst eine Gruppe mit
+einem Tresor –, zeigt Kennwort vorab genau an, welche Tresore oder Personen betroffen sind, und dein
+Gerät gibt sie für alle Tresore, die du selbst verwaltest, direkt in einem Schritt frei.
+
+Für Tresore, die jemand anderes verwaltet, für noch nicht bestätigte Personen oder bei einem
+Gruppenwechsel über den [Anmeldedienst](anmeldedienst.md) erzeugt der Server weiterhin nur eine
+**Anfrage** bei den Verwaltern – er kann niemandem selbst Zugriff geben. Nimmst du jemanden aus
+einer Gruppe heraus, bietet Kennwort direkt an, die Person auch aus den verknüpften Tresoren zu
+entfernen, die du verwaltest (samt Schlüsselwechsel), sofern sie nicht noch über eine andere Gruppe
+dazu gehört. Bleibt jemand dennoch in einem Tresor, markiert der Dialog ihn mit **in keiner
+verknüpften Gruppe**. Lösen einer Verknüpfung nimmt niemandem den Zugriff. Gruppennamen und wer in
+welcher Gruppe ist, sieht der Server.
 
 ## Was dein Gerät prüft
 

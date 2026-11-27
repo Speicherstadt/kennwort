@@ -28,10 +28,12 @@ Hier stehen alle Personen der Firma mit ihrer Rolle (Inhaber, Admin, Mitarbeiter
 
 ## Gruppen
 
-Gruppen fassen Personen zusammen, etwa „Büro-Team“ oder „Monteure“. Inhaber und Admins legen sie
-an und nehmen Personen auf oder heraus. Eine Gruppe gibt selbst keinen Zugriff: Erst wenn ein
-Verwalter sie mit einem Tresor verknüpft, werden ihre Mitglieder dort vorgeschlagen. Wie das genau
-abläuft, steht unter [Gruppen](tresore.md#gruppen).
+Gruppen geben mehreren Personen gleichzeitig Zugriff auf ausgewählte Tresore, etwa „Büro-Team“ oder
+„Monteure“. Inhaber und Admins legen sie an und nehmen Personen auf oder heraus; Verwalter
+verknüpfen ihre Tresore direkt auf der Gruppe oder im Dialog des Tresors. Bestätigte Mitglieder gibt
+dein Gerät für deine Tresore direkt frei – bei fremden Tresoren oder über den Anmeldedienst landet
+weiter eine Anfrage bei den Verwaltern. Wie das genau abläuft, steht unter
+[Gruppen](tresore.md#gruppen).
 
 ## Tresore
 

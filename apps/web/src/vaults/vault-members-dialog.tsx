@@ -10,7 +10,8 @@ import type { Certificate, MemberView, VaultRole } from "@kennwort/core";
 import { idKey } from "@kennwort/core";
 import { Button, Dialog, Input, m, selectClass } from "@kennwort/ui";
 import { createSignal, For, Show } from "solid-js";
-import { linkGroup, outsideLinkedGroups, unlinkGroup } from "../groups/groups.ts";
+import { linkGroupWithAccess } from "../groups/group-access.ts";
+import { outsideLinkedGroups, unlinkGroup } from "../groups/groups.ts";
 import type { Session } from "../session/session.ts";
 import { dateText, endOfDay, today } from "./day.ts";
 import { createDialogState, type DialogApi, type Outcome } from "./dialog-state.ts";
@@ -183,10 +184,14 @@ export const VaultMembersDialog = (props: {
       <VaultGroups
         groups={state.groups()}
         links={state.links()}
+        vault={props.vault}
+        people={props.people}
         manager={mayManage(props.vault)}
         busy={busy()}
-        onLink={(groupId, role) =>
-          void state.runLinks(() => linkGroup(api, session, props.vault, groupId, role))
+        onLink={(groupId, role, directGrant) =>
+          void state.runLinks(() =>
+            linkGroupWithAccess(api, session, props.store, props.vault, groupId, role, directGrant),
+          )
         }
         onUnlink={(groupId) =>
           void state.runLinks(() => unlinkGroup(api, session, props.vault, groupId))
