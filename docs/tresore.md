@@ -95,10 +95,11 @@ wenn deine Schlüssel schon bestätigt sind.
 ## Gruppen
 
 Unter **Team → Gruppen** legen Inhaber und Admins Gruppen an, etwa „Büro-Team“, verknüpfen sie mit
-Tresoren (oder im Dialog **Mitglieder** eines Tresors) und nehmen Personen der Firma auf oder
-heraus. Fügst du eine bestätigte Person zu einer Gruppe hinzu – oder verknüpfst eine Gruppe mit
-einem Tresor –, zeigt Kennwort vorab genau an, welche Tresore oder Personen betroffen sind, und dein
-Gerät gibt sie für alle Tresore, die du selbst verwaltest, direkt in einem Schritt frei.
+Tresoren und nehmen Personen der Firma auf oder heraus. Fügst du eine bestätigte Person zu einer
+Gruppe hinzu – oder verknüpfst einen Tresor mit einer Gruppe –, zeigt Kennwort vorab genau an,
+welche Tresore oder Personen betroffen sind, und dein Gerät gibt sie für alle Tresore, die du selbst
+verwaltest, direkt in einem Schritt frei. Im Dialog **Mitglieder** eines Tresors siehst du, welche
+Gruppen verknüpft sind und bei jedem Mitglied, über welche Gruppe es dazugehört.
 
 Für Tresore, die jemand anderes verwaltet, für noch nicht bestätigte Personen oder bei einem
 Gruppenwechsel über den [Anmeldedienst](anmeldedienst.md) erzeugt der Server weiterhin nur eine

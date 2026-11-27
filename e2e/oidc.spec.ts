@@ -1,5 +1,5 @@
 import { type Browser, expect, type Page } from "@playwright/test";
-import { newDevice, setUpCompany, test, unlock } from "./account.ts";
+import { newDevice, setUpCompany, test } from "./account.ts";
 import { heading, openTeam, openVaults } from "./company.ts";
 import { unique } from "./entries.ts";
 import { OIDC_NAME } from "./oidc.ts";
@@ -90,19 +90,19 @@ test.describe("OpenID Connect", { tag: "@phone" }, () => {
     // Two people, a group, a vault and two sign-ins through the provider
     test.slow();
     await setUpCompany(page);
-    await page.goto("/groups");
-    await unlock(page);
-    await page.getByLabel("Name der Gruppe").fill("Technik");
-    await page.getByRole("button", { name: "Gruppe anlegen" }).click();
     await openVaults(page);
     await page.getByLabel("Name", { exact: true }).fill("Büro");
     await page.getByRole("button", { name: "Tresor anlegen" }).click();
-    await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-    const members = page.getByRole("dialog", { name: "Mitglieder von Büro" });
-    await members.getByLabel("Gruppe", { exact: true }).selectOption({ label: "Technik" });
-    await members.getByRole("button", { name: "Verknüpfen" }).click();
-    await expect(members.getByRole("list", { name: "Gruppen" })).toContainText("Technik");
-    await members.press("Escape");
+    await expect(page.getByRole("button", { name: "Mitglieder von Büro" })).toBeVisible();
+    await page
+      .getByRole("navigation", { name: "Team" })
+      .getByRole("link", { name: "Gruppen" })
+      .click();
+    await page.getByLabel("Name der Gruppe").fill("Technik");
+    await page.getByRole("button", { name: "Gruppe anlegen" }).click();
+    await page.getByLabel("Tresor für Technik").selectOption({ label: "Büro" });
+    await page.getByRole("button", { name: "Verknüpfen" }).click();
+    await expect(page.getByRole("list", { name: "Tresore von Technik" })).toContainText("Büro");
 
     const link = await openEnrolment(page);
     const sub = unique("sandra");
@@ -119,6 +119,7 @@ test.describe("OpenID Connect", { tag: "@phone" }, () => {
 
     await openVaults(page);
     await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
+    const members = page.getByRole("dialog", { name: "Mitglieder von Büro" });
     const requests = members.getByRole("list", { name: "Anfragen" });
     await expect(requests).toContainText("Sandra Weber");
     await members.press("Escape");

@@ -10,6 +10,7 @@ import {
   createGroup,
   type Group,
   joinGroup,
+  linkedGroupNames,
   linkGroup,
   loadGroups,
   loadLinks,
@@ -97,8 +98,10 @@ describe("groups", () => {
     expect(await linkGroup(w.g.api, w.c.session, vault, "g0", "read")).toEqual({ ok: true });
     const links = (await loadLinks(w.g.api, w.c.session, vault)) ?? [];
     expect(outsideLinkedGroups(vault, links, w.g.groups)).toEqual(new Set([idKey(anna.accountId)]));
+    expect(linkedGroupNames(anna.accountId, links, w.g.groups)).toEqual([]);
     await joinGroup(w.g.api, w.c.session, "g0", anna.accountId);
     expect(outsideLinkedGroups(vault, links, w.g.groups)).toEqual(new Set());
+    expect(linkedGroupNames(anna.accountId, links, w.g.groups)).toEqual(["Büro-Team"]);
   });
 
   it("sends nothing when the account is locked, and says when the server fails", async () => {

@@ -49,13 +49,5 @@ export const createDialogState = (props: {
     await reloadAround();
     setBusy(false);
   };
-  /** A change to the links, which a link answers with new requests */
-  const runLinks = async (change: () => Promise<{ ok: boolean }>) => {
-    setBusy(true);
-    const done = await change();
-    setError(done.ok ? undefined : "unreachable");
-    await reloadAround();
-    setBusy(false);
-  };
-  return { busy, error, requests, groups, links, run, runLinks };
+  return { busy, error, requests, groups, links, run };
 };

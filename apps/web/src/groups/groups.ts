@@ -89,3 +89,16 @@ export const outsideLinkedGroups = (vault: Vault, links: Link[], groups: Group[]
       .map(([key]) => key),
   );
 };
+
+/** Names of the vault's linked groups that `accountId` belongs to */
+export const linkedGroupNames = (
+  accountId: Uint8Array,
+  links: readonly Link[],
+  groups: readonly Group[],
+) => {
+  const key = idKey(accountId);
+  const linked = new Set(links.map((l) => l.groupId));
+  return groups
+    .filter((g) => linked.has(g.id) && g.members.some((m) => idKey(m) === key))
+    .map((g) => g.name);
+};
