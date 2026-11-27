@@ -18,11 +18,11 @@ bun run build
 
 `bun run check` führt diese vier nacheinander aus.
 
-Playwright, wenn sich etwas ändert, das jemand bedient (Desktop und `@phone`, die Extension im echten Browser).
-Die volle Suite läuft in der CI in drei Teilen; vor dem Push die berührten Specs:
+Dazu vor jedem Push Playwright (Desktop und `@phone`, die Extension im echten Browser); beim Arbeiten einzelne
+Specs mit `bun run e2e e2e/<spec>.ts` oder `-g "<test>"`:
 
 ```sh
-bun run e2e e2e/<spec>.ts     # oder -g "<test>"; in der Sandbox CHROMIUM_PATH=/opt/pw-browsers/chromium
+bun run e2e                   # in der Sandbox CHROMIUM_PATH=/opt/pw-browsers/chromium
 bun run e2e:engines           # Extension in Firefox und WebKit, wenn sich apps/extension ändert
 ```
 
