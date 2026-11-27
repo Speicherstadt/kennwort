@@ -10,8 +10,7 @@ import type { Certificate, MemberView, VaultRole } from "@kennwort/core";
 import { idKey } from "@kennwort/core";
 import { Button, Dialog, Input, m, selectClass } from "@kennwort/ui";
 import { createSignal, For, Show } from "solid-js";
-import { linkGroupWithAccess } from "../groups/group-access.ts";
-import { outsideLinkedGroups, unlinkGroup } from "../groups/groups.ts";
+import { linkedGroupNames, outsideLinkedGroups } from "../groups/groups.ts";
 import type { Session } from "../session/session.ts";
 import { dateText, endOfDay, today } from "./day.ts";
 import { createDialogState, type DialogApi, type Outcome } from "./dialog-state.ts";
@@ -47,6 +46,8 @@ const nameOf = (person: { name: string | null }) => person.name ?? m.vault_membe
 
 const MemberRow = (props: {
   member: VaultMember;
+  /** Names of linked groups this member belongs to */
+  viaGroups: string[];
   /** In none of the vault's linked groups (any more): a manager may want to remove them */
   outside: boolean;
   editable: boolean;
@@ -58,7 +59,12 @@ const MemberRow = (props: {
     <span class="flex-1 truncate">
       {nameOf(props.member)}
       <Show when={props.member.me}> {m.vault_members_you()}</Show>
-      <Show when={props.outside}>
+      <Show when={props.viaGroups.length > 0}>
+        <span class="ml-2 text-xs text-muted-foreground">
+          {m.vault_groups_via({ groups: props.viaGroups.join(", ") })}
+        </span>
+      </Show>
+      <Show when={props.viaGroups.length === 0 && props.outside}>
         <span class="ml-2 text-xs text-muted-foreground">{m.vault_groups_outside()}</span>
       </Show>
       <Show when={props.member.validUntil !== 0}>
@@ -172,6 +178,7 @@ export const VaultMembersDialog = (props: {
           {(member) => (
             <MemberRow
               member={member}
+              viaGroups={linkedGroupNames(member.accountId, state.links(), state.groups())}
               outside={outside().has(idKey(member.accountId))}
               editable={mayManage(props.vault)}
               busy={busy()}
@@ -181,22 +188,7 @@ export const VaultMembersDialog = (props: {
           )}
         </For>
       </ul>
-      <VaultGroups
-        groups={state.groups()}
-        links={state.links()}
-        vault={props.vault}
-        people={props.people}
-        manager={mayManage(props.vault)}
-        busy={busy()}
-        onLink={(groupId, role, directGrant) =>
-          void state.runLinks(() =>
-            linkGroupWithAccess(api, session, props.store, props.vault, groupId, role, directGrant),
-          )
-        }
-        onUnlink={(groupId) =>
-          void state.runLinks(() => unlinkGroup(api, session, props.vault, groupId))
-        }
-      />
+      <VaultGroups groups={state.groups()} links={state.links()} />
       <VaultRequests
         requests={requests()}
         busy={busy()}

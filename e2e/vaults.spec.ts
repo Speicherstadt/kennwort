@@ -164,31 +164,40 @@ test.describe("access requests", { tag: "@phone" }, () => {
 });
 
 test.describe("groups", { tag: "@phone" }, () => {
-  test("linking a group to a vault previews and directly grants verified members", async ({
+  test("linking a vault to a group previews, directly grants verified members, and shows group provenance", async ({
     page,
     browser,
   }) => {
     await setUpCompany(page);
     const anna = await annaJoins(page, browser);
-    await page.goto("/groups");
-    await unlock(page);
+    await openVaults(page);
+    await page.getByLabel("Name", { exact: true }).fill("Büro");
+    await page.getByRole("button", { name: "Tresor anlegen" }).click();
+    await expect(page.getByRole("button", { name: "Mitglieder von Büro" })).toBeVisible();
+
+    await page
+      .getByRole("navigation", { name: "Team" })
+      .getByRole("link", { name: "Gruppen" })
+      .click();
     await expect(heading(page, "Gruppen")).toBeVisible();
     await page.getByLabel("Name der Gruppe").fill("Büro-Team");
     await page.getByRole("button", { name: "Gruppe anlegen" }).click();
     await page.getByLabel("Person für Büro-Team").selectOption({ label: "Anna" });
     await page.getByRole("button", { name: "Hinzufügen" }).click();
-    await expect(page.getByRole("list", { name: "Büro-Team" })).toContainText("Anna");
+    await expect(page.getByRole("list", { name: "Büro-Team", exact: true })).toContainText("Anna");
+    await page.getByLabel("Tresor für Büro-Team").selectOption({ label: "Büro" });
+    await expect(page.getByRole("main")).toContainText("Gibt direkt Zugriff für: Anna");
+    await page.getByRole("button", { name: "Verknüpfen" }).click();
+    await expect(page.getByRole("list", { name: "Tresore von Büro-Team" })).toContainText("Büro");
     await axe(page);
 
     await openVaults(page);
-    await page.getByLabel("Name", { exact: true }).fill("Büro");
-    await page.getByRole("button", { name: "Tresor anlegen" }).click();
     await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
     const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });
-    await dialog.getByLabel("Gruppe", { exact: true }).selectOption({ label: "Büro-Team" });
-    await expect(dialog).toContainText("Gibt direkt Zugriff für: Anna");
-    await dialog.getByRole("button", { name: "Verknüpfen" }).click();
     await expect(dialog.getByRole("list", { name: "Gruppen" })).toContainText("Büro-Team");
+    await expect(dialog.getByRole("listitem").filter({ hasText: "Anna" })).toContainText(
+      "über Büro-Team",
+    );
     await expect(dialog.getByLabel("Rolle von Anna")).toHaveValue("read");
     await axe(page);
 

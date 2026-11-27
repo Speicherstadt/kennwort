@@ -30,18 +30,18 @@ Hier stehen alle Personen der Firma mit ihrer Rolle (Inhaber, Admin, Mitarbeiter
 
 Gruppen geben mehreren Personen gleichzeitig Zugriff auf ausgewählte Tresore, etwa „Büro-Team“ oder
 „Monteure“. Inhaber und Admins legen sie an und nehmen Personen auf oder heraus; Verwalter
-verknüpfen ihre Tresore direkt auf der Gruppe oder im Dialog des Tresors. Bestätigte Mitglieder gibt
-dein Gerät für deine Tresore direkt frei – bei fremden Tresoren oder über den Anmeldedienst landet
-weiter eine Anfrage bei den Verwaltern. Wie das genau abläuft, steht unter
-[Gruppen](tresore.md#gruppen).
+verknüpfen ihre Tresore direkt auf der Gruppe. Bestätigte Mitglieder gibt dein Gerät für deine
+Tresore direkt frei – bei fremden Tresoren oder über den Anmeldedienst landet weiter eine Anfrage
+bei den Verwaltern. Wie das genau abläuft, steht unter [Gruppen](tresore.md#gruppen).
 
 ## Tresore
 
 Der Reiter zeigt die geteilten Tresore der Firma mit der Zahl ihrer Mitglieder. In der Seitenleiste
 stehen sie als „Name · Anzahl“. Öffnest du einen geteilten Tresor, führt der Knopf **Zugriff** zu
-seinen Mitgliedern: Dort gibst du Personen oder Gruppen eine Rolle, auch auf Zeit, und nimmst sie
-wieder heraus. Danach wechselt Kennwort den Tresor-Schlüssel und markiert, was die Person lesen
-konnte, als „Zum Ändern“. Mehr unter [Tresore](tresore.md).
+seinen Mitgliedern: Dort siehst du, wer Zugriff hat (auch über welche Gruppe), gibst einzelnen
+Personen eine Rolle – auch auf Zeit – und nimmst sie wieder heraus. Danach wechselt Kennwort den
+Tresor-Schlüssel und markiert, was die Person lesen konnte, als „Zum Ändern“. Mehr unter
+[Tresore](tresore.md).
 
 ## In der Demo
 
