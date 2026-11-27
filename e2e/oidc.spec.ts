@@ -122,10 +122,10 @@ test.describe("OpenID Connect", { tag: "@phone" }, () => {
 
     await openVaults(page);
     await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-    const members = page.getByRole("dialog", { name: "Mitglieder von Büro" });
+    const members = page.getByRole("region", { name: "Mitglieder von Büro" });
     const requests = members.getByRole("list", { name: "Anfragen" });
     await expect(requests).toContainText("Sandra Weber");
-    await members.press("Escape");
+    await members.getByRole("button", { name: "Schließen" }).filter({ visible: true }).click();
     await openSettings(page);
     await expect(page.getByTestId("oidc-groups")).toContainText("Technik1 über den Anmeldedienst");
   });

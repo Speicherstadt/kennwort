@@ -6,7 +6,7 @@
 import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
 import type { Vault, VaultDeps } from "@kennwort/client/vaults/vaults.ts";
 import type { MemberView } from "@kennwort/core";
-import { createSignal, onSettled } from "solid-js";
+import { createEffect, createSignal } from "solid-js";
 import { type Group, type Link, loadGroups, loadLinks } from "../groups/groups.ts";
 import type { Session } from "../session/session.ts";
 import type { ExitError } from "./exit.ts";
@@ -40,8 +40,14 @@ export const createDialogState = (props: {
     setGroups(g ?? []);
     setLinks(l ?? []);
   };
-  // Once the dialog is on screen, and after every change; called from the dialog's body
-  onSettled(() => void reloadAround());
+  // Reload whenever the panel opens or switches to another vault
+  createEffect(
+    () => props.vault.idText,
+    () => {
+      setError(undefined);
+      void reloadAround();
+    },
+  );
   /** A change to the log, then the vault and what is around it anew */
   const run = async (change: () => Promise<Outcome>) => {
     setBusy(true);

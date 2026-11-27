@@ -42,7 +42,7 @@ const annaInBuero = async (page: Page, anna: Page) => {
   await page.getByLabel("Name", { exact: true }).fill("Büro");
   await page.getByRole("button", { name: "Tresor anlegen" }).click();
   await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-  const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });
+  const dialog = page.getByRole("region", { name: "Mitglieder von Büro" });
   await dialog.getByLabel("Person").selectOption({ label: "Anna" });
   await dialog.getByLabel("Rolle", { exact: true }).selectOption("edit");
   await dialog.getByRole("button", { name: "Aufnehmen" }).click();
@@ -91,7 +91,7 @@ test.describe("leaving a vault", { tag: "@phone" }, () => {
     // Removing writes the remove, the rotation with the new key, and the login anew (P-11)
     await openVaults(page);
     await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-    const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });
+    const dialog = page.getByRole("region", { name: "Mitglieder von Büro" });
     const rotation = page.waitForRequest(
       (r) =>
         r.method() === "POST" &&
@@ -159,7 +159,7 @@ test.describe("leaving the company", { tag: "@phone" }, () => {
     // Jonas's client takes her out of Büro and rotates by itself
     await openVaults(page);
     await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-    const vaultDialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });
+    const vaultDialog = page.getByRole("region", { name: "Mitglieder von Büro" });
     await expect(
       vaultDialog.getByRole("list", { name: "Mitglieder des Tresors" }).getByRole("listitem"),
     ).toHaveCount(1);

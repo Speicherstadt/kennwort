@@ -51,7 +51,7 @@ test.describe("members of a vault", { tag: "@phone" }, () => {
     await page.getByLabel("Name", { exact: true }).fill("Büro");
     await page.getByRole("button", { name: "Tresor anlegen" }).click();
     await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-    const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });
+    const dialog = page.getByRole("region", { name: "Mitglieder von Büro" });
     await dialog.getByLabel("Person").selectOption({ label: "Anna" });
     await dialog.getByLabel("Rolle", { exact: true }).selectOption("read");
     await dialog.getByRole("button", { name: "Aufnehmen" }).click();
@@ -101,7 +101,7 @@ test.describe("access requests", { tag: "@phone" }, () => {
 
     await openVaults(page);
     await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-    const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });
+    const dialog = page.getByRole("region", { name: "Mitglieder von Büro" });
     const requests = dialog.getByRole("list", { name: "Anfragen" });
     await expect(requests.getByRole("listitem")).toHaveCount(1);
     await expect(requests).toContainText("Anna");
@@ -123,7 +123,7 @@ test.describe("access requests", { tag: "@phone" }, () => {
     await page.getByLabel("Name", { exact: true }).fill("Büro");
     await page.getByRole("button", { name: "Tresor anlegen" }).click();
     await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-    const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });
+    const dialog = page.getByRole("region", { name: "Mitglieder von Büro" });
     await dialog.getByLabel("Person").selectOption({ label: "Anna" });
     await dialog.getByRole("button", { name: /Zugriff zeitlich begrenzen/ }).click();
     await dialog.getByLabel("Zugriff bis (optional)").fill("2099-12-31");
@@ -141,11 +141,11 @@ test.describe("access requests", { tag: "@phone" }, () => {
     await page.getByLabel("Name", { exact: true }).fill("Büro");
     await page.getByRole("button", { name: "Tresor anlegen" }).click();
     await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-    const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });
+    const dialog = page.getByRole("region", { name: "Mitglieder von Büro" });
     await dialog.getByLabel("Person").selectOption({ label: "Anna" });
     await dialog.getByRole("button", { name: "Aufnehmen" }).click();
     await expect(dialog.getByLabel("Rolle von Anna")).toHaveValue("read");
-    await page.keyboard.press("Escape");
+    await dialog.getByRole("button", { name: "Schließen" }).filter({ visible: true }).click();
     await page.getByRole("main").getByRole("link", { name: /Büro/ }).click();
     const link = page.url();
     const vaultId = new URL(link).pathname.split("/").pop();
@@ -197,7 +197,7 @@ test.describe("groups", { tag: "@phone" }, () => {
 
     await openVaults(page);
     await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-    const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });
+    const dialog = page.getByRole("region", { name: "Mitglieder von Büro" });
     await expect(dialog).toContainText("Verknüpfte Gruppen: Büro-Team");
     await expect(dialog.getByRole("listitem").filter({ hasText: "Anna" })).toContainText(
       "über Büro-Team",

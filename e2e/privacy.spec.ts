@@ -52,7 +52,7 @@ const annaInBuero = async (page: Page) => {
   await page.getByLabel("Name", { exact: true }).fill("Büro");
   await page.getByRole("button", { name: "Tresor anlegen" }).click();
   await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-  const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });
+  const dialog = page.getByRole("region", { name: "Mitglieder von Büro" });
   await dialog.getByLabel("Person").selectOption({ label: "Anna" });
   await dialog.getByLabel("Rolle", { exact: true }).selectOption("edit");
   await dialog.getByRole("button", { name: "Aufnehmen" }).click();
@@ -114,7 +114,7 @@ test.describe("privacy", { tag: "@phone" }, () => {
     });
     await openVaults(page);
     await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-    const members = page.getByRole("dialog", { name: "Mitglieder von Büro" });
+    const members = page.getByRole("region", { name: "Mitglieder von Büro" });
     await expect(
       members.getByRole("list", { name: "Mitglieder des Tresors" }).getByRole("listitem"),
     ).toHaveCount(1);
