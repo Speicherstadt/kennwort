@@ -81,7 +81,7 @@ export type IdToken = {
   subject: string;
   /** What the provider calls the person, a label only (like an invitation's), never trusted */
   name: string | undefined;
-  /** Every claim, for the configured groups claim */
+  /** Every claim from the verified ID token payload */
   claims: Record<string, unknown>;
 };
 

@@ -1,5 +1,5 @@
 // Serves the fake identity provider (fake-idp.ts) for the e2e tests (K-604): discovery, keys, a
-// login form that names the person and their groups, and the token endpoint. Port, issuer and
+// login form that names the person, and the token endpoint. Port, issuer and
 // client come from playwright.config.ts (e2e/oidc.ts); never part of a release
 import { createFakeIdp } from "./fake-idp.ts";
 

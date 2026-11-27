@@ -1,12 +1,12 @@
 /**
  * OpenID Connect in a company (K-604, P-25), for signed-in accounts: whether this account is linked
  * to its person of the provider and how to link it; for owners and admins whether people of the
- * provider may enrol, the enrolment address, and which groups follow the provider's groups claim.
+ * provider may enrol and the enrolment address.
  */
-import { and, count, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
-import { groupMembers, groups, oidcCompanies } from "../db/schema.ts";
+import { oidcCompanies } from "../db/schema.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
 import { type OidcDeps, startFlow } from "./routes.ts";
 import { enrolmentOpen, identityOf } from "./store.ts";
@@ -17,16 +17,6 @@ const isAdmin = (c: Context<TenantEnv>) => {
   const me = c.var.scope.account(c.var.session.accountId);
   return me?.role === "owner" || me?.role === "admin";
 };
-
-/** Each group of the company: its name is the provider's group it follows, and who came through it */
-const mapping = (deps: OidcDeps, companyId: string) =>
-  deps.db
-    .select({ id: groups.id, name: groups.name, viaIdp: count(groupMembers.accountId) })
-    .from(groups)
-    .leftJoin(groupMembers, and(eq(groupMembers.groupId, groups.id), eq(groupMembers.viaIdp, true)))
-    .where(eq(groups.companyId, companyId))
-    .groupBy(groups.id)
-    .all();
 
 export const oidcApiRoutes = (deps: OidcDeps) =>
   new Hono<TenantEnv>()
@@ -42,8 +32,6 @@ export const oidcApiRoutes = (deps: OidcDeps) =>
         ...own,
         enrolment: enrolmentOpen(deps.db, companyId),
         enrolmentUrl: `${origin}/auth/oidc/start?company=${encodeURIComponent(companyId)}`,
-        groupsClaim: deps.provider.settings.groupsClaim,
-        groups: mapping(deps, companyId),
       });
     })
     .put("/oidc/enrolment", async (c) => {

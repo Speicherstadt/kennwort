@@ -87,58 +87,8 @@ export const vaultRequests = sqliteTable(
       .references(() => vaults.id),
     accountId: text("account_id").notNull(),
     requestedAt: integer("requested_at").notNull(),
-    /** The linked group that filed it (K-305 part 5); null when the person asked themselves */
-    viaGroup: text("via_group"),
   },
   (table) => [primaryKey({ columns: [table.vaultId, table.accountId] })],
-);
-
-/**
- * Groups of a company (K-305 part 5): a name and its members, kept by owners and admins. A group
- * gives no access by itself; joining one only asks the managers of its vaults (vault_requests).
- */
-export const groups = sqliteTable(
-  "groups",
-  {
-    id: text("id").primaryKey(),
-    companyId: text("company_id")
-      .notNull()
-      .references(() => companies.id),
-    name: text("name").notNull(),
-    createdAt: integer("created_at").notNull(),
-  },
-  (table) => [index("groups_company").on(table.companyId)],
-);
-
-export const groupMembers = sqliteTable(
-  "group_members",
-  {
-    groupId: text("group_id")
-      .notNull()
-      .references(() => groups.id),
-    accountId: text("account_id").notNull(),
-    /**
-     * Joined because the identity provider's groups claim named the group (K-604): such a
-     * membership ends when the claim no longer names it; one an admin made stays
-     */
-    viaIdp: integer("via_idp", { mode: "boolean" }).notNull().default(false),
-  },
-  (table) => [primaryKey({ columns: [table.groupId, table.accountId] })],
-);
-
-/** A group a vault's manager linked to the vault, with the role its members are asked in with */
-export const vaultGroups = sqliteTable(
-  "vault_groups",
-  {
-    vaultId: text("vault_id")
-      .notNull()
-      .references(() => vaults.id),
-    groupId: text("group_id")
-      .notNull()
-      .references(() => groups.id),
-    role: text("role", { enum: ["read", "edit", "manage"] }).notNull(),
-  },
-  (table) => [primaryKey({ columns: [table.vaultId, table.groupId] })],
 );
 
 /**

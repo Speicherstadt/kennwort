@@ -49,22 +49,7 @@ export const VaultRequestsWire = z.object({
     z.object({
       accountId: bytes(16),
       requestedAt: z.number().int().nonnegative(),
-      /** The highest role a linked group asks this person in with; none without such a group */
-      role: z.enum(["read", "edit", "manage"]).nullable().default(null),
     }),
-  ),
-});
-
-/** GET /api/groups: the company's groups with their members (K-305 part 5) */
-export const GroupsWire = z.object({
-  groups: z.array(
-    z.object({ id: z.string().min(1), name: z.string().min(1), members: z.array(bytes(16)) }),
-  ),
-});
-/** GET /api/vaults/:id/groups: the groups linked to a vault, with the role they ask for */
-export const VaultGroupsWire = z.object({
-  groups: z.array(
-    z.object({ groupId: z.string().min(1), role: z.enum(["read", "edit", "manage"]) }),
   ),
 });
 

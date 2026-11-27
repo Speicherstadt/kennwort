@@ -20,20 +20,12 @@ export const OidcTicketWire = z.discriminatedUnion("kind", [
 ]);
 export type OidcTicket = z.infer<typeof OidcTicketWire>;
 
-const MappedGroup = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  viaIdp: z.number().int().nonnegative(),
-});
-
-/** This account's link; for owners and admins the enrolment, its address and the group mapping */
+/** This account's link; for owners and admins the enrolment and its address */
 export const OidcStatusWire = z.object({
   name: z.string().min(1),
   linked: z.boolean(),
   enrolment: z.boolean().optional(),
   enrolmentUrl: z.url({ protocol: /^https?$/ }).optional(),
-  groupsClaim: z.string().min(1).optional(),
-  groups: z.array(MappedGroup).optional(),
 });
 export type OidcStatus = z.infer<typeof OidcStatusWire>;
 

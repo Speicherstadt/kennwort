@@ -169,5 +169,11 @@ export const migrations: EmbeddedMigration[] = [
     "when": 1795425447329,
     "breakpoints": true,
     "sql": "CREATE TABLE `unlock_passkeys` (\n\t`passkey_id` text PRIMARY KEY NOT NULL,\n\t`account_id` text NOT NULL,\n\t`sealed` blob NOT NULL,\n\t`created_at` integer NOT NULL,\n\tFOREIGN KEY (`passkey_id`) REFERENCES `auth_passkey`(`id`) ON UPDATE no action ON DELETE cascade\n);\n--> statement-breakpoint\nCREATE INDEX `unlock_passkeys_account` ON `unlock_passkeys` (`account_id`);"
+  },
+  {
+    "tag": "0028_closed_mathemanic",
+    "when": 1795808904895,
+    "breakpoints": true,
+    "sql": "DROP TABLE `group_members`;--> statement-breakpoint\nDROP TABLE `vault_groups`;--> statement-breakpoint\nDROP TABLE `groups`;--> statement-breakpoint\nALTER TABLE `oidc_tickets` DROP COLUMN `groups`;--> statement-breakpoint\nALTER TABLE `vault_requests` DROP COLUMN `via_group`;--> statement-breakpoint\nDELETE FROM `notifications` WHERE `kind` = 'group-left';--> statement-breakpoint\nUPDATE `notification_prefs` SET `prefs` = json_object('push', json(COALESCE((SELECT json_group_array(value) FROM json_each(json_extract(`prefs`, '$.push')) WHERE value != 'group-left'), '[]'))) WHERE `prefs` LIKE '%group-left%';"
   }
 ];

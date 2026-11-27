@@ -29,7 +29,6 @@ import { oidcApiRoutes } from "./oidc/api-routes.ts";
 import type { Provider } from "./oidc/provider.ts";
 import { oidcPublicRoutes } from "./oidc/routes.ts";
 import { type PwnedDeps, pwnedRoutes } from "./pwned/routes.ts";
-import { groupRoutes } from "./sync/group-routes.ts";
 import { createHub, type Hub } from "./sync/hub.ts";
 import { logRoutes } from "./sync/log-routes.ts";
 import { requestRoutes } from "./sync/request-routes.ts";
@@ -162,7 +161,6 @@ export const createApp = ({
   api.route("/", deviceRoutes({ db, now }));
   api.route("/", logRoutes({ db, now, notify }));
   api.route("/", requestRoutes({ db, now, notify }));
-  api.route("/", groupRoutes({ db, now }));
   api.route("/", shareRoutes({ db, now, notify }));
   api.route("/", pwnedRoutes(pwned));
   api.route("/", syncRoutes({ db, hub, now, ...(keepAliveMs ? { keepAliveMs } : {}) }));

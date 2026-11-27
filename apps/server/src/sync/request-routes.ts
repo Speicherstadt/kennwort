@@ -11,7 +11,6 @@ import type { Db } from "../db/database.ts";
 import { vaultLog, vaultRequests, vaults } from "../db/schema.ts";
 import { type Notify, noNotify } from "../notifications/notify.ts";
 import type { TenantEnv } from "../tenancy/routes.ts";
-import { linkedRoles } from "./group-links.ts";
 import { currentMembers, isCurrent, membersOf } from "./vault-chain.ts";
 
 /** The vault's current managers by its stored log: they hear of a request (K-602) */
@@ -59,20 +58,16 @@ export const requestRoutes = (deps: Deps) => {
       if (!a.inCompany(c, vaultId)) return c.json({ error: "not-found" }, 404);
       if (a.memberOf(c, vaultId)) return c.json({ error: "member" }, 409);
       const accountId = c.var.session.accountId;
-      const before = a.db.select().from(vaultRequests).where(requestRow(vaultId, accountId)).get();
-      a.db
+      const inserted = a.db
         .insert(vaultRequests)
         .values({ vaultId, accountId, requestedAt: deps.now() })
-        // Asking oneself outlasts what a group filed: unlinking the group no longer drops it
-        .onConflictDoUpdate({
-          target: [vaultRequests.vaultId, vaultRequests.accountId],
-          set: { viaGroup: null },
-        })
-        .run();
+        .onConflictDoNothing()
+        .returning()
+        .get();
       // The managers hear of it (K-602): which vault and who, by ID; the client knows the names.
-      // Only of a request new as the person's own: asking again would flood their list and prune
-      // older rows, such as an emergency request they must object to in time (P-14)
-      if (!before || before.viaGroup !== null)
+      // Only of a new request: asking again would flood their list and prune older rows, such as
+      // an emergency request they must object to in time (P-14)
+      if (inserted)
         (deps.notify ?? noNotify)({
           companyId: c.var.session.companyId,
           recipients: vaultManagers(a.db, vaultId, deps.now()),
@@ -93,12 +88,10 @@ export const requestRoutes = (deps: Deps) => {
         .where(eq(vaultRequests.vaultId, vaultId))
         .orderBy(asc(vaultRequests.requestedAt))
         .all();
-      const roles = linkedRoles(a.db, vaultId);
       return c.json({
         requests: rows.map((row) => ({
           accountId: row.accountId,
           requestedAt: row.requestedAt,
-          role: roles.get(row.accountId) ?? null,
         })),
       });
     })

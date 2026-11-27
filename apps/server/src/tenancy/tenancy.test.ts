@@ -17,8 +17,6 @@ import {
   emergencyGrants,
   emergencyRevocations,
   entryShares,
-  groupMembers,
-  groups,
   invitations,
   loginChallenges,
   loginKeys,
@@ -186,13 +184,6 @@ const jonasSends = (method: string, path: string, body: unknown) =>
   });
 const muellerVault = encodeBytes(new Uint8Array(16).fill(0xa1));
 app.db.insert(vaults).values({ id: muellerVault, companyId: "mueller", createdAt: 3 }).run();
-// Müller Elektro's group, which no one at Weber Haustechnik may see or change
-const muellerGroup = "mueller-group";
-app.db
-  .insert(groups)
-  .values({ id: muellerGroup, companyId: "mueller", name: "Werkstatt", createdAt: 3 })
-  .run();
-app.db.insert(groupMembers).values({ groupId: muellerGroup, accountId: "max" }).run();
 // a key row naming Jonas in Müller Elektro's vault must not let him in
 app.db
   .insert(vaultKeys)
@@ -705,43 +696,6 @@ const cases: Record<string, () => Promise<void>> = {
   "PUT /api/vaults/:vaultId/name": async () => {
     const body = { epoch: 0, name: encodeBytes(new Uint8Array(42)) };
     expect((await jonasSends("PUT", `/api/vaults/${muellerVault}/name`, body)).status).toBe(404);
-  },
-  "GET /api/groups": async () => {
-    const answer = (await (await asJonas("/api/groups")).json()) as { groups: { id: string }[] };
-    expect(answer.groups.map((g) => g.id)).not.toContain(muellerGroup);
-  },
-  "POST /api/groups": async () => {
-    expect((await jonasSends("POST", "/api/groups", { name: "Büro" })).status).toBe(201);
-    const rows = app.db.select().from(groups).all();
-    expect(rows.filter((g) => g.name === "Büro").map((g) => g.companyId)).toEqual(["weber"]);
-  },
-  "DELETE /api/groups/:groupId": async () => {
-    expect((await jonasSends("DELETE", `/api/groups/${muellerGroup}`, undefined)).status).toBe(404);
-  },
-  "PUT /api/groups/:groupId/members/:accountId": async () => {
-    expect((await jonasSends("PUT", `/api/groups/${muellerGroup}/members/jonas`, {})).status).toBe(
-      404,
-    );
-    // Max of Müller Elektro cannot join a group of Weber Haustechnik
-    const made = (await (await jonasSends("POST", "/api/groups", { name: "Lager" })).json()) as {
-      id: string;
-    };
-    expect((await jonasSends("PUT", `/api/groups/${made.id}/members/max`, {})).status).toBe(404);
-  },
-  "DELETE /api/groups/:groupId/members/:accountId": async () => {
-    const path = `/api/groups/${muellerGroup}/members/max`;
-    expect((await jonasSends("DELETE", path, undefined)).status).toBe(404);
-  },
-  "GET /api/vaults/:vaultId/groups": async () => {
-    expect((await asJonas(`/api/vaults/${muellerVault}/groups`)).status).toBe(404);
-  },
-  "PUT /api/vaults/:vaultId/groups/:groupId": async () => {
-    const path = `/api/vaults/${muellerVault}/groups/${muellerGroup}`;
-    expect((await jonasSends("PUT", path, { role: "read" })).status).toBe(404);
-  },
-  "DELETE /api/vaults/:vaultId/groups/:groupId": async () => {
-    const path = `/api/vaults/${muellerVault}/groups/${muellerGroup}`;
-    expect((await jonasSends("DELETE", path, undefined)).status).toBe(404);
   },
   "POST /api/vaults/:vaultId/requests": async () => {
     expect((await jonasSends("POST", `/api/vaults/${muellerVault}/requests`, {})).status).toBe(404);

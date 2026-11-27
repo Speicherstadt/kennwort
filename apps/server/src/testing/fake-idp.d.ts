@@ -1,7 +1,6 @@
 export type FakeUser = {
   sub: string;
   name?: string | undefined;
-  groups?: string[] | undefined;
 };
 /** What a test may change in the next ID token: its claims, its header, or the whole token */
 export type Tamper = {

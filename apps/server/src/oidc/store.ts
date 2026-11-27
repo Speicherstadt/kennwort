@@ -67,7 +67,6 @@ export type TicketData = {
   accountId: string | null;
   companyId: string | null;
   name: string | null;
-  groups: string[];
 };
 
 export const saveTicket = (db: Db, ticket: string, data: TicketData, now: number) => {
@@ -76,7 +75,6 @@ export const saveTicket = (db: Db, ticket: string, data: TicketData, now: number
     .values({
       ticketHash: hashOf(ticket),
       ...data,
-      groups: JSON.stringify(data.groups),
       expiresAt: now + TICKET_MS,
     })
     .run();
@@ -88,7 +86,6 @@ const toData = (row: typeof oidcTickets.$inferSelect): TicketData => ({
   accountId: row.accountId,
   companyId: row.companyId,
   name: row.name,
-  groups: JSON.parse(row.groups) as string[],
 });
 
 /** A ticket still valid, without using it up (an enrolment shows its form first) */

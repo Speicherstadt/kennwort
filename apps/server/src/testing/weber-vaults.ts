@@ -1,5 +1,5 @@
 // Weber Haustechnik for the vault tests (K-305): Jonas with his company and Anna, certified, and
-// the vault Büro; shared by the log, request and group tests of the server
+// the vault Büro; shared by the log and request tests of the server
 import { expect } from "bun:test";
 import {
   type Certificate,
