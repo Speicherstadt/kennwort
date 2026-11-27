@@ -39,7 +39,7 @@ Nur in der CI, nicht in der Sandbox:
 - `bun run reproducible --reuse`, `bun run --cwd apps/server smoke` und `bun audit` laufen dort nach dem Build,
   lokal nur bei Änderungen an Build, Release oder Server-Start.
 - Mutation-Tests (`bun run mutation`, 100 % in `packages/crypto` und `packages/core`) jede Nacht in
-  `.github/workflows/mutation.yml`; ein roter Lauf wird zuerst behoben.
+  `.github/workflows/mutation.yml` (ein roter Lauf: `BAULISTE.md`, „So arbeitet der Loop“).
 - Android (`android.yml`) bei Änderungen in `apps/mobile`.
 
 Was die Tests selbst überspringen: den Export nach KDBX in KeePassXC (`packages/core/src/export/kdbx.test.ts`),
