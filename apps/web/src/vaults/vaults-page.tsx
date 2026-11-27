@@ -114,85 +114,104 @@ export const VaultsPage = (props: {
             return s.state === "ready" ? s : undefined;
           })()}
         >
-          {(ready) => (
-            <>
-              <Show when={ready().vaults.length === 0 && ready().refused.length === 0}>
-                <p class="rounded-xl border border-dashed border-border px-4 py-8 text-center text-[13px] text-muted-foreground">
-                  {m.vaults_empty()}
-                </p>
-              </Show>
-              <ul class="divide-y divide-border overflow-hidden rounded-xl border border-border empty:hidden">
-                <For each={ready().vaults}>
-                  {(vault) => (
-                    <li class="flex flex-wrap items-center gap-2 pr-3 transition-colors hover:bg-muted/50">
-                      <Link
-                        nav={props.nav}
-                        href={`/vaults/${vault.idText}`}
-                        class="flex min-w-0 flex-1 items-center gap-3 px-4 py-3"
-                      >
-                        <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-accent">
-                          <Icon icon={Archive} />
-                        </span>
-                        <span class="flex-1 truncate font-medium">
-                          {vault.name ?? m.vaults_unnamed()}
-                        </span>
-                        <Badge variant="outline">{roleText(vault.role)}</Badge>
-                      </Link>
-                      <Button
-                        aria-label={m.vault_members_of({ name: vault.name ?? m.vaults_unnamed() })}
-                        onClick={() => setMembersOf(vault.idText)}
-                      >
-                        <Icon icon={Users} /> {m.vault_members_open()}
-                      </Button>
-                      <Show when={vault.role === "manage" ? props.onHandOver : undefined}>
-                        {(handOver) => (
+          {(ready) => {
+            const selected = () => ready().vaults.find((v) => v.idText === membersOf());
+            return (
+              <div
+                class={
+                  selected()
+                    ? "grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)]"
+                    : ""
+                }
+              >
+                <div class={selected() ? "hidden lg:block" : ""}>
+                  <Show when={ready().vaults.length === 0 && ready().refused.length === 0}>
+                    <p class="rounded-xl border border-dashed border-border px-4 py-8 text-center text-[13px] text-muted-foreground">
+                      {m.vaults_empty()}
+                    </p>
+                  </Show>
+                  <ul class="divide-y divide-border overflow-hidden rounded-xl border border-border empty:hidden">
+                    <For each={ready().vaults}>
+                      {(vault) => (
+                        <li
+                          class={
+                            membersOf() === vault.idText
+                              ? "flex flex-wrap items-center gap-2 bg-muted/60 pr-3 transition-colors"
+                              : "flex flex-wrap items-center gap-2 pr-3 transition-colors hover:bg-muted/50"
+                          }
+                        >
+                          <Link
+                            nav={props.nav}
+                            href={`/vaults/${vault.idText}`}
+                            class="flex min-w-0 flex-1 items-center gap-3 px-4 py-3"
+                          >
+                            <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-accent">
+                              <Icon icon={Archive} />
+                            </span>
+                            <span class="flex-1 truncate font-medium">
+                              {vault.name ?? m.vaults_unnamed()}
+                            </span>
+                            <Badge variant="outline">{roleText(vault.role)}</Badge>
+                          </Link>
                           <Button
-                            aria-label={m.handover_open({
+                            aria-label={m.vault_members_of({
                               name: vault.name ?? m.vaults_unnamed(),
                             })}
-                            onClick={() => handOver()(vault)}
+                            onClick={() => setMembersOf(vault.idText)}
                           >
-                            <Icon icon={Handshake} /> {m.handover_button()}
+                            <Icon icon={Users} /> {m.vault_members_open()}
                           </Button>
-                        )}
-                      </Show>
-                    </li>
+                          <Show when={vault.role === "manage" ? props.onHandOver : undefined}>
+                            {(handOver) => (
+                              <Button
+                                aria-label={m.handover_open({
+                                  name: vault.name ?? m.vaults_unnamed(),
+                                })}
+                                onClick={() => handOver()(vault)}
+                              >
+                                <Icon icon={Handshake} /> {m.handover_button()}
+                              </Button>
+                            )}
+                          </Show>
+                        </li>
+                      )}
+                    </For>
+                    <For each={ready().refused}>
+                      {() => (
+                        <li class="flex items-center gap-3 px-4 py-3 text-danger">
+                          <Icon icon={TriangleExclamationPoint} />
+                          <span class="flex-1">{m.vaults_refused()}</span>
+                        </li>
+                      )}
+                    </For>
+                  </ul>
+                  <CreateForm onCreate={props.store.create} />
+                </div>
+                <Show when={selected()}>
+                  {(vault) => (
+                    <VaultMembersDialog
+                      open
+                      onClose={() => setMembersOf(undefined)}
+                      vault={vault()}
+                      people={ready().people}
+                      api={props.api}
+                      session={props.session}
+                      store={props.store}
+                      onRemove={(accountId) =>
+                        props.exits.remove(vault(), ready().trust, accountId, ready().left)
+                      }
+                      onRole={(accountId, role) => props.exits.changeRole(vault(), accountId, role)}
+                      onManageGroups={(groupId) => {
+                        setMembersOf(undefined);
+                        if (props.onManageGroup) props.onManageGroup(groupId);
+                        else props.nav.go("/groups");
+                      }}
+                    />
                   )}
-                </For>
-                <For each={ready().refused}>
-                  {() => (
-                    <li class="flex items-center gap-3 px-4 py-3 text-danger">
-                      <Icon icon={TriangleExclamationPoint} />
-                      <span class="flex-1">{m.vaults_refused()}</span>
-                    </li>
-                  )}
-                </For>
-              </ul>
-              <CreateForm onCreate={props.store.create} />
-              <Show when={ready().vaults.find((v) => v.idText === membersOf())}>
-                {(vault) => (
-                  <VaultMembersDialog
-                    open
-                    onClose={() => setMembersOf(undefined)}
-                    vault={vault()}
-                    people={ready().people}
-                    api={props.api}
-                    session={props.session}
-                    store={props.store}
-                    onRemove={(accountId) =>
-                      props.exits.remove(vault(), ready().trust, accountId, ready().left)
-                    }
-                    onRole={(accountId, role) => props.exits.changeRole(vault(), accountId, role)}
-                    onManageGroups={(groupId) => {
-                      setMembersOf(undefined);
-                      if (props.onManageGroup) props.onManageGroup(groupId);
-                      else props.nav.go("/groups");
-                    }}
-                  />
-                )}
-              </Show>
-            </>
-          )}
+                </Show>
+              </div>
+            );
+          }}
         </Match>
       </Switch>
     </section>

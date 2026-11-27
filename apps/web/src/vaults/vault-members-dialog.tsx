@@ -8,9 +8,9 @@
 import type { Vault } from "@kennwort/client/vaults/vaults.ts";
 import type { Certificate, MemberView, VaultRole } from "@kennwort/core";
 import { idKey } from "@kennwort/core";
-import { Button, Dialog, Icon, Input, m, selectClass } from "@kennwort/ui";
-import { X } from "@kennwort/ui/icons";
-import { createSignal, For, Show } from "solid-js";
+import { Button, Icon, Input, m, selectClass } from "@kennwort/ui";
+import { ArrowLeft, X } from "@kennwort/ui/icons";
+import { createSignal, createUniqueId, For, Show } from "solid-js";
 import { linkedGroupNames, outsideLinkedGroups } from "../groups/groups.ts";
 import type { Session } from "../session/session.ts";
 import { dateText, endOfDay, today } from "./day.ts";
@@ -213,65 +213,84 @@ export const VaultMembersDialog = (props: {
   onRole: (accountId: Uint8Array, role: VaultRole) => Promise<Outcome>;
   onManageGroups?: ((groupId: string | undefined) => void) | undefined;
 }) => {
+  const titleId = createUniqueId();
   const state = createDialogState(props);
   const { busy, error, requests, run } = state;
   const { api, session } = props;
   const me = () => props.session.opened()?.accountId ?? new Uint8Array();
   const outside = () => outsideLinkedGroups(props.vault, state.links(), state.groups());
   return (
-    <Dialog
-      open={props.open}
-      onClose={props.onClose}
-      title={m.vault_members_title({ name: props.vault.name ?? m.vaults_unnamed() })}
-      size="lg"
-    >
-      <Show when={mayManage(props.vault) && candidates(props.vault, props.people).length > 0}>
-        <AddForm
-          people={candidates(props.vault, props.people)}
-          busy={busy()}
-          onAdd={(person, role, until) =>
-            run(() => addToVault(api, session, props.vault, person, role, until))
-          }
-        />
-      </Show>
-      <Show when={error()}>
-        {(e) => (
-          <p class={`mb-3 ${alertClass}`} role="alert">
-            {errorText(e())}
-          </p>
-        )}
-      </Show>
-      <ul class="divide-y divide-border" aria-label={m.vault_members_list()}>
-        <For each={vaultMembers(props.vault, props.people, me())}>
-          {(member) => (
-            <MemberRow
-              member={member}
-              viaGroups={linkedGroupNames(member.accountId, state.links(), state.groups())}
-              direct={state.links().length > 0}
-              outside={outside().has(idKey(member.accountId))}
-              editable={mayManage(props.vault)}
-              busy={busy()}
-              onRole={(role) => run(() => props.onRole(member.accountId, role))}
-              onRemove={() => run(() => props.onRemove(member.accountId))}
-            />
-          )}
-        </For>
-      </ul>
-      <VaultRequests
-        requests={requests()}
-        busy={busy()}
-        onGrant={(request, role) => {
-          const certificate = request.certificate;
-          if (certificate)
-            void run(() =>
-              grantRequest(api, session, props.vault, { ...request, certificate }, role),
-            );
+    <Show when={props.open}>
+      <section
+        aria-labelledby={titleId}
+        class="overflow-hidden rounded-2xl border border-border bg-card"
+        onKeyDown={(event) => {
+          if (event.key === "Escape") props.onClose();
         }}
-        onDecline={(request) =>
-          void run(() => declineRequest(api, session, props.vault, request.accountId))
-        }
-      />
-      <VaultGroups groups={state.groups()} links={state.links()} onManage={props.onManageGroups} />
-    </Dialog>
+      >
+        <div class="flex items-center justify-between gap-2 border-b border-border px-4 py-3.5 sm:px-5">
+          <h2 id={titleId} class="truncate text-sm font-semibold">
+            {m.vault_members_title({ name: props.vault.name ?? m.vaults_unnamed() })}
+          </h2>
+          <Button variant="ghost" size="icon" aria-label={m.ui_close()} onClick={props.onClose}>
+            <Icon icon={ArrowLeft} class="lg:hidden" />
+            <Icon icon={X} class="hidden lg:block" />
+          </Button>
+        </div>
+        <div class="p-4 sm:p-5">
+          <Show when={mayManage(props.vault) && candidates(props.vault, props.people).length > 0}>
+            <AddForm
+              people={candidates(props.vault, props.people)}
+              busy={busy()}
+              onAdd={(person, role, until) =>
+                run(() => addToVault(api, session, props.vault, person, role, until))
+              }
+            />
+          </Show>
+          <Show when={error()}>
+            {(e) => (
+              <p class={`mb-3 ${alertClass}`} role="alert">
+                {errorText(e())}
+              </p>
+            )}
+          </Show>
+          <ul class="divide-y divide-border" aria-label={m.vault_members_list()}>
+            <For each={vaultMembers(props.vault, props.people, me())}>
+              {(member) => (
+                <MemberRow
+                  member={member}
+                  viaGroups={linkedGroupNames(member.accountId, state.links(), state.groups())}
+                  direct={state.links().length > 0}
+                  outside={outside().has(idKey(member.accountId))}
+                  editable={mayManage(props.vault)}
+                  busy={busy()}
+                  onRole={(role) => run(() => props.onRole(member.accountId, role))}
+                  onRemove={() => run(() => props.onRemove(member.accountId))}
+                />
+              )}
+            </For>
+          </ul>
+          <VaultRequests
+            requests={requests()}
+            busy={busy()}
+            onGrant={(request, role) => {
+              const certificate = request.certificate;
+              if (certificate)
+                void run(() =>
+                  grantRequest(api, session, props.vault, { ...request, certificate }, role),
+                );
+            }}
+            onDecline={(request) =>
+              void run(() => declineRequest(api, session, props.vault, request.accountId))
+            }
+          />
+          <VaultGroups
+            groups={state.groups()}
+            links={state.links()}
+            onManage={props.onManageGroups}
+          />
+        </div>
+      </section>
+    </Show>
   );
 };

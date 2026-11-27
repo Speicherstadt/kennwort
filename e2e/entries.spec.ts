@@ -26,7 +26,7 @@ test.describe("entries", { tag: "@phone" }, () => {
     await page.getByLabel("Name", { exact: true }).fill("Büro");
     await page.getByRole("button", { name: "Tresor anlegen" }).click();
     await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-    const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });
+    const dialog = page.getByRole("region", { name: "Mitglieder von Büro" });
     await dialog.getByLabel("Person").selectOption({ label: "Anna" });
     await dialog.getByRole("button", { name: "Aufnehmen" }).click();
     await expect(dialog.getByLabel("Rolle von Anna")).toHaveValue("read");

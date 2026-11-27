@@ -166,7 +166,7 @@ test.describe("several companies and the handover", { tag: "@phone" }, () => {
     // Max ends Jonas's access: removed with a new key, the vault is gone for Jonas
     await openVaults(max);
     await max.getByRole("button", { name: "Mitglieder von Heizung Müller" }).click();
-    const members = max.getByRole("dialog", { name: "Mitglieder von Heizung Müller" });
+    const members = max.getByRole("region", { name: "Mitglieder von Heizung Müller" });
     await members.getByRole("button", { name: "Jonas aus dem Tresor entfernen" }).click();
     await expect(
       members.getByRole("list", { name: "Mitglieder des Tresors" }).getByRole("listitem"),
