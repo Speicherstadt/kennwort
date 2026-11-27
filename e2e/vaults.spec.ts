@@ -125,6 +125,7 @@ test.describe("access requests", { tag: "@phone" }, () => {
     await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
     const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });
     await dialog.getByLabel("Person").selectOption({ label: "Anna" });
+    await dialog.getByRole("button", { name: /Zugriff zeitlich begrenzen/ }).click();
     await dialog.getByLabel("Zugriff bis (optional)").fill("2099-12-31");
     await dialog.getByRole("button", { name: "Aufnehmen" }).click();
     await expect(dialog.getByRole("listitem").filter({ hasText: "Anna" })).toContainText("bis");
@@ -164,7 +165,7 @@ test.describe("access requests", { tag: "@phone" }, () => {
 });
 
 test.describe("groups", { tag: "@phone" }, () => {
-  test("linking a vault to a group previews, directly grants verified members, and shows group provenance", async ({
+  test("toggling a vault on a group directly grants verified members and shows group provenance", async ({
     page,
     browser,
   }) => {
@@ -180,21 +181,24 @@ test.describe("groups", { tag: "@phone" }, () => {
       .getByRole("link", { name: "Gruppen" })
       .click();
     await expect(heading(page, "Gruppen")).toBeVisible();
-    await page.getByLabel("Name der Gruppe").fill("Büro-Team");
-    await page.getByRole("button", { name: "Gruppe anlegen" }).click();
-    await page.getByLabel("Person für Büro-Team").selectOption({ label: "Anna" });
-    await page.getByRole("button", { name: "Hinzufügen" }).click();
-    await expect(page.getByRole("list", { name: "Büro-Team", exact: true })).toContainText("Anna");
-    await page.getByLabel("Tresor für Büro-Team").selectOption({ label: "Büro" });
-    await expect(page.getByRole("main")).toContainText("Gibt direkt Zugriff für: Anna");
-    await page.getByRole("button", { name: "Verknüpfen" }).click();
-    await expect(page.getByRole("list", { name: "Tresore von Büro-Team" })).toContainText("Büro");
+    await page.getByRole("button", { name: "Neue Gruppe" }).click();
+    const create = page.getByRole("dialog", { name: "Neue Gruppe" });
+    await create.getByLabel("Name der Gruppe").fill("Büro-Team");
+    await create.getByRole("button", { name: "Gruppe anlegen" }).click();
+
+    const membersList = page.getByRole("list", { name: "Büro-Team", exact: true });
+    await membersList.getByRole("switch", { name: "Anna" }).click();
+    await expect(membersList.getByRole("switch", { name: "Anna" })).toBeChecked();
+
+    const vaultsList = page.getByRole("list", { name: "Tresore von Büro-Team" });
+    await vaultsList.getByRole("switch", { name: "Büro" }).click();
+    await expect(vaultsList.getByRole("switch", { name: "Büro" })).toBeChecked();
     await axe(page);
 
     await openVaults(page);
     await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
     const dialog = page.getByRole("dialog", { name: "Mitglieder von Büro" });
-    await expect(dialog.getByRole("list", { name: "Gruppen" })).toContainText("Büro-Team");
+    await expect(dialog).toContainText("Verknüpfte Gruppen: Büro-Team");
     await expect(dialog.getByRole("listitem").filter({ hasText: "Anna" })).toContainText(
       "über Büro-Team",
     );
@@ -207,7 +211,7 @@ test.describe("groups", { tag: "@phone" }, () => {
     ).toContainText("Lesen");
   });
 
-  test("linking a vault on the groups page grants new members directly and offers removal on leave", async ({
+  test("toggling a member grants access to enabled vaults and offers removal when unchecked", async ({
     page,
     browser,
   }) => {
@@ -222,35 +226,31 @@ test.describe("groups", { tag: "@phone" }, () => {
       .getByRole("navigation", { name: "Team" })
       .getByRole("link", { name: "Gruppen" })
       .click();
-    await page.getByLabel("Name der Gruppe").fill("Büro-Team");
-    await page.getByRole("button", { name: "Gruppe anlegen" }).click();
-    await page.getByLabel("Tresor für Büro-Team").selectOption({ label: "Büro" });
-    await page.getByLabel("Rolle für die Gruppe").selectOption({ label: "Bearbeiten" });
-    await page.getByRole("button", { name: "Verknüpfen" }).click();
-    await expect(page.getByRole("list", { name: "Tresore von Büro-Team" })).toContainText("Büro");
-    await expect(page.getByRole("list", { name: "Tresore von Büro-Team" })).toContainText(
-      "Bearbeiten",
-    );
+    await page.getByRole("button", { name: "Neue Gruppe" }).click();
+    const create = page.getByRole("dialog", { name: "Neue Gruppe" });
+    await create.getByLabel("Name der Gruppe").fill("Büro-Team");
+    await create.getByRole("button", { name: "Gruppe anlegen" }).click();
 
-    await page.getByLabel("Person für Büro-Team").selectOption({ label: "Anna" });
-    await expect(page.getByRole("main")).toContainText(
-      "Gibt direkt Zugriff auf: Büro (Bearbeiten)",
-    );
-    await page.getByRole("button", { name: "Hinzufügen" }).click();
+    const vaultsList = page.getByRole("list", { name: "Tresore von Büro-Team" });
+    await vaultsList.getByRole("switch", { name: "Büro" }).click();
+    await expect(vaultsList.getByRole("switch", { name: "Büro" })).toBeChecked();
+    await vaultsList.getByLabel("Rolle für Büro").selectOption({ label: "Bearbeiten" });
+
     const membersList = page.getByRole("list", { name: "Büro-Team", exact: true });
-    await expect(membersList).toContainText("Anna");
+    await membersList.getByRole("switch", { name: "Anna" }).click();
+    await expect(membersList.getByRole("switch", { name: "Anna" })).toBeChecked();
 
     await openVaults(anna);
     await expect(
       anna.getByRole("main").getByRole("list").getByRole("listitem").filter({ hasText: "Büro" }),
     ).toContainText("Bearbeiten");
 
-    // Removing Anna from the group asks whether to also remove her from Büro
-    await membersList.getByRole("button", { name: "Entfernen" }).click();
+    // Turning off Anna asks whether to also remove her from Büro
+    await membersList.getByRole("switch", { name: "Anna" }).click();
     const confirm = page.getByRole("dialog", { name: "Anna aus „Büro-Team“ entfernen" });
     await expect(confirm).toContainText("Büro");
     await confirm.getByRole("button", { name: "Entfernen" }).click();
-    await expect(page.getByText("Noch keine Mitglieder.")).toBeVisible();
+    await expect(membersList.getByRole("switch", { name: "Anna" })).not.toBeChecked();
   });
 });
 

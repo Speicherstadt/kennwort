@@ -98,11 +98,13 @@ test.describe("OpenID Connect", { tag: "@phone" }, () => {
       .getByRole("navigation", { name: "Team" })
       .getByRole("link", { name: "Gruppen" })
       .click();
-    await page.getByLabel("Name der Gruppe").fill("Technik");
-    await page.getByRole("button", { name: "Gruppe anlegen" }).click();
-    await page.getByLabel("Tresor für Technik").selectOption({ label: "Büro" });
-    await page.getByRole("button", { name: "Verknüpfen" }).click();
-    await expect(page.getByRole("list", { name: "Tresore von Technik" })).toContainText("Büro");
+    await page.getByRole("button", { name: "Neue Gruppe" }).click();
+    const create = page.getByRole("dialog", { name: "Neue Gruppe" });
+    await create.getByLabel("Name der Gruppe").fill("Technik");
+    await create.getByRole("button", { name: "Gruppe anlegen" }).click();
+    const vaultsList = page.getByRole("list", { name: "Tresore von Technik" });
+    await vaultsList.getByRole("switch", { name: "Büro" }).click();
+    await expect(vaultsList.getByRole("switch", { name: "Büro" })).toBeChecked();
 
     const link = await openEnrolment(page);
     const sub = unique("sandra");

@@ -1,12 +1,14 @@
 /**
- * Groups (K-305 part 5): the company's groups with their linked vaults and members. Owners and
- * admins create and delete groups and change their members; managers link vaults right here or in
- * a vault's members dialog. Verified members are granted directly on vaults this device manages
- * after previewing the affected vaults; other vaults and OIDC groups remain access requests.
+ * Groups (K-305 part 5): master-detail team view. Left lists the company's groups; right shows the
+ * selected group's vaults and members as clean toggles (no dropdown walls). Verified members are
+ * granted directly on vaults this device manages; removing a member offers vault removal & key
+ * rotation via LeaveGroupDialog.
  */
 
-import { idKey, type MemberView } from "@kennwort/core";
-import { Button, Input, introClass, m, pageClass, panelClass, panelTitleClass } from "@kennwort/ui";
+import type { Vault } from "@kennwort/client/vaults/vaults.ts";
+import { idKey, type MemberView, type VaultRole } from "@kennwort/core";
+import { Button, cn, Dialog, Icon, Input, m, pageClass } from "@kennwort/ui";
+import { Plus } from "@kennwort/ui/icons";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createEffect, createMemo, createSignal, For, Loading, Show } from "solid-js";
 import { queryKeys } from "../queries.ts";
@@ -20,11 +22,13 @@ import {
   linkGroupWithAccess,
   linksForGroup,
   loadAllVaultLinks,
+  planJoinAccess,
   planLeaveAccess,
+  planLinkAccess,
   sharedVaults,
   type VaultLink,
 } from "./group-access.ts";
-import { GroupCard } from "./group-card.tsx";
+import { GroupDetail } from "./group-detail.tsx";
 import {
   createGroup,
   deleteGroup,
@@ -36,7 +40,7 @@ import {
 } from "./groups.ts";
 import { LeaveGroupDialog, type PendingLeave } from "./leave-group-dialog.tsx";
 
-const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
+const alertClass = "mb-4 rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
 
 const nameOf = (people: readonly MemberView[], accountId: Uint8Array) =>
   people.find((p) => idKey(p.accountId) === idKey(accountId))?.name ?? m.vault_members_unnamed();
@@ -49,28 +53,40 @@ type GroupsProps = {
   exits?: Exits | undefined;
 };
 
-const CreateGroup = (props: { busy: boolean; onCreate: (name: string) => void }) => {
+const CreateGroupDialog = (props: {
+  open: boolean;
+  busy: boolean;
+  onClose: () => void;
+  onCreate: (name: string) => void;
+}) => {
   const [name, setName] = createSignal("");
   const submit = (event: SubmitEvent) => {
     event.preventDefault();
     if (!name().trim()) return;
     props.onCreate(name());
     setName("");
+    props.onClose();
   };
   return (
-    <form class={`mt-6 ${panelClass}`} onSubmit={submit}>
-      <h2 class={panelTitleClass}>{m.groups_create_title()}</h2>
-      <Input
-        label={m.groups_create_name()}
-        value={name()}
-        maxlength={100}
-        required
-        onInput={(event) => setName(event.currentTarget.value)}
-      />
-      <Button type="submit" variant="primary" class="w-fit justify-self-end" disabled={props.busy}>
-        {m.groups_create()}
-      </Button>
-    </form>
+    <Dialog open={props.open} onClose={props.onClose} title={m.groups_create_title()}>
+      <form class="grid gap-4" onSubmit={submit}>
+        <Input
+          label={m.groups_create_name()}
+          value={name()}
+          maxlength={100}
+          required
+          onInput={(event) => setName(event.currentTarget.value)}
+        />
+        <div class="flex justify-end gap-2">
+          <Button type="button" disabled={props.busy} onClick={props.onClose}>
+            {m.groups_leave_cancel()}
+          </Button>
+          <Button type="submit" variant="primary" disabled={props.busy || !name().trim()}>
+            {m.groups_create()}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   );
 };
 
@@ -103,15 +119,23 @@ const createGroupsState = (props: GroupsProps) => {
       };
     },
   );
+  const [selectedId, setSelectedId] = createSignal<string>();
+  const [creating, setCreating] = createSignal(false);
+  const [feedback, setFeedback] = createSignal<string>();
   const [changeFailed, setChangeFailed] = createSignal(false);
   const [busy, setBusy] = createSignal(false);
   const [pendingLeave, setPendingLeave] = createSignal<PendingLeave>();
-  const run = async (change: () => Promise<{ ok: boolean }>) => {
+  const activeGroup = createMemo(() => {
+    const list = groups.data ?? [];
+    return list.find((g) => g.id === selectedId()) ?? list[0];
+  });
+  const run = async (change: () => Promise<{ ok: boolean }>, note?: string) => {
     setBusy(true);
     const result = await change();
     await client.invalidateQueries({ queryKey: queryKeys.groups });
     setLinksVersion((v) => v + 1);
     setChangeFailed(!result.ok);
+    setFeedback(result.ok ? note : undefined);
     setBusy(false);
   };
   const people = () => props.people() ?? [];
@@ -119,22 +143,83 @@ const createGroupsState = (props: GroupsProps) => {
     const id = props.session.opened()?.accountId;
     return mayKeepGroups(people().find((p) => id && idKey(p.accountId) === idKey(id)));
   };
-  const startRemove = (group: Group, accountId: Uint8Array) => {
+  const toggleVault = (group: Group, vault: Vault, checked: boolean) => {
+    const vName = vault.name ?? m.vaults_unnamed();
+    if (!checked) {
+      void run(
+        () => unlinkGroup(props.api, props.session, vault, group.id),
+        m.groups_feedback_vault_off({ vault: vName, group: group.name }),
+      );
+      return;
+    }
+    const plan = planLinkAccess(group, vault, people());
+    const note =
+      plan.directGrant.length > 0
+        ? m.groups_feedback_vault_on({ vault: vName, count: plan.directGrant.length })
+        : m.groups_feedback_vault_linked({ vault: vName, group: group.name });
+    void run(
+      () =>
+        linkGroupWithAccess(
+          props.api,
+          props.session,
+          props.store,
+          vault,
+          group.id,
+          "read",
+          plan.directGrant,
+        ),
+      note,
+    );
+  };
+  const changeVaultRole = (group: Group, vault: Vault, role: VaultRole) => {
+    const plan = planLinkAccess(group, vault, people());
+    void run(() =>
+      linkGroupWithAccess(
+        props.api,
+        props.session,
+        props.store,
+        vault,
+        group.id,
+        role,
+        plan.directGrant,
+      ),
+    );
+  };
+  const toggleMember = (group: Group, person: MemberView, checked: boolean) => {
+    const pName = person.name ?? m.vault_members_unnamed();
+    if (checked) {
+      const plan = planJoinAccess(person, group.id, links());
+      const note =
+        plan.directGrant.length > 0
+          ? m.groups_feedback_member_granted({
+              name: pName,
+              vaults: plan.directGrant.map((d) => d.vault.name ?? m.vaults_unnamed()).join(", "),
+            })
+          : m.groups_feedback_member_on({ name: pName, group: group.name });
+      void run(
+        () => joinGroupWithAccess(props.api, props.session, props.store, group.id, person, plan),
+        note,
+      );
+      return;
+    }
     const loadedGroups = groups.data;
     const me = props.session.opened()?.accountId ?? new Uint8Array();
     const removable =
       loadedGroups && props.store && props.exits
-        ? planLeaveAccess(accountId, group.id, loadedGroups, links(), me)
+        ? planLeaveAccess(person.accountId, group.id, loadedGroups, links(), me)
         : [];
     if (removable.length === 0) {
-      void run(() => leaveGroup(props.api, props.session, group.id, accountId));
+      void run(
+        () => leaveGroup(props.api, props.session, group.id, person.accountId),
+        m.groups_feedback_member_off({ name: pName, group: group.name }),
+      );
       return;
     }
     setPendingLeave({
       groupId: group.id,
       groupName: group.name,
-      accountId,
-      personName: nameOf(people(), accountId),
+      accountId: person.accountId,
+      personName: nameOf(people(), person.accountId),
       removable,
     });
   };
@@ -142,6 +227,12 @@ const createGroupsState = (props: GroupsProps) => {
     vaults,
     groups,
     links,
+    activeGroup,
+    setSelectedId,
+    creating,
+    setCreating,
+    feedback,
+    setFeedback,
     changeFailed,
     busy,
     pendingLeave,
@@ -149,7 +240,9 @@ const createGroupsState = (props: GroupsProps) => {
     run,
     people,
     keeper,
-    startRemove,
+    toggleVault,
+    changeVaultRole,
+    toggleMember,
   };
 };
 
@@ -157,10 +250,19 @@ export const GroupsPage = (props: GroupsProps) => {
   const s = createGroupsState(props);
   return (
     <section aria-labelledby="page-title" class={pageClass("wide")}>
-      <h1 id="page-title" class="mb-2 text-[28px] font-semibold md:text-lg">
-        {m.nav_groups()}
-      </h1>
-      <p class={introClass}>{m.groups_intro_real()}</p>
+      <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 id="page-title" class="text-[28px] font-semibold md:text-lg">
+            {m.nav_groups()}
+          </h1>
+          <p class="mt-1 text-[13px] text-muted-foreground">{m.groups_intro_real()}</p>
+        </div>
+        <Show when={s.keeper()}>
+          <Button variant="primary" disabled={s.busy()} onClick={() => s.setCreating(true)}>
+            <Icon icon={Plus} /> {m.groups_create_title()}
+          </Button>
+        </Show>
+      </div>
       <Loading>
         <Show when={s.changeFailed() || s.groups.data === null}>
           <p class={alertClass} role="alert">
@@ -172,50 +274,58 @@ export const GroupsPage = (props: GroupsProps) => {
             {m.groups_empty()}
           </p>
         </Show>
-        <ul class="grid gap-3 empty:hidden">
-          <For each={s.groups.data ?? []}>
-            {(group) => (
-              <GroupCard
-                group={group}
-                people={s.people()}
+        <Show when={s.activeGroup()}>
+          {(current) => (
+            <div class="grid gap-4 md:grid-cols-[220px_1fr]">
+              <ul class="space-y-1" aria-label={m.nav_groups()}>
+                <For each={s.groups.data ?? []}>
+                  {(group) => {
+                    const active = () => current().id === group.id;
+                    const vCount = () => linksForGroup(group.id, s.links()).length;
+                    return (
+                      <li>
+                        <button
+                          type="button"
+                          aria-current={active() ? "true" : undefined}
+                          class={cn(
+                            "flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left transition-colors",
+                            active()
+                              ? "border-foreground bg-card font-medium"
+                              : "border-transparent text-muted-foreground hover:border-border hover:bg-card/60 hover:text-foreground",
+                          )}
+                          onClick={() => {
+                            s.setSelectedId(group.id);
+                            s.setFeedback(undefined);
+                          }}
+                        >
+                          <span class="truncate text-xs">{group.name}</span>
+                          <span class="shrink-0 text-xs text-muted-foreground">
+                            {vCount()}T · {group.members.length}P
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  }}
+                </For>
+              </ul>
+              <GroupDetail
+                group={current()}
                 vaults={s.vaults()}
-                links={linksForGroup(group.id, s.links())}
+                links={linksForGroup(current().id, s.links())}
+                people={s.people()}
                 keeper={s.keeper()}
                 busy={s.busy()}
-                onAdd={(person, plan) =>
-                  void s.run(() =>
-                    joinGroupWithAccess(
-                      props.api,
-                      props.session,
-                      props.store,
-                      group.id,
-                      person,
-                      plan,
-                    ),
-                  )
+                feedback={s.feedback()}
+                onToggleVault={(vault, checked) => s.toggleVault(current(), vault, checked)}
+                onVaultRole={(vault, role) => s.changeVaultRole(current(), vault, role)}
+                onToggleMember={(person, checked) => s.toggleMember(current(), person, checked)}
+                onDelete={() =>
+                  void s.run(() => deleteGroup(props.api, props.session, current().id))
                 }
-                onRemove={(accountId) => s.startRemove(group, accountId)}
-                onLink={(vault, role, directGrant) =>
-                  void s.run(() =>
-                    linkGroupWithAccess(
-                      props.api,
-                      props.session,
-                      props.store,
-                      vault,
-                      group.id,
-                      role,
-                      directGrant,
-                    ),
-                  )
-                }
-                onUnlink={(vault) =>
-                  void s.run(() => unlinkGroup(props.api, props.session, vault, group.id))
-                }
-                onDelete={() => void s.run(() => deleteGroup(props.api, props.session, group.id))}
               />
-            )}
-          </For>
-        </ul>
+            </div>
+          )}
+        </Show>
       </Loading>
       <Show when={s.pendingLeave()}>
         {(pending) => (
@@ -226,27 +336,32 @@ export const GroupsPage = (props: GroupsProps) => {
             onConfirm={(removeFrom) => {
               const current = pending();
               s.setPendingLeave(undefined);
-              void s.run(() =>
-                leaveGroupWithAccess(
-                  props.api,
-                  props.session,
-                  props.store,
-                  props.exits,
-                  current.groupId,
-                  current.accountId,
-                  removeFrom,
-                ),
+              void s.run(
+                () =>
+                  leaveGroupWithAccess(
+                    props.api,
+                    props.session,
+                    props.store,
+                    props.exits,
+                    current.groupId,
+                    current.accountId,
+                    removeFrom,
+                  ),
+                m.groups_feedback_member_off({
+                  name: current.personName,
+                  group: current.groupName,
+                }),
               );
             }}
           />
         )}
       </Show>
-      <Show when={s.keeper()}>
-        <CreateGroup
-          busy={s.busy()}
-          onCreate={(name) => void s.run(() => createGroup(props.api, props.session, name))}
-        />
-      </Show>
+      <CreateGroupDialog
+        open={s.creating()}
+        busy={s.busy()}
+        onClose={() => s.setCreating(false)}
+        onCreate={(name) => void s.run(() => createGroup(props.api, props.session, name))}
+      />
     </section>
   );
 };

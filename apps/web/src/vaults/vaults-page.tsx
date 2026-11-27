@@ -181,6 +181,10 @@ export const VaultsPage = (props: {
                       props.exits.remove(vault(), ready().trust, accountId, ready().left)
                     }
                     onRole={(accountId, role) => props.exits.changeRole(vault(), accountId, role)}
+                    onManageGroups={() => {
+                      setMembersOf(undefined);
+                      props.nav.go("/groups");
+                    }}
                   />
                 )}
               </Show>
