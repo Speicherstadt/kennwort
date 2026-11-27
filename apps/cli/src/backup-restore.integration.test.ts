@@ -3,7 +3,7 @@
  * server, a backup taken while it runs (`kennwort-server backup`), a restore refused while it runs,
  * then restored into a fresh installation whose new server Jonas opens exactly as the CLI opens
  * his account (account.ts): every vault log and record checked, the entries decrypted. The servers
- * run on their own ports (28330, 28331), clear of the dev and e2e ports (CLAUDE.md).
+ * run on their own ports (28330, 28331), clear of the dev and e2e ports (.agents/skills/checks, "Ports").
  */
 import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import { mkdtempSync } from "node:fs";

@@ -267,7 +267,8 @@ bun run check     # Typen, Lint, Tests und Build
 bun run e2e       # Playwright am Rechner und am Handy
 ```
 
-Hinweise für Mitwirkende und Agenten stehen in [CLAUDE.md](CLAUDE.md), was als Nächstes gebaut wird in
+Wie ein Beitrag entsteht, steht unter [Mitwirken](https://kennwort.app/mitwirken.html), Regeln für Agenten in
+[AGENTS.md](AGENTS.md), was als Nächstes gebaut wird in
 [BAULISTE.md](BAULISTE.md).
 
 | Paket | Inhalt |
@@ -289,8 +290,8 @@ Kennwort gehört zur Speicherstadt: Open-Source-Apps für deinen eigenen Server,
 
 ## Mitwirken
 
-Fehler und Ideen gern als Issue; Sicherheitslücken bitte vertraulich nach [SECURITY.md](SECURITY.md). Was vor
-einem Pull Request laufen muss, steht in [CLAUDE.md](CLAUDE.md) unter „Checks“.
+Fehler und Ideen gern als Issue; Sicherheitslücken bitte vertraulich nach [SECURITY.md](SECURITY.md). Wie ein
+Pull Request entsteht und was vorher laufen muss, steht unter [Mitwirken](https://kennwort.app/mitwirken.html).
 
 ---
 

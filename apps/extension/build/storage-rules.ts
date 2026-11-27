@@ -1,6 +1,6 @@
 /**
  * What the extension may not use: any store but chrome.storage.session, where a key could reach
- * the disk (CLAUDE.md, Never; docs/sicherheitsdesign.md, Schlüsselhierarchie). Read by the guard
+ * the disk (AGENTS.md, "Nie"; docs/sicherheitsdesign.md, Schlüsselhierarchie). Read by the guard
  * over the sources (src/storage-guard.test.ts) and by the check over the built bundle
  * (build/check-bundle.ts). Kept outside src/, which the guard scans, since it names them all.
  */
