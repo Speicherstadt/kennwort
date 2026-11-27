@@ -2,8 +2,8 @@
 title: Anmeldedienst und Deep Links
 description: >-
   Kennwort mit einem vorhandenen Anmeldedienst verbinden (OpenID Connect): Keycloak, Authentik,
-  Entra ID. Neue Personen aufnehmen, Gruppen übernehmen, warum der Anmeldedienst nie einen Schlüssel
-  bekommt – und wie andere Apps per Deep Link auf Tresore und Einträge verweisen.
+  Entra ID. Neue Personen aufnehmen, warum der Anmeldedienst nie einen Schlüssel bekommt – und wie
+  andere Apps per Deep Link auf Tresore und Einträge verweisen.
 ---
 
 # Anmeldedienst und Deep Links
@@ -16,7 +16,7 @@ eigene Konten mit Passphrase, Secret Key und Passkey.
 
 Kennwort verschlüsselt Ende-zu-Ende. Daran ändert der Anmeldedienst nichts:
 
-- Er bestätigt nur, **wer** sich anmeldet, und meldet die **Gruppen** der Person.
+- Er bestätigt nur, **wer** sich anmeldet.
 - Er bekommt nie einen Schlüssel und gibt nie einen heraus. Entsperrt wird immer mit deiner
   Passphrase und deinem Secret Key, die der Anmeldedienst nie sieht.
 - Meldest du dich über ihn an, obwohl du schon ein Konto hast, gibt er dir **keine Sitzung**: Du
@@ -24,17 +24,15 @@ Kennwort verschlüsselt Ende-zu-Ende. Daran ändert der Anmeldedienst nichts:
   weder an Geheimtexte noch an Admin-Rechte in Kennwort.
 - Eine neue Person bekommt über ihn nur ein Konto **ohne Tresor**. Erst wenn eine Inhaberin oder
   ein Admin den Code ihrer Schlüssel mit ihr verglichen hat, ist sie bestätigt.
-- Eine neue Gruppe beim Anmeldedienst ist in Kennwort nur eine **Zugriffsanfrage**. Zugriff gibt
-  erst ein Verwalter des Tresors.
 
-Wie das im Einzelnen geschützt ist, steht im [Sicherheitsdesign](sicherheitsdesign.md#p-25-anmeldung-uber-openid-connect-und-gruppen).
+Wie das im Einzelnen geschützt ist, steht im [Sicherheitsdesign](sicherheitsdesign.md#p-25-anmeldung-uber-openid-connect).
 
 ## Für alle: Konto verknüpfen
 
 Unter **Einstellungen → Anmeldedienst** verknüpfst du dein Konto mit deiner Anmeldung beim
-Anmeldedienst. Danach folgen deine Gruppen in Kennwort denen beim Anmeldedienst, jedes Mal, wenn du
-dich über **Mit … anmelden** anmeldest. Kennwort erkennt dich am festen Kennzeichen des
-Anmeldedienstes (`sub`), nie an deiner Mail-Adresse.
+Anmeldedienst. Kennwort erkennt dich am festen Kennzeichen des Anmeldedienstes (`sub`), nie an
+deiner Mail-Adresse. Wer beim Anmeldedienst gesperrt wird, kommt mit Passphrase weiter in Kennwort:
+Entferne die Person unter **Team → Mitglieder** aus der Firma.
 
 ## Neue Personen aufnehmen
 
@@ -51,26 +49,6 @@ Anmeldedienstes (`sub`), nie an deiner Mail-Adresse.
 Bis dahin hat die neue Person keinen Tresor der Firma und kann keinen bekommen. Ein Konto, das
 jemand anderes untergeschoben hat, hätte einen anderen Code.
 
-## Gruppen
-
-Eine Gruppe in Kennwort folgt der Gruppe **gleichen Namens** beim Anmeldedienst (ein führender
-Schrägstrich, wie ihn Keycloak schreibt, zählt nicht). Unter **Einstellungen → Anmeldedienst**
-sehen Inhaber und Admins, aus welchem Claim die Gruppen kommen und wie viele Personen über den
-Anmeldedienst in jeder Gruppe sind.
-
-- Kommt jemand beim Anmeldedienst in eine Gruppe, die mit einem Tresor verknüpft ist, bekommt der
-  Verwalter des Tresors eine **Zugriffsanfrage** und eine Mitteilung. Er gibt sie frei oder lehnt
-  sie ab.
-- Verlässt jemand die Gruppe beim Anmeldedienst, fällt eine offene Anfrage weg. Ist die Person
-  schon im Tresor, bekommt der Verwalter eine Mitteilung und entfernt sie dort selbst – mit dem
-  Schlüsselwechsel, den nur sein Gerät machen kann.
-- Gruppen, die ein Admin in Kennwort von Hand vergeben hat, ändert der Anmeldedienst nicht – auch
-  dann nicht, wenn die Person schon über den Anmeldedienst in der Gruppe war.
-
-Kennwort gleicht die Gruppen bei jeder Anmeldung über den Anmeldedienst ab. Wer beim Anmeldedienst
-gesperrt wird, kommt mit Passphrase weiter in Kennwort: Entferne die Person unter **Mitglieder**
-aus der Firma.
-
 ## Für Betreiber: Einstellungen
 
 Den Anmeldedienst stellt der Betreiber des Servers ein:
@@ -80,8 +58,7 @@ Den Anmeldedienst stellt der Betreiber des Servers ein:
 | `KENNWORT_OIDC_ISSUER` | Adresse des Anmeldedienstes (Issuer), mit `https://`; ohne sie ist die Anmeldung über OpenID Connect aus |
 | `KENNWORT_OIDC_CLIENT_ID` | Client-ID, die du beim Anmeldedienst angelegt hast |
 | `KENNWORT_OIDC_CLIENT_SECRET` | Client-Geheimnis (vertraulicher Client); ohne es meldet sich Kennwort als öffentlicher Client mit PKCE an |
-| `KENNWORT_OIDC_SCOPES` | Scopes, Vorgabe `openid profile`; muss `openid` enthalten, für Gruppen oft zusätzlich `groups` |
-| `KENNWORT_OIDC_GROUPS_CLAIM` | Name des Claims mit den Gruppen im ID-Token, Vorgabe `groups` |
+| `KENNWORT_OIDC_SCOPES` | Scopes, Vorgabe `openid profile`; muss `openid` enthalten |
 | `KENNWORT_OIDC_NAME` | Beschriftung des Knopfs „Mit … anmelden“, Vorgabe „OpenID Connect“ |
 
 Beim Anmeldedienst legst du einen Client vom Typ „Authorization Code“ an, mit der
@@ -93,16 +70,12 @@ ES256 oder EdDSA). Das Client-Geheimnis steht nie im Log und geht nie an einen B
 
 - Client anlegen: *Client authentication* an, *Standard flow* an, *Valid redirect URIs* wie oben,
   unter *Advanced* „Proof Key for Code Exchange Code Challenge Method“ auf `S256`.
-- Gruppen: unter *Client scopes → <client>-dedicated → Add mapper → Group Membership*, Token Claim
-  Name `groups`, *Full group path* an oder aus (Kennwort entfernt den führenden Schrägstrich), *Add
-  to ID token* an.
 - `KENNWORT_OIDC_ISSUER=https://sso.example.de/realms/<realm>`
 
 ### Authentik
 
 - *Applications → Providers → OAuth2/OpenID Provider*, *Client type* „Confidential“, Redirect URI
   wie oben, Signierschlüssel auswählen (sonst signiert Authentik mit HS256, das Kennwort ablehnt).
-- Der Scope `profile` enthält bei Authentik schon den Claim `groups`.
 - `KENNWORT_OIDC_ISSUER=https://auth.example.de/application/o/<slug>/` (mit Schrägstrich am Ende,
   genau wie in der Discovery).
 
@@ -110,9 +83,6 @@ ES256 oder EdDSA). Das Client-Geheimnis steht nie im Log und geht nie an einen B
 
 - *App registrations → New registration*, Plattform „Web“, Redirect URI wie oben; unter
   *Certificates & secrets* ein Client-Geheimnis.
-- Gruppen: *Token configuration → Add groups claim*, „Security groups“, im ID-Token. Entra ID
-  schickt die **Objekt-IDs** der Gruppen, keine Namen: Benenne die Gruppen in Kennwort mit diesen
-  IDs oder wähle unter „Group claims“ das Format `sAMAccountName` für synchronisierte Gruppen.
 - `KENNWORT_OIDC_ISSUER=https://login.microsoftonline.com/<tenant-id>/v2.0`
 
 ## Deep Links

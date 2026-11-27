@@ -26,9 +26,8 @@ Was Kennwort anders macht als Passbolt und Bitwarden:
 - **Post-quanten-hybrid** (X25519 + ML-KEM-768) von Anfang an.
 - **Entsperren mit Passkey** (WebAuthn PRF), Passphrase nur als Notweg.
 - **Eine Anmeldung über OpenID Connect**: in der Suite über Kontext oder Stalwart, sonst jeder
-  Anbieter (Keycloak, Authentik, Entra ID); Gruppen kommen aus dem groups-Claim, wer geht, verliert
-  den Zugriff.
-- **Alles frei**: SSO, Gruppen, Audit-Log ohne Pro-Version (AGPL).
+  Anbieter (Keycloak, Authentik, Entra ID); wer geht, verliert den Zugriff.
+- **Alles frei**: SSO, Audit-Log ohne Pro-Version (AGPL).
 - **Ein Container, Bun + SQLite**, wenige Abhängigkeiten (Client: etwa 6 Laufzeitpakete).
 
 Nicht das Ziel: Konkurrenz zu Bitwarden für Privatleute oder Großunternehmen (LDAP/SCIM erst
@@ -41,7 +40,7 @@ später).
 | Firmen-Recovery | Standard für Firmen, pro Firma abschaltbar: Der Inhaber hält einen Notfallschlüssel und kann den Zugang eines Mitarbeiters wiederherstellen | Für einen kleinen Betrieb ist „alles weg“ schlimmer als „der Chef kommt im Notfall ran“; geteilte Tresore haben ohnehin mehrere Mitglieder |
 | Betrieb | Selbst gehostet, aber von Anfang an mandantenfähig, sodass ein IT-Dienstleister viele Firmen auf einem Server betreiben kann | passt zu „mehrere Firmen“; da der Server nichts lesen kann, ist auch gehosteter Betrieb unbedenklich |
 | Einrichtungs-Code | Der Code des Betreibers legt jede neue Firma an, nicht nur die erste; eine bestehende Firma öffnet er nie | passt zum mandantenfähigen Betrieb: Ein IT-Dienstleister legt viele Firmen an, ohne den Server neu zu starten; in eine Firma kommt man weiter nur mit Einladung |
-| Router und Server-Daten der Web-App | TanStack Router (`@tanstack/solid-router` 2.0.0-rc.11) und TanStack Query (`@tanstack/solid-query` 6.0.0-rc.6), auf Wunsch des Nutzers als Release Candidates übernommen, exakt gepinnt. Der Router läuft ohne `RouterProvider` mit Routen im Code (keine Codegen): Er hält Adresse und Verlauf, die App liest die Seite aus seinem Treffer und bleibt beim Sperren der Torwächter. Query lädt Geräte, Gruppen, Mitglieder und Richtlinie: ein Cache je geöffnetem Konto, nur im Speicher, beim Sperren geleert, ohne Persister, Schlüssel ohne Token oder Geheimnis. Tresore und Einträge bleiben beim eigenen Laden, weil sie entschlüsseln und den Sync speisen | Nur diese Versionen tragen Solid 2. Risiko: Der Router hängt laut Paket noch an `@solidjs/meta`, `@solid-primitives/refs` und `@solid-devtools/logger` (für Solid 1) und `isbot`; keins davon landet im Bundle (geprüft mit der Source Map), es gibt nur ein `solid-js`. Beide zusammen machen das Bundle der Web-App um rund 153 kB größer (53 kB gzip), vor allem `router-core` und `query-core`. Fragmente mit Geheimnissen (Kit, Kopplung) liest die App vor dem ersten Rendern und entfernt sie sofort aus Adresse, Verlauf und Router |
+| Router und Server-Daten der Web-App | TanStack Router (`@tanstack/solid-router` 2.0.0-rc.11) und TanStack Query (`@tanstack/solid-query` 6.0.0-rc.6), auf Wunsch des Nutzers als Release Candidates übernommen, exakt gepinnt. Der Router läuft ohne `RouterProvider` mit Routen im Code (keine Codegen): Er hält Adresse und Verlauf, die App liest die Seite aus seinem Treffer und bleibt beim Sperren der Torwächter. Query lädt Geräte, Mitglieder und Richtlinie: ein Cache je geöffnetem Konto, nur im Speicher, beim Sperren geleert, ohne Persister, Schlüssel ohne Token oder Geheimnis. Tresore und Einträge bleiben beim eigenen Laden, weil sie entschlüsseln und den Sync speisen | Nur diese Versionen tragen Solid 2. Risiko: Der Router hängt laut Paket noch an `@solidjs/meta`, `@solid-primitives/refs` und `@solid-devtools/logger` (für Solid 1) und `isbot`; keins davon landet im Bundle (geprüft mit der Source Map), es gibt nur ein `solid-js`. Beide zusammen machen das Bundle der Web-App um rund 153 kB größer (53 kB gzip), vor allem `router-core` und `query-core`. Fragmente mit Geheimnissen (Kit, Kopplung) liest die App vor dem ersten Rendern und entfernt sie sofort aus Adresse, Verlauf und Router |
 | Secret Key auf dem Gerät | Die Web-App merkt sich Konto-ID und Secret Key im `localStorage`, nie Passphrase oder AK | wie bei 1Password: Zum Entsperren reicht die Passphrase, und ein Server, der Passphrasen errät, muss trotzdem den Secret Key raten |
 | Neues Gerät | Der QR-Code trägt Kopplungs-ID, Fingerabdruck des Einmal-Schlüssels und ein Kopplungs-Geheimnis, nicht den Schlüssel; das Paket ist an das Geheimnis gebunden und enthält auch den Secret Key | Ein X-Wing-Schlüssel hat 1216 Byte, der QR-Code bliebe kaum lesbar, und der Fingerabdruck bindet ihn genauso; das Geheimnis sieht der Server nie, so kann er kein eigenes Paket unterschieben (Review von K-303); ohne Secret Key könnte das neue Gerät nach dem Sperren nicht mit der Passphrase entsperren |
 | Icons | `lucide` (die Icon-Daten ohne Framework) mit einer eigenen Icon-Komponente in `packages/ui` statt `lucide-solid` | `lucide-solid` baut auf Solid 1 (`splitProps`, `solid-js/web`) und läuft mit Solid 2 nicht; die Daten sind dieselben, und eine Abhängigkeit weniger läuft im Client |
@@ -52,7 +51,8 @@ später).
 | Namen der Mitglieder | Der Einladende tippt einen Namen ein; der Server speichert ihn an der Einladung und zeigt ihn in der Mitgliederliste | Konten haben sonst keine Namen, bis OIDC oder SCIM sie liefern; der Name ist nur eine Beschriftung, Vertrauen kommt allein aus dem Zertifikat |
 | Wurzelschlüssel für Admins | Inhaber und Admins halten den privaten Wurzelschlüssel, verpackt an ihr Bündel; nur Inhaber vergeben Rollen, nie die eigene | Admins laden ein und müssen dafür zertifizieren können (P-08); ein Inhaber, der sich nicht selbst herabstufen kann, hält die Firma immer mit mindestens einem Inhaber |
 | Firmen-Richtlinie | Eine vom Wurzelschlüssel signierte Richtlinie mit Version (F-07); Clients merken sich die höchste Version und nehmen keine ältere | So kann der Server weder die Sperrzeit noch später die Firmen-Recovery heimlich ändern oder zurückdrehen |
-| Gruppen nach den Anfragen | Zugriff anfragen kommt vor den Gruppen (K-305); eine Gruppe erzeugt beim Eintritt eines Mitglieds nur Anfragen an die Verwalter ihrer Tresore | Bei Ende-zu-Ende-Verschlüsselung gibt nur ein Verwalter-Client Zugriff; Gruppen bauen darum auf den Anfragen auf, nicht umgekehrt |
+| Gruppen nach den Anfragen | *(Überholt am 27.11.2026 durch „Keine Gruppen“, K-608)* Zugriff anfragen kommt vor den Gruppen (K-305); eine Gruppe erzeugt beim Eintritt eines Mitglieds nur Anfragen an die Verwalter ihrer Tresore | Bei Ende-zu-Ende-Verschlüsselung gibt nur ein Verwalter-Client Zugriff; Gruppen bauen darum auf den Anfragen auf, nicht umgekehrt |
+| Keine Gruppen (K-608, 27.11.2026) | Personen werden direkt zu Tresoren hinzugefügt (auch mehrere auf einmal, mit Rolle und Befristung); es gibt keine Gruppen, keinen Gruppen-Tab und keinen OIDC-Gruppenabgleich mehr | Für kleine Betriebe (3–30 Personen, 3–6 Tresore) waren Gruppen eine unnötige Zwischenebene: Bei Ende-zu-Ende-Verschlüsselung konnte eine Gruppe ohnehin keinen Zugriff geben und machte das Modell mit doppelten Pflegeorten und Klartext-Gruppennamen auf dem Server komplizierter |
 | Einzelnen Eintrag teilen nach den Einträgen | K-305 Teil 6 (P-10) kommt nach K-306 Teil 1; der Eintrags-Schlüssel bleibt seitdem über die Versionen eines Eintrags gleich, neu bei Schlüsselwechsel und Widerruf | Vorher bekam jede Version einen neuen EK; eine Freigabe soll aber auch spätere Versionen öffnen, und erst ein Widerruf wechselt den EK |
 | Widerruf einer Freigabe | Entfernen holt den Tresor neu, schreibt den Eintrag mit unverändertem Inhalt als neue Version unter einem neuen EK, verpackt den neuen EK für die übrigen Freigaben neu und löscht die Freigabe erst danach; neu gemacht werden nur Freigaben, die ein Mitglied mit „bearbeiten“ oder „verwalten“ über den EK der ersetzten Version signiert hat | Erst der neue EK nimmt dem Entfernten spätere Versionen (P-10); ohne neues Verpacken würden die übrigen Freigaben brechen, ohne die Prüfung gegen den neuesten EK könnte ein Server eine eigene oder früher widerrufene Freigabe neu verpacken lassen, und weil zuletzt gelöscht wird, bleibt ein gescheiterter Widerruf wiederholbar (Review von K-305 Teil 6b) |
 | Versionen geteilter Einträge | Der Empfänger merkt sich die höchste Version jedes geteilten Eintrags im verschlüsselten Kontostand (`versions`) und zeigt keine ältere | So spielt ihm der Server auch ohne Log keinen älteren Stand ein, über Geräte und Sitzungen hinweg (E-13) |
@@ -144,8 +144,8 @@ später).
 | Datenleck-Prüfung über den eigenen Server | Die Web-App fragt Pwned Passwords (Have I Been Pwned, k-Anonymität) nicht selbst, sondern `GET /api/pwned/<präfix>` beim Kennwort-Server, der nur fünf große Hex-Zeichen annimmt und den Bereich mit `Add-Padding: true` vom eingestellten Dienst holt (`KENNWORT_PWNED_URL`, Spiegel möglich, `off` schaltet ab); eine Stunde im Speicher, nie im Log | Direkt aus dem Browser bräuchte die CSP der Web-App einen fremden Host in `connect-src`, die Extension ebenso, und der Dienst sähe die Adresse jeder Person; über den Server bleibt `connect-src` bei `'self'`, ein Spiegel wird an einer Stelle eingetragen, und dieselbe Anfrage mehrerer Kollegen geht einmal hinaus. Der Server sieht dafür die Präfixe je Konto – nicht mehr, als der Dienst sonst sähe, und er gilt ohnehin als nicht vertrauenswürdig (P-23) |
 | Datenleck-Prüfung je Person | Aus, bis die Person sie unter „Sicherheit“ einschaltet; die Wahl steht versiegelt im Kontozustand und gilt auf allen ihren Geräten | Eine Anfrage an einen Dritten braucht eine Einwilligung; je Firma ginge sie nur über die signierte Richtlinie (F-07, neues Format), eine unsignierte Einstellung könnte der Server selbst einschalten und so Präfixe sammeln |
 | OpenID-Connect-Client | Eigener Client im Server (Discovery, Authorization Code mit PKCE, `state`, `nonce`, Prüfung des ID-Tokens mit WebCrypto, nur RS256/PS256/ES256/EdDSA), Einstellung über `KENNWORT_OIDC_*`; nicht Better Auths Plugins | Better Auths `genericOAuth` und `sso` legen Benutzer selbst an und verknüpfen über die Mail-Adresse; Kennworts Konten-IDs wählt aber das Gerät, und verknüpft wird nur über Issuer und `sub`. Ein eigener Client ist kurz, ohne neues Paket und gegen einen nachgebauten Anmeldedienst getestet (P-25) |
-| Was der Anmeldedienst darf | Er bestätigt eine Person und meldet Gruppen; ein bestehendes Konto bekommt von ihm **keine Sitzung** (es meldet sich weiter mit der Passphrase an), eine neue Person nur ein Konto ohne Zertifikat und ohne Tresor, das ein Inhaber oder Admin nach einem Codevergleich zertifiziert | Die Ende-zu-Ende-Verschlüsselung darf nicht am Anmeldedienst hängen (ETH-Studie: SSO als Schlüsseldienst, E-03). Ohne Sitzung kann ein gekaperter Anmeldedienst auch keine Geheimtexte abholen oder mit einer Admin-Sitzung Mitglieder entfernen |
-| Gruppen vom Anmeldedienst | Eine Gruppe folgt der Gruppe gleichen Namens im Claim; ein Beitritt legt nur Zugriffsanfragen an, ein Austritt nimmt nur die Anfragen zurück und meldet den Verwaltern, wer noch im Tresor ist; Gruppen, die ein Admin vergeben hat, bleiben | Zugriff gibt nur ein Verwalter mit verpacktem Schlüssel und signiertem Log-Eintrag (P-05); den Schlüsselwechsel nach einem Austritt kann nur ein Client machen (P-11) |
+| Was der Anmeldedienst darf | Er bestätigt eine Person; ein bestehendes Konto bekommt von ihm **keine Sitzung** (es meldet sich weiter mit der Passphrase an), eine neue Person nur ein Konto ohne Zertifikat und ohne Tresor, das ein Inhaber oder Admin nach einem Codevergleich zertifiziert | Die Ende-zu-Ende-Verschlüsselung darf nicht am Anmeldedienst hängen (ETH-Studie: SSO als Schlüsseldienst, E-03). Ohne Sitzung kann ein gekaperter Anmeldedienst auch keine Geheimtexte abholen oder mit einer Admin-Sitzung Mitglieder entfernen |
+| Gruppen vom Anmeldedienst | *(Überholt am 27.11.2026 durch „Keine Gruppen“, K-608)* Eine Gruppe folgt der Gruppe gleichen Namens im Claim; ein Beitritt legt nur Zugriffsanfragen an, ein Austritt nimmt nur die Anfragen zurück und meldet den Verwaltern, wer noch im Tresor ist; Gruppen, die ein Admin vergeben hat, bleiben | Zugriff gibt nur ein Verwalter mit verpacktem Schlüssel und signiertem Log-Eintrag (P-05); den Schlüsselwechsel nach einem Austritt kann nur ein Client machen (P-11) |
 | Aufnahme über den Anmeldedienst | Je Firma von einem Inhaber oder Admin eingeschaltet, Link zum Beitreten mit der Firmen-ID; der Wurzelschlüssel beim ersten Kontakt, abgesichert durch zwei Codes (Bündel und Firma), die beide Seiten vergleichen | Ein Link ohne Geheimnis kann kein MAC wie bei der Einladung tragen (P-08); der Codevergleich ersetzt ihn. Ein Server kann viele Firmen tragen, darum nennt der Link die Firma |
 | SCIM | Zurückgestellt (Bauliste) | Ohne Schlüssel kann der Server ein Konto nicht wirklich entfernen; SCIM brächte Tokens je Firma, eine zweite Schnittstelle zum Anlegen von Konten und nur eine Markierung „entfernen“, die ein Admin ohnehin selbst ausführt |
 | Deep Links | Die Adressen der App und das Schema `web+kennwort:` (`protocol_handlers`, weiter an `/open`), später `kennwort:` in der Mobile-App; nur IDs, nie ein Geheimnis | offene Standards ohne Kopplung an eine App; ein Link öffnet nichts ohne Entsperren und nur, was das Konto lesen darf (P-26) |
@@ -277,15 +277,14 @@ Schreibzeug, das sich über einen allgemeinen OIDC-Client bei Kontext anmeldet.
 | Was | Standard in Kennwort | In der Speicherstadt-Suite | Ohne Suite |
 | --- | --- | --- | --- |
 | Anmeldung | eigene Konten mit Passkey; wahlweise OpenID Connect (Client) | Kontext als OIDC-Provider, wie bei Schreibzeug, oder Stalwart direkt | Keycloak, Authentik, Entra ID, Google |
-| Gruppen | eigene; wahlweise der groups-Claim aus dem ID-Token, Name des Claims einstellbar | info@, rechnung@ aus den Gruppenkonten in Stalwart | Gruppen des Anbieters |
 | Benutzer anlegen und entfernen | Einladung oder Anmeldung legt an; optional SCIM-Endpunkt | Kontext könnte SCIM sprechen | jeder SCIM-Client |
 | Verweise von außen | Deep Links auf Tresor und Eintrag per ID (`/vaults/<id>/<eintrag>`, `web+kennwort:`) | Kontext verlinkt vom Kunden auf seine Zugänge | jede App |
 
-Ende-zu-Ende-Verschlüsselung setzt eine Grenze: Ein Gruppenwechsel beim Anbieter erzeugt nur eine
-**Anfrage**. Zugriff gibt erst ein Verwalter frei, dessen Client den Tresor-Schlüssel für das neue
-Mitglied verpackt und signiert; Entfernen wirkt sofort auf dem Server, den Schlüsselwechsel macht
-der nächste Verwalter-Client. So kann weder der Anbieter noch der Server heimlich Zugriff
-verschaffen.
+Ende-zu-Ende-Verschlüsselung setzt eine Grenze: Neue Konten über den Anbieter starten ohne Zertifikat
+und ohne Tresor, bis ein Inhaber oder Admin den Code vergleicht; Zugriff gibt erst ein Verwalter
+frei, dessen Client den Tresor-Schlüssel verpackt und signiert; Entfernen wirkt sofort auf dem
+Server, den Schlüsselwechsel macht der nächste Verwalter-Client. So kann weder der Anbieter noch der
+Server heimlich Zugriff verschaffen.
 
 ## Bauplan im Agenten-Loop
 
@@ -313,12 +312,12 @@ Reihenfolge nach Abhängigkeiten:
 
 1. **Fundament** – Repo-Gerüst, CI, Sicherheitsdesign, `packages/crypto`, `packages/core`.
 2. **Server** – API, Sync mit SSE, Anmeldung, Mitgliedschafts-Log, Audit-Log.
-3. **Web-App und PWA** – Konto, Geräte, Firma, Tresore, Gruppen, Einträge, Verwaltung.
+3. **Web-App und PWA** – Konto, Geräte, Firma, Tresore, Einträge, Verwaltung.
 4. **Extension** – Popup, Inline-Menü, Ausfüllen, Speichern, Passkeys; Chrome, Edge, Firefox,
    Firefox für Android, Safari.
 5. **Import und Export** – alle Formate aus dem Abschnitt unten.
 6. **Team-Funktionen** – Einmal-Links, Erinnerungen, Richtlinien, Notfallzugriff, Anmeldung per
-   OpenID Connect mit Gruppen, CLI.
+   OpenID Connect, CLI.
 7. **Härtung** – alle ETH-Angriffe abgewehrt, reproduzierbare Builds, Demo ohne Server, Doku,
    Screenshots.
 8. **Mobile-App** – ganz am Schluss: Tauri 3 mit Autofill für Android; das iOS-Projekt wird angelegt,
@@ -428,7 +427,7 @@ Der Import läuft komplett im Client; die Datei verlässt nie das Gerät und wir
 | Von | Format |
 | --- | --- |
 | Bitwarden / Vaultwarden | JSON (auch Organisationen und Sammlungen), verschlüsseltes JSON, CSV |
-| LastPass | CSV aus dem Web-Tresor (geteilte Ordner als Gruppen) |
+| LastPass | CSV aus dem Web-Tresor (auch geteilte Ordner) |
 | 1Password | 1PUX, CSV |
 | KeePass / KeePassXC | KDBX 4, KeePass-2-XML, CSV |
 | Team Password Manager | CSV (Projekte als Ordner, auf Wunsch als Tags) |
@@ -443,7 +442,7 @@ Ablauf:
 
 1. Anbieter wählen; Kennwort zeigt in wenigen Schritten, wo dort der Export ist.
 2. Datei laden; Vorschau mit Zuordnung: ein Ziel-Tresor, Ordner und Sammlungen auf Wunsch als Tags
-   (Tresore aus Ordnern und geteilte Ordner als geteilte Tresore mit Gruppen folgen später), bei
+   (Tresore aus Ordnern und geteilte Ordner als geteilte Tresore folgen später), bei
    einer beliebigen Tabelle die Spalten.
 3. Doppelte Einträge erkennen und überspringen, außer man nimmt sie trotzdem; schwache Passwörter
    markieren, sie stehen danach unter „Zum Ändern“.
@@ -467,7 +466,6 @@ wenn dort alles abgehakt ist und die menschlichen Schritte erledigt sind.
 
 - Marke: „Kennwort“ als Wort-Bild-Marke anmelden? Store-Namen prüfen (Chrome, Firefox, App Store,
   Play).
-- Liefert Stalwart selbst einen groups-Claim, oder bekommt ihn Kontexts OIDC-Provider dazu?
 - Ab wann Budget für das externe Audit, und welcher Prüfer?
 - Aktueller Stand von Googles Entwickler-Verifizierung für APKs außerhalb des Play Stores?
 - Bringt Tauri 3 für Mobile genug, um auf die stabile Version zu warten?

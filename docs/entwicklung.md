@@ -23,7 +23,7 @@ Geheimtext an Eintrag, Tresor und Version gebunden (AAD), und der Client prüft 
 absichtlich falsch verhält, spielt die Angriffe der ETH-Studie nach
 ([Sicherheitsdesign](sicherheitsdesign.md)).
 
-Testdaten: die Firma „Weber Haustechnik“ mit Jonas, Anna, Sandra und Max, wie in Kontext.
+Testdaten: die Firma „Weber Haustechnik“ mit Jonas, Anna, Sandra, Max, Tim und Lea.
 
 ## Konventionen
 

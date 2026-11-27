@@ -1,8 +1,8 @@
 ---
 title: Verwaltung
 description: >-
-  Kennwort für Inhaber und Admins: Mitglieder, Rollen, Firmen-Richtlinien, Tresore und Gruppen,
-  Audit-Log, Sicherheitsbericht und der Betrieb des Servers.
+  Kennwort für Inhaber und Admins: Mitglieder, Rollen, Firmen-Richtlinien, Tresore, Audit-Log,
+  Sicherheitsbericht und der Betrieb des Servers.
 ---
 
 # Verwaltung
@@ -28,11 +28,11 @@ die Zeit bis zum automatischen Sperren ([Automatisch sperren](konto.md#automatis
 die Firmen-Recovery ([Firmen-Recovery](konto.md#firmen-recovery)). Die Richtlinien sind mit dem
 Firmenschlüssel unterschrieben; der Server kann sie nicht ändern.
 
-## Tresore und Gruppen
+## Tresore
 
-Tresore ordnen die Zugänge, Gruppen fassen Personen zusammen. Wer einen Tresor verwaltet, gibt
-Zugriff, auch auf Zeit, beantwortet Zugriffsanfragen und nimmt Personen wieder heraus; danach
-wechselt Kennwort den Tresor-Schlüssel und setzt alles, was die Person lesen konnte, auf
+Tresore ordnen die Zugänge. Wer einen Tresor verwaltet, gibt Personen direkt Zugriff – auch
+mehreren auf einmal oder auf Zeit –, beantwortet Zugriffsanfragen und nimmt Personen wieder heraus;
+danach wechselt Kennwort den Tresor-Schlüssel und setzt alles, was die Person lesen konnte, auf
 „Zum Ändern“. Mehr unter [Tresore](tresore.md) und [Team](team.md).
 
 ## Nachvollziehen und prüfen
