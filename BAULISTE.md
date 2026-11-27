@@ -609,6 +609,13 @@ die Doku-Seite dazu steht und die Ernstfälle aus dem Projektplan getestet sind.
   ihre Daten herunter, ein Tippfehler löscht nichts, sie löscht ihr Konto, und Jonas' Client nimmt
   sie aus Büro und wechselt den Schlüssel; allein in seiner Firma löscht Jonas sie mit seinem Konto.
 
+- [ ] **K-608 Tresor-Zugriff ohne Gruppen** – Gruppen ganz entfernen (Oberfläche, Client, Server,
+  Datenbank, Anmeldedienst, Doku) und Team → Tresore nach dem Entwurf in
+  [`entwuerfe/tresor-zugriff/`](entwuerfe/tresor-zugriff/README.md) neu bauen: Personen nach Rolle,
+  Hinzufügen per Feld mit Chips, Menü „⋯“ je Person, Verlauf aus dem Mitglieder-Protokoll, Desktop,
+  Tablet und Handy. In vier Pull Requests, wie der Entwurf sie beschreibt.
+  Fertig, wenn: alles unter „Fertig, wenn“ in `entwuerfe/tresor-zugriff/README.md` erfüllt ist.
+
 ## Phase 7 – Härtung
 
 - [x] **K-701 Alle ETH-Angriffe** – jeder der 27 Angriffe als Test gegen den bösartigen Testserver.

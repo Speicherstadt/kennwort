@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tresor-Zugriff</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: Konzeptseite mit einem Prototyp, dessen Rahmen zwischen Desktop, Tablet und Handy umschaltet; die App reagiert per Container Query (3 / 2 / 1 Spalten). Tokens = DESIGN.md (Zinc, Geist). */
+:root{
+  --background:#ffffff;--muted:#fafafa;--accent:#f4f4f5;--border:#e4e4e7;--border-strong:#d4d4d8;--foreground:#09090b;
+  --muted-foreground:#71717a;--primary:#18181b;--primary-foreground:#fafafa;--success:#15803d;--success-surface:#dcfce7;
+  --warning:#b45309;--warning-surface:#fef3c7;--danger:#b91c1c;--danger-surface:#fee2e2;--info:#1d4ed8;--info-surface:#dbeafe;
+  --page:#f4f4f5;--scrim:rgba(9,9,11,.4);--shadow:0 16px 40px rgba(0,0,0,.14),0 2px 6px rgba(0,0,0,.06);
+  --sans:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --background:#09090b;--muted:#18181b;--accent:#27272a;--border:#27272a;--border-strong:#3f3f46;--foreground:#fafafa;
+  --muted-foreground:#a1a1aa;--primary:#fafafa;--primary-foreground:#18181b;--success:#4ade80;--success-surface:#052e16;
+  --warning:#fbbf24;--warning-surface:#422006;--danger:#f87171;--danger-surface:#450a0a;--info:#93c5fd;--info-surface:#172554;
+  --page:#111113;--scrim:rgba(0,0,0,.6);--shadow:0 16px 40px rgba(0,0,0,.6);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --background:#09090b;--muted:#18181b;--accent:#27272a;--border:#27272a;--border-strong:#3f3f46;--foreground:#fafafa;
+  --muted-foreground:#a1a1aa;--primary:#fafafa;--primary-foreground:#18181b;--success:#4ade80;--success-surface:#052e16;
+  --warning:#fbbf24;--warning-surface:#422006;--danger:#f87171;--danger-surface:#450a0a;--info:#93c5fd;--info-surface:#172554;
+  --page:#111113;--scrim:rgba(0,0,0,.6);--shadow:0 16px 40px rgba(0,0,0,.6);color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--foreground);font-family:var(--sans);font-size:14px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 80px}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--foreground);outline-offset:2px}
+.doc{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+.prose{max-width:68ch;display:flex;flex-direction:column;gap:8px}
+h1,h2,h3,h4{margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:34px;font-weight:600;line-height:1.15}
+h2{font-size:21px;font-weight:600}
+h3{font-size:15px;font-weight:600}
+p{margin:0}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-foreground);font-weight:500}
+.lead{font-size:16px;color:var(--muted-foreground)}
+section{display:flex;flex-direction:column;gap:16px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{background:var(--background);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.card p{font-size:13px;color:var(--muted-foreground)}
+
+/* Gerätewahl */
+.stage-bar{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.seg{display:inline-flex;background:var(--background);border:1px solid var(--border);border-radius:8px;padding:2px}
+.seg button{border:0;background:none;padding:5px 14px;border-radius:6px;font-size:13px;cursor:pointer;color:var(--muted-foreground)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--foreground);font-weight:500}
+.stage{display:flex;justify-content:center}
+.device{width:100%;max-width:1240px;background:var(--background);border:1px solid var(--border);border-radius:14px;overflow:hidden;position:relative}
+.device[data-d="tablet"]{max-width:820px;border-radius:22px}
+.device[data-d="phone"]{max-width:390px;border-radius:34px}
+.device-bar{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--border);background:var(--muted);font-size:12px;color:var(--muted-foreground)}
+.device-bar .dot{width:9px;height:9px;border-radius:50%;background:var(--border)}
+.device[data-d="phone"] .device-bar{justify-content:center;border-bottom:0;background:var(--background);font-weight:600;color:var(--foreground)}
+.device[data-d="phone"] .device-bar .dot{display:none}
+
+/* App */
+.app{container-type:inline-size;position:relative;height:700px;display:flex;flex-direction:column;overflow:hidden}
+.app-top{padding:14px 24px 0}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border)}
+.tab{border:0;background:none;padding:8px 12px;font-size:13px;color:var(--muted-foreground);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab[aria-selected="true"]{color:var(--foreground);border-color:var(--foreground);font-weight:500}
+.split{flex:1;min-height:0;display:grid;grid-template-columns:264px minmax(0,1fr)}
+.list{border-right:1px solid var(--border);padding:12px 10px;overflow:auto;display:flex;flex-direction:column;gap:2px;background:var(--muted)}
+.detail{overflow:auto;min-width:0}
+
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted-foreground);font-weight:500;padding:8px 10px 6px}
+.vrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:0;background:none;text-align:left;cursor:pointer;width:100%;min-height:54px}
+.vrow:hover{background:var(--accent)}
+.vrow[aria-current="true"]{background:var(--background);box-shadow:0 0 0 1px var(--border)}
+.vico{width:32px;height:32px;border-radius:8px;background:var(--accent);display:grid;place-items:center;flex:none;color:var(--foreground)}
+.vrow[aria-current="true"] .vico{background:var(--primary);color:var(--primary-foreground)}
+.vrow .t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}
+.vrow .n{font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vrow .s{font-size:12px;color:var(--muted-foreground)}
+.stack{display:flex;flex:none}
+.stack .av{width:24px;height:24px;font-size:8.5px;border:2px solid var(--muted);margin-left:-5px;letter-spacing:-.02em}
+.vrow[aria-current="true"] .stack .av{border-color:var(--background)}
+.stack .more{background:var(--border)}
+.reqdot{min-width:18px;height:18px;border-radius:9px;background:var(--info);color:var(--background);font-size:11px;font-weight:600;display:grid;place-items:center;padding:0 5px;flex:none}
+.chev{color:var(--muted-foreground);display:none;flex:none}
+.newv{display:flex;gap:8px;align-items:center;padding:10px;color:var(--muted-foreground);font-size:13px;border:0;background:none;cursor:pointer;border-radius:8px;width:100%}
+.newv:hover{background:var(--accent);color:var(--foreground)}
+
+/* Detail */
+.dgrid{display:grid;grid-template-columns:minmax(0,1fr) 300px;min-height:100%}
+.main{min-width:0;padding:22px 28px 32px;display:flex;flex-direction:column;gap:20px}
+.aside{border-left:1px solid var(--border);padding:22px 20px;display:flex;flex-direction:column;gap:20px;background:var(--background)}
+.dh{display:flex;align-items:flex-start;gap:14px;position:relative}
+.dh .big{width:48px;height:48px;border-radius:12px;background:var(--primary);color:var(--primary-foreground);display:grid;place-items:center;flex:none}
+.dh .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.dh h2{font-size:22px;font-weight:600;line-height:1.2}
+.meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;border-radius:6px;padding:2px 8px;background:var(--accent);color:var(--foreground);font-variant-numeric:tabular-nums}
+.chip.ok{background:var(--success-surface);color:var(--success)}
+.chip svg{flex:none}
+.iconbtn{width:34px;height:34px;border:0;background:none;border-radius:8px;display:grid;place-items:center;cursor:pointer;color:var(--muted-foreground);flex:none}
+.iconbtn:hover{background:var(--accent);color:var(--foreground)}
+.iconbtn.back{display:none}
+
+/* Hinzufügen */
+.adder{border:1px solid var(--border);border-radius:12px;padding:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;position:relative;background:var(--background);transition:border-color .15s}
+.adder:focus-within{border-color:var(--border-strong);box-shadow:0 0 0 3px var(--accent)}
+.adder .field{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:0 4px 0 6px;cursor:text}
+.adder .field svg{color:var(--muted-foreground);flex:none;margin-right:2px}
+.adder input{flex:1;min-width:120px;border:0;background:none;height:32px;font-size:13.5px;outline:none}
+.pchip{display:inline-flex;align-items:center;gap:6px;background:var(--accent);border-radius:999px;padding:2px 4px 2px 2px;font-size:12.5px;font-weight:500}
+.pchip .av{width:22px;height:22px;font-size:9px}
+.pchip button{border:0;background:none;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:var(--muted-foreground)}
+.pchip button:hover{background:var(--border);color:var(--foreground)}
+.rolesel{height:34px;border:0;border-left:1px solid var(--border);background:none;padding:0 10px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:var(--foreground);white-space:nowrap}
+.rolesel:hover{color:var(--foreground)}
+.sugg{flex-basis:100%;border-top:1px solid var(--border);margin:2px -6px -6px;padding:6px;max-height:260px;overflow:auto}
+.sg{display:flex;gap:10px;align-items:center;width:100%;border:0;background:none;padding:7px 8px;border-radius:8px;text-align:left;cursor:pointer}
+.sg:hover:not(:disabled),.sg.hl:not(:disabled){background:var(--accent)}
+.sg:disabled{cursor:not-allowed;opacity:.55}
+.sg .t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3;font-size:13px}
+.sg .s{font-size:12px;color:var(--muted-foreground)}
+.sg .sel{color:var(--foreground)}
+.addrow2{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:-10px;font-size:12px;color:var(--muted-foreground)}
+.linkbtn{border:0;background:none;padding:0;color:var(--muted-foreground);font-size:12px;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+.linkbtn:hover{color:var(--foreground)}
+.linkbtn u{text-underline-offset:2px}
+.inline-date{display:inline-flex;gap:6px;align-items:center}
+.inline-date input{height:26px;border:1px solid var(--border);border-radius:6px;background:var(--background);padding:0 6px;font-size:12px}
+
+/* Anfragen */
+.req{border:1px solid var(--info);background:var(--info-surface);border-radius:12px;padding:10px 10px 10px 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.req .t{flex:1;min-width:160px;font-size:13px;line-height:1.35}
+.req .t .s{display:block;font-size:12px;color:var(--muted-foreground)}
+
+/* Rollen-Gruppen */
+.groups{display:flex;flex-direction:column;gap:18px}
+.rg-h{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.rg-h .ri{width:22px;height:22px;border-radius:6px;background:var(--accent);display:grid;place-items:center;color:var(--foreground)}
+.rg-h b{font-size:13px;font-weight:600}
+.rg-h .c{font-size:12px;color:var(--muted-foreground);font-variant-numeric:tabular-nums}
+.rg-h .d{font-size:12px;color:var(--muted-foreground);margin-left:auto}
+.people{border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.prow{display:flex;align-items:center;gap:12px;padding:9px 8px 9px 12px;min-height:56px;background:var(--background)}
+.prow+.prow{border-top:1px solid var(--border)}
+.prow:hover{background:var(--muted)}
+.av{width:32px;height:32px;border-radius:50%;background:var(--accent);display:grid;place-items:center;font-size:11px;font-weight:600;flex:none;color:var(--foreground)}
+.prow .t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35}
+.prow .n{font-weight:500;font-size:13.5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.prow .s{font-size:12px;color:var(--muted-foreground);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.you{font-size:11px;color:var(--muted-foreground);font-weight:500;border:1px solid var(--border);border-radius:5px;padding:0 5px}
+.until{font-family:var(--mono);font-size:11px;background:var(--warning-surface);color:var(--warning);border-radius:5px;padding:1px 6px}
+.just{animation:flash 1.8s ease-out}
+@keyframes flash{0%,30%{background:var(--success-surface)}100%{background:var(--background)}}
+.empty-r{font-size:12.5px;color:var(--muted-foreground);border:1px dashed var(--border);border-radius:12px;padding:12px 14px}
+
+/* Seite: Verlauf und Rollen */
+.aside h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted-foreground);font-weight:500}
+.tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.tl li{display:flex;gap:10px;position:relative;padding-bottom:14px;font-size:12.5px;line-height:1.4}
+.tl li:not(:last-child)::before{content:"";position:absolute;left:11px;top:24px;bottom:2px;width:1px;background:var(--border)}
+.tl .ti{width:23px;height:23px;border-radius:50%;background:var(--accent);display:grid;place-items:center;flex:none;color:var(--muted-foreground)}
+.tl .ti.add{background:var(--success-surface);color:var(--success)}
+.tl .ti.rm{background:var(--danger-surface);color:var(--danger)}
+.tl .ti.key{background:var(--warning-surface);color:var(--warning)}
+.tl .when{display:block;color:var(--muted-foreground);font-size:11.5px;font-variant-numeric:tabular-nums}
+.trust{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--muted-foreground);border-top:1px solid var(--border);padding-top:14px}
+.trust svg{color:var(--success);flex:none;margin-top:2px}
+.roles{display:flex;flex-direction:column;gap:8px}
+.roles div{display:flex;gap:10px;font-size:12.5px;line-height:1.35}
+.roles .ri{width:22px;height:22px;border-radius:6px;background:var(--accent);display:grid;place-items:center;flex:none}
+.roles b{font-weight:600;display:block;font-size:12.5px}
+.roles span{color:var(--muted-foreground)}
+
+/* Knöpfe */
+.btn{height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--border);background:var(--background);cursor:pointer;font-size:13px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn:hover{background:var(--accent)}
+.btn.primary{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
+.btn.primary:hover{opacity:.9}
+.btn.primary:disabled{opacity:.35;cursor:not-allowed}
+.btn.danger{background:var(--danger);color:var(--background);border-color:var(--danger)}
+.btn.ghost{border-color:transparent;background:none}
+.btn.ghost:hover{background:var(--background)}
+.mobile-add{display:none}
+
+/* Menü */
+.menu{position:absolute;z-index:38;width:272px;background:var(--background);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px}
+.menu .mh{padding:8px 10px 6px;display:flex;gap:10px;align-items:center;font-size:13px;font-weight:500}
+.mi{display:flex;gap:10px;align-items:flex-start;width:100%;border:0;background:none;padding:8px 10px;border-radius:8px;text-align:left;cursor:pointer}
+.mi:hover,.mi:focus-visible{background:var(--accent);outline:none}
+.mi .ck{width:16px;flex:none;margin-top:2px;color:var(--foreground)}
+.mi .l{display:flex;flex-direction:column;line-height:1.35;font-size:13px;flex:1}
+.mi .d{font-size:12px;color:var(--muted-foreground)}
+.mi .rk{color:var(--muted-foreground);margin-top:1px}
+.mi.danger{color:var(--danger)}
+.menu hr{border:0;border-top:1px solid var(--border);margin:6px 0}
+.sheet-handle{display:none}
+.menu-scrim{position:absolute;inset:0;z-index:37}
+
+/* Dialog / Sheet */
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:40;display:grid;place-items:center;padding:20px}
+.dlg{width:min(460px,100%);max-height:100%;background:var(--background);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}
+.dlg-h{padding:18px 20px 10px;display:flex;flex-direction:column;gap:4px}
+.dlg-h p{font-size:13px;color:var(--muted-foreground)}
+.dlg-b{padding:4px 20px 16px;overflow:auto;display:flex;flex-direction:column;gap:12px;min-height:0}
+.dlg-f{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid var(--border);flex-wrap:wrap;align-items:center}
+.dlg-f .grow{flex:1;font-size:12px;color:var(--muted-foreground)}
+.warn{border:1px solid var(--warning);background:var(--warning-surface);border-radius:10px;padding:12px;font-size:13px;display:flex;gap:10px}
+.warn svg{color:var(--warning);flex:none;margin-top:2px}
+.steps{margin:0;padding-left:18px;font-size:13px;display:flex;flex-direction:column;gap:4px;color:var(--muted-foreground)}
+.steps b{color:var(--foreground);font-weight:500}
+.toast{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);background:var(--primary);color:var(--primary-foreground);padding:9px 12px 9px 14px;border-radius:10px;font-size:13px;z-index:35;box-shadow:var(--shadow);display:flex;gap:12px;align-items:center;white-space:nowrap;max-width:calc(100% - 24px)}
+.toast svg{color:var(--success)}
+.toast button{border:0;background:none;color:inherit;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+
+/* Handy-Sheet zum Hinzufügen */
+.pick{border:1px solid var(--border);border-radius:12px;overflow:auto;flex:none;max-height:260px}
+.pk{display:flex;gap:12px;align-items:center;padding:8px 12px;min-height:56px;cursor:pointer}
+.pk+.pk{border-top:1px solid var(--border)}
+.pk input{width:20px;height:20px;accent-color:var(--foreground);flex:none}
+.pk .t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35;font-size:15px}
+.pk .s{font-size:12px;color:var(--muted-foreground)}
+.pk.off{cursor:not-allowed;opacity:.55}
+.rolecards{display:flex;flex-direction:column;gap:8px}
+.rc{border:1px solid var(--border);border-radius:12px;padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:12px;min-height:56px;position:relative}
+.rc .l{display:flex;flex-direction:column;line-height:1.3;font-size:15px;font-weight:500}
+.rc .l span{font-size:12px;color:var(--muted-foreground);font-weight:400}
+.rc:has(input:checked){border-color:var(--foreground);background:var(--accent)}
+.rc input{position:absolute;opacity:0;pointer-events:none}
+.search{position:relative}
+.search input{width:100%;height:44px;border:1px solid var(--border);border-radius:10px;background:var(--background);padding:0 12px 0 38px;font-size:15px}
+.search svg{position:absolute;left:13px;top:15px;color:var(--muted-foreground)}
+
+/* Tablet: Verlauf unter die Liste */
+@container (max-width:1020px){
+  .split{grid-template-columns:232px minmax(0,1fr)}
+  .dgrid{grid-template-columns:1fr}
+  .aside{border-left:0;border-top:1px solid var(--border);padding:20px 28px 28px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .aside .trust{grid-column:1/-1}
+}
+/* Handy: eine Ebene nach der anderen, Menüs und Hinzufügen als Sheets */
+@container (max-width:600px){
+  .app-top{padding:4px 16px 0}
+  .tabs{display:none}
+  .app[data-screen="list"] .app-top::before{content:"Tresore";display:block;font-size:30px;font-weight:700;letter-spacing:-.02em;padding:6px 2px 4px}
+  .split{grid-template-columns:1fr}
+  .app[data-screen="list"] .detail{display:none}
+  .app[data-screen="detail"] .list{display:none}
+  .app[data-screen="detail"] .app-top{display:none}
+  .list{border-right:0;padding:4px 8px 16px;background:var(--background)}
+  .vrow{min-height:64px;padding:10px 8px}
+  .vrow .n{font-size:16px}
+  .vrow .s{font-size:13px}
+  .vrow[aria-current="true"]{background:none;box-shadow:none}
+  .vrow[aria-current="true"] .vico{background:var(--accent);color:var(--foreground)}
+  .vrow+.vrow{border-top:1px solid var(--border);border-radius:0}
+  .stack .av{border-color:var(--background)}
+  .chev{display:block}
+  .iconbtn.back{display:grid;margin:-4px 0 0 -8px;color:var(--foreground);width:40px;height:40px}
+  .main{padding:8px 16px 24px;gap:16px}
+  .dh{flex-wrap:wrap;gap:10px}
+  .dh .big{display:none}
+  .dh>.iconbtn:last-child{position:absolute;right:-6px;top:-4px;width:40px;height:40px}
+  .dh .t{flex-basis:100%}
+  .dh h2{font-size:28px;font-weight:700}
+  .adder,.addrow2{display:none}
+  .mobile-add{display:flex;width:100%;height:46px;font-size:15px}
+  .rg-h .d{display:none}
+  .prow{min-height:64px;padding:10px 6px 10px 12px}
+  .prow .n{font-size:15.5px}
+  .prow .iconbtn{width:44px;height:44px}
+  .aside{grid-template-columns:1fr;padding:20px 16px 28px}
+  .scrim{place-items:end stretch;padding:0}
+  .dlg{width:100%;border-radius:20px 20px 0 0;max-height:94%;border-bottom:0}
+  .dlg-f .btn{flex:1;height:48px;font-size:15px}
+  .dlg-f .grow{flex-basis:100%;text-align:center}
+  .menu{left:0!important;right:0;top:auto!important;bottom:0;width:auto;border-radius:20px 20px 0 0;padding:8px 8px 18px;border-bottom:0}
+  .menu .mi{min-height:54px;align-items:center}
+  .menu .mi .l{font-size:15px}
+  .menu-scrim{background:var(--scrim)}
+  .sheet-handle{display:block;width:36px;height:4px;border-radius:2px;background:var(--border-strong);margin:4px auto 6px}
+}
+@media (prefers-reduced-motion:reduce){.just{animation:none}}
+@media (max-width:560px){h1{font-size:27px}}
+</style>
+</head>
+<body>
+
+<div class="doc">
+
+<header class="prose">
+  <div class="eyebrow">Entwurf · Team → Tresore · ohne Gruppen</div>
+  <h1>Tresor-Zugriff</h1>
+  <p class="lead">Ein Tresor zeigt, wer drin ist, sortiert nach dem, was die Leute dürfen. Wer dazukommen soll, tippst du oben ins Feld. Rechts steht, wer wann wen aufgenommen hat, signiert und von deinem Gerät geprüft.</p>
+</header>
+
+<section>
+  <div class="stage-bar">
+    <div class="prose"><div class="eyebrow">Prototyp · zum Anklicken</div><h2>Ein Entwurf für alle Geräte</h2></div>
+    <div class="seg" role="group" aria-label="Gerät"><button data-dev="desktop" aria-pressed="true">Desktop</button><button data-dev="tablet" aria-pressed="false">Tablet</button><button data-dev="phone" aria-pressed="false">Handy</button></div>
+  </div>
+  <p style="font-size:14px;color:var(--muted-foreground);max-width:72ch">Probier: Bei <b>Büro</b> ins Feld klicken, Tim und Lea ansehen, Tim wählen, „Hinzufügen“. Bei Max auf <b>⋯</b> und die Rolle ändern oder ihn entfernen. Bei <b>Baustellen-Tablets</b> die Anfrage freigeben. Dann auf „Handy“ umschalten.</p>
+  <div class="stage"><div class="device" id="device" data-d="desktop">
+    <div class="device-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span id="devlabel" style="margin-left:6px">Kennwort · Team</span></div>
+    <div class="app" id="app" data-screen="detail"></div>
+  </div></div>
+</section>
+
+<section>
+  <div class="prose"><div class="eyebrow">Prinzipien</div><h2>Was den Entwurf trägt</h2></div>
+  <div class="cards">
+    <div class="card"><h3>Nur wer drin ist, nach Rolle sortiert</h3><p>Drei Abschnitte: Verwalten, Bearbeiten, Lesen. Man sieht ohne Lesen jeder Zeile, wer was darf. Wer nicht drin ist, steht hier nicht.</p></div>
+    <div class="card"><h3>Hinzufügen wie beim Teilen</h3><p>Oben ein Feld: Namen tippen, mehrere als Chips sammeln, Rolle wählen, Enter. So kennt man es aus jedem Teilen-Dialog. Am Handy wird daraus ein Knopf mit Sheet.</p></div>
+    <div class="card"><h3>Ein Menü je Person</h3><p>„⋯“ in der Zeile: Rolle wechseln, Zugriff befristen, entfernen. Keine Schalter, kein Dropdown je Zeile, das man aus Versehen verstellt.</p></div>
+    <div class="card"><h3>Bestätigt wird nur, was wehtut</h3><p>Hinzufügen und Rolle wechseln gelten sofort. Nur die Rollenänderung hat „Rückgängig“, weil sie nur eine neue Rolle schreibt. Entfernen fragt nach und nennt den Schlüsselwechsel.</p></div>
+    <div class="card"><h3>Verlauf statt Behauptung</h3><p>Rechts steht das Mitglieder-Protokoll in Sätzen: wer wen wann aufgenommen, geändert oder entfernt hat. Grün „Protokoll geprüft“ steht nur, wenn das Gerät die Kette wirklich geprüft hat.</p></div>
+    <div class="card"><h3>Was nicht geht, sagt warum</h3><p>Lea ist im Vorschlag ausgegraut: „Schlüssel noch nicht bestätigt“. Im Tresor Lohn steht, dass Sandra ihn verwaltet; das Feld fehlt dort.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="prose"><div class="eyebrow">Geräte</div><h2>Drei Breiten, eine Logik</h2></div>
+  <div class="cards">
+    <div class="card"><h3>Desktop, Inhalt ab 1020 px</h3><p>Drei Spalten: Tresore (264 px), Personen, Verlauf und Rollen (300 px).</p></div>
+    <div class="card"><h3>Tablet, 600 bis 1020 px</h3><p>Zwei Spalten: Tresore (232 px) und Personen; Verlauf und Rollen rutschen nebeneinander unter die Personen.</p></div>
+    <div class="card"><h3>Handy, unter 600 px</h3><p>Erst die Tresore, dann ein Tresor mit Zurück-Pfeil. Hinzufügen und „⋯“ öffnen Sheets von unten, Tippflächen mindestens 44 px.</p></div>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function(){
+const ROLES={Verwalten:{d:"Personen hinzufügen und entfernen",short:"Dazu Personen aufnehmen und entfernen"},Bearbeiten:{d:"Einträge anlegen und ändern",short:"Dazu Einträge anlegen und ändern"},Lesen:{d:"Einträge ansehen und kopieren",short:"Einträge ansehen und kopieren"}};
+const ORDER=["Verwalten","Bearbeiten","Lesen"];
+const PEOPLE={jw:{n:"Jonas Weber",i:"JW",mail:"jonas@weber-haustechnik.de"},an:{n:"Anna Krüger",i:"AK",mail:"anna@weber-haustechnik.de"},sa:{n:"Sandra Yılmaz",i:"SY",mail:"sandra@weber-haustechnik.de"},mx:{n:"Max Brandt",i:"MB",mail:"max@weber-haustechnik.de"},tk:{n:"Tim Kaya",i:"TK",mail:"tim@weber-haustechnik.de"},le:{n:"Lea Hoffmann",i:"LH",mail:"lea@weber-haustechnik.de",unconfirmed:true}};
+const ME="jw";
+const mk=(p,r,since,by,until)=>({p,r,since,by,until});
+const vaults=[
+ {id:"buero",n:"Büro",items:23,m:[mk("jw","Verwalten","2026-02-03"),mk("an","Lesen","2026-02-03","jw"),mk("sa","Lesen","2026-03-14","jw"),mk("mx","Lesen","2026-05-20","jw")],req:[],
+  log:[["add","Jonas hat Max aufgenommen","Lesen","20.05.2026"],["add","Jonas hat Sandra aufgenommen","Lesen","14.03.2026"],["add","Jonas hat Anna aufgenommen","Lesen","03.02.2026"],["new","Jonas hat Büro angelegt","","03.02.2026"]]},
+ {id:"buch",n:"Buchhaltung",items:14,m:[mk("jw","Verwalten","2026-02-03"),mk("sa","Bearbeiten","2026-03-14","jw")],req:[],
+  log:[["role","Jonas hat Sandra auf Bearbeiten gesetzt","","02.06.2026"],["add","Jonas hat Sandra aufgenommen","Lesen","14.03.2026"],["new","Jonas hat Buchhaltung angelegt","","03.02.2026"]]},
+ {id:"kunden",n:"Kunden-Zugänge",items:41,m:[mk("jw","Verwalten","2026-02-03"),mk("an","Bearbeiten","2026-09-01","jw","2026-12-31"),mk("sa","Lesen","2026-03-14","jw"),mk("mx","Lesen","2026-05-20","jw")],req:[],
+  log:[["add","Jonas hat Anna bis 31.12. aufgenommen","Bearbeiten","01.09.2026"],["key","Schlüssel gewechselt, nachdem Ole gegangen ist","","12.08.2026"],["rm","Jonas hat Ole entfernt","","12.08.2026"],["add","Jonas hat Max aufgenommen","Lesen","20.05.2026"]]},
+ {id:"tab",n:"Baustellen-Tablets",items:8,m:[mk("jw","Verwalten","2026-04-02"),mk("mx","Bearbeiten","2026-04-02","jw")],req:["tk"],
+  log:[["add","Jonas hat Max aufgenommen","Bearbeiten","02.04.2026"],["new","Jonas hat Baustellen-Tablets angelegt","","02.04.2026"]]},
+ {id:"lohn",n:"Lohn",items:6,m:[mk("sa","Verwalten","2026-03-20"),mk("jw","Lesen","2026-03-20","sa")],req:[],by:"sa",
+  log:[["add","Sandra hat Jonas aufgenommen","Lesen","20.03.2026"],["new","Sandra hat Lohn angelegt","","20.03.2026"]]},
+ {id:"werk",n:"Werkstatt",items:0,m:[mk("jw","Verwalten","2026-11-27")],req:[],log:[["new","Jonas hat Werkstatt angelegt","","heute, 09:30"]]}
+];
+const ui={sel:"buero",screen:"detail",menu:null,remove:null,until:null,toast:null,flash:null,
+  add:{sel:[],role:"Lesen",q:"",open:false,hl:0,untilOn:false,until:"2026-12-31"},sheet:null};
+const V=()=>vaults.find(v=>v.id===ui.sel);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=d=>{const [y,m,t]=d.split("-");return `${t}.${m}.${y}`;};
+const first=p=>PEOPLE[p].n.split(" ")[0];
+const manages=v=>v.m.some(x=>x.p===ME&&x.r==="Verwalten");
+const svg=(d,s=16,w=2)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ic={
+ vault:(s=18)=>svg('<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M12 9V8M12 16v-1M15 12h1M8 12h1M7 20v1M17 20v1"/>',s),
+ lock:(s=16)=>svg('<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',s),
+ down:svg('<path d="m6 9 6 6 6-6"/>',14),
+ right:svg('<path d="m9 18 6-6-6-6"/>',18),
+ back:svg('<path d="m15 18-6-6 6-6"/>',24),
+ plus:svg('<path d="M12 5v14M5 12h14"/>',16),
+ x:svg('<path d="M18 6 6 18M6 6l12 12"/>',12,2.4),
+ check:svg('<path d="M20 6 9 17l-5-5"/>',16,2.4),
+ dots:svg('<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',18,2.6),
+ search:svg('<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',16),
+ key:svg('<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/>',14),
+ clock:svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',16),
+ shield:svg('<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',14),
+ Verwalten:svg('<path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>',13),
+ Bearbeiten:svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',13),
+ Lesen:svg('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',13),
+ plusS:svg('<path d="M12 5v14M5 12h14"/>',12,2.4),
+ minusS:svg('<path d="M5 12h14"/>',12,2.4),
+ swap:svg('<path d="m16 3 4 4-4 4M20 7H4M8 21l-4-4 4-4M4 17h16"/>',12),
+ hand:svg('<path d="M18 11V6a2 2 0 0 0-4 0M14 10V4a2 2 0 0 0-4 0v2M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',12),
+ star:svg('<path d="M12 3v18M3 12h18"/>',12)
+};
+const LOGI={add:["add",ic.plusS],rm:["rm",ic.minusS],key:["key",ic.key],role:["",ic.swap],req:["",ic.hand],new:["",ic.vault(12)]};
+
+function stack(v){const ps=v.m.map(x=>x.p),show=ps.slice(0,3);return `<span class="stack" aria-hidden="true">${show.map(p=>`<span class="av">${PEOPLE[p].i}</span>`).join("")}${ps.length>3?`<span class="av more">+${ps.length-3}</span>`:""}</span>`;}
+function list(){
+  const rows=vaults.map(v=>`<button class="vrow" data-act="open" data-id="${v.id}" aria-current="${v.id===ui.sel}">
+    <span class="vico">${ic.vault()}</span><span class="t"><span class="n">${esc(v.n)}</span><span class="s">${v.m.length===1?"Nur du":v.m.length+" Personen"}</span></span>
+    ${v.req.length&&manages(v)?`<span class="reqdot" title="Offene Anfrage">${v.req.length}</span>`:""}<span class="chev">${ic.right}</span></button>`).join("");
+  return `<nav class="list" aria-label="Tresore"><div class="lbl">Geteilte Tresore</div>${rows}
+   <button class="newv" data-act="noop">${ic.plus} Neuer Tresor</button>
+   <div class="lbl" style="margin-top:10px">Nur für dich</div>
+   <button class="vrow" data-act="open" data-id="personal" aria-current="${ui.sel==="personal"}"><span class="vico">${ic.lock()}</span><span class="t"><span class="n">Persönlich</span><span class="s">Wird nicht geteilt</span></span><span class="chev">${ic.right}</span></button></nav>`;
+}
+function adder(v){
+  const a=ui.add,inV=new Set(v.m.map(x=>x.p)),q=a.q.toLowerCase();
+  const cands=Object.keys(PEOPLE).filter(p=>!inV.has(p)&&!a.sel.includes(p)&&(PEOPLE[p].n.toLowerCase().includes(q)||PEOPLE[p].mail.includes(q)));
+  const n=a.sel.length;
+  return `<div class="adder" id="adder"><div class="field" data-act="focusq">${a.sel.length?"":ic.search}
+     ${a.sel.map(p=>`<span class="pchip"><span class="av">${PEOPLE[p].i}</span>${esc(first(p))}<button data-act="unpick" data-p="${p}" aria-label="${esc(PEOPLE[p].n)} abwählen">${ic.x}</button></span>`).join("")}
+     <input id="q" type="text" autocomplete="off" placeholder="${n?"Weitere Person …":"Person hinzufügen …"}" value="${esc(a.q)}" aria-label="Person hinzufügen" role="combobox" aria-expanded="${a.open}" aria-controls="sugg"></div>
+   <button class="rolesel" data-act="rolemenu" aria-haspopup="menu">${ic[a.role]} ${a.role} ${ic.down}</button>
+   <button class="btn primary" data-act="doadd" ${n?"":"disabled"}>Hinzufügen</button>
+   ${a.open?`<div class="sugg" id="sugg" role="listbox">${cands.map((p,i)=>{const P=PEOPLE[p];return `<button class="sg ${i===a.hl?"hl":""}" role="option" data-act="pick" data-p="${p}" ${P.unconfirmed?"disabled":""}><span class="av">${P.i}</span><span class="t">${esc(P.n)}<span class="s">${P.unconfirmed?"Schlüssel noch nicht bestätigt, danach möglich":esc(P.mail)}</span></span></button>`;}).join("")||`<div class="sg" style="cursor:default"><span class="t"><span class="s">${q?"Niemand gefunden.":"Alle aus der Firma sind schon drin."}</span></span></div>`}</div>`:""}
+  </div>
+  <div class="addrow2"><span>${n?`${n} ${n===1?"Person":"Personen"} bekommt ${ui.add.role==="Lesen"?"Lesezugriff":ui.add.role==="Bearbeiten"?"Bearbeiten":"Verwalten"} und sieht alle ${v.items} Einträge.`:`Wer hinzukommt, sieht alle ${v.items} Einträge.`}</span>
+   ${a.untilOn?`<span class="inline-date">Befristet bis <input type="date" id="addUntil" value="${a.until}" min="2026-11-28" aria-label="Zugriff bis"><button class="linkbtn" data-act="untiloff" aria-label="Befristung entfernen">${ic.x}</button></span>`:`<button class="linkbtn" data-act="untilon">${ic.clock} <u>Befristen</u></button>`}</div>`;
+}
+function sub(m){
+  const parts=[];
+  if(m.until)parts.push(`<span class="until">bis ${fmt(m.until)}</span>`);
+  if(m.just)parts.push("gerade eben aufgenommen");
+  else if(m.by)parts.push(`seit ${fmt(m.since)} · von ${esc(first(m.by))}`);
+  else parts.push(`hat den Tresor angelegt`);
+  return parts.join("");
+}
+function row(v,m,can){
+  const P=PEOPLE[m.p],me=m.p===ME;
+  return `<div class="prow ${ui.flash&&ui.flash.includes(m.p)?"just":""}"><span class="av" aria-hidden="true">${P.i}</span><span class="t"><span class="n">${esc(P.n)}${me?'<span class="you">du</span>':""}</span><span class="s">${sub(m)}</span></span>
+   ${can&&!me?`<button class="iconbtn" data-act="menu" data-p="${m.p}" aria-haspopup="menu" aria-expanded="${ui.menu===m.p}" aria-label="${esc(P.n)}: Rolle ändern oder entfernen">${ic.dots}</button>`:""}</div>`;
+}
+function aside(v){
+  return `<aside class="aside"><div><h3>Verlauf</h3><ol class="tl" style="margin-top:12px">${v.log.slice(0,5).map(([k,t,r,w])=>{const [c,i]=LOGI[k];return `<li><span class="ti ${c}">${i}</span><span>${esc(t)}${r?` · ${r}`:""}<span class="when">${w}</span></span></li>`;}).join("")}</ol></div>
+   <div><h3>Rollen</h3><div class="roles" style="margin-top:12px">${ORDER.map(r=>`<div><span class="ri">${ic[r]}</span><span><b>${r}</b>${ROLES[r].d}</span></div>`).join("")}</div></div>
+   <div class="trust">${ic.shield}<span>Jede Änderung ist von einem Verwalter signiert. Dein Gerät hat das Protokoll vor dem Öffnen geprüft.</span></div></aside>`;
+}
+function detail(){
+  if(ui.sel==="personal")return `<div class="main"><div class="dh"><button class="iconbtn back" data-act="back" aria-label="Zurück">${ic.back}</button><span class="big">${ic.lock(22)}</span><div class="t"><h2>Persönlich</h2><div class="meta"><span class="chip">${ic.lock(12)} Nur für dich</span></div></div></div>
+   <div class="empty-r">Diesen Tresor siehst nur du, auch Inhaber und Admins nicht. Er lässt sich nicht teilen. Was andere sehen sollen, legst du in einen geteilten Tresor.</div></div>`;
+  const v=V(),can=manages(v);
+  const groups=ORDER.map(r=>({r,ms:v.m.filter(x=>x.r===r).sort((a,b)=>a.p===ME?-1:b.p===ME?1:0)})).filter(g=>g.ms.length);
+  return `<div class="dgrid"><div class="main">
+   <div class="dh"><button class="iconbtn back" data-act="back" aria-label="Zurück zu den Tresoren">${ic.back}</button><span class="big">${ic.vault(24)}</span>
+    <div class="t"><h2>${esc(v.n)}</h2><div class="meta"><span class="chip">${v.m.length} ${v.m.length===1?"Person":"Personen"}</span><span class="chip">${v.items} Einträge</span><span class="chip ok">${ic.shield} Protokoll geprüft</span>${can?"":`<span class="chip">${ic.lock(12)} verwaltet von ${esc(first(v.by))}</span>`}</div></div>
+    <button class="iconbtn" data-act="noop" aria-label="Tresor umbenennen oder löschen">${ic.dots}</button></div>
+   ${can?adder(v)+`<button class="btn primary mobile-add" data-act="sheet">${ic.plus} Personen hinzufügen</button>`:""}
+   ${can?v.req.map(p=>`<div class="req" role="status"><span class="av">${PEOPLE[p].i}</span><span class="t"><b>${esc(PEOPLE[p].n)}</b> möchte Zugriff<span class="s">Über den Link zum Tresor angefragt · heute, 08:12</span></span><span style="display:flex;gap:6px"><button class="btn ghost" data-act="deny" data-p="${p}">Ablehnen</button><button class="btn" data-act="grant" data-p="${p}">Freigeben</button></span></div>`).join(""):""}
+   <div class="groups">${groups.map(g=>`<div><div class="rg-h"><span class="ri">${ic[g.r]}</span><b>${g.r}</b><span class="c">${g.ms.length}</span><span class="d">${ROLES[g.r].d}</span></div>
+     <div class="people">${g.ms.map(m=>row(v,m,can)).join("")}</div></div>`).join("")}
+     ${v.m.length===1&&can?`<div class="empty-r">Bisher hast nur du Zugriff. Tippe oben einen Namen ein, damit andere die Einträge in ${esc(v.n)} sehen.</div>`:""}
+     ${can?"":`<div class="empty-r">Nur wer einen Tresor verwaltet, ändert, wer drin ist. Brauchst du etwas, frag ${esc(first(v.by))}.</div>`}</div>
+  </div>${aside(v)}</div>`;
+}
+function menu(){
+  if(ui.menu==="__role"){
+    return `<div class="menu-scrim" data-act="closemenu"></div><div class="menu" id="menu" role="menu" aria-label="Rolle für Neue"><div class="sheet-handle"></div>
+     ${ORDER.slice().reverse().map(r=>`<button class="mi" role="menuitemradio" aria-checked="${ui.add.role===r}" data-act="setaddrole" data-r="${r}"><span class="ck">${ui.add.role===r?ic.check:""}</span><span class="l">${r}<span class="d">${ROLES[r].short}</span></span><span class="rk">${ic[r]}</span></button>`).join("")}</div>`;
+  }
+  const v=V(),m=v.m.find(x=>x.p===ui.menu);if(!m)return "";
+  return `<div class="menu-scrim" data-act="closemenu"></div><div class="menu" id="menu" role="menu" aria-label="${esc(PEOPLE[m.p].n)}"><div class="sheet-handle"></div>
+   <div class="mh"><span class="av" style="width:24px;height:24px;font-size:9px">${PEOPLE[m.p].i}</span>${esc(PEOPLE[m.p].n)}</div>
+   ${ORDER.slice().reverse().map(r=>`<button class="mi" role="menuitemradio" aria-checked="${m.r===r}" data-act="role" data-r="${r}"><span class="ck">${m.r===r?ic.check:""}</span><span class="l">${r}<span class="d">${ROLES[r].short}</span></span><span class="rk">${ic[r]}</span></button>`).join("")}
+   <hr><button class="mi" role="menuitem" data-act="until"><span class="ck">${ic.clock}</span><span class="l">${m.until?`Befristet bis ${fmt(m.until)} …`:"Zugriff befristen …"}</span></button>
+   <button class="mi danger" role="menuitem" data-act="askremove"><span class="ck"></span><span class="l">Aus ${esc(V().n)} entfernen …</span></button></div>`;
+}
+function removeDlg(){
+  const v=V(),p=ui.remove,P=PEOPLE[p];
+  return `<div class="scrim" data-act="closeremove"><div class="dlg" role="alertdialog" aria-modal="true" aria-labelledby="rmt" aria-describedby="rmd" data-stop>
+   <div class="dlg-h"><div class="sheet-handle"></div><h3 id="rmt">${esc(first(p))} aus ${esc(v.n)} entfernen?</h3><p id="rmd">${esc(P.n)} sieht ${esc(v.n)} danach nicht mehr. Dein Gerät erledigt dafür drei Dinge:</p></div>
+   <div class="dlg-b"><ol class="steps"><li><b>Neuer Schlüssel</b> für ${esc(v.n)}, den ${esc(first(p))} nie bekommt.</li><li><b>Alle ${v.items} Einträge</b> neu verschlüsselt.</li><li>Was ${esc(first(p))} lesen konnte, landet unter <b>Zum Ändern</b>.</li></ol>
+   <div class="warn">${ic.key}<div>Passwörter, die ${esc(first(p))} kannte, schützt erst ein neues Passwort beim jeweiligen Dienst. „Zum Ändern“ zeigt dir, welche.</div></div></div>
+   <div class="dlg-f"><button class="btn" data-act="closeremove" id="rmcancel">Abbrechen</button><button class="btn danger" data-act="doremove">Entfernen</button></div></div></div>`;
+}
+function untilDlg(){
+  const v=V(),m=v.m.find(x=>x.p===ui.until);
+  return `<div class="scrim" data-act="closeuntil"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="ut" data-stop>
+   <div class="dlg-h"><div class="sheet-handle"></div><h3 id="ut">Zugriff für ${esc(first(m.p))} befristen</h3><p>Nach diesem Tag öffnet kein Gerät ${esc(v.n)} mehr für ${esc(first(m.p))}.</p></div>
+   <div class="dlg-b"><label class="inline-date" style="font-size:13px">Zugriff bis <input type="date" id="untilVal" value="${m.until||"2026-12-31"}" min="2026-11-28" style="height:34px"></label></div>
+   <div class="dlg-f">${m.until?`<button class="btn ghost" data-act="clearuntil">Ohne Ende</button>`:""}<span class="grow"></span><button class="btn" data-act="closeuntil">Abbrechen</button><button class="btn primary" data-act="saveuntil">Speichern</button></div></div></div>`;
+}
+function sheet(){
+  const v=V(),a=ui.add,inV=new Set(v.m.map(x=>x.p)),q=a.q.toLowerCase(),n=a.sel.length;
+  const cands=Object.keys(PEOPLE).filter(p=>!inV.has(p)&&(PEOPLE[p].n.toLowerCase().includes(q)));
+  return `<div class="scrim" data-act="closesheet"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="sht" data-stop>
+   <div class="dlg-h"><div class="sheet-handle"></div><h3 id="sht" style="font-size:18px">Personen hinzufügen</h3><p>Sie sehen alle ${v.items} Einträge in ${esc(v.n)}.</p></div>
+   <div class="dlg-b"><div class="search">${ic.search}<input id="sq" type="search" placeholder="Name suchen" value="${esc(a.q)}" aria-label="Personen suchen"></div>
+    <div class="pick">${cands.map(p=>{const P=PEOPLE[p],off=P.unconfirmed;return `<label class="pk ${off?"off":""}"><input type="checkbox" data-pick="${p}" ${a.sel.includes(p)?"checked":""} ${off?"disabled":""}><span class="av">${P.i}</span><span class="t">${esc(P.n)}<span class="s">${off?"Schlüssel noch nicht bestätigt":esc(P.mail)}</span></span></label>`;}).join("")||'<div class="pk"><span class="t"><span class="s">Alle aus der Firma sind schon drin.</span></span></div>'}</div>
+    <div class="rolecards" role="radiogroup" aria-label="Rolle">${ORDER.slice().reverse().map(r=>`<label class="rc"><input type="radio" name="sr" value="${r}" ${a.role===r?"checked":""}><span class="ri" style="width:28px;height:28px;border-radius:8px;background:var(--accent);display:grid;place-items:center">${ic[r]}</span><span class="l">${r}<span>${ROLES[r].short}</span></span></label>`).join("")}</div></div>
+   <div class="dlg-f"><span class="grow">${n?`${n} ausgewählt`:"Niemand ausgewählt"}</span><button class="btn" data-act="closesheet">Abbrechen</button><button class="btn primary" data-act="doadd" ${n?"":"disabled"}>${n>1?`${n} hinzufügen`:"Hinzufügen"}</button></div></div></div>`;
+}
+function render(opts={}){
+  const app=document.getElementById("app"),ae=document.activeElement,focusId=ae&&app.contains(ae)?ae.id:null;
+  app.dataset.screen=ui.screen;
+  app.innerHTML=`<div class="app-top"><div class="tabs" role="tablist"><span class="tab" role="tab" aria-selected="false">Mitglieder</span><span class="tab" role="tab" aria-selected="true">Tresore</span></div></div>
+   <div class="split">${list()}<main class="detail" id="detail">${detail()}</main></div>
+   ${ui.menu?menu():""}${ui.sheet?sheet():""}${ui.remove?removeDlg():""}${ui.until?untilDlg():""}
+   ${ui.toast?`<div class="toast" role="status">${ic.check}<span>${ui.toast.t}</span>${ui.toast.undo?`<button data-act="undo">Rückgängig</button>`:""}</div>`:""}`;
+  if(ui.menu){const anchor=ui.menu==="__role"?app.querySelector(".rolesel"):app.querySelector(`.iconbtn[data-p="${ui.menu}"]`),mn=app.querySelector("#menu");
+    if(anchor&&mn){const ar=app.getBoundingClientRect(),br=anchor.getBoundingClientRect();let top=br.bottom-ar.top+4,left=br.right-ar.left-mn.offsetWidth;
+      if(top+mn.offsetHeight>ar.height-8)top=br.top-ar.top-mn.offsetHeight-4;mn.style.top=Math.max(8,top)+"px";mn.style.left=Math.max(8,left)+"px";
+      const f=mn.querySelector('[aria-checked="true"]')||mn.querySelector(".mi");f&&f.focus({preventScroll:true});}}
+  const fid=opts.focus||focusId;
+  if(fid){const el=document.getElementById(fid);if(el){el.focus({preventScroll:true});if(el.setSelectionRange&&el.type!=="date")el.setSelectionRange(el.value.length,el.value.length);}}
+  if(ui.remove&&!fid){const c=document.getElementById("rmcancel");c&&c.focus({preventScroll:true});}
+}
+let tt;function toast(t,undo){ui.toast={t,undo};clearTimeout(tt);tt=setTimeout(()=>{ui.toast=null;render();},4500);}
+let ft;function flash(ps){ui.flash=ps;clearTimeout(ft);ft=setTimeout(()=>{ui.flash=null;},1900);}
+const clone=o=>JSON.parse(JSON.stringify(o));
+const resetAdd=()=>{ui.add={sel:[],role:"Lesen",q:"",open:false,hl:0,untilOn:false,until:"2026-12-31"};};
+function doAdd(v){
+  const a=ui.add,n=a.sel.length;if(!n)return;
+  a.sel.forEach(p=>{v.m.push({p,r:a.role,since:"2026-11-27",by:ME,until:a.untilOn?a.until:undefined,just:true});v.log.unshift(["add",`Jonas hat ${first(p)} aufgenommen`,a.role,"gerade eben"]);});
+  flash([...a.sel]);toast(n>1?`${n} Personen hinzugefügt`:`${first(a.sel[0])} hinzugefügt · ${a.role}`);resetAdd();ui.sheet=null;
+}
+const app=document.getElementById("app");
+app.addEventListener("click",e=>{
+  const el=e.target.closest("[data-act]");
+  if(!el){if(ui.add.open&&!e.target.closest("#adder")){ui.add.open=false;render();}return;}
+  if(el.classList.contains("scrim")&&e.target!==el)return;
+  const a=el.dataset.act,v=V();
+  switch(a){
+   case "open":ui.sel=el.dataset.id;ui.screen="detail";ui.menu=null;resetAdd();break;
+   case "back":ui.screen="list";break;
+   case "focusq":ui.add.open=true;render({focus:"q"});return;
+   case "pick":ui.add.sel.push(el.dataset.p);ui.add.q="";ui.add.hl=0;render({focus:"q"});return;
+   case "unpick":ui.add.sel=ui.add.sel.filter(x=>x!==el.dataset.p);render({focus:"q"});return;
+   case "rolemenu":ui.menu="__role";ui.add.open=false;break;
+   case "setaddrole":ui.add.role=el.dataset.r;ui.menu=null;break;
+   case "untilon":ui.add.untilOn=true;break;
+   case "untiloff":ui.add.untilOn=false;break;
+   case "doadd":doAdd(v);break;
+   case "sheet":ui.sheet=true;ui.add.q="";break;
+   case "closesheet":ui.sheet=null;resetAdd();break;
+   case "menu":ui.menu=ui.menu===el.dataset.p?null:el.dataset.p;ui.add.open=false;break;
+   case "closemenu":ui.menu=null;break;
+   case "role":{const m=v.m.find(x=>x.p===ui.menu);if(m.r!==el.dataset.r){const old=m.r;m.r=el.dataset.r;v.log.unshift(["role",`Jonas hat ${first(m.p)} auf ${m.r} gesetzt`,"","gerade eben"]);flash([m.p]);toast(`${first(m.p)}: ${old} → ${m.r}`,()=>{m.r=old;v.log.shift();});}ui.menu=null;break;}
+   case "until":ui.until=ui.menu;ui.menu=null;break;
+   case "askremove":ui.remove=ui.menu;ui.menu=null;break;
+   case "closeremove":ui.remove=null;break;
+   case "doremove":{const p=ui.remove;v.m=v.m.filter(x=>x.p!==p);v.log.unshift(["key",`Schlüssel gewechselt`,"","gerade eben"],["rm",`Jonas hat ${first(p)} entfernt`,"","gerade eben"]);ui.remove=null;toast(`${first(p)} entfernt · neuer Schlüssel`);break;}
+   case "grant":{const p=el.dataset.p;v.req=v.req.filter(x=>x!==p);v.m.push({p,r:"Lesen",since:"2026-11-27",by:ME,just:true});v.log.unshift(["add",`Jonas hat ${first(p)} aufgenommen`,"Lesen","gerade eben"]);flash([p]);toast(`${first(p)} hat jetzt Lesezugriff`);break;}
+   case "deny":{const p=el.dataset.p;v.req=v.req.filter(x=>x!==p);toast(`Anfrage von ${first(p)} abgelehnt`);break;}
+   case "closeuntil":ui.until=null;break;
+   case "saveuntil":{const m=v.m.find(x=>x.p===ui.until);m.until=document.getElementById("untilVal").value||undefined;toast(`${first(m.p)} hat Zugriff bis ${fmt(m.until)}`);ui.until=null;break;}
+   case "clearuntil":{const m=v.m.find(x=>x.p===ui.until);delete m.until;toast(`${first(m.p)} hat Zugriff ohne Ende`);ui.until=null;break;}
+   case "undo":{ui.toast.undo&&ui.toast.undo();ui.toast=null;break;}
+   default:if(ui.add.open){ui.add.open=false;}else return;
+  }
+  render();
+});
+app.addEventListener("focusin",e=>{if(e.target.id==="q"&&!ui.add.open){ui.add.open=true;render({focus:"q"});}});
+app.addEventListener("input",e=>{if(e.target.id==="q"||e.target.id==="sq"){ui.add.q=e.target.value;ui.add.open=e.target.id==="q";ui.add.hl=0;render({focus:e.target.id});}});
+app.addEventListener("change",e=>{const t=e.target;
+  if(t.dataset.pick){const p=t.dataset.pick;ui.add.sel=t.checked?[...ui.add.sel,p]:ui.add.sel.filter(x=>x!==p);render();}
+  else if(t.name==="sr"){ui.add.role=t.value;render();}
+  else if(t.id==="addUntil"){ui.add.until=t.value;}});
+app.addEventListener("keydown",e=>{
+  if(e.target.id==="q"){
+    const opts=[...app.querySelectorAll(".sg[data-p]:not(:disabled)")];
+    if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();ui.add.open=true;ui.add.hl=Math.max(0,Math.min(opts.length-1,ui.add.hl+(e.key==="ArrowDown"?1:-1)));render({focus:"q"});return;}
+    if(e.key==="Enter"){e.preventDefault();const all=[...app.querySelectorAll(".sg[data-p]")],o=all[ui.add.hl];if(ui.add.q&&o&&!o.disabled){ui.add.sel.push(o.dataset.p);ui.add.q="";ui.add.hl=0;render({focus:"q"});}else if(ui.add.sel.length){doAdd(V());render();}return;}
+    if(e.key==="Backspace"&&!e.target.value&&ui.add.sel.length){ui.add.sel.pop();render({focus:"q"});return;}
+  }
+  if(e.key==="Escape"){if(ui.menu){const p=ui.menu;ui.menu=null;render();const b=app.querySelector(`.iconbtn[data-p="${p}"]`);b&&b.focus();}else if(ui.add.open){ui.add.open=false;render();}else if(ui.sheet||ui.remove||ui.until){ui.sheet=ui.remove=ui.until=null;render();}}
+});
+document.querySelectorAll("[data-dev]").forEach(b=>b.addEventListener("click",()=>{
+  const d=b.dataset.dev;document.getElementById("device").dataset.d=d;
+  document.querySelectorAll("[data-dev]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+  document.getElementById("devlabel").textContent=d==="phone"?"9:41":"Kennwort · Team";
+  ui.menu=null;ui.add.open=false;if(d==="phone")ui.screen="list";render();
+}));
+render();
+})();
+</script>
+</body>
+</html>

@@ -15,6 +15,7 @@ Abschnitte lesen, die die Änderung berühren.
 | Was | Wo |
 | --- | --- |
 | Was als Nächstes gebaut wird, Kriterien, wie der Agenten-Loop arbeitet | `BAULISTE.md` |
+| Entwürfe und Pläne für größere Umbauten, mit Prototyp und Bildern | `entwuerfe/` |
 | Warum: Ziele, Entscheidungen, Stack, Kryptografie, Bedrohungsmodell, Tests | `docs/plan.md` |
 | Aussehen und Bedienung der Oberfläche | `DESIGN.md` |
 | Protokolle und Formate (vor allem in `packages/crypto`, `packages/core` oder am Sync) | `docs/sicherheitsdesign.md` |
