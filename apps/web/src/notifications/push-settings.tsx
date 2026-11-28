@@ -157,14 +157,7 @@ export const PushSettings = (props: { deps: NotificationsDeps; browser?: PushDep
           </>
         )}
       </Show>
-      <Show when={state() === "unsupported"} fallback={<KindChoice deps={props.deps} />}>
-        <details class="grid gap-3 border-t border-border pt-3">
-          <summary class="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground">
-            {m.push_kinds()}
-          </summary>
-          <KindChoice deps={props.deps} />
-        </details>
-      </Show>
+      <KindChoice deps={props.deps} />
     </section>
   );
 };

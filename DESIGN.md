@@ -122,8 +122,7 @@ Leiste links, am Handy als umbrechende Pill-Leiste oben, damit keine Gruppe abge
 
 **Push-Einstellungen** (Mitteilungen): die Arten nach Thema gruppiert – Zugriff, Sicherheit, Notfall,
 Konto, Sonstiges –, je Gruppe ein Titel in 11 px Großbuchstaben und Trennlinien ohne verschachtelten
-Rahmen; jede Zeile hat links den Namen und einen kurzen Satz, rechts einen Switch. Unterstützt das
-Gerät kein Push, liegen die kontoübergreifenden Arten eingeklappt in einem `<details>`. Ebenso
+Rahmen; jede Zeile hat links den Namen und einen kurzen Satz, rechts einen Switch. Ebenso
 einzelne Schalter wie der Datenleck-Abgleich und die Aufnahme über den Anmeldedienst.
 
 **Handy (unter `md`)**: ein Screen zur Zeit, über die URL gewählt; oben bei offenem Konto eine
