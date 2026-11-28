@@ -31,7 +31,7 @@ export const createNotifications = (
   const deps = { api: props.api, session: props.session };
   const names = namesOf(store);
   return {
-    bell: (variant: "rail" | "tab") => (
+    bell: (variant: "rail" | "header" | "tab") => (
       <NotificationBell nav={props.nav} deps={deps} variant={variant} />
     ),
     page: () => (

@@ -7,7 +7,7 @@ import { m } from "../paraglide/messages.js";
 import { Icon } from "./icon.tsx";
 
 const fieldClass =
-  "h-8 w-full rounded-lg border border-border bg-background px-2.5 text-[13px] placeholder:text-muted-foreground disabled:opacity-50";
+  "h-11 w-full rounded-lg border border-border bg-background px-2.5 text-base placeholder:text-muted-foreground disabled:opacity-50 md:h-8 md:text-[13px]";
 
 export type InputProps = JSX.InputHTMLAttributes<HTMLInputElement> & {
   label: string;
@@ -91,12 +91,12 @@ export const SearchInput = (props: Omit<InputProps, "hint" | "type"> & { shortcu
         type="search"
         {...omit(props, "label", "shortcut", "class")}
         aria-keyshortcuts={props.shortcut}
-        class={[fieldClass, "pl-8", props.shortcut && "pr-8", props.class]}
+        class={[fieldClass, "pl-8", props.shortcut && "md:pr-8", props.class]}
       />
       <Show when={props.shortcut}>
         {(key) => (
           <kbd
-            class="absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border px-1 font-mono text-[11px] text-muted-foreground"
+            class="absolute top-1/2 right-2 hidden -translate-y-1/2 rounded border border-border px-1 font-mono text-[11px] text-muted-foreground md:inline-block"
             title={m.ui_search_shortcut({ key: key() })}
           >
             {key()}

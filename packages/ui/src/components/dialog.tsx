@@ -59,7 +59,7 @@ const wrapFocus = (event: KeyboardEvent, dialog: HTMLElement) => {
 
 export const dialogClass = variants(
   cn(
-    "fixed inset-x-0 bottom-0 mx-0 mt-auto mb-0 max-h-[90dvh] w-full max-w-none overflow-y-auto rounded-t-xl border border-border bg-background p-0 text-foreground shadow-lg",
+    "fixed inset-x-0 bottom-0 mx-0 mt-auto mb-0 max-h-[90dvh] w-full max-w-none overflow-y-auto overscroll-contain rounded-t-xl border border-border bg-background p-0 text-foreground shadow-lg",
     "backdrop:bg-black/50 backdrop:backdrop-blur-sm",
     "md:inset-0 md:m-auto md:w-[calc(100vw-2rem)] md:rounded-lg",
   ),
@@ -130,7 +130,7 @@ export const Dialog = (props: DialogProps) => {
       class={dialogClass({ size: props.size })}
     >
       <Header {...props} id={id} />
-      <div class="grid gap-3 px-5 pb-5 text-[13px] md:px-6 md:pb-6">
+      <div class="grid gap-3 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-[13px] md:px-6 md:pb-6">
         {props.children}
         <Show when={props.footer}>
           <DialogFooter>{props.footer}</DialogFooter>

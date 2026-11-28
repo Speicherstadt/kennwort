@@ -137,7 +137,7 @@ export const EntryList = (props: {
           <VaultAccess nav={props.nav} filter={props.filter} vaults={props.vaults} />
           <Show when={props.onNew}>
             {(onNew) => (
-              <Button onClick={() => onNew()()}>
+              <Button class="h-11 md:h-8" onClick={() => onNew()()}>
                 <Icon icon={Plus} /> {m.entry_new()}
               </Button>
             )}

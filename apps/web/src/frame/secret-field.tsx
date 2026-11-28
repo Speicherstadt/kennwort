@@ -16,10 +16,11 @@ export type FieldProps = {
 export const Field = (props: FieldProps) => {
   const [revealed, setRevealed] = createSignal(false);
   return (
-    <div class="flex min-h-14 items-center gap-1 px-4 py-2">
+    <div class="flex min-h-14 items-center gap-2 px-4 py-2 md:gap-1">
       <div class="grid min-w-0 flex-1 gap-0.5">
         <span class="text-xs font-medium text-muted-foreground">{props.label}</span>
         <span
+          translate="no"
           class={cn(
             props.multiline ? "break-words whitespace-pre-wrap" : "truncate",
             (props.secret || props.mono) && "font-mono",
@@ -30,6 +31,7 @@ export const Field = (props: FieldProps) => {
       </div>
       <Show when={props.secret}>
         <TooltipIconButton
+          class="size-11 md:size-8"
           label={
             revealed()
               ? m.field_hide({ field: props.label })
@@ -42,6 +44,7 @@ export const Field = (props: FieldProps) => {
         </TooltipIconButton>
       </Show>
       <TooltipIconButton
+        class="size-11 md:size-8"
         label={m.field_copy({ field: props.label })}
         onClick={() => copyText(props.value, props.label, props.toasts)}
       >

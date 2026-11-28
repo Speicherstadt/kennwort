@@ -11,17 +11,19 @@ import { Link } from "../frame/link.tsx";
 import type { Navigation } from "../navigation.ts";
 import { type NotificationsDeps, notificationsQuery } from "./notifications-query.ts";
 
-type Variant = "rail" | "tab";
+type Variant = "rail" | "header" | "tab";
 
 const linkClass = (variant: Variant, current: boolean) =>
   cn(
     variant === "rail"
       ? "grid size-9 place-items-center rounded-lg"
-      : "flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px]",
-    current && variant === "rail" && "bg-accent text-foreground",
+      : variant === "header"
+        ? "grid size-11 place-items-center rounded-lg"
+        : "flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px]",
+    current && variant !== "tab" && "bg-accent text-foreground",
     current && variant === "tab" && "text-foreground",
     !current && "text-muted-foreground",
-    !current && variant === "rail" && "hover:bg-accent",
+    !current && variant !== "tab" && "hover:bg-accent",
   );
 
 const BellLink = (props: { nav: Navigation; variant: Variant; unread: number }) => {
@@ -34,7 +36,7 @@ const BellLink = (props: { nav: Navigation; variant: Variant; unread: number }) 
       class={linkClass(props.variant, current())}
     >
       <span class="relative" aria-hidden="true">
-        <Icon icon={Bell} size={props.variant === "rail" ? 18 : 22} />
+        <Icon icon={Bell} size={props.variant === "rail" ? 18 : 20} />
         <Show when={props.unread > 0}>
           <CountDot count={props.unread} />
         </Show>
