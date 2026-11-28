@@ -17,7 +17,7 @@ import {
   selectClass,
   TooltipIconButton,
 } from "@kennwort/ui";
-import { ShieldCheck, UserMinus } from "@kennwort/ui/icons";
+import { ShieldCheck, UserMinus, Users } from "@kennwort/ui/icons";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createSignal, For, Loading, Match, onSettled, resolve, Show, Switch } from "solid-js";
 import { queryKeys } from "../queries.ts";
@@ -198,7 +198,7 @@ const MemberRow = (props: {
       >
         <TooltipIconButton
           label={m.members_leave_of({ name: name() })}
-          class="size-11 shrink-0 text-muted-foreground hover:text-danger md:size-8"
+          class="size-11 shrink-0 text-muted-foreground hover:bg-danger-surface hover:text-danger md:size-8"
           disabled={props.busy}
           onClick={() => props.onRemove()}
         >
@@ -294,12 +294,31 @@ export const MembersPage = (props: {
     act(async () =>
       (await setRole(props.api, props.session, view, role)) ? undefined : m.members_role_failed(),
     );
+  const activeCount = () => ready()?.views.filter((v) => v.leftAt == null).length ?? 0;
   return (
     <section aria-labelledby="page-title" class={pageClass("wide")}>
-      <h1 id="page-title" class="mb-1 text-[28px] font-semibold md:text-lg">
-        {m.members_title()}
-      </h1>
-      <p class={introClass}>{m.members_intro()}</p>
+      <div class="mb-5 flex items-start gap-3.5">
+        <span class="hidden size-12 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground md:grid">
+          <Icon icon={Users} size={22} />
+        </span>
+        <div class="grid min-w-0 flex-1 gap-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 id="page-title" class="text-[28px] leading-tight font-semibold md:text-[22px]">
+              {m.members_title()}
+            </h1>
+            <Loading fallback={null}>
+              <Show when={ready()}>
+                <Badge variant="secondary">
+                  {activeCount() === 1
+                    ? m.vault_access_people_one()
+                    : m.vault_access_people_many({ count: String(activeCount()) })}
+                </Badge>
+              </Show>
+            </Loading>
+          </div>
+          <p class={cn(introClass, "mb-0")}>{m.members_intro()}</p>
+        </div>
+      </div>
       <div class="grid gap-6">
         <Loading>
           <LoadProblem

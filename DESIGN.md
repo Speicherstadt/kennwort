@@ -1,4 +1,3 @@
-| Auswahl | natives `<select>` mit `selectClass` | wie die Eingabefelder: 32 px hoch (44 px am Handy), Radius 8 px, Rahmen in `--border`, eigener Chevron rechts statt des Browser-Pfeils; die Liste bleibt die des Browsers |
 # Design
 
 Wie Kennwort aussieht und sich bedient, für Menschen und Agenten. Vorbild ist das Mockup „Kennwort
@@ -35,9 +34,10 @@ Tailwind 4 mit Zinc als Grundpalette; alle Werte als CSS-Variablen, hell und dun
 | `--warning` | `#b45309` | `#fbbf24` | „Zum Ändern“, Hinweise |
 | `--warning-surface` | `#fef3c7` | `#422006` | Badge „ändern“, Befristung |
 | `--danger` | `#b91c1c` | `#f87171` | Löschen, Fehler, Phishing-Warnung |
+| `--danger-foreground` | `#fafafa` | `#09090b` | Text auf `--danger` (mindestens 4,5:1) |
 | `--danger-surface` | `#fee2e2` | `#450a0a` | destruktive Hervorhebung im Menü und Dialog |
-| `--info` | `#1d4ed8` | `#60a5fa` | offene Zugriffsanfragen (Akzent, Zähler, Balken) |
-| `--info-surface` | `#eff6ff` | `#172554` | Fläche für offene Zugriffsanfragen |
+| `--info` | `#1d4ed8` | `#93c5fd` | offene Zugriffsanfragen, Ziffern im Generator |
+| `--info-surface` | `#dbeafe` | `#172554` | Fläche für offene Zugriffsanfragen |
 
 Nebentext auf `--accent` (gewählte Zeile, aktiver Tab) steht in `--foreground`: `--muted-foreground`
 erreicht dort nur 4,4:1 statt 4,5:1. Flächen für Gruppen wie die Tab-Leiste sind `--muted`.
@@ -116,19 +116,22 @@ und haben oben den Link „← Einstellungen“.
 **Einstellungen**: Gruppen mit Titel und einem Satz – Allgemein, Firma, Daten, Konto, Geräte und
 Anmeldung, zuletzt die **Gefahrenzone** mit rotem Rahmen (Sperren). Jede Gruppe ist eine Karte aus
 Zeilen: links Name und Hilfe, rechts die Steuerung; eine Zeile, die eine eigene Seite öffnet, ist
-ganz anklickbar, mit Icon und Chevron; der Knopf darin heißt nur wie die Zeile. Ab `md` steht links eine klebende Liste der Gruppen, die zu ihnen
-springt; am Handy führen die Zeilen in ihre eigenen Screens.
+ganz anklickbar, mit Icon und Chevron; der Knopf darin heißt nur wie die Zeile. Die Gruppen wechseln
+über Tabs (`role="tablist"` mit Pfeiltasten und roving `tabindex`): ab `md` als klebende vertikale
+Leiste links, am Handy als umbrechende Pill-Leiste oben, damit keine Gruppe abgeschnitten wird.
 
 **Push-Einstellungen** (Mitteilungen): die Arten nach Thema gruppiert – Zugriff, Sicherheit, Notfall,
-Konto, Sonstiges –, je Gruppe ein Titel in 11 px Großbuchstaben und eine Karte mit Trennlinien; jede
-Zeile hat links den Namen und einen kurzen Satz, rechts einen Switch. Ebenso einzelne Schalter wie
-der Datenleck-Abgleich und die Aufnahme über den Anmeldedienst.
+Konto, Sonstiges –, je Gruppe ein Titel in 11 px Großbuchstaben und Trennlinien ohne verschachtelten
+Rahmen; jede Zeile hat links den Namen und einen kurzen Satz, rechts einen Switch. Unterstützt das
+Gerät kein Push, liegen die kontoübergreifenden Arten eingeklappt in einem `<details>`. Ebenso
+einzelne Schalter wie der Datenleck-Abgleich und die Aufnahme über den Anmeldedienst.
 
-**Handy (unter `md`)**: ein Screen zur Zeit, über die URL gewählt; großer Titel, Suchfeld, Filter-Chips
-(„Alle“, „Favoriten“, „Zum Ändern · 3“, „Mit mir geteilt“ wie in der Seitenleiste), Liste mit
-40-px-Icons; Eintrag mit Zurück-Link, großem Icon, Feldkarte; unten Tab-Leiste (Einträge,
-Generator, „Links“ für die Einmal-Links, Team, Einstellungen und, mit offenem Konto, Mitteilungen mit Zähler). Berührungsziele
-mindestens 44 px.
+**Handy (unter `md`)**: ein Screen zur Zeit, über die URL gewählt; oben bei offenem Konto eine
+schmale Kopfzeile mit der Mitteilungen-Glocke (44 px, Zähler als Badge), großer Titel, Suchfeld,
+Filter-Chips („Alle“, „Favoriten“, „Zum Ändern · 3“, „Mit mir geteilt“ wie in der Seitenleiste),
+Liste mit 40-px-Icons; Eintrag mit Zurück-Link, großem Icon, Feldkarte; unten Tab-Leiste mit 5 Tabs
+(Einträge, Generator, „Links“ für die Einmal-Links, Team, Einstellungen) und Safe-Area-Abstand.
+Berührungsziele mindestens 44 px.
 
 **Extension-Popup (360 × 600)**: Kopf mit Logo und Sperren, Suche, Filter-Chips „Alle“ und
 „Favoriten“, „Für <Host>“ mit Treffern (Kopieren von Benutzername und Passwort als Icon-Knöpfe; ausgefüllt
@@ -178,19 +181,20 @@ Eigene Komponenten in `packages/ui`, ohne Bibliothek, auf nativen Elementen:
 
 | Komponente | Grundlage | Hinweise |
 | --- | --- | --- |
-| Button | `<button>` | Varianten `primary`, `outline`, `ghost`, `icon`; Icon-Knöpfe immer mit `aria-label` |
-| Eingabe, Suche | `<input>` mit `<label>` | Suche mit Lupe und Kürzel |
+| Button | `<button>` | Varianten `primary`, `outline`, `ghost`, `danger`, `icon`; Icon-Knöpfe immer mit `aria-label` |
+| Eingabe, Suche | `<input>` mit `<label>` | 32 px hoch am Desktop, 44 px (`text-base`) am Handy; Suche mit Lupe und Desktop-Kürzel |
+| Auswahl | natives `<select>` mit `selectClass` | wie die Eingabefelder: 32 px hoch (44 px am Handy), Radius 8 px, Rahmen in `--border`, eigener Chevron rechts in `--muted-foreground`; die Liste bleibt die des Browsers |
 | Checkbox | `<input type="checkbox">`, `appearance-none` | 16 px, Radius 4 px, gefüllt in `--primary` mit Haken; für Auswahl in Formularen, die erst mit dem Absenden gilt. Nie eine native Checkbox |
 | Switch | `<input type="checkbox" role="switch">` | 32 × 18 px, Daumen rutscht nach rechts; für Einstellungen, die sofort gelten. In Einstellungslisten als Zeile: links Name (fett) und ein Satz in `--muted-foreground`, rechts der Switch |
-| Dialog | `<dialog>` mit `showModal()` | Eine Hülle für alle Dialoge: Hintergrund `black/50` mit Unschärfe; Karte mittig, `rounded-lg`, Schatten, Breiten `sm` (384 px, Bestätigungen), `md` (512 px, Standard), `lg` (672 px, Teilen, Etikett, Tresor-Mitglieder); Kopf mit Titel (16 px halbfett), Beschreibung und ×; dann Inhalt und Fußzeile (`footer` oder `DialogFooter` in einem Formular) mit den Knöpfen rechts, Abbrechen vor der Hauptaktion. `variant="destructive"` zeigt ein Warnzeichen in `--danger` neben dem Titel, die Hauptaktion ist dann `danger`. Am Handy ein Bottom Sheet: volle Breite, unten, oben gerundet, Knöpfe 44 px untereinander mit der Hauptaktion oben. Fokusfalle und Esc vom Browser |
-| Menü, Popover, Tooltip | Popover-API, CSS Anchor Positioning | Tastatur selbst: Pfeile, Home/End, Esc |
-| Combobox | `<input>` + Popover | Rolle `combobox`, `aria-activedescendant` |
-| Toast | eigener Bereich mit `aria-live="polite"` | verschwindet nicht, solange Fokus darin ist |
+| Dialog | `<dialog>` mit `showModal()` | Eine Hülle für alle Dialoge: Hintergrund `black/50` mit Unschärfe; Karte mittig, `rounded-lg`, Schatten, Breiten `sm` (384 px, Bestätigungen), `md` (512 px, Standard), `lg` (672 px, Teilen, Etikett, Tresor-Mitglieder); Kopf mit Titel (16 px halbfett), Beschreibung und ×; dann Inhalt und Fußzeile (`footer` oder `DialogFooter` in einem Formular) mit den Knöpfen rechts, Abbrechen vor der Hauptaktion. `variant="destructive"` zeigt ein Warnzeichen in `--danger` neben dem Titel, die Hauptaktion ist dann `danger`. Am Handy ein Bottom Sheet: volle Breite, unten, oben gerundet, `overscroll-contain` + Safe-Area, Knöpfe 44 px untereinander mit der Hauptaktion oben. Fokusfalle und Esc vom Browser |
+| Menü, Popover, Tooltip | Popover-API, CSS Anchor Positioning | Tastatur selbst: Pfeile, Home/End, Esc; `aria-expanded` am Auslöser |
+| Combobox | `<input>` + Popover | Rolle `combobox`, `aria-activedescendant`, Auswahl auf `click` |
+| Toast | eigener Bereich mit `aria-live="polite"` | verschwindet nicht, solange Fokus darin ist; Fehler-Toasts mit `role="alert"` |
 | Badge | `<span>` mit `badgeVariants` | wie shadcn: `rounded-md`, `px-2.5 py-0.5`, 12 px halbfett; `default`, `secondary`, `outline`, `destructive`, dazu `warning` („ändern“: dezent umrandet mit einem Punkt in `--warning`, keine gefüllte Pille) und `success` („Bestätigt“). Jedes Etikett, jede Rolle, jeder Status und jeder Zähler (in der Seitenleiste `outline`) nutzt sie |
 | Filter-Chip | `toggleVariants` (wie shadcn Toggle/ToggleGroup) | `h-8`, `rounded-md`, Rahmen, `px-3`, 14 px; ausgewählt `bg-accent`, gelesen aus `aria-pressed` (Knopf), `aria-current="page"` (Link) oder `data-state="on"`. Am Handy im 44-px-Link, im Popup als Knopf mit `aria-pressed` |
 | Zähler an der Glocke | `CountDot` | kleiner runder Punkt in `--primary`, „99+“ ab 100; nur Anzeige, den Namen trägt der Link |
-| Geheimnisfeld | Text + Aufdecken + Kopieren | Punkte in Geist Mono, Stärke als vier Balken |
-| Einmalcode | Geist Mono + Kreis-Countdown | Countdown mit `aria-label` „noch N Sekunden“ |
+| Geheimnisfeld | Text + Aufdecken + Kopieren | Punkte in Geist Mono (`translate="no"`), 44-px-Knöpfe am Handy |
+| Einmalcode | Geist Mono + Sekunden-Countdown | `tabular-nums`, `translate="no"`, Countdown als Text „noch N Sekunden“ |
 
 `cn()` setzt Klassen zusammen, `variants()` wählt Varianten typisiert; Konflikte vermeiden
 Komponenten über `data-*`-Attribute statt durch Überschreiben von Klassen.
