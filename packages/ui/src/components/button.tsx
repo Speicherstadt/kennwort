@@ -10,7 +10,7 @@ export const buttonClass = variants(
       primary: "bg-primary text-primary-foreground hover:bg-primary/90",
       outline: "border border-border bg-background hover:bg-accent",
       ghost: "hover:bg-accent",
-      danger: "bg-danger text-white hover:bg-danger/90",
+      danger: "bg-danger text-danger-foreground hover:bg-danger/90",
     },
     size: { sm: "h-7 px-2.5 text-xs", md: "h-8 px-3 text-[13px]", icon: "size-8" },
   },

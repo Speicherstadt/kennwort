@@ -81,11 +81,7 @@ const CheckWithMin = (props: {
 
 /** Digits and symbols in their own colors, so a 0 is told from an O; the text stays the same */
 const kindClass = (c: string) =>
-  DIGITS.includes(c)
-    ? "text-sky-500 dark:text-sky-400"
-    : SYMBOLS.includes(c)
-      ? "text-rose-500 dark:text-rose-400"
-      : undefined;
+  DIGITS.includes(c) ? "text-info" : SYMBOLS.includes(c) ? "text-danger" : undefined;
 
 const Colored = (props: { value: string }) => (
   <For each={[...props.value]} keyed={false}>

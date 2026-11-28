@@ -148,7 +148,7 @@ export const VaultAddBar = (props: {
           if (!next || !containerEl?.contains(next)) s.setOpen(false);
         }}
       >
-        <div class="relative flex flex-wrap items-center gap-1.5 rounded-xl border border-border bg-background p-1.5 transition-colors focus-within:ring-2 focus-within:ring-accent">
+        <div class="relative flex flex-wrap items-center gap-1.5 rounded-xl border border-border bg-background p-1.5 transition-colors focus-within:ring-2 focus-within:ring-foreground">
           <div class="flex min-w-0 flex-1 flex-wrap items-center gap-1 px-1.5">
             <Show when={s.picked().length === 0}>
               <Icon icon={Search} size={15} class="mr-0.5 shrink-0 text-muted-foreground" />

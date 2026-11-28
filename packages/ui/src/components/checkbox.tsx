@@ -34,7 +34,7 @@ export const Switch = (props: CheckboxProps) => (
     <input type="checkbox" role="switch" {...omit(props, "class")} class={trackClass} />
     <span
       aria-hidden="true"
-      class="pointer-events-none absolute top-[2px] left-[2px] size-3.5 rounded-full bg-background shadow-sm transition-transform peer-checked:translate-x-3.5"
+      class="pointer-events-none absolute top-[2px] left-[2px] size-3.5 rounded-full bg-background shadow-sm transition-transform peer-checked:translate-x-3.5 peer-checked:bg-primary-foreground dark:bg-foreground"
     />
   </span>
 );

@@ -8,7 +8,16 @@
 
 @source "./";
 
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
 
 :root {
   --background: #ffffff;
@@ -24,6 +33,7 @@
   --warning: #b45309;
   --warning-surface: #fef3c7;
   --danger: #b91c1c;
+  --danger-foreground: #fafafa;
   --danger-surface: #fee2e2;
   --info: #1d4ed8;
   --info-surface: #dbeafe;
@@ -45,6 +55,7 @@
     --warning: #fbbf24;
     --warning-surface: #422006;
     --danger: #f87171;
+    --danger-foreground: #09090b;
     --danger-surface: #450a0a;
     --info: #93c5fd;
     --info-surface: #172554;
@@ -66,6 +77,7 @@
   --warning: #fbbf24;
   --warning-surface: #422006;
   --danger: #f87171;
+  --danger-foreground: #09090b;
   --danger-surface: #450a0a;
   --info: #93c5fd;
   --info-surface: #172554;
@@ -86,6 +98,7 @@
   --color-warning: var(--warning);
   --color-warning-surface: var(--warning-surface);
   --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
   --color-danger-surface: var(--danger-surface);
   --color-info: var(--info);
   --color-info-surface: var(--info-surface);
@@ -114,13 +127,13 @@
   }
 }
 
-/* A chevron for native selects (selectClass) drawn from two gradients in zinc-500: a data: or
-   inline-SVG image would break the app's CSP (img-src 'self') */
+/* A chevron for native selects (selectClass) drawn from two gradients in --muted-foreground: a
+   data: or inline-SVG image would break the app's CSP (img-src 'self') */
 @utility select-chevron {
   /* Two half-squares meet in a small downward triangle (the classic CSS caret) */
   background-image:
-    linear-gradient(45deg, transparent 50%, #71717a 50%),
-    linear-gradient(135deg, #71717a 50%, transparent 50%);
+    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%),
+    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
   background-size: 5px 5px;
   background-position:
     right 0.875rem top 50%,

@@ -85,7 +85,7 @@ export const VaultMemberMenu = (props: {
                 role="menuitemradio"
                 aria-checked={active() ? "true" : "false"}
                 disabled={props.busy}
-                class="flex w-full cursor-pointer items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-accent focus:bg-accent focus:outline-none max-md:min-h-[54px] max-md:items-center"
+                class="group flex w-full cursor-pointer items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-accent focus:bg-accent focus:outline-none max-md:min-h-[54px] max-md:items-center"
                 onClick={() => {
                   close();
                   if (!active()) props.onRole(role);
@@ -96,7 +96,9 @@ export const VaultMemberMenu = (props: {
                 </span>
                 <span class="flex min-w-0 flex-1 flex-col leading-snug">
                   <span class="text-[13px] max-md:text-[15px]">{roleText(role)}</span>
-                  <span class="text-xs text-muted-foreground">{roleShort(role)}</span>
+                  <span class="text-xs text-muted-foreground group-hover:text-foreground group-focus:text-foreground">
+                    {roleShort(role)}
+                  </span>
                 </span>
                 <span aria-hidden="true" class="mt-0.5 shrink-0 text-muted-foreground">
                   <Icon icon={roleIcon(role)} size={13} />
