@@ -58,7 +58,6 @@ describe("notificationText", () => {
       "link-opened": "/links",
       "security-report": "/security",
       "member-enrolled": "/members",
-      "group-left": "/vaults/buero",
       "update-available": "/notifications",
     });
     expect(notificationText(note({ kind: "vault-added", subject: null }), names).href).toBe(

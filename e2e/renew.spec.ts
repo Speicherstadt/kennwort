@@ -1,7 +1,15 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { newDevice, setUpCompany, test, unlock } from "./account.ts";
-import { annaJoins, heading, openTeam, openVaults } from "./company.ts";
+import {
+  addVaultMembers,
+  annaJoins,
+  createVault,
+  heading,
+  openTeam,
+  openVaults,
+  selectVault,
+} from "./company.ts";
 
 // K-307 part e (P-12): Anna's recovery kit got into other hands. She renews every key of her
 // account; Jonas compares the code and confirms the new bundle; the vaults get a rekey entry and a
@@ -42,15 +50,10 @@ const loginInBuero = async (page: Page, title: string) => {
 /** Jonas creates Büro with Anna as editor and writes the Sparkasse login */
 const buero = async (page: Page, anna: Page) => {
   await openVaults(page);
-  await page.getByLabel("Name", { exact: true }).fill("Büro");
-  await page.getByRole("button", { name: "Tresor anlegen" }).click();
-  await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-  const dialog = page.getByRole("region", { name: "Mitglieder von Büro" });
-  await dialog.getByLabel("Person").selectOption({ label: "Anna" });
-  await dialog.getByLabel("Rolle", { exact: true }).selectOption("edit");
-  await dialog.getByRole("button", { name: "Aufnehmen" }).click();
-  await expect(dialog.getByLabel("Rolle von Anna")).toHaveValue("edit");
-  await dialog.getByRole("button", { name: "Schließen" }).click();
+  await createVault(page, "Büro");
+  await selectVault(page, "Büro");
+  await addVaultMembers(page, ["Anna"], "Bearbeiten");
+  await expect(page.getByRole("region", { name: "Bearbeiten", exact: true })).toContainText("Anna");
   await loginInBuero(page, "Sparkasse");
   await openVaults(anna);
   await visibleLink(anna, "Einträge").click();

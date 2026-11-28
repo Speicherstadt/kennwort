@@ -8,7 +8,7 @@ import { weber } from "./weber-vaults.ts";
 export const ISSUER = "https://sso.weber-haustechnik.test/realms/weber";
 export const CLIENT = "kennwort";
 
-export const oidcWeber = async (settings: { groupsClaim?: string } = {}) => {
+export const oidcWeber = async () => {
   let clock = () => Date.now();
   const idp = await createFakeIdp({
     issuer: ISSUER,
@@ -25,8 +25,7 @@ export const oidcWeber = async (settings: { groupsClaim?: string } = {}) => {
           clientId: CLIENT,
           clientSecret: "client-secret",
           name: "Weber SSO",
-          scopes: "openid profile groups",
-          groupsClaim: settings.groupsClaim ?? "groups",
+          scopes: "openid profile",
         },
         idp.fetch,
         now,

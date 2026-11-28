@@ -22,7 +22,6 @@ import {
 import type { DeviceIdentity } from "./device-identity.ts";
 import { deviceCalls } from "./devices-api.ts";
 import { emergencyCalls } from "./emergency-api.ts";
-import { groupCalls } from "./groups-api.ts";
 import { linkCalls } from "./links-api.ts";
 import { memberCalls } from "./members-api.ts";
 import { notificationCalls } from "./notifications-api.ts";
@@ -127,7 +126,6 @@ export const createApi = (send: typeof fetch = fetch, identity?: DeviceIdentity)
     ...recoveryCalls(call),
     ...vaultCalls(call),
     ...requestCalls(call),
-    ...groupCalls(call),
     ...shareCalls(call),
     ...emergencyCalls(call),
     ...renewalCalls(call),
@@ -218,7 +216,6 @@ export type AccountApi = Omit<
   | keyof ReturnType<typeof recoveryCalls>
   | keyof ReturnType<typeof vaultCalls>
   | keyof ReturnType<typeof requestCalls>
-  | keyof ReturnType<typeof groupCalls>
   | keyof ReturnType<typeof shareCalls>
   | keyof ReturnType<typeof emergencyCalls>
   | keyof ReturnType<typeof linkCalls>

@@ -13,10 +13,9 @@ export type ListFilter =
 export type Route =
   | { page: "entries"; filter: ListFilter; entry?: string }
   | { page: "generator" }
-  | { page: "groups" }
   | { page: "settings" }
   | { page: "members" }
-  /** „Team“: the members tab; /members, /groups and /vaults are its other addresses */
+  /** „Team“: the members tab; /members and /vaults are its other addresses */
   | { page: "team" }
   | { page: "vaults" }
   | { page: "import" }

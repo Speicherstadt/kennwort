@@ -27,7 +27,6 @@ import { EmergencyNotice } from "./emergency/emergency-notice.tsx";
 import { markToChange } from "./entries/to-change.ts";
 import { ExportPage } from "./export/export-page.tsx";
 import { Frame } from "./frame/frame.tsx";
-import { GroupsPage } from "./groups/groups-page.tsx";
 import { createHandover } from "./handover/handover-wiring.tsx";
 import { createLabels } from "./labels/label-wiring.tsx";
 import { SecretPage } from "./links/secret-page.tsx";
@@ -46,7 +45,6 @@ import { createAccountQueries } from "./queries.ts";
 import { createSecurity } from "./security/security-wiring.tsx";
 import type { Session } from "./session/session.ts";
 import { RotationNotice } from "./vaults/rotation-notice.tsx";
-import type { VaultStore } from "./vaults/vault-store.ts";
 import { namedMarks, peopleOf, vaultViews } from "./vaults/vault-views.ts";
 import { VaultsPage } from "./vaults/vaults-page.tsx";
 
@@ -55,12 +53,6 @@ export type AutofillHost = (deps: {
   entries: () => ShownEntry[];
   onSave: (login: LoginInput) => void;
 }) => JSX.Element;
-
-/** The people of the company as the vaults' load confirmed them, once loaded */
-const readyPeople = (store: VaultStore) => {
-  const shown = store.shown();
-  return shown.state === "ready" ? shown.people : undefined;
-};
 
 /**
  * The vaults while the account is open: loaded when it opens, gone when it locks. So is the cache
@@ -105,7 +97,6 @@ const OpenedFrame = (props: {
     saveImport: entries.saveImport,
   });
   const labels = createLabels();
-  const [focusGroupId, setFocusGroupId] = createSignal<string>();
   return (
     <QueryClientProvider client={queries}>
       <Frame
@@ -140,16 +131,6 @@ const OpenedFrame = (props: {
         securityPage={security.page}
         noAccess={noAccessFor(props, store)}
         notifications={notifications}
-        groupsPage={() => (
-          <GroupsPage
-            api={props.api}
-            session={props.session}
-            people={() => readyPeople(store)}
-            store={store}
-            exits={exits}
-            initialGroupId={focusGroupId()}
-          />
-        )}
         vaultsPage={() => (
           <VaultsPage
             nav={props.nav}
@@ -157,11 +138,8 @@ const OpenedFrame = (props: {
             api={props.api}
             session={props.session}
             exits={exits}
+            entries={allEntries}
             onHandOver={handover.possible() ? handover.open : undefined}
-            onManageGroup={(id) => {
-              setFocusGroupId(id);
-              props.nav.go("/groups");
-            }}
           />
         )}
         importPage={importPage(props.nav, store, allEntries, () => online(entries.saveImport))}

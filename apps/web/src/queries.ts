@@ -11,7 +11,6 @@ import { onCleanup } from "solid-js";
 export const queryKeys = {
   devices: ["devices"],
   emergency: ["emergency"],
-  groups: ["groups"],
   members: ["members"],
   notifications: ["notifications"],
   notificationPrefs: ["notification-prefs"],

@@ -1,11 +1,9 @@
 // K-604: a misbehaving identity provider or browser. A forged, foreign, stale or replayed login
-// gets no ticket and no account; a provider that claims groups files requests and gives no vault.
+// gets no ticket and no account; a provider that claims higher privileges gives no certificate or vault.
 import { describe, expect, it } from "bun:test";
-import { encodeBytes } from "@kennwort/core";
 import { accounts, oidcTickets } from "../db/schema.ts";
 import type { Tamper } from "../testing/fake-idp.ts";
 import { oidcWeber } from "../testing/oidc-setup.ts";
-import { createBuero } from "../testing/weber-vaults.ts";
 
 const SANDRA = { sub: "77c2-sandra", name: "Sandra Weber" };
 
@@ -90,36 +88,11 @@ describe("a callback that is not this browser's", () => {
   });
 });
 
-describe("a provider that claims groups", () => {
-  it("files a request and gives no vault: the key comes only from a manager's signed add", async () => {
-    const s = await oidcWeber();
-    const { vaultId } = await createBuero(s.w);
-    const made = await s.request("/api/groups", { token: s.w.o.token, body: { name: "Technik" } });
-    const groupId = ((await made.json()) as { id: string }).id;
-    await s.request(`/api/vaults/${vaultId}/groups/${groupId}`, {
-      method: "PUT",
-      token: s.w.o.token,
-      body: { role: "manage" },
-    });
-    // Anna links herself; the provider says she is in Technik, and in groups Kennwort has not
-    await s.login({ sub: "anna", groups: ["Technik", "Admins", "Büro"] }, { token: s.w.annaToken });
-    const anna = encodeBytes(s.w.annaId);
-    const requests = await s.request(`/api/vaults/${vaultId}/requests`, { token: s.w.o.token });
-    expect(await requests.json()).toEqual({
-      requests: [{ accountId: anna, requestedAt: expect.any(Number), role: "manage" }],
-    });
-    for (const path of ["log", "keys", "records"])
-      expect(
-        (await s.request(`/api/vaults/${vaultId}/${path}`, { token: s.w.annaToken })).status,
-      ).toBe(404);
-    const listed = await s.request("/api/vaults", { token: s.w.annaToken });
-    expect(((await listed.json()) as { vaults: unknown[] }).vaults).toEqual([]);
-  });
-
+describe("a provider that claims higher privileges", () => {
   it("enrols nobody with a certificate or a role above member, whatever it claims", async () => {
     const s = await oidcWeber();
     await s.openEnrolment();
-    s.idp.state.tamper = { claims: (c) => ({ ...c, role: "owner", groups: ["owner", "admin"] }) };
+    s.idp.state.tamper = { claims: (c) => ({ ...c, role: "owner" }) };
     const { ticket } = await s.login(SANDRA);
     const answer = await s.enrol(ticket ?? "");
     const { accountId } = (await answer.json()) as { accountId: string };

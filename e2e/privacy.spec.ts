@@ -2,7 +2,14 @@ import { readFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { PASSPHRASE, setUpCompany, test, unlock } from "./account.ts";
-import { annaJoins, heading, openVaults } from "./company.ts";
+import {
+  addVaultMembers,
+  annaJoins,
+  createVault,
+  heading,
+  openVaults,
+  selectVault,
+} from "./company.ts";
 
 // K-607: Anna of Weber Haustechnik downloads what the server keeps about her and deletes her
 // account; Jonas, the last owner, may not leave his company without one, and Jonas's client takes
@@ -49,15 +56,10 @@ const deleteWith = async (page: Page, passphrase: string) => {
 /** Jonas creates Büro and takes Anna in to edit */
 const annaInBuero = async (page: Page) => {
   await openVaults(page);
-  await page.getByLabel("Name", { exact: true }).fill("Büro");
-  await page.getByRole("button", { name: "Tresor anlegen" }).click();
-  await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-  const dialog = page.getByRole("region", { name: "Mitglieder von Büro" });
-  await dialog.getByLabel("Person").selectOption({ label: "Anna" });
-  await dialog.getByLabel("Rolle", { exact: true }).selectOption("edit");
-  await dialog.getByRole("button", { name: "Aufnehmen" }).click();
-  await expect(dialog.getByLabel("Rolle von Anna")).toHaveValue("edit");
-  await dialog.getByRole("button", { name: "Schließen" }).click();
+  await createVault(page, "Büro");
+  await selectVault(page, "Büro");
+  await addVaultMembers(page, ["Anna"], "Bearbeiten");
+  await expect(page.getByRole("main")).toContainText("Anna");
 };
 
 test.describe("privacy", { tag: "@phone" }, () => {
@@ -113,11 +115,8 @@ test.describe("privacy", { tag: "@phone" }, () => {
       entry: { action: "rotate", epoch: 1 },
     });
     await openVaults(page);
-    await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-    const members = page.getByRole("region", { name: "Mitglieder von Büro" });
-    await expect(
-      members.getByRole("list", { name: "Mitglieder des Tresors" }).getByRole("listitem"),
-    ).toHaveCount(1);
+    await selectVault(page, "Büro");
+    await expect(page.getByRole("main")).toContainText("1 Person");
   });
 
   test("Jonas, alone in his company, deletes it with his account", async ({ page }) => {

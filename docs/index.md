@@ -49,8 +49,8 @@ Server speichert nur Geheimtext.</p>
 
 ## Jeder sieht, was er braucht
 
-Ein persönlicher Tresor für jeden, geteilte Tresore für Büro, Baustelle oder Buchhaltung. Gruppen,
-Rollen und Zugriff auf Zeit.
+Ein persönlicher Tresor für jeden, geteilte Tresore für Büro, Baustelle oder Buchhaltung. Rollen
+und Zugriff auf Zeit.
 </div>
 <div class="showcase-shot" markdown>
 ![Die Tresore der Firma mit der Zahl ihrer Personen](assets/screenshots/vaults-desktop-light.webp#only-light){ width="2560" height="1600" loading="lazy" }

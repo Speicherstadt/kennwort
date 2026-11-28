@@ -15,7 +15,12 @@ afterEach(() => {
   delete document.documentElement.dataset.theme;
 });
 
-const open = (path: string, locale: "de" | "en" = "de", members?: () => JSX.Element) => {
+const open = (
+  path: string,
+  locale: "de" | "en" = "de",
+  members?: () => JSX.Element,
+  vaultsPage: () => JSX.Element = () => <h1>Tresore</h1>,
+) => {
   setLocale(locale, { reload: false });
   window.history.replaceState(null, "", path);
   const root = document.createElement("div");
@@ -30,6 +35,7 @@ const open = (path: string, locale: "de" | "en" = "de", members?: () => JSX.Elem
         onLocale={() => {}}
         onAddDevice={() => {}}
         members={members}
+        vaultsPage={vaultsPage}
       />
     ),
     root,
@@ -84,7 +90,7 @@ describe("App frame", () => {
   it("opens every section and says when a page or entry does not exist", () => {
     expect(heading(open("/generator"))).toBe("Generator");
     dispose();
-    expect(heading(open("/groups"))).toBe("Gruppen");
+    expect(heading(open("/groups"))).toBe("Tresore");
     dispose();
     expect(heading(open("/settings"))).toBe("Einstellungen");
     dispose();
@@ -105,8 +111,8 @@ describe("App frame", () => {
       "Mitglieder-Seite",
     );
     dispose();
-    // Without members the team opens on its groups; /members alone shows nothing
-    expect(heading(open("/team"))).toBe("Gruppen");
+    // Without members the team opens on its vaults; /members alone shows nothing
+    expect(heading(open("/team"))).toBe("Tresore");
     dispose();
     expect(heading(open("/members"))).toBeUndefined();
   });
@@ -123,6 +129,6 @@ describe("App frame", () => {
     const root = open("/groups");
     expect(
       [...root.querySelectorAll('[aria-current="page"]')].map((a) => a.getAttribute("href")),
-    ).toContain("/groups");
+    ).toContain("/vaults");
   });
 });

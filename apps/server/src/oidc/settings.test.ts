@@ -13,7 +13,7 @@ describe("readOidcSettings", () => {
     expect(readOidcSettings({})).toEqual({ ok: true, value: undefined });
   });
 
-  it("has defaults for name, scopes and the groups claim", () => {
+  it("has defaults for name and scopes", () => {
     expect(readOidcSettings(base)).toEqual({
       ok: true,
       value: {
@@ -22,27 +22,24 @@ describe("readOidcSettings", () => {
         clientSecret: "client-secret",
         name: "OpenID Connect",
         scopes: "openid profile",
-        groupsClaim: "groups",
       },
     });
   });
 
-  it("reads name, scopes and the groups claim; a public client has no secret", () => {
+  it("reads name and scopes; a public client has no secret", () => {
     const { KENNWORT_OIDC_CLIENT_SECRET: _, ...publicClient } = base;
     expect(
       readOidcSettings({
         ...publicClient,
         KENNWORT_OIDC_NAME: "Weber SSO",
-        KENNWORT_OIDC_SCOPES: "openid profile groups",
-        KENNWORT_OIDC_GROUPS_CLAIM: "roles",
+        KENNWORT_OIDC_SCOPES: "openid profile email",
       }),
     ).toEqual({
       ok: true,
       value: expect.objectContaining({
         clientSecret: undefined,
         name: "Weber SSO",
-        scopes: "openid profile groups",
-        groupsClaim: "roles",
+        scopes: "openid profile email",
       }),
     });
   });
@@ -60,13 +57,8 @@ describe("readOidcSettings", () => {
     ],
     [
       "scopes without openid",
-      { ...base, KENNWORT_OIDC_SCOPES: "profile groups" },
+      { ...base, KENNWORT_OIDC_SCOPES: "profile email" },
       "KENNWORT_OIDC_SCOPES",
-    ],
-    [
-      "a claim with a space",
-      { ...base, KENNWORT_OIDC_GROUPS_CLAIM: "my groups" },
-      "KENNWORT_OIDC_GROUPS_CLAIM",
     ],
   ])("refuses %s", (_, env, setting) => {
     expect(readOidcSettings(env)).toEqual({ ok: false, error: [setting] });

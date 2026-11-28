@@ -15,8 +15,6 @@ import {
   auditEvents,
   authSession,
   entryShares,
-  groupMembers,
-  groups,
   invitations,
   rootGrants,
   vaultRequests,
@@ -68,18 +66,12 @@ describe("leaving the company (K-307, P-11)", () => {
     expect(listed.members.find((m) => m.role === "owner")?.leftAt).toBeNull();
   });
 
-  it("forgets what only she could use: requests, groups, shares to her and a root key", async () => {
+  it("forgets what only she could use: requests, shares to her and a root key", async () => {
     const w = await weber();
     const { vaultId } = await createBuero(w);
     const db = w.o.setup.db;
     db.insert(vaultRequests)
       .values({ vaultId, accountId: anna(w), requestedAt: 1 })
-      .run();
-    db.insert(groups)
-      .values({ id: "g", companyId: companyOf(w), name: "Büro", createdAt: 1 })
-      .run();
-    db.insert(groupMembers)
-      .values({ groupId: "g", accountId: anna(w) })
       .run();
     db.insert(rootGrants)
       .values({ accountId: anna(w), wrapped: Buffer.alloc(1), createdAt: 1 })
@@ -101,7 +93,6 @@ describe("leaving the company (K-307, P-11)", () => {
       .run();
     await remove(w, anna(w));
     expect(db.select().from(vaultRequests).all()).toEqual([]);
-    expect(db.select().from(groupMembers).all()).toEqual([]);
     expect(db.select().from(rootGrants).all()).toEqual([]);
     expect(db.select().from(entryShares).all()).toEqual([]);
   });

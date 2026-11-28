@@ -62,7 +62,7 @@ Dutzend Leuten. Du brauchst einen Server oder ein NAS mit Docker oder Podman und
 - **Entsperren mit Passkey**: in der Web-App mit einem Passkey (WebAuthn PRF) statt der Passphrase, die daneben
   weiter funktioniert; der Server sieht nur den mit dem Passkey verschlüsselten Kontoschlüssel. Passkeys für
   Websites speichert Kennwort gleich mit.
-- **Für Teams gebaut**: Tresore, Gruppen, Rechte, Zugriff auf Zeit, Freigabe durch Verwalter, Audit-Log.
+- **Für Teams gebaut**: Tresore, Rechte, Zugriff auf Zeit, Freigabe durch Verwalter, Audit-Log.
 - **Für Handwerk und IT-Dienstleister**: QR-Etiketten für Geräte, Übergabe der Zugänge an den Kunden, mehrere
   Firmen in einem Konto.
 - **Keine Kosten pro Kopf**: zehn Mitarbeiter kosten so viel wie einer; bezahlt wird nur der Server.
@@ -77,9 +77,9 @@ ganz im Browser und ohne Server.
 |---|---|
 | 🔑 [Konto und Entsperren](https://kennwort.app/konto.html) | Firma mit Einrichtungs-Code anlegen, Mitglieder per Einladungslink einladen und per Vergleichscode bestätigen, Rollen (Inhaber, Admin, Mitarbeiter), signierte Firmen-Richtlinien; entsperren mit Passphrase und Secret Key oder mit Passkey; Recovery-Kit als PDF, Firmen-Recovery über einen Inhaber, Notfallzugriff mit Wartezeit, alle Schlüssel erneuern, wenn das Kit in fremde Hände geraten ist; neues Gerät per QR-Code, Geräteliste, automatisches Sperren, ohne Verbindung lesen |
 | 🔐 [Tresore](https://kennwort.app/tresore.html) · [Einträge](https://kennwort.app/eintraege.html) | Logins, Notizen, WLAN, Karten, SSH- und API-Schlüssel, Anhänge, TOTP, Passkeys; Generator für Passwörter und Passphrasen; frühere Passwörter, Favoriten, Tags und Suche über alles; Live-Sync zwischen allen Geräten |
-| 👥 Team | Gruppen, Rollen, Zugriff anfragen, Zugriff auf Zeit, einzelnen Eintrag teilen, aus Tresor oder Firma entfernen mit Schlüsselwechsel, „Zum Ändern“ für alles, was die Person lesen konnte, und ein neuer Firmenschlüssel, wenn ein Inhaber oder Admin geht |
+| 👥 [Team](https://kennwort.app/team.html) | Rollen, Zugriff anfragen, Zugriff auf Zeit, einzelnen Eintrag teilen, aus Tresor oder Firma entfernen mit Schlüsselwechsel, „Zum Ändern“ für alles, was die Person lesen konnte, und ein neuer Firmenschlüssel, wenn ein Inhaber oder Admin geht |
 | 🛠️ [Handwerk und IT-Dienstleister](https://kennwort.app/handwerk.html) | QR-Etiketten für Geräte und Anlagen (der Code führt nur zum Eintrag, nie zu einem Passwort), mehrere Firmen in einem Konto, strikt getrennt; Übergabe eines Tresors an die Firma des Kunden, neu verschlüsselt auf dem Gerät |
-| 🪪 [Anmeldedienst und Deep Links](https://kennwort.app/anmeldedienst.html) | Optional OpenID Connect mit Keycloak, Authentik, Entra ID oder Kontext; Gruppen folgen dem groups-Claim als Zugriffsanfragen; der Anmeldedienst bekommt nie einen Schlüssel. Deep Links auf Tresor und Eintrag (`web+kennwort:`) |
+| 🪪 [Anmeldedienst und Deep Links](https://kennwort.app/anmeldedienst.html) | Optional OpenID Connect mit Keycloak, Authentik, Entra ID oder Kontext; der Anmeldedienst bekommt nie einen Schlüssel. Deep Links auf Tresor und Eintrag (`web+kennwort:`) |
 | 🔔 [Mitteilungen](https://kennwort.app/mitteilungen.html) | Glocke für alles, was auf dich wartet, live in der App; auf Wunsch Push, der nur „Neue Mitteilung in Kennwort“ sagt |
 | 🔗 [Einmal-Links](https://kennwort.app/einmal-links.html) | Ein Eintrag oder freier Text für Externe ohne Konto, bis zu sieben Tage und zehn Abrufe, auf Wunsch mit Passphrase, jederzeit widerrufbar |
 | 🧩 [Browser-Extension](https://kennwort.app/extension.html) | Chrome und Edge, Firefox ab 140 (auch Android), Safari ab 18; Popup mit Treffern für den exakten Host, Inline-Menü, das erst nach Klick ausfüllt und nie in fremde iFrames; neue Logins speichern, Phishing-Warnung, Passkey-Anbieter für Websites |

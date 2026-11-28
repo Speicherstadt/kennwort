@@ -11,7 +11,6 @@ export type DemoEntry = ShownEntry;
 
 export const company: { name: string; user: string } = data.company;
 export const vaults: { id: string; name: string }[] = data.vaults;
-export const groups: { id: string; name: string; members: number }[] = data.groups;
 /** A field whose label follows the app's language, read when shown, not when this module loads */
 const field = (
   id: string,

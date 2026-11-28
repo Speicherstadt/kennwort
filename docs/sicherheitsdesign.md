@@ -27,7 +27,7 @@ selbst.
 | **Netzwerk** | mitlesen, wo TLS fehlt | mehr als der Server (TLS ist zusätzlich, nicht tragend) |
 | **Phishing-Seite** | das Ausfüllen erbitten, Menüs überdecken | ausfüllen lassen ohne exakten Host-Treffer und Klick |
 | **Ehemaliges Mitglied** | behalten, was es schon entschlüsselt hat | neue Einträge und neue Tresor-Schlüssel lesen |
-| **Anmeldedienst (OIDC)** | Konten anlegen und Gruppen melden | entschlüsseln oder Zugriff geben; ein Gruppenwechsel ist nur eine Anfrage |
+| **Anmeldedienst (OIDC)** | Konten anlegen | entschlüsseln, Sitzungen ausstellen oder Zugriff geben |
 
 Außerhalb des Modells: Schadsoftware auf dem entsperrten Gerät, ein Angreifer mit dem entsperrten
 Gerät in der Hand, eine kompromittierte Browser- oder Betriebssystem-Installation und die erste
@@ -44,7 +44,7 @@ Geheimtexte, ungeschützte Metadaten); und Rückwärtskompatibilität, über die
 schwächere Verfahren erzwingt.
 
 Kennwort führt daraus einen eigenen Katalog mit 27 Angriffen, ergänzt um die Angriffe, die erst
-durch Kennworts Funktionen möglich werden (Geräte-Freigabe, Einmal-Links, OIDC-Gruppen). Jedes
+durch Kennworts Funktionen möglich werden (Geräte-Freigabe, Einmal-Links, OIDC). Jedes
 Protokoll unten nennt, welche es abwehrt; der bösartige Testserver (K-206, K-701) spielt jeden als
 Test nach. Die Klassen und Mechanismen folgen den veröffentlichten Zusammenfassungen der Studie.
 
@@ -76,7 +76,7 @@ Test nach. Die Klassen und Mechanismen folgen den veröffentlichten Zusammenfass
 | E-24 | Anmeldung | greift beim Anmelden die Passphrase oder etwas ab, mit dem er sie raten kann |
 | E-25 | Geräte | leitet die Freigabe eines neuen Geräts auf seinen eigenen Schlüssel um |
 | E-26 | Austritt | gibt einem ausgetretenen Mitglied weiter Zugriff auf neue Daten |
-| E-27 | Anmeldung | macht aus einem Gruppenwechsel beim Anmeldedienst einen Zugriff ohne Verwalter |
+| E-27 | Anmeldung | verschafft über Ansprüche im ID-Token (Rolle, Rechte) Zugriff ohne Verwalter oder Zertifikat |
 
 ### Abdeckung des Projektplans
 
@@ -95,7 +95,7 @@ gleich.
 | Phishing-Seite will Autofill | [P-17](#p-17-ausfullen) | E-14 |
 | Clickjacking auf das Autofill-Menü (DEF CON 2025) | [P-17](#p-17-ausfullen) | – |
 | Supply-Chain im Client | [P-16](#p-16-ausgelieferter-code) | E-22 |
-| SSO-Konto übernommen | [P-02](#p-02-anmelden), [P-03](#p-03-entsperren), [P-25](#p-25-anmeldung-uber-openid-connect-und-gruppen) | E-03, E-27 |
+| SSO-Konto übernommen | [P-02](#p-02-anmelden), [P-03](#p-03-entsperren), [P-25](#p-25-anmeldung-uber-openid-connect) | E-03, E-27 |
 | Mitarbeiter verlässt Firma | [P-11](#p-11-austritt-und-schlusselwechsel) | E-26 |
 | Malware auf dem Gerät | [P-03](#p-03-entsperren) (Sperren, Schlüssel nur im Speicher) | – |
 | Passwort bleibt am Handy in der Zwischenablage | [P-17](#p-17-ausfullen) | – |
@@ -106,7 +106,7 @@ gleich.
 | Firmen-Wurzelschlüssel | [P-07](#p-07-firmen-wurzelschlussel-und-zertifikate) | E-02, E-05, E-10 |
 | Austritt | [P-11](#p-11-austritt-und-schlusselwechsel) | E-26 |
 | Neues Gerät | [P-04](#p-04-neues-gerat) | E-09, E-25 |
-| Login per Passkey/SSO | [P-02](#p-02-anmelden), [P-25](#p-25-anmeldung-uber-openid-connect-und-gruppen) | E-24, E-27 |
+| Login per Passkey/SSO | [P-02](#p-02-anmelden), [P-25](#p-25-anmeldung-uber-openid-connect) | E-24, E-27 |
 | Symmetrisch | [F-01](#f-01-geheimtext-v1) | E-17 |
 | Schlüssel verpacken | [F-02](#f-02-an-einen-offentlichen-schlussel-verpackt-v1) | E-05, E-16 |
 | Signaturen | [F-03](#f-03-signatur-v1) | E-07, E-19 |
@@ -152,7 +152,7 @@ nicht existiert.
 | E-24 | `packages/core/src/adversary/catalog.test.ts`, `apps/server/src/auth/auth.test.ts` | – der Server bekommt nur Konto-ID und eine Signatur, nie Passphrase, Secret Key oder einen Schlüssel daraus |
 | E-25 | `packages/core/src/adversary/catalog.test.ts`, `packages/core/src/account/pairing.test.ts`, `apps/web/src/pairing/pairing.test.ts` | nicht authentisch, anderer Kontozustand, anderes Konto |
 | E-26 | `packages/core/src/adversary/exit.test.ts`, `packages/core/src/adversary/epoch-order.test.ts`, `packages/core/src/membership/rotation.test.ts`, `apps/server/src/sync/rotation-routes.test.ts`, `apps/web/src/offline/local-copy.test.ts` | Wechsel steht aus, Schlüssel zurückgehalten, neuere Epoche, kein Bearbeiter |
-| E-27 | `apps/server/src/adversary/oidc-attacks.test.ts`, `apps/server/src/oidc/groups.test.ts` | nur Anfrage, kein Tresor |
+| E-27 | `apps/server/src/adversary/oidc-attacks.test.ts` | nur Konto ohne Zertifikat, kein Tresor |
 
 Keiner der 27 fällt weg: Funktionen, die Kennwort anders baut als die untersuchten Produkte (keine
 Geräteschlüssel, kein SSO-Schlüsseldienst, keine Iterationszahl vom Server), haben einen Test, der
@@ -597,10 +597,9 @@ Anmelden (beim Server) und Entsperren (der Schlüssel) sind getrennt; Anmelden g
 Geheimtexten.
 
 - **Passkey** über Better Auth (WebAuthn); derselbe Passkey kann zugleich per PRF entsperren.
-- **OpenID Connect** ([P-25](#p-25-anmeldung-uber-openid-connect-und-gruppen)): Der Anmeldedienst
+- **OpenID Connect** ([P-25](#p-25-anmeldung-uber-openid-connect)): Der Anmeldedienst
   bestätigt nur, wer jemand ist. Er entschlüsselt nichts und gibt einem bestehenden Konto keine
-  Sitzung; ein Gruppenwechsel erzeugt eine Zugriffsanfrage, die ein Verwalter freigibt
-  ([P-05](#p-05-tresor-anlegen-und-mitglieder-aufnehmen)).
+  Sitzung.
 - **Notweg Passphrase**: Aus `anmelden` (F-05) wird ein Ed25519-Schlüssel; der Server kennt nur
   dessen öffentlichen Teil und schickt eine Herausforderung. Die Passphrase und `p₁` verlassen nie
   das Gerät; was der Server speichert, lässt sich ohne den Secret Key nicht raten.
@@ -760,7 +759,7 @@ der Passphrase neu anmelden. Den Zugang ganz entziehen erst Austritt und Schlüs
 „Dieses Gerät abmelden“ löscht dazu Konto-ID und Secret Key vom Gerät.
 Umgesetzt in `apps/server/src/auth/devices.ts` und `apps/web/src/frame/devices-section.tsx`.
 
-Was die Seiten der Web-App vom Server laden (Geräte, Gruppen, Mitglieder, Richtlinie), hält
+Was die Seiten der Web-App vom Server laden (Geräte, Mitglieder, Richtlinie), hält
 TanStack Query (`apps/web/src/queries.ts`): ein Cache je geöffnetem Konto, nur im Speicher, ohne
 Persister, beim Sperren geleert. Die Schlüssel der Abfragen nennen nur die Daten, nie ein Token,
 einen Schlüssel oder ein Geheimnis; das Token kommt beim Laden aus der Sitzung.
@@ -790,19 +789,13 @@ die damit neu beginnt (`onFragment`). Das neue Gerät fragt alle vier Sekunden n
    verwalten), optional Ablaufzeit, und der Bindung von VKₑ.
 3. Das neue Mitglied entpackt VKₑ und prüft die Bindung gegen den signierten Log-Eintrag seiner
    Epoche; ein Paket, das der Server mit einem eigenen Schlüssel gebaut hat, passt nicht (E-16).
-4. Zugriff anfragen und OIDC-Gruppen: Der Server legt nur eine Anfrage ab; erst ein Verwalter
-   führt Schritt 2 aus. Gebaut: `POST /api/vaults/:id/requests` (ein Konto der Firma, das nicht
-   Mitglied ist), `GET` und `DELETE` für die aktuellen Verwalter (zurückziehen darf auch, wer
-   gefragt hat); ein gespeichertes `aufnehmen` oder `rolle` für das Konto löscht die Anfrage. Wessen
-Zeit abgelaufen ist, der steht noch im Log und fragt erneut an; freigegeben wird er mit `rolle`
-ohne Ablaufzeit, denn ein zweites `aufnehmen` nimmt `verifyLog` nicht. Freigeben kann der Client nur
-   für ein Konto, dessen Zertifikat der gemerkte Wurzelschlüssel bestätigt. Gruppen (`apps/server/src/sync/group-routes.ts`)
-   legen nur Anfragen an: beim Verknüpfen einer Gruppe mit einem Tresor für alle ihre Mitglieder,
-   die nicht im Tresor sind, und bei jedem späteren Beitritt; Zugriff gibt weiter nur Schritt 2.
-   Eine Anfrage merkt sich, ob eine Gruppe sie gestellt hat; wird die Gruppe gelöst, gelöscht oder
-   verlassen, bleibt sie nur, solange die Person in einer anderen verknüpften Gruppe ist. Beim
-   Freigeben schlägt der Client die höchste Rolle der verknüpften Gruppen der Person vor, höchstens
-   „bearbeiten“: Der Vorschlag kommt vom Server, „verwalten“ wählt der Verwalter selbst.
+4. Zugriff anfragen: Der Server legt nur eine Anfrage ab; erst ein Verwalter führt Schritt 2 aus.
+   Gebaut: `POST /api/vaults/:id/requests` (ein Konto der Firma, das nicht Mitglied ist), `GET` und
+   `DELETE` für die aktuellen Verwalter (zurückziehen darf auch, wer gefragt hat); ein gespeichertes
+   `aufnehmen` oder `rolle` für das Konto löscht die Anfrage. Wessen Zeit abgelaufen ist, der steht
+   noch im Log und fragt erneut an; freigegeben wird er mit `rolle` ohne Ablaufzeit, denn ein
+   zweites `aufnehmen` nimmt `verifyLog` nicht. Freigeben kann der Client nur für ein Konto, dessen
+   Zertifikat der gemerkte Wurzelschlüssel bestätigt.
 
 So ist es gebaut: `createVault` und `addMember` in `packages/core/src/membership/vault-ops.ts`
 erzeugen den Eintrag und das an das Mitglied verpackte VKₑ; `changeAccess` und `removeMember`
@@ -1375,7 +1368,7 @@ den Stand im Speicher kommt (`newestOf` in `packages/client/src/entries/device-m
 
 **Austritt aus der Firma.** `DELETE /api/members/:id` (Inhaber für alle anderen, Admins nur für
 Mitarbeiter, nie sich selbst) markiert das Konto als ausgetreten (`accounts.left_at`), löscht
-sofort alle seine Sitzungen, Zugriffsanfragen, Gruppenmitgliedschaften, Freigaben an es, einen
+sofort alle seine Sitzungen, Zugriffsanfragen, Freigaben an es, einen
 verpackten Wurzelschlüssel und die offenen Einladungen, die es erstellt hat (es kennt Token und
 Geheimnis), und schreibt `member-left` ins Audit-Log. Danach kommt es mit keiner Sitzung mehr unter
 `/api`, und ein Live-Stream, den es noch offen hat, endet vor der nächsten Meldung. Schlüssel und Zertifikat bleiben, denn die Logs, die es signiert hat,
@@ -1836,11 +1829,10 @@ Restrisiken:
 | --- | --- |
 | Konten, Firmen, Geräte, Sitzungen, Anmeldezeiten, IP-Adressen | Passphrase, Secret Key, PRF-Ausgabe, AK, private Schlüssel |
 | Tresor-IDs, Mitglieder, Rollen (im signierten Log) | Tresor-Namen und -Beschreibungen (verschlüsselt mit VKₑ) |
-| Gruppen, ihre Namen und Mitglieder, welche Gruppe mit welchem Tresor verknüpft ist | – (eine Gruppe gibt keinen Zugriff, sie erzeugt nur Anfragen) |
 | Eintrags-IDs, Versionen, Größen, Zeitpunkte, Autor | Titel, URLs, Benutzernamen, Passwörter, TOTP, Notizen, Tags, Favoriten, Anhänge |
 | öffentliche Schlüssel, Zertifikate, Fingerabdrücke | Recovery Key, Einladungsgeheimnis, Schlüssel von Einmal-Links |
 | Audit-Ereignisse (wer, was, wann) | Inhalte der Ereignisse, die Einträge betreffen |
-| mit OpenID Connect: Issuer, `sub` und Name der Person beim Anmeldedienst, die Gruppennamen ihres Claims bei der Anmeldung ([P-25](#p-25-anmeldung-uber-openid-connect-und-gruppen)) | Token des Anmeldedienstes (nicht gespeichert); einen Schlüssel gibt der Anmeldedienst nie |
+| mit OpenID Connect: Issuer, `sub` und Name der Person beim Anmeldedienst ([P-25](#p-25-anmeldung-uber-openid-connect)) | Token des Anmeldedienstes (nicht gespeichert); einen Schlüssel gibt der Anmeldedienst nie |
 | Mitteilungen: Art, IDs, Zeit, gelesen; Push-Adressen der Geräte ([P-24](#p-24-mitteilungen-und-web-push)) | Namen von Tresoren und Einträgen in Mitteilungen; einen Inhalt in Pushes gibt es nicht |
 | mehrere Firmen in einem Konto: je Firma ein eigenes Konto; dass sie einer Person gehören, nur aus Geräte-ID, Adresse und Zeit ([P-27](#p-27-mehrere-firmen-ubergabe-an-den-kunden-und-qr-etiketten)) | die Zugänge zu den weiteren Konten (versiegelt im Kontozustand des Stammkontos), die Namen der Firmen |
 | nach dem Löschen eines Kontos: Konto-ID, Firma, Rolle, Austrittszeit, öffentliche Schlüssel und Zertifikate, Audit-Ereignisse mit der Konto-ID ([P-28](#p-28-konto-loschen-und-daten-herunterladen)) | alles andere des Kontos: gelöscht |
@@ -2884,7 +2876,7 @@ ohnehin bearbeitet, und nur mit dem, was er ohnehin weiß:
 
 | Art | Wer sie bekommt | Betreff | Ausgelöst von |
 | --- | --- | --- | --- |
-| `access-requested` | die Verwalter des Tresors (gespeichertes Log), nur bei einer neuen Anfrage, nicht bei jeder Wiederholung; auch wenn der Anmeldedienst eine verknüpfte Gruppe meldet (P-25) | Tresor-ID | wer anfragt |
+| `access-requested` | die Verwalter des Tresors (gespeichertes Log), nur bei einer neuen Anfrage, nicht bei jeder Wiederholung | Tresor-ID | wer anfragt |
 | `vault-added` | wer aufgenommen wurde (Eintrag `add` im Log) | Tresor-ID | der Verwalter |
 | `share-received` | wem ein Eintrag zum ersten Mal geteilt wurde | Eintrags-ID | wer teilt |
 | `invitation-accepted` | wer die Einladung erstellt hat | Einladungs-ID | das neue Konto |
@@ -2896,8 +2888,7 @@ ohnehin bearbeitet, und nur mit dem, was er ohnehin weiß:
 | `account-recovered` | wessen Konto ein Inhaber wiederhergestellt hat (P-13) | – | der Inhaber |
 | `link-opened` | wer den Einmal-Link erstellt hat | Link-ID (nicht die Abruf-ID) | – |
 | `security-report` | (reserviert für den Monatsbericht aus [P-23](#p-23-sicherheits-ubersicht-und-datenleck-prufung); den rechnet das Gerät selbst aus, der Server schreibt die Art noch nicht) | – | – |
-| `member-enrolled` | Inhaber und Admins (sie vergleichen den Code, [P-25](#p-25-anmeldung-uber-openid-connect-und-gruppen)) | Konto-ID | das neue Konto |
-| `group-left` | die Verwalter eines verknüpften Tresors, in dem die Person noch ist ([P-25](#p-25-anmeldung-uber-openid-connect-und-gruppen)) | Tresor-ID | die Person |
+| `member-enrolled` | Inhaber und Admins (sie vergleichen den Code, [P-25](#p-25-anmeldung-uber-openid-connect)) | Konto-ID | das neue Konto |
 
 Eine Mitteilung ist eine Zeile mit Art, Betreff-ID, Auslöser-ID, Zeit und „gelesen“. Namen von
 Tresoren und Einträgen kennt der Server nicht (sie sind verschlüsselt, P-15), und auch Namen, die er
@@ -2975,21 +2966,19 @@ Push-Einstellungen) und `apps/web/src/sw/push.ts` (Text und Klick im Service Wor
 
 **Wehrt ab:** E-14.
 
-### P-25 Anmeldung über OpenID Connect und Gruppen
+### P-25 Anmeldung über OpenID Connect
 
 Firmen, die schon einen Anmeldedienst haben (Keycloak, Authentik, Entra ID, in der Suite Kontext),
 können ihn mit Kennwort verbinden (K-604). Der Grundsatz: **Die Ende-zu-Ende-Verschlüsselung hängt
-nicht am Anmeldedienst.** Er bestätigt nur, wer sich anmeldet, und meldet Gruppen. Er sieht und
-verteilt nie einen Schlüssel, kein Gerät bekommt von ihm einen, und was er meldet, wird nie von
-selbst zu Zugriff.
+nicht am Anmeldedienst.** Er bestätigt nur, wer sich anmeldet. Er sieht und verteilt nie einen
+Schlüssel, kein Gerät bekommt von ihm einen, und er gibt niemandem von selbst Zugriff.
 
 **Client nach OpenID Connect Core 1.0**, im Server (`apps/server/src/oidc/`), ohne neues Paket:
 
 1. Konfiguration über `KENNWORT_OIDC_ISSUER`, `KENNWORT_OIDC_CLIENT_ID`,
-   `KENNWORT_OIDC_CLIENT_SECRET`, `KENNWORT_OIDC_SCOPES` (muss `openid` enthalten),
-   `KENNWORT_OIDC_GROUPS_CLAIM` (Vorgabe `groups`) und `KENNWORT_OIDC_NAME` (Beschriftung des
-   Knopfs). Der Issuer braucht TLS, außer auf dem eigenen Rechner (Tests). Das Client-Geheimnis
-   steht nie im Log und geht nie an einen Client.
+   `KENNWORT_OIDC_CLIENT_SECRET`, `KENNWORT_OIDC_SCOPES` (muss `openid` enthalten) und
+   `KENNWORT_OIDC_NAME` (Beschriftung des Knopfs). Der Issuer braucht TLS, außer auf dem eigenen
+   Rechner (Tests). Das Client-Geheimnis steht nie im Log und geht nie an einen Client.
 2. Discovery: Die Konfiguration muss genau den eingestellten Issuer nennen (Discovery §4.3), ihre
    Adressen brauchen TLS. Der Server hält sie eine Stunde, die Schlüssel (JWKS) ebenso und fragt
    bei einem unbekannten `kid` höchstens einmal in der Minute neu.
@@ -3044,37 +3033,24 @@ Wurzelschlüssel, den der Server dem neuen Gerät unterschiebt, auch. Der Server
 Konto in der Mitgliederliste (`oidc`); die Markierung wählt nur den Weg der Prüfung, sie ersetzt sie
 nicht.
 
-**Gruppen als Anfragen**: Bei jeder Anmeldung über den Anmeldedienst gleicht der Server die Gruppen
-des Kontos mit dem Claim ab. Eine Gruppe der Firma mit demselben Namen wie im Claim (ein führendes
-`/` von Keycloak fällt weg) tritt das Konto bei; das legt für jeden mit der Gruppe verknüpften Tresor
-nur eine Zugriffsanfrage an ([P-05](#p-05-tresor-anlegen-und-mitglieder-aufnehmen), Schritt 4), und
-die Verwalter bekommen `access-requested`. Zugriff gibt erst ein Verwalter mit seinem signierten
-Log-Eintrag und dem an das Zertifikat verpackten Tresor-Schlüssel. Nennt der Claim eine Gruppe nicht
-mehr, die der Anmeldedienst gegeben hat, verlässt das Konto sie: Anfragen, die sie gestellt hat,
-fallen weg, und die Verwalter der verknüpften Tresore, in denen die Person noch ist, bekommen
-`group-left`. Entfernen und den Schlüsselwechsel macht der Client eines Verwalters
-([P-11](#p-11-austritt-und-schlusselwechsel)); der Server kann es nicht. Gruppen, die ein Admin von
-Hand vergeben hat, rührt der Abgleich nicht an.
-
 Was der Server zusätzlich speichert: Issuer, `sub` und den Namen, den der Anmeldedienst nennt (eine
 Beschriftung wie die einer Einladung, sie bestätigt nichts), welche Firmen die Aufnahme erlauben,
-laufende Abläufe (Hashes, Nonce, Verifier, zehn Minuten) und Tickets (Hash, Gruppennamen, 15
-Minuten). Kein Token des Anmeldedienstes wird gespeichert.
+laufende Abläufe (Hashes, Nonce, Verifier, zehn Minuten) und Tickets (Hash, 15 Minuten). Kein Token
+des Anmeldedienstes wird gespeichert.
 
 Restrisiko:
 
-- Ein bösartiger Anmeldedienst kann Konten anlegen lassen, die auf einen Codevergleich warten, und
-  Gruppen melden, die Anfragen auslösen. Beides braucht einen Menschen, der vergleicht oder freigibt.
+- Ein bösartiger Anmeldedienst kann Konten anlegen lassen, die auf einen Codevergleich warten. Das
+  braucht einen Menschen, der den Code vergleicht.
 - Wer den Codevergleich überspringt, zertifiziert auch ein untergeschobenes Bündel; wie bei jedem
   Vergleichscode schützt nur der Vergleich. Das TOFU des Wurzelschlüssels deckt der zweite Code ab
   ([P-07](#p-07-firmen-wurzelschlussel-und-zertifikate), Restrisiko des ersten Kontakts).
 - Sperrt der Anmeldedienst jemanden, kommt die Person über ihre Passphrase weiter in Kennwort, bis
   ein Admin sie aus der Firma entfernt (K-307). Eine Abmeldung beim Anmeldedienst entzieht nichts;
   SCIM, das das melden würde, ist zurückgestellt (Bauliste).
-- Der Abgleich der Gruppen läuft nur, wenn sich die Person über den Anmeldedienst anmeldet.
 
 Umgesetzt in `apps/server/src/oidc/` (`settings.ts`, `provider.ts`, `jwt.ts`, `store.ts`,
-`callback.ts`, `routes.ts`, `api-routes.ts`, `groups.ts`), `apps/server/src/db/oidc-schema.ts`,
+`callback.ts`, `routes.ts`, `api-routes.ts`), `apps/server/src/db/oidc-schema.ts`,
 `packages/core/src/auth/oidc.ts` (Schemas), `packages/core/src/membership/members.ts`
 (`enrolled`, `certifyEnrolled`), `packages/client/src/session/oidc-api.ts` und in der Web-App in
 `apps/web/src/oidc/` und `apps/web/src/members/enrolled.ts`. Getestet gegen einen nachgebauten
@@ -3131,7 +3107,7 @@ linked[konto-ID] = { name, at, credentials?: { secretKey (16 Byte), passphrase (
   Beim Zusammenführen gewinnt die Entfernung, damit ein Gerät, das sie noch nicht kennt, den Zugang
   nicht zurückbringt. Das Konto in der anderen Firma bleibt; aus der Firma nimmt es deren Inhaber
   ([P-11](#p-11-austritt-und-schlusselwechsel)).
-- Über OpenID Connect bleibt eine Person ein Konto in einer Firma ([P-25](#p-25-anmeldung-uber-openid-connect-und-gruppen)):
+- Über OpenID Connect bleibt eine Person ein Konto in einer Firma ([P-25](#p-25-anmeldung-uber-openid-connect)):
   Wer schon verknüpft ist und dem Link zum Beitreten einer anderen Firma folgt, bekommt nur sein
   bestehendes Konto genannt, keine Aufnahme dort; weitere Firmen kommen über Einladungen.
 
@@ -3211,7 +3187,7 @@ das Löschen über dieselben signierten Mitgliedschaftsänderungen wie ein Austr
    Tresors, in dem andere bleiben, wartet das Löschen (`sole-manager`): Ohne Verwalter könnte
    niemand mehr den Schlüssel wechseln.
 3. **Was wird aus der Firma** (`companyFate`): Bleibt niemand sonst, geht die ganze Firma mit allen
-   Tresoren, Konten, Gruppen, dem Audit-Log und den Wurzelwechseln (`erase`). Bleiben andere, aber
+   Tresoren, Konten, dem Audit-Log und den Wurzelwechseln (`erase`). Bleiben andere, aber
    kein anderer Inhaber, wartet das Löschen (`last-owner`), wie ein Inhaber sich nicht selbst
    herabstufen kann.
 4. **Server**: `DELETE /api/account` prüft Challenge und Signatur, rechnet Schritt 2 und 3 nach den
@@ -3219,7 +3195,7 @@ das Löschen über dieselben signierten Mitgliedschaftsänderungen wie ein Austr
    Geräte, Passkeys, Anmeldeschlüssel, Push-Adressen, Mitteilungen, die Person beim Anmeldedienst,
    Schlüsselbund, Kontozustand und beide AK-Kopien (geleert), verpackte Wurzel- und
    Recovery-Schlüssel, die Hinterlegung, Notfallzugriffe, Einmal-Links, die eigene Einladung (ihre
-   Beschriftung nennt die Person) und offene Einladungen der Person, Anfragen, Gruppen, Freigaben an
+   Beschriftung nennt die Person) und offene Einladungen der Person, Anfragen, Freigaben an
    sie und an sie verpackte Tresor-Schlüssel. Das Konto bleibt als ausgetreten stehen (`leftAt`), mit
    öffentlichen Schlüsseln und Zertifikaten: Ohne sie verifizierte kein Log und kein Eintrag mehr,
    den die Person signiert hat. Das Audit-Log bekommt `member-left` mit der Person als Handelnder und
@@ -3231,7 +3207,7 @@ das Löschen über dieselben signierten Mitgliedschaftsänderungen wie ein Austr
 6. **Daten herunterladen**: `GET /api/account/export` liefert als JSON (`kennwort-privacy-export`,
    Version 1) Konto, öffentliche Schlüssel und Zertifikate, die versiegelten Daten so, wie sie liegen,
    Geräte mit Adresse und Browser, Passkeys, die Person beim Anmeldedienst, Fehlversuche,
-   Mitteilungen, Push-Adressen, die Tresore, deren Log die Person nennt, mit ihrer Rolle, Gruppen,
+   Mitteilungen, Push-Adressen, die Tresore, deren Log die Person nennt, mit ihrer Rolle,
    Anfragen, Freigaben, Notfallzugriffe, Einmal-Links, Einladungen und die Audit-Ereignisse, in denen
    sie handelt oder betroffen ist. Nicht darin sind Sitzungs-Token und Daten anderer Personen; die
    Einträge stehen im verschlüsselten Export der App (P-19).

@@ -51,8 +51,7 @@ export const oidcFlows = sqliteTable(
 
 /**
  * A finished login, handed to the app in the fragment of the address: for a known account a
- * session once, for an unknown person the enrolment. The provider's groups (names only) wait here
- * until the account exists.
+ * session once, for an unknown person the enrolment.
  */
 export const oidcTickets = sqliteTable(
   "oidc_tickets",
@@ -63,7 +62,6 @@ export const oidcTickets = sqliteTable(
     accountId: text("account_id"),
     companyId: text("company_id"),
     name: text("name"),
-    groups: text("groups").notNull(),
     expiresAt: integer("expires_at").notNull(),
   },
   (table) => [index("oidc_tickets_expiry").on(table.expiresAt)],

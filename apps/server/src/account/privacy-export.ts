@@ -20,8 +20,6 @@ import {
   deviceSessions,
   emergencyGrants,
   entryShares,
-  groupMembers,
-  groups,
   invitations,
   loginFailures,
   notificationPrefs,
@@ -152,14 +150,8 @@ const vaultsOf = (db: Db, companyId: string, id: string) =>
 /** The other side of an emergency grant, to keep both sides in the company */
 const grantees = alias(accounts, "grantees");
 
-/** Groups, requests, shares, emergency access, links and invitations: IDs and times only */
+/** Requests, shares, emergency access, links and invitations: IDs and times only */
 const relationsOf = (db: Db, companyId: string, id: string) => ({
-  groups: db
-    .select({ id: groups.id, name: groups.name, viaIdp: groupMembers.viaIdp })
-    .from(groupMembers)
-    .innerJoin(groups, eq(groups.id, groupMembers.groupId))
-    .where(and(eq(groupMembers.accountId, id), eq(groups.companyId, companyId)))
-    .all(),
   vaultRequests: db
     .select({ vaultId: vaultRequests.vaultId, requestedAt: vaultRequests.requestedAt })
     .from(vaultRequests)

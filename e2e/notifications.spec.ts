@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 import { setUpCompany, test, unlock } from "./account.ts";
-import { annaJoins, heading, openVaults } from "./company.ts";
+import { annaJoins, createVault, heading, openVaults } from "./company.ts";
 
 // K-602 (P-24): what happens to one account shows up in the bell of the other, live, by IDs the
 // device names itself; marking it read clears the count. Push is tested on the server only
@@ -40,10 +40,7 @@ test.describe("notifications", { tag: "@phone" }, () => {
 
     // Anna asks for access to Büro; Jonas's device names the vault and Anna itself
     await openVaults(page);
-    await page.getByLabel("Name", { exact: true }).fill("Büro");
-    await page.getByRole("button", { name: "Tresor anlegen" }).click();
-    await page.getByRole("main").getByRole("link", { name: /Büro/ }).click();
-    const link = page.url();
+    const link = await createVault(page, "Büro");
     await anna.goto(link);
     await unlock(anna, "Anna Heizung Bad Fliese");
     await anna.getByRole("button", { name: "Zugriff anfragen" }).click();

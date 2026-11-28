@@ -32,7 +32,6 @@ export const sections: readonly Section[] = [
 const parent: Partial<Record<Route["page"], Route["page"]>> = {
   security: "entries",
   members: "team",
-  groups: "team",
   vaults: "team",
   import: "settings",
   export: "settings",

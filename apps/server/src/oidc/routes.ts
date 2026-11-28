@@ -4,11 +4,11 @@
  * callback, check the ID token, and hand the result to the app as a one-time ticket in the
  * fragment of a redirect (P-16: a login through /auth ends in a redirect into the app).
  *
- * What the provider's word gives: for a person linked to an account, its groups are brought in
- * line (as requests only, groups.ts), and no session: the account signs in and unlocks with its
- * passphrase and Secret Key as always. For a person without an account, an enrolment into a company
- * that allows it: a new member without a certificate and without any vault, whom an owner or admin
- * certifies only after comparing the code of the new keys with the person (P-07, P-08).
+ * What the provider's word gives: for a person linked to an account, no session — the account
+ * signs in and unlocks with its passphrase and Secret Key as always. For a person without an account,
+ * an enrolment into a company that allows it: a new member without a certificate and without any
+ * vault, whom an owner or admin certifies only after comparing the code of the new keys with the
+ * person (P-07, P-08).
  */
 import { bytes, encodeBytes } from "@kennwort/core";
 import { eq } from "drizzle-orm";
@@ -26,7 +26,6 @@ import type { Log } from "../log.ts";
 import { type Notify, noNotify } from "../notifications/notify.ts";
 import { companyAccounts } from "../notifications/recipients.ts";
 import { completeLogin } from "./callback.ts";
-import { syncGroups } from "./groups.ts";
 import type { Provider } from "./provider.ts";
 import {
   accountOf,
@@ -97,7 +96,7 @@ const EnrolRequest = Ticket.extend({
   accountSalt: bytes(16),
 });
 
-/** The account of an enrolment, linked to its person, in its groups, its admins told */
+/** The account of an enrolment, linked to its person, its admins told */
 const finishEnrolment = async (
   deps: OidcDeps,
   request: z.infer<typeof EnrolRequest>,
@@ -124,7 +123,6 @@ const finishEnrolment = async (
     signature: new Uint8Array(),
   });
   const notify = deps.notify ?? noNotify;
-  syncGroups({ db, now: deps.now, notify }, { id: user.id, companyId }, ticket.groups);
   notify({
     companyId,
     recipients: companyAccounts(db, companyId, ["owner", "admin"]),

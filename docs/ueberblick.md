@@ -9,8 +9,8 @@ description: >-
 
 **Die Zugänge deines Teams – nur für euch lesbar, auf deinem eigenen Server.**
 
-Kennwort ist ein selbst gehosteter Passwortmanager für kleine Betriebe: Tresore und Gruppen fürs
-Team, eine Browser-Extension, die erst nach Klick ausfüllt, und eine Web-App fürs Handy.
+Kennwort ist ein selbst gehosteter Passwortmanager für kleine Betriebe: Tresore fürs Team, eine
+Browser-Extension, die erst nach Klick ausfüllt, und eine Web-App fürs Handy.
 Ende-zu-Ende-verschlüsselt, mit Post-Quanten-Schutz, Open Source und ohne Kosten pro Benutzer.
 
 <a href="/demo/" class="md-button md-button--primary">Demo ausprobieren</a>
@@ -23,18 +23,19 @@ Ende-zu-Ende-verschlüsselt, mit Post-Quanten-Schutz, Open Source und ohne Koste
 
 !!! tip "Ausprobieren ohne Server"
     Die [Demo](https://kennwort.app/demo/) zeigt die Web-App mit der Beispielfirma „Weber
-    Haustechnik“ (Jonas, Anna, Sandra und Max). Sie läuft ganz in deinem Browser: Ein Ersatz für den
-    Server hält die verschlüsselten Daten nur im Speicher des Tabs, beim Neuladen beginnt alles von
-    vorn, und die Seite darf keinen Server erreichen (CSP `connect-src 'none'`). Die Verschlüsselung
-    ist dieselbe wie in der echten App, auch Argon2id mit den festen Parametern; deshalb dauert das
-    Entsperren ein, zwei Sekunden. Die Passphrase steht oben auf der Seite und ist absichtlich
-    schwach. Entsperren kann nur Jonas; Anna, Sandra und Max sind bestätigte Mitglieder, deren
-    Passphrase niemand kennt. Gib dort keine echten Passwörter ein.
+    Haustechnik“ (Jonas, Anna, Sandra, Max, Tim und Lea). Sie läuft ganz in deinem Browser: Ein
+    Ersatz für den Server hält die verschlüsselten Daten nur im Speicher des Tabs, beim Neuladen
+    beginnt alles von vorn, und die Seite darf keinen Server erreichen (CSP `connect-src 'none'`).
+    Die Verschlüsselung ist dieselbe wie in der echten App, auch Argon2id mit den festen
+    Parametern; deshalb dauert das Entsperren ein, zwei Sekunden. Die Passphrase steht oben auf der
+    Seite und ist absichtlich schwach. Entsperren kann nur Jonas; Anna, Sandra, Max und Tim sind
+    bestätigte Mitglieder, Lea wartet auf die Bestätigung, und ihre Passphrasen kennt niemand. Gib
+    dort keine echten Passwörter ein.
 
 ## Was Kennwort kann
 
 - **Tresore fürs Team**: Logins, Notizen, WLAN, Karten, SSH- und API-Schlüssel, Einmal-Codes und
-  Passkeys in [Tresoren](tresore.md) mit Gruppen, Rollen und Zugriff auf Zeit.
+  Passkeys in [Tresoren](tresore.md) mit Rollen und Zugriff auf Zeit.
 - **Entsperren mit Passkey oder Passphrase**: in der Web-App mit einem Passkey (WebAuthn PRF) oder
   mit Passphrase und Secret Key, die das Gerät nie verlassen ([Kryptografie](kryptografie.md)); dazu
   Recovery-Kit, Firmen-Recovery und Notfallzugriff ([Konto und Entsperren](konto.md)).
@@ -53,7 +54,7 @@ Ende-zu-Ende-verschlüsselt, mit Post-Quanten-Schutz, Open Source und ohne Koste
 Die Web-App zeigt am Rechner Liste und Eintrag nebeneinander, mit der Seitenleiste für Tresore (dein
 persönlicher zuerst, dann die geteilten mit der Zahl ihrer Personen); am Handy einen Bildschirm nach
 dem anderen mit der Tab-Leiste unten. Die Navigation hat fünf Punkte: Einträge, Generator, Team
-(Mitglieder, Gruppen und Tresore auf einer eigenen Seite), Einstellungen und Mitteilungen; unten am
+(Mitglieder und Tresore auf einer eigenen Seite), Einstellungen und Mitteilungen; unten am
 Rand **Sperren** (Strg+L) und dein Konto ([Handy und App](handy.md)). Die
 Extension öffnet ein Popup mit den Treffern der Seite und legt ein Menü unter Login-Felder. Am
 schnellsten siehst du es in der <a href="/demo/">Demo</a>.

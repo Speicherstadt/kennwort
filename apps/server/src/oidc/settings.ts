@@ -1,7 +1,7 @@
 /**
- * The identity provider a self-hoster connects (K-604): issuer, client, scopes and the claim that
- * lists a person's groups. Without an issuer, sign-in with OpenID Connect is off. The client secret
- * is a setting like the auth secret: never in a log, never sent to a client.
+ * The identity provider a self-hoster connects (K-604): issuer, client and scopes. Without an
+ * issuer, sign-in with OpenID Connect is off. The client secret is a setting like the auth secret:
+ * never in a log, never sent to a client.
  */
 import { z } from "zod";
 
@@ -31,10 +31,6 @@ const Settings = z.object({
     .regex(/^[\x21\x23-\x5B\x5D-\x7E]+( [\x21\x23-\x5B\x5D-\x7E]+)*$/)
     .refine((scopes) => scopes.split(" ").includes("openid"))
     .default("openid profile"),
-  KENNWORT_OIDC_GROUPS_CLAIM: z
-    .string()
-    .regex(/^[A-Za-z0-9_:./-]{1,100}$/)
-    .default("groups"),
 });
 
 export type OidcSettings = {
@@ -43,7 +39,6 @@ export type OidcSettings = {
   clientSecret: string | undefined;
   name: string;
   scopes: string;
-  groupsClaim: string;
 };
 
 export const readOidcSettings = (
@@ -66,7 +61,6 @@ export const readOidcSettings = (
       clientSecret: data.KENNWORT_OIDC_CLIENT_SECRET,
       name: data.KENNWORT_OIDC_NAME,
       scopes: data.KENNWORT_OIDC_SCOPES,
-      groupsClaim: data.KENNWORT_OIDC_GROUPS_CLAIM,
     },
   };
 };

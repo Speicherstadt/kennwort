@@ -34,8 +34,6 @@ const admin: OidcStatus = {
   linked: false,
   enrolment: true,
   enrolmentUrl: "https://kennwort.weber.test/auth/oidc/start?company=c1",
-  groupsClaim: "groups",
-  groups: [{ id: "g1", name: "Technik", viaIdp: 2 }],
 };
 
 const apiFor = (status: OidcStatus | undefined) => ({
@@ -69,16 +67,13 @@ describe("OidcSection", () => {
     expect(root.querySelector("button")).toBeNull();
   });
 
-  it("shows an admin enrolment, its link and the groups that follow the provider", async () => {
+  it("shows an admin enrolment and its link", async () => {
     const api = apiFor(admin);
     const root = await mount(() => <OidcSection token="tok" api={api} />);
     expect(root.querySelector("[data-testid=oidc-enrolment-url]")?.textContent).toBe(
       admin.enrolmentUrl,
     );
-    expect(root.textContent).toContain("Gruppen aus dem Claim „groups“");
-    expect(root.querySelector("[data-testid=oidc-groups]")?.textContent).toContain(
-      "Technik2 über den Anmeldedienst",
-    );
+    expect(root.querySelector("[data-testid=oidc-groups]")).toBeNull();
     root.querySelector<HTMLInputElement>("input[type=checkbox]")?.click();
     await settle();
     expect(api.setEnrolment).toHaveBeenCalledWith("tok", false);

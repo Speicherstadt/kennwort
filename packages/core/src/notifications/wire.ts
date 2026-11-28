@@ -22,9 +22,8 @@ export const NOTIFICATION_KINDS = Object.freeze([
   "account-recovered",
   "link-opened",
   "security-report",
-  // OpenID Connect (K-604, P-25): to admins, someone enrolled; to managers, a member left a group
+  // OpenID Connect (K-604, P-25): to admins, someone enrolled
   "member-enrolled",
-  "group-left",
   // To owners and admins: a newer release of Kennwort is out (K-703)
   "update-available",
 ] as const);

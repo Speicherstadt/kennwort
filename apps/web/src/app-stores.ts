@@ -6,7 +6,6 @@ import { httpServerFor } from "@kennwort/client/entries/entry-store.ts";
 import type { AccountApi, Api } from "@kennwort/client/session/api.ts";
 import type { DevicesApi } from "@kennwort/client/session/devices-api.ts";
 import type { EmergencyApi } from "@kennwort/client/session/emergency-api.ts";
-import type { GroupApi } from "@kennwort/client/session/groups-api.ts";
 import type { LinkApi } from "@kennwort/client/session/links-api.ts";
 import type { NotificationApi } from "@kennwort/client/session/notifications-api.ts";
 import type { OidcApi } from "@kennwort/client/session/oidc-api.ts";
@@ -30,7 +29,6 @@ export type AppApi = PairDeps &
   DevicesApi &
   MembersDeps &
   VaultApi &
-  GroupApi &
   ShareApi &
   EmergencyApi &
   LinkApi &

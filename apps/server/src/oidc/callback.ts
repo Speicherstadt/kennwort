@@ -1,15 +1,13 @@
 /**
  * The callback of a login with OpenID Connect (K-604, P-25): the flow by its state and cookie, the
  * code exchanged with the PKCE verifier, the ID token checked (jwt.ts), and then what it means for
- * the person: a linked account's groups, a link asked for by a signed-in account, or an enrolment
- * ticket. The account is found by issuer and `sub` only, never by an email address.
+ * the person: a linked account, a link asked for by a signed-in account, or an enrolment ticket.
+ * The account is found by issuer and `sub` only, never by an email address.
  */
 
 import { eq } from "drizzle-orm";
 import { recordAudit } from "../audit/store.ts";
 import { accounts } from "../db/schema.ts";
-import { noNotify } from "../notifications/notify.ts";
-import { groupNames, syncGroups } from "./groups.ts";
 import { verifyIdToken } from "./jwt.ts";
 import type { OidcDeps } from "./routes.ts";
 import { redirectUri } from "./routes.ts";
@@ -43,7 +41,7 @@ type Callback = {
   binding: string | undefined;
 };
 
-type Person = { issuer: string; subject: string; name: string | null; groups: string[] };
+type Person = { issuer: string; subject: string; name: string | null };
 
 const issue = (deps: OidcDeps, data: TicketData): Outcome => {
   const ticket = randomText(deps.random);
@@ -77,7 +75,7 @@ const link = (deps: OidcDeps, accountId: string, person: Person): Outcome => {
   return known(deps, account, person);
 };
 
-/** A known account: its groups follow the claim (as requests), and the ticket only names it */
+/** A known account: the ticket only names it, no session */
 const known = (
   deps: OidcDeps,
   account: { id: string; companyId: string; leftAt: number | null },
@@ -85,11 +83,6 @@ const known = (
 ): Outcome => {
   if (account.leftAt !== null) return { ok: false, error: "left" };
   renameIdentity(deps.db, account.id, person.name);
-  syncGroups(
-    { db: deps.db, now: deps.now, notify: deps.notify ?? noNotify },
-    account,
-    person.groups,
-  );
   return issue(deps, { ...person, accountId: account.id, companyId: account.companyId });
 };
 
@@ -120,7 +113,6 @@ export const completeLogin = async (deps: OidcDeps, callback: Callback): Promise
     issuer: checked.value.issuer,
     subject: checked.value.subject,
     name: checked.value.name ?? null,
-    groups: groupNames(checked.value.claims, provider.settings.groupsClaim),
   };
   if (flow.linkAccount) return link(deps, flow.linkAccount, person);
   const account = accountOf(deps.db, person.issuer, person.subject);

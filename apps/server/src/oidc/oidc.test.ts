@@ -8,14 +8,13 @@ import {
   accounts,
   auditEvents,
   companies,
-  groups,
   notifications,
   oidcCompanies,
   oidcIdentities,
 } from "../db/schema.ts";
 import { CLIENT, ISSUER, type OidcWeber, oidcWeber } from "../testing/oidc-setup.ts";
 
-const ANNA_IDP = { sub: "f3b1-anna", name: "Anna Weber", groups: ["Technik"] };
+const ANNA_IDP = { sub: "f3b1-anna", name: "Anna Weber" };
 const SANDRA = { sub: "77c2-sandra", name: "Sandra Weber" };
 
 const enrolled = async (s: OidcWeber, user = SANDRA) => {
@@ -37,7 +36,7 @@ describe("starting a login", () => {
       response_type: "code",
       client_id: CLIENT,
       redirect_uri: "http://localhost:28100/auth/oidc/callback",
-      scope: "openid profile groups",
+      scope: "openid profile",
       state: expect.stringMatching(/^[A-Za-z0-9_-]{43}$/),
       nonce: expect.stringMatching(/^[A-Za-z0-9_-]{43}$/),
       code_challenge: expect.stringMatching(/^[A-Za-z0-9_-]{43}$/),
@@ -184,16 +183,11 @@ describe("the admin's view", () => {
     const s = await oidcWeber();
     const db = s.w.o.setup.db;
     db.insert(companies).values({ id: "mueller", createdAt: 1 }).run();
-    db.insert(groups)
-      .values({ id: "m-1", companyId: "mueller", name: "Lager", createdAt: 1 })
-      .run();
     db.insert(oidcCompanies).values({ companyId: "mueller", enabledBy: "x", enabledAt: 1 }).run();
     const view = (await (await s.request("/api/oidc", { token: s.w.o.token })).json()) as {
       enrolment: boolean;
-      groups: unknown[];
     };
     expect(view.enrolment).toBe(false);
-    expect(view.groups).toEqual([]);
     await s.openEnrolment(false);
     expect(
       db
@@ -211,9 +205,8 @@ describe("the admin's view", () => {
     );
   });
 
-  it("shows enrolment, its address, the claim and the groups that follow it", async () => {
+  it("shows enrolment and its address", async () => {
     const s = await oidcWeber();
-    await s.request("/api/groups", { token: s.w.o.token, body: { name: "Technik" } });
     await s.openEnrolment();
     const view = await (await s.request("/api/oidc", { token: s.w.o.token })).json();
     expect(view).toEqual({
@@ -221,8 +214,6 @@ describe("the admin's view", () => {
       linked: false,
       enrolment: true,
       enrolmentUrl: `http://localhost:28100/auth/oidc/start?company=${s.companyId}`,
-      groupsClaim: "groups",
-      groups: [{ id: expect.any(String), name: "Technik", viaIdp: 0 }],
     });
   });
 });

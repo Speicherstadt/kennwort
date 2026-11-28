@@ -36,13 +36,20 @@ import { type DemoStore, emptyStore } from "./demo-store.ts";
 /** Shown on the demo page: weak on purpose, it guards nothing but made-up data */
 export const DEMO_PASSPHRASE = "weber-haustechnik";
 
-type Person = { name: string; role: CompanyRole; vaults: Record<string, VaultRole> };
+type Person = {
+  name: string;
+  role: CompanyRole;
+  vaults: Record<string, VaultRole>;
+  unconfirmed?: boolean;
+};
 
 /** Who works where besides Jonas, who made every vault and manages it */
 export const PEOPLE: readonly Person[] = [
   { name: "Anna", role: "admin", vaults: { office: "manage", accounting: "manage" } },
   { name: "Sandra", role: "member", vaults: { office: "edit", customers: "edit" } },
   { name: "Max", role: "member", vaults: { office: "read", tablets: "edit" } },
+  { name: "Tim Kaya", role: "member", vaults: {} },
+  { name: "Lea Hoffmann", role: "member", vaults: {}, unconfirmed: true },
 ];
 
 const seconds = () => Math.floor(Date.now() / 1000);
@@ -59,22 +66,24 @@ const memoryStorage = () => {
   };
 };
 
-/** A colleague's account and certificate, put on the stand-in as if their device had enrolled */
+/** A colleague's account and certificate (unless unconfirmed), put on the stand-in */
 const enrolColleague = (
   store: DemoStore,
   person: Person,
   root: { fingerprint: Uint8Array; secretKey: Uint8Array; companyId: Uint8Array },
-): Certificate => {
+): { id: string; certificate: Certificate | undefined } => {
   const account = createAccount("", emptyState(root.fingerprint), { derive: unknowable });
   const { upload } = account;
-  const certificate = certify(root.secretKey, {
-    accountId: upload.accountId,
-    xwingPublicKey: upload.xwingPublicKey,
-    edPublicKey: upload.edPublicKey,
-    companyId: root.companyId,
-    role: person.role,
-    issuedAt: seconds(),
-  });
+  const certificate = person.unconfirmed
+    ? undefined
+    : certify(root.secretKey, {
+        accountId: upload.accountId,
+        xwingPublicKey: upload.xwingPublicKey,
+        edPublicKey: upload.edPublicKey,
+        companyId: root.companyId,
+        role: person.role,
+        issuedAt: seconds(),
+      });
   const id = encodeBytes(upload.accountId);
   store.accounts.set(id, {
     id,
@@ -93,10 +102,10 @@ const enrolColleague = (
       },
       state: encodeBytes(upload.state),
       stateCounter: 0,
-      certificate: toWire(certificate),
+      certificate: certificate ? toWire(certificate) : null,
     },
   });
-  return certificate;
+  return { id, certificate };
 };
 
 /** A login of demo.json as the content the editor would write */
@@ -112,51 +121,6 @@ export const contentOf = (entry: (typeof data.entries)[number]): EntryContent =>
   favorite: entry.favorite,
   history: [],
 });
-
-/** The company's groups, each bundling the vaults of a team; everyone in them is already in them */
-export const GROUPS = [
-  {
-    name: "Büro-Team", // i18n-ignore: demo data
-    members: ["Anna", "Sandra", "Max"],
-    vaults: [{ vault: "office", role: "read" as const }],
-  },
-  {
-    name: "Verwaltung", // i18n-ignore: demo data
-    members: ["Anna"],
-    vaults: [
-      { vault: "accounting", role: "manage" as const },
-      { vault: "office", role: "manage" as const },
-    ],
-  },
-  {
-    name: "Montage", // i18n-ignore: demo data
-    members: ["Max"],
-    vaults: [
-      { vault: "tablets", role: "edit" as const },
-      { vault: "office", role: "read" as const },
-    ],
-  },
-] as const;
-
-/** Groups ask, never give (K-305 part 5): they go on the stand-in as the server keeps them */
-const seedGroups = (
-  store: DemoStore,
-  vaultIds: Map<string, string>,
-  colleagues: { person: Person; certificate: Certificate }[],
-) => {
-  const accountOf = (name: string) =>
-    colleagues.find((c) => c.person.name === name)?.certificate.accountId ?? fail(`no ${name}`);
-  for (const group of GROUPS) {
-    const id = encodeBytes(randomBytes(16));
-    const members = new Set(group.members.map((name) => encodeBytes(accountOf(name))));
-    store.groups.set(id, { id, name: group.name, members });
-    for (const link of group.vaults) {
-      const vaultId = vaultIds.get(link.vault) ?? fail(`no vault ${link.vault}`);
-      const links = store.vaultGroups.get(vaultId) ?? new Map();
-      store.vaultGroups.set(vaultId, links.set(id, link.role));
-    }
-  }
-};
 
 export type Seeded = { store: DemoStore; accountId: Uint8Array; secretKey: Uint8Array };
 
@@ -186,7 +150,7 @@ export const seedDemo = async (options: SeedOptions = {}): Promise<Seeded> => {
   };
   const colleagues = PEOPLE.map((person) => ({
     person,
-    certificate: enrolColleague(store, person, root),
+    ...enrolColleague(store, person, root),
   }));
 
   const ids = new Map<string, string>();
@@ -204,6 +168,7 @@ export const seedDemo = async (options: SeedOptions = {}): Promise<Seeded> => {
   };
   const signer = { accountId: owner.accountId, edSecretKey: owner.keyBlock.ed.secretKey };
   for (const { person, certificate } of colleagues) {
+    if (!certificate) continue;
     for (const [vaultName, role] of Object.entries(person.vaults)) {
       const vault = (await vaultsNow()).vaults.find((v: Vault) => v.idText === ids.get(vaultName));
       if (!vault) return fail(`no vault ${vaultName}`);
@@ -220,7 +185,13 @@ export const seedDemo = async (options: SeedOptions = {}): Promise<Seeded> => {
     }
   }
 
-  seedGroups(store, ids, colleagues);
+  // Tim Kaya has an open access request for Baustellen-Tablets
+  const tim = colleagues.find((c) => c.person.name === "Tim Kaya");
+  const tabletsId = ids.get("tablets");
+  if (tim && tabletsId) {
+    store.requests.set(tabletsId, new Map([[tim.id, { requestedAt: Date.now() - 3_600_000 }]]));
+  }
+
   const loaded = await vaultsNow();
   const entries = createEntryStore(httpServerFor(api.syncFetch), session);
   await entries.load(loaded.vaults, loaded.trust);

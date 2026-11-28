@@ -19,7 +19,7 @@ const claims = (extra: Record<string, unknown> = {}) => ({
   iat: NOW,
   nonce: "n-123",
   name: "Anna Weber",
-  groups: ["Technik"],
+  email: "anna@weber.test",
   ...extra,
 });
 
@@ -46,7 +46,7 @@ describe("verifyIdToken", () => {
         issuer: ISSUER,
         subject: "anna",
         name: "Anna Weber",
-        claims: expect.objectContaining({ groups: ["Technik"] }),
+        claims: expect.objectContaining({ email: "anna@weber.test" }),
       },
     });
   });

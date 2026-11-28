@@ -52,8 +52,6 @@ describe("OidcStatusWire", () => {
     linked: false,
     enrolment: true,
     enrolmentUrl: "https://kennwort.weber.test/auth/oidc/start?company=x",
-    groupsClaim: "groups",
-    groups: [{ id: "g", name: "Technik", viaIdp: 2 }],
   };
 
   it("reads a member's view and an admin's", () => {
@@ -73,11 +71,6 @@ describe("OidcStatusWire", () => {
     ["an address that is no web address", { enrolmentUrl: "javascript:alert(1)" }],
     ["a scheme that only ends in http", { enrolmentUrl: "xhttp://kennwort.test/x" }],
     ["a scheme that only starts with http", { enrolmentUrl: "httpx://kennwort.test/x" }],
-    ["an empty claim", { groupsClaim: "" }],
-    ["a group without a name", { groups: [{ id: "g", name: "", viaIdp: 0 }] }],
-    ["a group without an ID", { groups: [{ id: "", name: "T", viaIdp: 0 }] }],
-    ["a negative count", { groups: [{ id: "g", name: "T", viaIdp: -1 }] }],
-    ["a count that is no integer", { groups: [{ id: "g", name: "T", viaIdp: 1.5 }] }],
   ])("refuses %s", (_, change) => {
     expect(OidcStatusWire.safeParse({ ...admin, ...change }).success).toBe(false);
   });

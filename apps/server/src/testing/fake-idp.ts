@@ -1,12 +1,12 @@
 /**
  * An OpenID Connect provider for tests (K-604), in-process or served by e2e/oidc-server.ts: discovery,
- * JWKS, an authorization endpoint with a small form (who signs in, with which groups), and a token
+ * JWKS, an authorization endpoint with a small form (who signs in), and a token
  * endpoint that checks PKCE (RFC 7636), the client and the redirect address and takes each code once.
  * Its keys are made with WebCrypto at start; a test can make it misbehave through `tamper`.
  */
 import { createHash } from "node:crypto";
 
-export type FakeUser = { sub: string; name?: string | undefined; groups?: string[] | undefined };
+export type FakeUser = { sub: string; name?: string | undefined };
 
 type Grant = { user: FakeUser; redirectUri: string; challenge: string; nonce: string };
 
@@ -90,7 +90,6 @@ const idTokenFor = (p: Provider, grant: Grant) => {
     iat: seconds,
     nonce: grant.nonce,
     ...(grant.user.name ? { name: grant.user.name } : {}),
-    ...(grant.user.groups ? { groups: grant.user.groups } : {}),
   });
 };
 
@@ -121,18 +120,14 @@ const form = (url: URL) =>
     `<!doctype html><meta charset="utf-8"><title>Fake IdP</title><form method="post">` +
       `<input type="hidden" name="query" value="${escapeHtml(url.search)}">` +
       `<label>User <input name="sub"></label><label>Name <input name="name"></label>` +
-      `<label>Groups <input name="groups"></label><button>Sign in</button></form>`,
+      `<button>Sign in</button></form>`,
     { headers: { "content-type": "text/html; charset=utf-8" } },
   );
 
 const submitForm = async (p: Provider, request: Request, url: URL) => {
   const fields = new URLSearchParams(await request.text());
   const query = new URL(`${url.origin}${url.pathname}${fields.get("query") ?? ""}`);
-  const groups = (fields.get("groups") ?? "")
-    .split(",")
-    .map((g) => g.trim())
-    .filter(Boolean);
-  const user = { sub: fields.get("sub") ?? "", name: fields.get("name") || undefined, groups };
+  const user = { sub: fields.get("sub") ?? "", name: fields.get("name") || undefined };
   const back = authorize(p, query, user);
   return back
     ? Response.redirect(back.toString(), 302)

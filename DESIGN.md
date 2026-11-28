@@ -31,9 +31,13 @@ Tailwind 4 mit Zinc als Grundpalette; alle Werte als CSS-Variablen, hell und dun
 | `--primary` | `#18181b` | `#fafafa` | Hauptknopf, Logo-Fläche |
 | `--primary-foreground` | `#fafafa` | `#18181b` | Text auf `--primary` |
 | `--success` | `#15803d` | `#4ade80` | „geprüft“, starke Passwörter |
+| `--success-surface` | `#dcfce7` | `#052e16` | Chip „Mitgliedschaft signiert · Kette geprüft“, kurze Bestätigung nach Aufnahme |
 | `--warning` | `#b45309` | `#fbbf24` | „Zum Ändern“, Hinweise |
-| `--warning-surface` | `#fef3c7` | `#422006` | Badge „ändern“ |
+| `--warning-surface` | `#fef3c7` | `#422006` | Badge „ändern“, Befristung |
 | `--danger` | `#b91c1c` | `#f87171` | Löschen, Fehler, Phishing-Warnung |
+| `--danger-surface` | `#fee2e2` | `#450a0a` | destruktive Hervorhebung im Menü und Dialog |
+| `--info` | `#1d4ed8` | `#60a5fa` | offene Zugriffsanfragen (Akzent, Zähler, Balken) |
+| `--info-surface` | `#eff6ff` | `#172554` | Fläche für offene Zugriffsanfragen |
 
 Nebentext auf `--accent` (gewählte Zeile, aktiver Tab) steht in `--foreground`: `--muted-foreground`
 erreicht dort nur 4,4:1 statt 4,5:1. Flächen für Gruppen wie die Tab-Leiste sind `--muted`.
@@ -59,8 +63,7 @@ einziges Merkmal: dazu immer Text oder Icon.
 Mitteilungen (Zähler als Badge), jeder Punkt mit seinem Namen als Tooltip; unten abgesetzt „Sperren“
 (umrandet, Tooltip „Sperren (Strg+L)“, Strg/Cmd+L sperrt überall) und der Avatar · Seitenleiste (232 px,
 ab `lg`) mit Firma, „Alle Einträge“, „Favoriten“, „Zum Ändern“, „Mit mir geteilt“ (sobald jemand
-etwas geteilt hat), Tresoren (der persönliche zuerst, geteilte mit Users-Icon und Zahl der Personen;
-keine Gruppen), unten der
+etwas geteilt hat), Tresoren (der persönliche zuerst, geteilte mit Users-Icon und Zahl der Personen), unten der
 Hinweis zur Verschlüsselung · Liste (340 px) mit Titel (bei einem geteilten Tresor daneben „Zugriff · N“, das zu ihm im Team
 führt), Suche (`/`) und Einträgen · Detail mit
 Kopfzeile in einer Reihe (Icon, Titel, darunter Art, Tresor und letzte Änderung; rechts Stern,
@@ -92,35 +95,17 @@ den Listen in zwei Spalten (ab `lg`). Kopf jeder Seite: Titel, darunter ein Satz
 Rahmen, Radius 12 px, 16–20 px innen, Titel 14 px halbfett. Leere Listen stehen in einem gestrichelten
 Rahmen statt als loser Satz.
 
-**Team**: eine eigene Seite ohne Liste und Seitenleiste, mit drei Reitern Mitglieder, Gruppen und
-Tresore; ihre Adressen bleiben `/members`, `/groups` und `/vaults`, `/team` öffnet die Mitglieder. Rail
-und Tab-Leiste markieren „Team“ auf allen dreien.
+**Team**: eine eigene Seite ohne Liste und Seitenleiste, mit zwei Reitern **Mitglieder** und
+**Tresore** (`/members` und `/vaults`; `/team` öffnet die Mitglieder, `/groups` leitet auf `/vaults`
+weiter). Rail und Tab-Leiste markieren „Team“ auf beiden.
 
-**Im Fluss bleiben**: Sicherheit behält die Seitenleiste, der Punkt dort ist
-markiert, und in der Rail bleibt „Einträge“ aktiv; „Sicherheit“ ist am Handy ein Filter-Chip neben
-„Zum Ändern“. Die Seiten unter den Einstellungen (Import, Export, Notfallzugriff,
-Firmen, Datenschutz, Schlüssel erneuern) markieren „Einstellungen“ in Rail und Tab-Leiste
-und haben oben den Link „← Einstellungen“.
-
-**Einstellungen**: Gruppen mit Titel und einem Satz – Allgemein, Firma, Daten, Konto, Geräte und
-Anmeldung, zuletzt die **Gefahrenzone** mit rotem Rahmen (Sperren). Jede Gruppe ist eine Karte aus
-Zeilen: links Name und Hilfe, rechts die Steuerung; eine Zeile, die eine eigene Seite öffnet, ist
-ganz anklickbar, mit Icon und Chevron; der Knopf darin heißt nur wie die Zeile. Ab `md` steht links eine klebende Liste der Gruppen, die zu ihnen
-springt; am Handy führen die Zeilen in ihre eigenen Screens.
-
-**Seiten neben der Liste** (Mitglieder, Mitteilungen, Sicherheit, Einstellungen und die Seiten
-darunter): `pageClass()` aus `packages/ui` legt alles in eine zentrierte Spalte, nie halb leer an
-den linken Rand gedrückt. `reading` (768 px) für Formulare und Texte, `wide` (1152 px) für Seiten mit
-zwei Spalten: Mitglieder mit der Liste links und den Firmen-Regeln rechts (ab `xl`), Mitteilungen mit
-der Liste links und den Push-Einstellungen rechts (ab `lg`), Sicherheit mit den vier Zahlen oben und
-den Listen in zwei Spalten (ab `lg`). Kopf jeder Seite: Titel, darunter ein Satz in
-`--muted-foreground` (`introClass`). Ein Abschnitt ist ein Panel (`panelClass`, `panelTitleClass`):
-Rahmen, Radius 12 px, 16–20 px innen, Titel 14 px halbfett. Leere Listen stehen in einem gestrichelten
-Rahmen statt als loser Satz.
-
-**Team**: eine eigene Seite ohne Liste und Seitenleiste, mit drei Reitern Mitglieder, Gruppen und
-Tresore; ihre Adressen bleiben `/members`, `/groups` und `/vaults`, `/team` öffnet die Mitglieder. Rail
-und Tab-Leiste markieren „Team“ auf allen dreien.
+**Team → Tresore**: zweispaltig ohne Dialog für Mitglieder (links 264 px Liste der geteilten Tresore
+mit Zähler für offene Anfragen, „Neuer Tresor“ als Modal und darunter „Nur für dich“; rechts das
+Detail mit Kopf, Hinzufügen-Leiste für mehrere Personen mit Rolle und Befristung, offenen Anfragen
+in `--info-surface`, nach Rolle gruppierten Mitgliedern mit „⋯“-Menü zum Ändern/Befristen/Entfernen
+und rechts ab 1020 px Container-Breite dem Verlauf aus dem signierten Log und der Rollen-Legende).
+Zwischen 600 px und 1020 px rutscht der Verlauf unter die Mitglieder; unter 600 px zeigt die Seite
+Liste und Detail nacheinander, mit Zurück-Knopf und einem Bottom Sheet für „Personen hinzufügen“.
 
 **Im Fluss bleiben**: Sicherheit behält die Seitenleiste, der Punkt dort ist
 markiert, und in der Rail bleibt „Einträge“ aktiv; „Sicherheit“ ist am Handy ein Filter-Chip neben
@@ -220,6 +205,6 @@ Komponenten über `data-*`-Attribute statt durch Überschreiben von Klassen.
 
 ## Testdaten
 
-Die Firma „Weber Haustechnik“ mit Jonas, Anna, Sandra und Max; Tresore Persönlich, Büro,
-Buchhaltung, Kunden-Zugänge, Baustellen-Tablets; Gruppen info@ und rechnung@; Adressen unter
-`weber-haustechnik.test`, Websites unter `.test`.
+Die Firma „Weber Haustechnik“ mit Jonas, Anna, Sandra, Max, Tim und Lea; Tresore Persönlich, Büro,
+Buchhaltung, Kunden-Zugänge, Baustellen-Tablets; Adressen unter `weber-haustechnik.test`, Websites
+unter `.test`.

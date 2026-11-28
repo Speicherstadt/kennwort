@@ -1,14 +1,13 @@
 /**
  * Settings → Anmeldedienst (K-604, P-25), shown only when the server has an identity provider.
- * Everyone links their account to their person of the provider here; then their groups follow the
- * provider's groups claim, as access requests only. Owners and admins open enrolment for new people,
- * copy the link to join, and see which groups follow the provider (a group of the same name).
+ * Everyone links their account to their person of the provider here. Owners and admins open
+ * enrolment for new people and copy the link to join.
  */
 import type { OidcApi } from "@kennwort/client/session/oidc-api.ts";
 import type { OidcStatus } from "@kennwort/core";
 import { Button, m, panelClass, panelTitleClass, Switch as Toggle } from "@kennwort/ui";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
-import { createSignal, For, Loading, Show } from "solid-js";
+import { createSignal, Loading, Show } from "solid-js";
 import { queryKeys } from "../queries.ts";
 
 const alertClass = "rounded-lg border border-danger px-3 py-2 text-[13px] text-danger";
@@ -17,38 +16,12 @@ type Admin = {
   name: string;
   enrolment: boolean;
   enrolmentUrl: string;
-  groupsClaim: string;
-  groups: NonNullable<OidcStatus["groups"]>;
 };
 /** What only owners and admins are shown; undefined for everyone else */
-const adminOf = ({ name, enrolment, enrolmentUrl, groupsClaim, groups }: OidcStatus) =>
-  enrolment !== undefined && enrolmentUrl && groupsClaim && groups
-    ? ({ name, enrolment, enrolmentUrl, groupsClaim, groups } satisfies Admin)
+const adminOf = ({ name, enrolment, enrolmentUrl }: OidcStatus) =>
+  enrolment !== undefined && enrolmentUrl
+    ? ({ name, enrolment, enrolmentUrl } satisfies Admin)
     : undefined;
-
-const Groups = (props: { status: Admin }) => (
-  <div class="grid gap-1">
-    <h3 class="text-xs font-medium">{m.oidc_groups({ claim: props.status.groupsClaim })}</h3>
-    <p class="text-xs text-muted-foreground">{m.oidc_groups_text()}</p>
-    <Show
-      when={props.status.groups.length > 0}
-      fallback={<p class="text-xs text-muted-foreground">{m.oidc_groups_none()}</p>}
-    >
-      <ul class="divide-y divide-border rounded-xl border border-border" data-testid="oidc-groups">
-        <For each={props.status.groups}>
-          {(group) => (
-            <li class="flex items-center justify-between gap-3 px-3.5 py-2 text-[13px]">
-              <span class="font-medium">{group.name}</span>
-              <span class="text-xs text-muted-foreground">
-                {m.oidc_group_count({ count: String(group.viaIdp) })}
-              </span>
-            </li>
-          )}
-        </For>
-      </ul>
-    </Show>
-  </div>
-);
 
 const Enrolment = (props: { status: Admin; busy: boolean; onToggle: (open: boolean) => void }) => (
   <div class="grid gap-2">
@@ -134,14 +107,7 @@ export const OidcSection = (props: {
             </Show>
             <Show when={adminOf(shown())}>
               {(admin) => (
-                <>
-                  <Enrolment
-                    status={admin()}
-                    busy={busy()}
-                    onToggle={(open) => void toggle(open)}
-                  />
-                  <Groups status={admin()} />
-                </>
+                <Enrolment status={admin()} busy={busy()} onToggle={(open) => void toggle(open)} />
               )}
             </Show>
             <Show when={problem()}>

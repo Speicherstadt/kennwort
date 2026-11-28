@@ -1,6 +1,7 @@
 // The shared interface of the web app, the extension and the mobile app: components (K-301,
 // DESIGN.md) and the texts, compiled by Paraglide from messages/de.json and messages/en.json.
 
+export { anchoredBelow, anchorName } from "./components/anchor.ts";
 export { Badge, type BadgeProps, type BadgeVariant, badgeVariants } from "./components/badge.tsx";
 export { Button, type ButtonProps, buttonClass, IconButton } from "./components/button.tsx";
 export { Checkbox, type CheckboxProps, Switch } from "./components/checkbox.tsx";

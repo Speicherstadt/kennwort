@@ -4,7 +4,7 @@
  * the logs and records it signed: its ID, company, role and the time it left, its public keys and
  * certificates. Everything else of it goes. The last account of a company takes the whole company.
  */
-import { and, eq, inArray, isNull, or } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 import type { Db } from "../db/database.ts";
 import {
   accountKeys,
@@ -17,8 +17,6 @@ import {
   emergencyRevocations,
   entryRecords,
   entryShares,
-  groupMembers,
-  groups,
   invitations,
   loginChallenges,
   loginFailures,
@@ -37,7 +35,6 @@ import {
   rootChanges,
   rootGrants,
   supersededCertificates,
-  vaultGroups,
   vaultKeys,
   vaultLog,
   vaultRequests,
@@ -46,9 +43,9 @@ import {
 
 export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
-/** A vault with everything in it: records, log, keys, requests, linked groups and shares */
+/** A vault with everything in it: records, log, keys, requests and shares */
 export const eraseVault = (tx: Tx, vaultId: string) => {
-  for (const table of [entryRecords, vaultLog, vaultKeys, vaultRequests, vaultGroups, entryShares])
+  for (const table of [entryRecords, vaultLog, vaultKeys, vaultRequests, entryShares])
     tx.delete(table).where(eq(table.vaultId, vaultId)).run();
   tx.delete(vaults).where(eq(vaults.id, vaultId)).run();
 };
@@ -58,7 +55,7 @@ export const eraseVault = (tx: Tx, vaultId: string) => {
  * passkeys, the sign-in key, challenges, failures), devices, push addresses, notifications, the
  * identity provider's person, the sealed key block and state, wrapped root and recovery keys, the
  * recovery deposit, emergency access, one-time links, invitations it made or was given, requests,
- * groups, shares to it and vault keys wrapped to it. Its public keys and certificates stay
+ * shares to it and vault keys wrapped to it. Its public keys and certificates stay
  * (`keepPublic`) while the company does: the logs and records it signed must still verify.
  */
 export const eraseAccount = (tx: Tx, accountId: string, keepPublic: boolean) => {
@@ -77,7 +74,6 @@ export const eraseAccount = (tx: Tx, accountId: string, keepPublic: boolean) => 
     recoveryGrants,
     recoveryDeposits,
     vaultRequests,
-    groupMembers,
     vaultKeys,
   ])
     tx.delete(table).where(eq(table.accountId, accountId)).run();
@@ -119,7 +115,7 @@ export const eraseAccount = (tx: Tx, accountId: string, keepPublic: boolean) => 
   tx.delete(accounts).where(eq(accounts.id, accountId)).run();
 };
 
-/** The whole company: its vaults, every account it ever had, groups, audit chain and root changes */
+/** The whole company: its vaults, every account it ever had, audit chain and root changes */
 export const eraseCompany = (tx: Tx, companyId: string) => {
   const vaultIds = tx
     .select({ id: vaults.id })
@@ -127,17 +123,6 @@ export const eraseCompany = (tx: Tx, companyId: string) => {
     .where(eq(vaults.companyId, companyId))
     .all();
   for (const { id } of vaultIds) eraseVault(tx, id);
-  const groupIds = tx
-    .select({ id: groups.id })
-    .from(groups)
-    .where(eq(groups.companyId, companyId))
-    .all()
-    .map((row) => row.id);
-  if (groupIds.length > 0) {
-    tx.delete(groupMembers).where(inArray(groupMembers.groupId, groupIds)).run();
-    tx.delete(vaultGroups).where(inArray(vaultGroups.groupId, groupIds)).run();
-  }
-  tx.delete(groups).where(eq(groups.companyId, companyId)).run();
   const accountIds = tx
     .select({ id: accounts.id })
     .from(accounts)

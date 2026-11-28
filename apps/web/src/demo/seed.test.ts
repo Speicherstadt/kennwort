@@ -28,7 +28,7 @@ describe("the demo's seed (K-706)", () => {
     expect((await session.unlock("wrong passphrase")).ok).toBe(false);
   });
 
-  it("has the vaults of Weber Haustechnik, named, and the four people certified", async () => {
+  it("has the vaults of Weber Haustechnik, named, and the seeded people with their status", async () => {
     const { api, session } = await unlockSeeded();
     const loaded = await loadVaults(api, session);
     if (!loaded.ok) throw new Error(loaded.error);
@@ -37,7 +37,14 @@ describe("the demo's seed (K-706)", () => {
     const expected = data.vaults.filter((v) => v.id !== "personal").map((v) => v.name);
     expect(names).toEqual(expect.arrayContaining(expected));
     expect(names).toHaveLength(data.vaults.length);
-    expect(loaded.value.people.map((p) => p.status)).toEqual(Array(4).fill("certified"));
+    expect(loaded.value.people.map((p) => p.status)).toEqual([
+      "certified",
+      "certified",
+      "certified",
+      "certified",
+      "certified",
+      "waiting",
+    ]);
   });
 
   it("gives each colleague the role in the vault the log signs", async () => {

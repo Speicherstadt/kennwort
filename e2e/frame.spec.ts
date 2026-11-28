@@ -12,7 +12,6 @@ const pages = [
   { path: "/to-change", title: "Zum Ändern" },
   { path: "/vaults/office", title: "Büro" },
   { path: "/generator", title: "Generator" },
-  { path: "/groups", title: "Gruppen" },
   { path: "/settings", title: "Einstellungen" },
   { path: "/nope", title: "Diese Seite gibt es nicht" },
 ];

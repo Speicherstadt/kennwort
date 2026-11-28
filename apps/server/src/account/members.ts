@@ -24,7 +24,6 @@ import {
   emergencyGrants,
   emergencyRevocations,
   entryShares,
-  groupMembers,
   invitations,
   oidcIdentities,
   recoveryDeposits,
@@ -180,7 +179,7 @@ const removal = (me: Member | undefined, member: Member | undefined) => {
 
 /**
  * The account leaves the company (K-307, P-11): marked as left, every session gone, and what only it
- * could use dropped (requests, group memberships, shares to it, a wrapped root or recovery key, its
+ * could use dropped (requests, shares to it, a wrapped root or recovery key, its
  * recovery deposit, emergency access given by or to it, the open invitations it made). Its keys and certificate stay: the vault logs it signed must still verify.
  * The vaults it was in owe a removal and a key rotation, which the next manager client signs; the
  * server cannot.
@@ -194,7 +193,6 @@ const leave = (db: Db, member: Member, at: number) =>
     tx.delete(recoveryGrants).where(eq(recoveryGrants.accountId, id)).run();
     tx.delete(recoveryDeposits).where(eq(recoveryDeposits.accountId, id)).run();
     tx.delete(vaultRequests).where(eq(vaultRequests.accountId, id)).run();
-    tx.delete(groupMembers).where(eq(groupMembers.accountId, id)).run();
     tx.delete(entryShares).where(eq(entryShares.recipient, id)).run();
     // Emergency access given by or to the account ends (P-14)
     for (const table of [emergencyGrants, emergencyRevocations])

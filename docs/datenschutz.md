@@ -26,7 +26,7 @@ findest du dasselbe unter **Einstellungen → Datenschutz**.
 | Mitteilungen: Art, IDs, Zeit, gelesen | die Glocke in der App | ja, nur IDs, keine Namen |
 | Tresore und Einträge, jede Version | Abgleich zwischen Geräten und Mitgliedern | nein, verschlüsselt; sichtbar sind IDs, Größen, Zeiten und wer geschrieben hat |
 | Mitgliedschafts-Logs der Tresore | wer Mitglied ist, signiert von den Verwaltern | ja |
-| Gruppen, Zugriffsanfragen, geteilte Einträge, Notfallzugriff, Einmal-Links, Einladungen | die Funktionen dahinter | IDs und Zeiten; die Inhalte nur verschlüsselt; Gruppennamen und die Beschriftung einer Einladung im Klartext |
+| Zugriffsanfragen, geteilte Einträge, Notfallzugriff, Einmal-Links, Einladungen | die Funktionen dahinter | IDs und Zeiten; die Inhalte nur verschlüsselt; die Beschriftung einer Einladung im Klartext |
 | mit OpenID Connect: Issuer, `sub` und Name beim Anmeldedienst | Anmelden über den Anmeldedienst | ja |
 | Audit-Log der Firma: wer wann was getan hat | Nachvollziehbarkeit für Inhaber und Admins | ja, mit Konto-IDs |
 

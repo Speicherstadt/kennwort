@@ -1,12 +1,11 @@
 import { type Browser, expect, type Page } from "@playwright/test";
 import { newDevice, setUpCompany, test } from "./account.ts";
-import { heading, openTeam, openVaults } from "./company.ts";
+import { heading, openTeam } from "./company.ts";
 import { unique } from "./entries.ts";
 import { OIDC_NAME } from "./oidc.ts";
 
 // K-604 (P-25): Sandra signs in through the company's identity provider. She gets an account
-// without any vault, which Jonas confirms only after comparing codes with her; a group the
-// provider names later becomes an access request, never access.
+// without any vault, which Jonas confirms only after comparing codes with her.
 test.use({ locale: "de-DE" });
 
 const openSettings = async (page: Page) => {
@@ -25,18 +24,17 @@ const openEnrolment = async (page: Page) => {
 };
 
 /** The provider's login form, as a person fills it in */
-const signInAtProvider = async (person: Page, sub: string, groups = "") => {
+const signInAtProvider = async (person: Page, sub: string) => {
   await person.getByLabel("User").fill(sub);
   await person.getByLabel("Name", { exact: true }).fill("Sandra Weber");
-  await person.getByLabel("Groups").fill(groups);
   await person.getByRole("button", { name: "Sign in" }).click();
 };
 
 /** Sandra follows the link, signs in at the provider, makes her account and reads her codes */
-const sandraEnrols = async (browser: Browser, link: string, sub: string, groups = "") => {
+const sandraEnrols = async (browser: Browser, link: string, sub: string) => {
   const sandra = await newDevice(browser);
   await sandra.goto(link);
-  await signInAtProvider(sandra, sub, groups);
+  await signInAtProvider(sandra, sub);
   await expect(sandra.getByText("Angemeldet als Sandra Weber.")).toBeVisible();
   // The ticket never stays in the address
   expect(new URL(sandra.url()).hash).toBe("");
@@ -82,51 +80,5 @@ test.describe("OpenID Connect", { tag: "@phone" }, () => {
     const link = await openEnrolment(page);
     const codes = await sandraEnrols(browser, link, unique("sandra"));
     await jonasConfirms(page, codes);
-  });
-
-  test("a group the provider names later shows as an access request for the manager", async ({
-    page,
-    browser,
-  }) => {
-    // Two people, a group, a vault and two sign-ins through the provider
-    test.slow();
-    await setUpCompany(page);
-    await openVaults(page);
-    await page.getByLabel("Name", { exact: true }).fill("Büro");
-    await page.getByRole("button", { name: "Tresor anlegen" }).click();
-    await expect(page.getByRole("button", { name: "Mitglieder von Büro" })).toBeVisible();
-    await page
-      .getByRole("navigation", { name: "Team" })
-      .getByRole("link", { name: "Gruppen" })
-      .click();
-    await page.getByRole("button", { name: "Neue Gruppe" }).click();
-    const create = page.getByRole("dialog", { name: "Neue Gruppe" });
-    await create.getByLabel("Name der Gruppe").fill("Technik");
-    await create.getByRole("button", { name: "Gruppe anlegen" }).click();
-    const vaultsList = page.getByRole("list", { name: "Tresore von Technik" });
-    await vaultsList.getByRole("switch", { name: "Büro" }).click();
-    await expect(vaultsList.getByRole("switch", { name: "Büro" })).toBeChecked();
-
-    const link = await openEnrolment(page);
-    const sub = unique("sandra");
-    const codes = await sandraEnrols(browser, link, sub);
-    await jonasConfirms(page, codes);
-
-    // Later the provider puts Sandra into Technik; her next sign-in through it files the request
-    const { sandra } = codes;
-    await sandra.goto("/");
-    await sandra.getByRole("link", { name: `Mit ${OIDC_NAME} anmelden` }).click();
-    await signInAtProvider(sandra, sub, "Technik");
-    // No session from the provider's word: she unlocks with her passphrase as always
-    await expect(heading(sandra, "Kennwort ist gesperrt")).toBeVisible();
-
-    await openVaults(page);
-    await page.getByRole("button", { name: "Mitglieder von Büro" }).click();
-    const members = page.getByRole("region", { name: "Mitglieder von Büro" });
-    const requests = members.getByRole("list", { name: "Anfragen" });
-    await expect(requests).toContainText("Sandra Weber");
-    await members.getByRole("button", { name: "Schließen" }).filter({ visible: true }).click();
-    await openSettings(page);
-    await expect(page.getByTestId("oidc-groups")).toContainText("Technik1 über den Anmeldedienst");
   });
 });

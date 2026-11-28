@@ -10,7 +10,6 @@ const settings = {
   clientSecret: "geheim:mit&zeichen",
   name: "Weber SSO",
   scopes: "openid profile",
-  groupsClaim: "groups",
 };
 
 const discovery = (over: Record<string, unknown> = {}) => ({

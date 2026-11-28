@@ -72,13 +72,19 @@ describe("navigation", () => {
   });
 
   it("follows the back button", async () => {
-    const nav = openAt("/groups");
+    const nav = openAt("/vaults");
     nav.go("/generator");
     flush();
     expect(nav.route()).toEqual({ page: "generator" });
     await back();
-    expect(window.location.pathname).toBe("/groups");
-    expect(nav.route()).toEqual({ page: "groups" });
+    expect(window.location.pathname).toBe("/vaults");
+    expect(nav.route()).toEqual({ page: "vaults" });
+  });
+
+  it("redirects /groups to /vaults", () => {
+    const nav = openAt("/groups");
+    expect(window.location.pathname).toBe("/vaults");
+    expect(nav.route()).toEqual({ page: "vaults" });
   });
 
   it("replaces the entry, fragment included, without adding one to the history", () => {

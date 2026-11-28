@@ -20,37 +20,41 @@ bestätigt sind – einmal, auch wenn du mehrere Geräte zugleich öffnest. In i
 ## Einen Tresor anlegen
 
 Unter **Team → Tresore** (Team ist der dritte Punkt der Navigation; auf dem Desktop auch über
-**Alle Tresore** in der Seitenleiste)
-stehen alle Tresore, in denen du Mitglied bist, mit deiner Rolle darin:
+**Alle Tresore** in der Seitenleiste) stehen links alle geteilten Tresore, in denen du Mitglied bist,
+und darunter dein persönlicher Tresor (**Nur für dich**).
 
-- **Lesen**: Einträge ansehen und kopieren.
-- **Bearbeiten**: dazu Einträge anlegen und ändern.
-- **Verwalten**: dazu Mitglieder aufnehmen, ihre Rolle ändern und sie entfernen.
-
-Unter **Neuer Tresor** gibst du einen Namen ein und wählst **Tresor anlegen**. Wer einen Tresor
+Mit **Neuer Tresor** gibst du einen Namen ein und wählst **Tresor anlegen**. Wer einen Tresor
 anlegt, verwaltet ihn.
 
 ## Mitglieder eines Tresors
 
-Neben jedem Tresor öffnet **Mitglieder** die Liste der Mitglieder mit ihrer Rolle. Wer den Tresor
-verwaltet, kann dort:
+Wählst du einen Tresor in der Liste, siehst du rechts seine Mitglieder, geordnet nach ihrer Rolle:
 
-- unter **Mitglied aufnehmen** eine Person der Firma mit einer Rolle aufnehmen. Angeboten werden
-  nur Konten, deren Schlüssel bestätigt sind; dein Gerät verpackt den Tresor-Schlüssel an genau
-  diese Schlüssel.
-- die **Rolle** eines Mitglieds ändern.
-- ein Mitglied **aus dem Tresor entfernen**. Was es vorher entschlüsselt hat, kann es behalten
-  haben; deshalb wechselt dein Gerät dabei gleich den Tresor-Schlüssel (siehe
+- **Verwalten**: Mitglieder hinzufügen, Rollen und Befristungen ändern, entfernen sowie Einträge
+  anlegen und ändern.
+- **Bearbeiten**: Einträge anlegen, ändern und kopieren.
+- **Lesen**: Einträge ansehen und kopieren.
+
+Wer den Tresor verwaltet, kann direkt dort:
+
+- über **Person hinzufügen** (am Handy **Personen hinzufügen**) eine oder mehrere bestätigte
+  Personen der Firma auswählen, eine Rolle festlegen und optional über **Befristen** ein Ablaufdatum
+  (**Zugriff bis**) setzen. Noch nicht bestätigte Konten stehen ausgegraut mit einem Hinweis in der
+  Auswahl, bis ihre Schlüssel unter **Team → Mitglieder** bestätigt wurden; dein Gerät verpackt den
+  Tresor-Schlüssel nur an bestätigte Schlüssel.
+- über das Menü **⋯** an einer Person ihre **Rolle** ändern, die **Befristung** anpassen oder
+  aufheben und sie **aus dem Tresor entfernen**. Was die Person vorher entschlüsselt hat, kann sie
+  behalten haben; deshalb wechselt dein Gerät beim Entfernen gleich den Tresor-Schlüssel (siehe
   [Wenn jemand geht](#wenn-jemand-geht)).
 
-Ist ein geteilter Tresor in den Einträgen offen, zeigt **Zugriff** über der Liste, wie viele ihn sehen,
-und führt zu ihm im Team.
+Rechts neben den Mitgliedern zeigt der **Verlauf** die signierten Änderungen aus dem Protokoll des
+Tresors, zusammen mit einer kurzen Übersicht der Rollen. Ist ein geteilter Tresor in den Einträgen
+offen, zeigt **Zugriff** über der Liste, wie viele ihn sehen, und führt zu ihm im Team.
 
-Beim Aufnehmen kannst du unter **Zugriff bis** einen Tag wählen. Nach diesem Tag öffnet kein Gerät
-den Tresor mehr für die Person, und der Server gibt ihr das Protokoll und den Schlüssel nicht mehr;
-in der Liste steht dann **abgelaufen**. Ein Tag, der schon vorbei ist, lässt sich nicht wählen. Wer
-abgelaufen ist, kann über den Link zum Tresor erneut Zugriff anfragen; Freigeben verlängert dann
-seinen Zugriff ohne Ende.
+Nach einem gesetzten Ablaufdatum öffnet kein Gerät den Tresor mehr für die Person, und der Server
+gibt ihr das Protokoll und den Schlüssel nicht mehr; in der Liste steht dann **abgelaufen**. Ein
+Tag, der schon vorbei ist, lässt sich nicht wählen. Wer abgelaufen ist, kann über den Link zum
+Tresor erneut Zugriff anfragen; Freigeben verlängert dann seinen Zugriff ohne Ende.
 
 Hat ein anderes Gerät den Tresor gerade geändert, lädt Kennwort den neuen Stand und bittet dich,
 die Änderung noch einmal zu machen.
@@ -87,28 +91,11 @@ etwas anlegen oder ändern. Lesen geht weiter, auch ohne Verbindung.
 
 Schickt dir jemand den Link zu einem Tresor, in dem du nicht Mitglied bist, zeigt Kennwort **Kein
 Zugriff** und nichts vom Tresor. Mit **Zugriff anfragen** landet deine Anfrage bei seinen
-Verwaltern: Sie sehen sie unter **Mitglieder → Anfragen** und können sie **freigeben** (mit einer
-Rolle) oder **ablehnen**. Der Server gibt dir dabei nie selbst Zugriff; den Tresor-Schlüssel
+Verwaltern: Am Tresor in der Liste erscheint ein Zähler, und über den Mitgliedern stehen die offenen
+**Anfragen** zum **Freigeben** (zunächst mit der Rolle **Lesen**; die Rolle lässt sich danach über
+**⋯** ändern) oder **Ablehnen**. Der Server gibt dir dabei nie selbst Zugriff; den Tresor-Schlüssel
 verpackt erst das Gerät eines Verwalters an deine bestätigten Schlüssel. Freigeben geht darum nur,
 wenn deine Schlüssel schon bestätigt sind.
-
-## Gruppen
-
-Unter **Team → Gruppen** legen Inhaber und Admins Gruppen an, etwa „Büro-Team“, verknüpfen sie mit
-Tresoren und nehmen Personen der Firma auf oder heraus. Fügst du eine bestätigte Person zu einer
-Gruppe hinzu – oder verknüpfst einen Tresor mit einer Gruppe –, zeigt Kennwort vorab genau an,
-welche Tresore oder Personen betroffen sind, und dein Gerät gibt sie für alle Tresore, die du selbst
-verwaltest, direkt in einem Schritt frei. Im Dialog **Mitglieder** eines Tresors siehst du, welche
-Gruppen verknüpft sind und bei jedem Mitglied, über welche Gruppe es dazugehört.
-
-Für Tresore, die jemand anderes verwaltet, für noch nicht bestätigte Personen oder bei einem
-Gruppenwechsel über den [Anmeldedienst](anmeldedienst.md) erzeugt der Server weiterhin nur eine
-**Anfrage** bei den Verwaltern – er kann niemandem selbst Zugriff geben. Nimmst du jemanden aus
-einer Gruppe heraus, bietet Kennwort direkt an, die Person auch aus den verknüpften Tresoren zu
-entfernen, die du verwaltest (samt Schlüsselwechsel), sofern sie nicht noch über eine andere Gruppe
-dazu gehört. Bleibt jemand dennoch in einem Tresor, markiert der Dialog ihn mit **in keiner
-verknüpften Gruppe**. Lösen einer Verknüpfung nimmt niemandem den Zugriff. Gruppennamen und wer in
-welcher Gruppe ist, sieht der Server.
 
 ## Was dein Gerät prüft
 
