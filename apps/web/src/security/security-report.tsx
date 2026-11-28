@@ -41,38 +41,7 @@ export const ReportCard = (props: {
         {m.security_report_title({ month: monthName(props.month, props.locale) })}
       </h2>
       <p class="text-[13px] text-muted-foreground">{m.security_report_intro()}</p>
-      <ul class="grid gap-2 md:hidden">
-        <For each={props.rows}>
-          {(row) => (
-            <li class="grid gap-2 rounded-lg border border-border bg-background p-3 text-[13px]">
-              <p class="font-medium">{row.name}</p>
-              <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                <div class="flex justify-between gap-2">
-                  <dt class="text-muted-foreground">{m.security_report_entries()}</dt>
-                  <dd class="tabular-nums">{row.entries}</dd>
-                </div>
-                <div class="flex justify-between gap-2">
-                  <dt class="text-muted-foreground">{m.security_weak()}</dt>
-                  <dd class="tabular-nums">{row.weak}</dd>
-                </div>
-                <div class="flex justify-between gap-2">
-                  <dt class="text-muted-foreground">{m.security_reused()}</dt>
-                  <dd class="tabular-nums">{row.reused}</dd>
-                </div>
-                <div class="flex justify-between gap-2">
-                  <dt class="text-muted-foreground">{m.security_leaked()}</dt>
-                  <dd class="tabular-nums">{row.leaked ?? m.security_not_checked()}</dd>
-                </div>
-                <div class="flex justify-between gap-2">
-                  <dt class="text-muted-foreground">{m.security_marked()}</dt>
-                  <dd class="tabular-nums">{row.marked}</dd>
-                </div>
-              </dl>
-            </li>
-          )}
-        </For>
-      </ul>
-      <div class="hidden overflow-x-auto md:block" tabindex={0}>
+      <div class="overflow-x-auto" tabindex={0}>
         <table class="w-full min-w-[34rem] text-[13px]">
           <thead class="text-xs text-muted-foreground">
             <tr>
