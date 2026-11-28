@@ -25,7 +25,7 @@ const CopyButton = (props: {
 );
 
 const EntryRow = (props: { entry: ShownEntry; toasts: Toasts }) => (
-  <li class="flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-accent">
+  <li class="group flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-accent">
     <span class="grid size-8 shrink-0 place-items-center rounded-lg border border-border bg-background">
       <Icon icon={entryIcon[props.entry.type]} size={15} />
     </span>
@@ -36,7 +36,9 @@ const EntryRow = (props: { entry: ShownEntry; toasts: Toasts }) => (
           <Icon icon={Star} size={12} label={m.detail_favorite()} class="shrink-0 text-warning" />
         </Show>
       </span>
-      <span class="truncate text-xs text-muted-foreground">{props.entry.subtitle}</span>
+      <span class="truncate text-xs text-muted-foreground group-hover:text-foreground">
+        {props.entry.subtitle}
+      </span>
     </span>
     <Show when={props.entry.username}>
       {(username) => (

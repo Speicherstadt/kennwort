@@ -13,7 +13,7 @@ export const DemoUnavailable = (props: { shown: boolean; onClose: () => void }) 
     <div
       role="alert"
       data-testid="demo-unavailable"
-      class="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-md items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-lg dark:border-amber-800 dark:bg-amber-950 dark:text-amber-50"
+      class="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-md items-center gap-3 rounded-lg border border-warning/30 bg-warning-surface px-4 py-3 text-sm text-foreground shadow-lg"
     >
       <span class="flex-1">{m.demo_unavailable()}</span>
       <button type="button" class="font-medium underline" onClick={() => props.onClose()}>
@@ -26,7 +26,7 @@ export const DemoUnavailable = (props: { shown: boolean; onClose: () => void }) 
 export const DemoBanner = () => (
   <aside
     data-testid="demo-banner"
-    class="shrink-0 border-b border-amber-300 bg-amber-50 px-4 py-1.5 text-[13px] text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-50"
+    class="shrink-0 border-b border-warning/30 bg-warning-surface px-4 py-1.5 text-[13px] text-foreground"
   >
     <details class="group">
       <summary class="flex min-h-8 cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden">

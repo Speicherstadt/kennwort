@@ -14,6 +14,26 @@ export const readTheme = (storage: Pick<Storage, "getItem"> | undefined): Theme 
   }
 };
 
+const THEME_COLORS = { light: "#ffffff", dark: "#09090b" } as const;
+
+const syncThemeColor = (theme: Theme, root: HTMLElement) => {
+  const head = root.ownerDocument?.head;
+  if (!head) return;
+  const existing = head.querySelector<HTMLMetaElement>('meta[name="theme-color"][data-manual]');
+  if (theme === "system") {
+    existing?.remove();
+    return;
+  }
+  const meta = existing ?? root.ownerDocument.createElement("meta");
+  meta.name = "theme-color";
+  meta.dataset.manual = "";
+  meta.content = THEME_COLORS[theme];
+  if (!existing) {
+    const first = head.querySelector('meta[name="theme-color"]');
+    head.insertBefore(meta, first);
+  }
+};
+
 export const applyTheme = (
   theme: Theme,
   root: HTMLElement,
@@ -21,6 +41,7 @@ export const applyTheme = (
 ) => {
   if (theme === "system") delete root.dataset.theme;
   else root.dataset.theme = theme;
+  syncThemeColor(theme, root);
   try {
     if (theme === "system") storage?.removeItem(KEY);
     else storage?.setItem(KEY, theme);

@@ -102,7 +102,7 @@ export const VaultScreen = (props: {
                   <Show
                     when={props.host()}
                     fallback={
-                      <p class="mx-2 mt-2 mb-3 rounded-lg bg-accent px-3 py-2 text-xs text-muted-foreground">
+                      <p class="mx-2 mt-2 mb-3 rounded-lg bg-accent px-3 py-2 text-xs text-foreground">
                         {m.popup_no_page()}
                       </p>
                     }

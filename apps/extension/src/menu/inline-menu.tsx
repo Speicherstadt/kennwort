@@ -120,11 +120,13 @@ const Entries = (props: {
                     type="button"
                     data-entry
                     aria-label={m.inline_menu_fill({ title: entry.title })}
-                    class="grid w-full rounded-md px-2 py-1.5 text-left hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                    class="group grid w-full rounded-md px-2 py-1.5 text-left hover:bg-accent focus-visible:bg-accent focus-visible:outline-2 focus-visible:outline-transparent"
                     onClick={(event) => void fill(entry, event)}
                   >
                     <span class="truncate text-[13px] font-medium">{entry.title}</span>
-                    <span class="truncate text-xs text-muted-foreground">{entry.username}</span>
+                    <span class="truncate text-xs text-muted-foreground group-hover:text-foreground group-focus-visible:text-foreground">
+                      {entry.username}
+                    </span>
                   </button>
                 </li>
               )}

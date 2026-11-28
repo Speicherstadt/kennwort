@@ -43,4 +43,27 @@ describe("theme", () => {
     applyTheme("system", root, undefined);
     expect(root.dataset.theme).toBeUndefined();
   });
+
+  it("updates a manual theme-color meta tag ahead of media metas", () => {
+    const media = document.createElement("meta");
+    media.name = "theme-color";
+    media.media = "(prefers-color-scheme: light)";
+    media.content = "#ffffff";
+    document.head.append(media);
+    try {
+      applyTheme("dark", document.documentElement, undefined);
+      const metas = [
+        ...document.head.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]'),
+      ];
+      expect(metas[0]?.dataset.manual).toBe("");
+      expect(metas[0]?.content).toBe("#09090b");
+      applyTheme("light", document.documentElement, undefined);
+      expect(metas[0]?.content).toBe("#ffffff");
+      applyTheme("system", document.documentElement, undefined);
+      expect(document.head.querySelector('meta[name="theme-color"][data-manual]')).toBeNull();
+    } finally {
+      media.remove();
+      document.head.querySelector('meta[name="theme-color"][data-manual]')?.remove();
+    }
+  });
 });

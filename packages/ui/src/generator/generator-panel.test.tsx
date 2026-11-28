@@ -112,12 +112,12 @@ describe("GeneratorPanel's password options", () => {
     expect(spans.map((s) => s.textContent).join("")).toBe(result(root));
     for (const span of spans) {
       const c = span.textContent ?? "";
-      if (/\d/.test(c)) expect(span.className).toContain("text-sky-500");
+      if (/\d/.test(c)) expect(span.className).toContain("text-info");
       else if (/[a-zA-Z]/.test(c)) expect(span.className).toBe("");
-      else expect(span.className).toContain("text-rose-500");
+      else expect(span.className).toContain("text-danger");
     }
-    expect(spans.some((s) => s.className.includes("text-sky-500"))).toBe(true);
-    expect(spans.some((s) => s.className.includes("text-rose-500"))).toBe(true);
+    expect(spans.some((s) => s.className.includes("text-info"))).toBe(true);
+    expect(spans.some((s) => s.className.includes("text-danger"))).toBe(true);
   });
 });
 

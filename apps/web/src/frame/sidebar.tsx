@@ -43,7 +43,7 @@ const Item = (props: {
       href={props.href}
       current={current()}
       class={cn(
-        "flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors",
+        "group flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors",
         current() ? "bg-accent text-foreground" : "hover:bg-accent",
       )}
     >
@@ -111,7 +111,7 @@ const sidebarVaults = (loaded: ShownVault[] | undefined): SidebarVault[] => {
 /** A shared vault's people: a small Users icon and their number, named for screen readers */
 const MemberCount = (props: { count: number }) => (
   <span
-    class="flex items-center gap-0.5 text-xs text-muted-foreground"
+    class="flex items-center gap-0.5 text-xs text-muted-foreground group-hover:text-foreground group-aria-[current=page]:text-foreground"
     title={m.sidebar_vault_members({ count: props.count })}
   >
     <Icon icon={Users} size={12} />

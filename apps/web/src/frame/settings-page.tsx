@@ -81,7 +81,7 @@ const LinkRow = (props: SettingLink & { open: () => void }) => {
     <div
       class={cn(
         rowClass,
-        "relative flex-nowrap transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-accent has-focus-visible:outline-2 has-focus-visible:-outline-offset-2 has-focus-visible:outline-foreground",
+        "group relative flex-nowrap transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-accent has-focus-visible:outline-2 has-focus-visible:-outline-offset-2 has-focus-visible:outline-foreground",
       )}
     >
       <span class="grid size-8 shrink-0 place-items-center rounded-lg border border-border">
@@ -97,7 +97,7 @@ const LinkRow = (props: SettingLink & { open: () => void }) => {
         >
           {props.label}
         </button>
-        <span id={id} class="text-xs text-muted-foreground">
+        <span id={id} class="text-xs text-muted-foreground group-hover:text-foreground">
           {props.help}
         </span>
       </span>
