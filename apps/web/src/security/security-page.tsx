@@ -8,6 +8,7 @@ import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
 import {
   Button,
   getLocale,
+  Icon,
   introClass,
   m,
   pageClass,
@@ -15,7 +16,9 @@ import {
   panelTitleClass,
   Switch as Toggle,
 } from "@kennwort/ui";
+import { ArrowLeft } from "@kennwort/ui/icons";
 import { createEffect, createMemo, createSignal, Match, Show, Switch } from "solid-js";
+import { Link } from "../frame/link.tsx";
 import type { Navigation } from "../navigation.ts";
 import type { LeakState, Leaks } from "./leaks.ts";
 import { type LeakedEntries, overviewOf, reportOf } from "./overview.ts";
@@ -115,6 +118,14 @@ export const SecurityPage = (props: { deps: SecurityDeps }) => {
     m.security_leaked_count({ count: leaked()?.get(entry.id) ?? 0 });
   return (
     <section aria-labelledby="page-title" class={pageClass("wide")}>
+      <Link
+        nav={props.deps.nav}
+        href="/entries"
+        class="mb-2 inline-flex min-h-11 items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground md:hidden"
+      >
+        <Icon icon={ArrowLeft} />
+        {m.nav_entries()}
+      </Link>
       <h1 id="page-title" class="mb-1 text-[28px] font-semibold md:text-lg">
         {m.nav_security()}
       </h1>

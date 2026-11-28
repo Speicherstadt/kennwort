@@ -47,7 +47,10 @@ const NotificationRow = (props: RowProps) => {
       <div class="grid min-w-0 flex-1 gap-0.5">
         <a
           href={shown().href}
-          class={cn("text-[13px] hover:underline", !props.note.read && "font-medium")}
+          class={cn(
+            "text-[13px] underline decoration-border underline-offset-2 hover:decoration-foreground",
+            !props.note.read && "font-medium",
+          )}
           onClick={(event) => {
             if (!props.note.read) props.onRead();
             if (!isPlainClick(event)) return;

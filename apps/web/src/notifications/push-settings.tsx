@@ -79,7 +79,7 @@ const KindChoice = (props: { deps: NotificationsDeps }) => {
                   <h3 class="text-[11px] font-medium tracking-[.04em] text-muted-foreground uppercase">
                     {groupTitles[group]()}
                   </h3>
-                  <ul class="divide-y divide-border rounded-lg border border-border">
+                  <ul class="divide-y divide-border border-t border-border">
                     <For each={kindsIn(NOTIFICATION_KINDS, group)}>
                       {(kind) => (
                         <KindRow
