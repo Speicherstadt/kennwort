@@ -4,7 +4,7 @@
  */
 
 import type { ShownEntry } from "@kennwort/client/entries/entries.ts";
-import { createToasts, type Locale, Toaster, type Toasts } from "@kennwort/ui";
+import { createToasts, type Locale, m, Toaster, type Toasts } from "@kennwort/ui";
 import type { JSX } from "@solidjs/web";
 import { Match, Show, Switch } from "solid-js";
 import type { Navigation } from "../navigation.ts";
@@ -100,6 +100,14 @@ export const Frame = (props: FrameProps) => {
   );
   return (
     <div class="flex h-dvh flex-col md:flex-row">
+      <nav aria-label={m.ui_skip_to_content()}>
+        <a
+          href="#main-content"
+          class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-xs focus:font-medium focus:text-primary-foreground"
+        >
+          {m.ui_skip_to_content()}
+        </a>
+      </nav>
       <Show when={props.notifications}>
         {(notifications) => (
           <header class="flex h-12 shrink-0 items-center justify-end border-b border-border bg-muted px-2 md:hidden">
@@ -134,7 +142,7 @@ export const Frame = (props: FrameProps) => {
                     security={Boolean(props.securityPage)}
                     companies={props.companies}
                   />
-                  <main class="flex min-h-0 flex-1">
+                  <main id="main-content" tabindex={-1} class="flex min-h-0 flex-1">
                     <EntryList
                       entries={props.entries?.()}
                       onNew={props.onNewEntry}
@@ -171,19 +179,21 @@ export const Frame = (props: FrameProps) => {
                     entries={props.entries?.()}
                     companies={props.companies}
                   />
-                  <main class="flex min-h-0 flex-1">{shown()}</main>
+                  <main id="main-content" tabindex={-1} class="flex min-h-0 flex-1">
+                    {shown()}
+                  </main>
                 </>
               )}
             </Show>
           )}
         </Match>
         <Match when={route().page === "generator"}>
-          <main class="flex min-h-0 flex-1">
+          <main id="main-content" tabindex={-1} class="flex min-h-0 flex-1">
             <GeneratorPage toasts={toasts} />
           </main>
         </Match>
         <Match when={route().page === "settings"}>
-          <main class="flex min-h-0 flex-1">
+          <main id="main-content" tabindex={-1} class="flex min-h-0 flex-1">
             <SettingsPage {...settingsLinks(props)} devices={props.devices} />
           </main>
         </Match>
@@ -213,13 +223,21 @@ export const Frame = (props: FrameProps) => {
         <Match when={route().page === "emergency" && props.emergencyPage}>
           <SettingsChild nav={props.nav}>{props.emergencyPage?.(toasts)}</SettingsChild>
         </Match>
-        <Match when={route().page === "links" && props.linksPage}>{props.linksPage?.()}</Match>
+        <Match when={route().page === "links" && props.linksPage}>
+          <main id="main-content" tabindex={-1} class="flex min-h-0 flex-1">
+            {props.linksPage?.()}
+          </main>
+        </Match>
         <Match when={route().page === "notifications" && props.notifications}>
-          <main class="flex min-h-0 flex-1">{props.notifications?.page()}</main>
+          <main id="main-content" tabindex={-1} class="flex min-h-0 flex-1">
+            {props.notifications?.page()}
+          </main>
         </Match>
         <Match when={route().page === "security" && props.securityPage}>
           {sidebar()}
-          <main class="flex min-h-0 flex-1">{props.securityPage?.()}</main>
+          <main id="main-content" tabindex={-1} class="flex min-h-0 flex-1">
+            {props.securityPage?.()}
+          </main>
         </Match>
         <Match when={route().page === "companies" && props.companiesPage}>
           <SettingsChild nav={props.nav}>{props.companiesPage?.()}</SettingsChild>
@@ -231,7 +249,7 @@ export const Frame = (props: FrameProps) => {
           <SettingsChild nav={props.nav}>{props.renewPage?.()}</SettingsChild>
         </Match>
         <Match when={route().page === "not-found"}>
-          <main class="flex min-h-0 flex-1">
+          <main id="main-content" tabindex={-1} class="flex min-h-0 flex-1">
             <NotFoundPage nav={props.nav} />
           </main>
         </Match>

@@ -17,7 +17,7 @@ const tabs: { tab: TeamTab; href: string; label: () => string }[] = [
 ];
 
 export const TeamPage = (props: { nav: Navigation; tab: TeamTab; children: JSX.Element }) => (
-  <main class="flex min-h-0 flex-1 flex-col">
+  <main id="main-content" tabindex={-1} class="flex min-h-0 flex-1 flex-col">
     <nav
       aria-label={m.nav_team()}
       class="mx-auto flex w-full max-w-6xl gap-1 border-b border-border px-4 pt-3 md:px-8 md:pt-6"

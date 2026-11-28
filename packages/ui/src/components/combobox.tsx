@@ -73,7 +73,7 @@ export const Combobox = (props: ComboboxProps) => {
         autocomplete="off"
         placeholder={props.placeholder}
         value={text()}
-        class="h-8 w-full rounded-lg border border-border bg-background px-2.5 text-[13px] placeholder:text-muted-foreground"
+        class="h-11 w-full rounded-lg border border-border bg-background px-2.5 text-base placeholder:text-muted-foreground md:h-8 md:text-[13px]"
         style={anchorName(id)}
         onInput={(event) => {
           setText(event.currentTarget.value);
@@ -88,16 +88,19 @@ export const Combobox = (props: ComboboxProps) => {
           list = el;
         }}
         popover="manual"
-        class={cn(floatingClass, "max-h-60 min-w-56 overflow-auto")}
+        class={cn(floatingClass, "max-h-60 min-w-56 overflow-auto overscroll-contain")}
         style={anchoredBelow(id)}
       >
+        {/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard selection lives on the combobox input via aria-activedescendant */}
         <div
           id={`${id}-list`}
           role="listbox"
           aria-label={props.label}
           onPointerDown={(event) => {
-            // Keep the focus in the field; the option under the pointer is taken
+            // Keep the focus in the field while clicking an option
             event.preventDefault();
+          }}
+          onClick={(event) => {
             const index = Number(
               (event.target as Element).closest("[data-index]")?.getAttribute("data-index"),
             );

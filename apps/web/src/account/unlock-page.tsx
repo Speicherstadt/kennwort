@@ -38,6 +38,7 @@ export const UnlockPage = (props: {
   const known = () => !props.link && props.session.device() !== undefined;
   const submit = async (event: SubmitEvent) => {
     event.preventDefault();
+    if (busy()) return;
     const key = known() ? undefined : parseSecretKey(secretKey());
     if (key && !key.ok) return setError(errorText("wrong-passphrase"));
     setBusy(true);
@@ -77,12 +78,16 @@ export const UnlockPage = (props: {
             label={m.unlock_account()}
             value={accountId()}
             autocomplete="username"
+            spellcheck={false}
+            autocapitalize="off"
             onInput={(event) => setAccountId(event.currentTarget.value)}
           />
           <Input
             label={m.unlock_secret_key()}
             value={secretKey()}
             autocomplete="off"
+            spellcheck={false}
+            autocapitalize="off"
             onInput={(event) => setSecretKey(event.currentTarget.value)}
           />
         </Show>

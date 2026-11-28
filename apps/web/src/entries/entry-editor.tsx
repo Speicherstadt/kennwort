@@ -222,7 +222,7 @@ export const EntryEditor = (props: {
   });
   const submit = async (event: SubmitEvent) => {
     event.preventDefault();
-    if (!latest.title.trim()) return;
+    if (busy() || !latest.title.trim()) return;
     setBusy(true);
     const saved = await props.onSave(latest, props.vaults ? vault() : undefined);
     setBusy(false);
@@ -281,7 +281,6 @@ export const EntryEditor = (props: {
                   label={m.entry_editor_title()}
                   value={input().title}
                   required
-                  autofocus
                   onInput={(event) =>
                     update((now) => ({ ...now, title: event.currentTarget.value }))
                   }

@@ -71,6 +71,22 @@ export const FieldValue = (props: {
           autocomplete={
             props.field.kind === "secret" || props.field.kind === "totp" ? "new-password" : "off"
           }
+          spellcheck={
+            props.field.kind === "url" ||
+            props.field.kind === "email" ||
+            props.field.kind === "secret" ||
+            props.field.kind === "totp"
+              ? false
+              : undefined
+          }
+          autocapitalize={
+            props.field.kind === "url" ||
+            props.field.kind === "email" ||
+            props.field.kind === "secret" ||
+            props.field.kind === "totp"
+              ? "off"
+              : undefined
+          }
           value={props.field.value}
           onInput={(event) => props.onValue(event.currentTarget.value)}
           hint={props.field.kind === "totp" ? totpHint(props.field.value) : undefined}

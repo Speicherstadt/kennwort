@@ -5,7 +5,8 @@
 
 import type { JSX } from "@solidjs/web";
 import type { IconNode } from "lucide";
-import { createUniqueId, For } from "solid-js";
+import { createSignal, createUniqueId, For } from "solid-js";
+import { ariaBoolean } from "../lib/aria.ts";
 import { cn } from "../lib/cn.ts";
 import { nextIndex } from "../lib/keys.ts";
 import { anchoredBelow, anchorName } from "./anchor.ts";
@@ -31,6 +32,7 @@ export type MenuProps = {
 
 export const Menu = (props: MenuProps) => {
   const id = createUniqueId();
+  const [open, setOpen] = createSignal(false);
   let menu: HTMLDivElement | undefined;
   let button: HTMLButtonElement | undefined;
   const items = () => [
@@ -61,6 +63,7 @@ export const Menu = (props: MenuProps) => {
         type="button"
         popovertarget={id}
         aria-haspopup="menu"
+        aria-expanded={ariaBoolean(open())}
         aria-controls={id}
         aria-label={props.label}
         class={props.triggerClass ?? buttonClass()}
@@ -79,7 +82,9 @@ export const Menu = (props: MenuProps) => {
         class={cn(floatingClass, "min-w-44")}
         style={anchoredBelow(id)}
         onToggle={(event) => {
-          if ((event as ToggleEvent).newState === "open") items()[0]?.focus();
+          const isOpen = (event as ToggleEvent).newState === "open";
+          setOpen(isOpen);
+          if (isOpen) items()[0]?.focus();
         }}
         onKeyDown={onKeyDown}
       >
