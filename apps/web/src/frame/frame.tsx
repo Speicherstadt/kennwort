@@ -100,12 +100,14 @@ export const Frame = (props: FrameProps) => {
   );
   return (
     <div class="flex h-dvh flex-col md:flex-row">
-      <a
-        href="#main-content"
-        class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-xs focus:font-medium focus:text-primary-foreground"
-      >
-        {m.ui_skip_to_content()}
-      </a>
+      <nav aria-label={m.ui_skip_to_content()}>
+        <a
+          href="#main-content"
+          class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-xs focus:font-medium focus:text-primary-foreground"
+        >
+          {m.ui_skip_to_content()}
+        </a>
+      </nav>
       <Show when={props.notifications}>
         {(notifications) => (
           <header class="flex h-12 shrink-0 items-center justify-end border-b border-border bg-muted px-2 md:hidden">
@@ -221,7 +223,11 @@ export const Frame = (props: FrameProps) => {
         <Match when={route().page === "emergency" && props.emergencyPage}>
           <SettingsChild nav={props.nav}>{props.emergencyPage?.(toasts)}</SettingsChild>
         </Match>
-        <Match when={route().page === "links" && props.linksPage}>{props.linksPage?.()}</Match>
+        <Match when={route().page === "links" && props.linksPage}>
+          <main id="main-content" tabindex={-1} class="flex min-h-0 flex-1">
+            {props.linksPage?.()}
+          </main>
+        </Match>
         <Match when={route().page === "notifications" && props.notifications}>
           <main id="main-content" tabindex={-1} class="flex min-h-0 flex-1">
             {props.notifications?.page()}

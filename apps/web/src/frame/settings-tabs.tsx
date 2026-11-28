@@ -9,7 +9,6 @@ export const SectionTabs = (props: {
   active: string;
   onSelect: (id: string) => void;
 }) => {
-  const buttons: (HTMLButtonElement | undefined)[] = [];
   const onKeyDown = (event: KeyboardEvent, index: number) => {
     const count = props.groups.length;
     const next =
@@ -27,7 +26,10 @@ export const SectionTabs = (props: {
     const group = props.groups[next];
     if (!group) return;
     props.onSelect(group.id);
-    buttons[next]?.focus();
+    const tabs = (event.currentTarget as HTMLElement).parentElement?.querySelectorAll<HTMLElement>(
+      '[role="tab"]',
+    );
+    tabs?.[next]?.focus();
   };
   return (
     <div
@@ -40,9 +42,6 @@ export const SectionTabs = (props: {
           const selected = () => props.active === group.id;
           return (
             <button
-              ref={(el) => {
-                buttons[index()] = el;
-              }}
               type="button"
               role="tab"
               id={`tab-${group.id}`}

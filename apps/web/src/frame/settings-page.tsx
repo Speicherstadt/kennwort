@@ -337,7 +337,7 @@ export const SettingsPage = (props: SettingsProps) => {
 
 /** A page under the settings: a way back to them above it, on a phone the way out of the drill */
 export const SettingsChild = (props: { nav: Navigation; children: JSX.Element }) => (
-  <main class="flex min-h-0 flex-1 flex-col">
+  <main id="main-content" tabindex={-1} class="flex min-h-0 flex-1 flex-col">
     <Link
       nav={props.nav}
       href="/settings"
