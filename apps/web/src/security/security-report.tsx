@@ -41,46 +41,48 @@ export const ReportCard = (props: {
         {m.security_report_title({ month: monthName(props.month, props.locale) })}
       </h2>
       <p class="text-[13px] text-muted-foreground">{m.security_report_intro()}</p>
-      <table class="w-full table-fixed text-[13px] [overflow-wrap:anywhere] hyphens-auto">
-        <thead class="text-xs text-muted-foreground">
-          <tr>
-            <th scope="col" class="px-2 py-1.5 text-left font-medium">
-              {m.security_report_vault()}
-            </th>
-            <th scope="col" class={cell}>
-              {m.security_report_entries()}
-            </th>
-            <th scope="col" class={cell}>
-              {m.security_weak()}
-            </th>
-            <th scope="col" class={cell}>
-              {m.security_reused()}
-            </th>
-            <th scope="col" class={cell}>
-              {m.security_leaked()}
-            </th>
-            <th scope="col" class={cell}>
-              {m.security_marked()}
-            </th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-border">
-          <For each={props.rows}>
-            {(row) => (
-              <tr>
-                <th scope="row" class="px-2 py-1.5 text-left font-normal">
-                  {row.name}
-                </th>
-                <td class={cell}>{row.entries}</td>
-                <td class={cell}>{row.weak}</td>
-                <td class={cell}>{row.reused}</td>
-                <td class={cell}>{row.leaked ?? m.security_not_checked()}</td>
-                <td class={cell}>{row.marked}</td>
-              </tr>
-            )}
-          </For>
-        </tbody>
-      </table>
+      <div class="overflow-x-auto" tabindex={0}>
+        <table class="w-full min-w-[34rem] text-[13px]">
+          <thead class="text-xs text-muted-foreground">
+            <tr>
+              <th scope="col" class="px-2 py-1.5 text-left font-medium">
+                {m.security_report_vault()}
+              </th>
+              <th scope="col" class={cell}>
+                {m.security_report_entries()}
+              </th>
+              <th scope="col" class={cell}>
+                {m.security_weak()}
+              </th>
+              <th scope="col" class={cell}>
+                {m.security_reused()}
+              </th>
+              <th scope="col" class={cell}>
+                {m.security_leaked()}
+              </th>
+              <th scope="col" class={cell}>
+                {m.security_marked()}
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border">
+            <For each={props.rows}>
+              {(row) => (
+                <tr>
+                  <th scope="row" class="px-2 py-1.5 text-left font-normal">
+                    {row.name}
+                  </th>
+                  <td class={cell}>{row.entries}</td>
+                  <td class={cell}>{row.weak}</td>
+                  <td class={cell}>{row.reused}</td>
+                  <td class={cell}>{row.leaked ?? m.security_not_checked()}</td>
+                  <td class={cell}>{row.marked}</td>
+                </tr>
+              )}
+            </For>
+          </tbody>
+        </table>
+      </div>
       <Show when={failed()}>
         <p role="alert" class="text-[13px] text-danger">
           {m.security_report_save_failed()}

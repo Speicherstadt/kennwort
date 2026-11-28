@@ -46,8 +46,10 @@ export const TotpField = (props: {
           {(result) =>
             result.ok ? (
               <span class="flex items-baseline gap-2">
-                <span class="font-mono text-[22px] md:text-lg">{grouped(result.value.code)}</span>
-                <span class="text-xs text-muted-foreground">
+                <span translate="no" class="font-mono text-[22px] tabular-nums md:text-lg">
+                  {grouped(result.value.code)}
+                </span>
+                <span class="text-xs text-muted-foreground tabular-nums">
                   {m.totp_remaining({ seconds: result.value.remaining })}
                 </span>
               </span>
@@ -59,6 +61,7 @@ export const TotpField = (props: {
       </div>
       <Show when={current().ok}>
         <TooltipIconButton
+          class="size-11 md:size-8"
           label={m.field_copy({ field: props.label })}
           onClick={() => {
             // The code at the click, not at the last tick

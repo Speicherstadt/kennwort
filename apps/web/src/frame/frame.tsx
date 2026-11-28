@@ -100,6 +100,13 @@ export const Frame = (props: FrameProps) => {
   );
   return (
     <div class="flex h-dvh flex-col md:flex-row">
+      <Show when={props.notifications}>
+        {(notifications) => (
+          <header class="flex h-12 shrink-0 items-center justify-end border-b border-border bg-muted px-2 md:hidden">
+            {notifications().bell("header")}
+          </header>
+        )}
+      </Show>
       <Rail
         nav={props.nav}
         onLock={props.onLock}
@@ -229,10 +236,7 @@ export const Frame = (props: FrameProps) => {
           </main>
         </Match>
       </Switch>
-      <TabBar
-        nav={props.nav}
-        bell={props.notifications ? () => props.notifications?.bell("tab") : undefined}
-      />
+      <TabBar nav={props.nav} />
       <Toaster toasts={toasts} />
     </div>
   );

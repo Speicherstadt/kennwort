@@ -59,8 +59,8 @@ export const VaultMemberMenu = (props: {
         aria-label={name()}
         style={anchoredBelow(id)}
         class={cn(
-          "w-[272px] rounded-xl border border-border bg-background p-1.5 text-foreground shadow-lg",
-          "max-md:fixed! max-md:inset-x-0! max-md:top-auto! max-md:right-0! max-md:bottom-0! max-md:left-0! max-md:m-0! max-md:w-auto! max-md:rounded-t-[20px] max-md:rounded-b-none max-md:border-b-0 max-md:p-2 max-md:pb-4.5 max-md:[position-anchor:none]! max-md:backdrop:bg-black/50",
+          "w-[272px] overscroll-contain rounded-xl border border-border bg-background p-1.5 text-foreground shadow-lg",
+          "max-md:fixed! max-md:inset-x-0! max-md:top-auto! max-md:right-0! max-md:bottom-0! max-md:left-0! max-md:m-0! max-md:w-auto! max-md:rounded-t-[20px] max-md:rounded-b-none max-md:border-b-0 max-md:p-2 max-md:pb-[max(1.125rem,env(safe-area-inset-bottom))] max-md:[position-anchor:none]! max-md:backdrop:bg-black/50",
         )}
       >
         <div

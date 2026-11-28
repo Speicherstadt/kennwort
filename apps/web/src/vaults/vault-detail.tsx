@@ -5,7 +5,7 @@
  */
 import type { Vault } from "@kennwort/client/vaults/vaults.ts";
 import { type Certificate, idKey, type MemberView, type VaultRole } from "@kennwort/core";
-import { cn, Icon, Menu, m } from "@kennwort/ui";
+import { Badge, cn, Icon, Menu, m } from "@kennwort/ui";
 import {
   ChevronLeft,
   Ellipsis,
@@ -191,7 +191,7 @@ export const VaultDetail = (props: {
           <button
             type="button"
             aria-label={m.vault_access_back()}
-            class="-mt-1 -ml-2 hidden size-10 cursor-pointer place-items-center rounded-lg text-foreground hover:bg-accent @max-[600px]:grid"
+            class="-mt-1 -ml-2 hidden size-11 cursor-pointer place-items-center rounded-lg text-foreground hover:bg-accent @max-[600px]:grid"
             onClick={() => props.onBack()}
           >
             <Icon icon={ChevronLeft} size={22} />
@@ -204,26 +204,26 @@ export const VaultDetail = (props: {
               {vaultName()}
             </h2>
             <div class="flex flex-wrap items-center gap-1.5">
-              <span class="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-xs text-foreground tabular-nums">
+              <Badge variant="secondary">
                 {members().length === 1
                   ? m.vault_access_people_one()
                   : m.vault_access_people_many({ count: String(members().length) })}
-              </span>
-              <span class="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-xs text-foreground tabular-nums">
+              </Badge>
+              <Badge variant="secondary">
                 {props.entryCount === 1
                   ? m.vault_access_entries_one()
                   : m.vault_access_entries_many({ count: String(props.entryCount) })}
-              </span>
-              <span class="inline-flex items-center gap-1 rounded-md bg-success-surface px-2 py-0.5 text-xs text-success">
+              </Badge>
+              <Badge variant="success">
                 <Icon icon={ShieldCheck} size={13} />
                 {m.vault_access_log_verified()}
-              </span>
+              </Badge>
               <Show when={!canManage() && managerName()}>
                 {(name) => (
-                  <span class="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-xs text-foreground">
+                  <Badge variant="secondary">
                     <Icon icon={Lock} size={12} />
                     {m.vault_access_managed_by({ name: name() })}
-                  </span>
+                  </Badge>
                 )}
               </Show>
             </div>
@@ -234,7 +234,7 @@ export const VaultDetail = (props: {
                 <Menu
                   label={m.vault_access_vault_menu({ vault: vaultName() })}
                   trigger={<Icon icon={Ellipsis} size={18} />}
-                  triggerClass="grid size-[34px] cursor-pointer place-items-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground"
+                  triggerClass="grid size-[34px] cursor-pointer place-items-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground @max-[600px]:size-11"
                   items={[
                     {
                       label: m.handover_button(),

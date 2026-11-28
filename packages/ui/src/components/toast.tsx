@@ -43,7 +43,7 @@ export type Toasts = ReturnType<typeof createToasts>;
 export const Toaster = (props: { toasts: Toasts }) => (
   <section
     aria-label={m.ui_notifications()}
-    class="pointer-events-none fixed right-4 bottom-4 z-50 grid w-80 gap-2"
+    class="pointer-events-none fixed inset-x-4 bottom-18 z-50 grid gap-2 sm:inset-x-auto sm:right-4 sm:bottom-4 sm:w-80"
     onPointerEnter={() => props.toasts.hold(true)}
     onPointerLeave={() => props.toasts.hold(false)}
     onFocusIn={() => props.toasts.hold(true)}
@@ -53,10 +53,11 @@ export const Toaster = (props: { toasts: Toasts }) => (
       <For each={props.toasts.toasts()}>
         {(toast) => (
           <div
+            role={toast.tone === "danger" ? "alert" : undefined}
             class={cn(
               "pointer-events-auto flex items-start gap-2 rounded-xl border border-border bg-background p-3 text-[13px] shadow-lg",
-              toast.tone === "success" && "text-success",
-              toast.tone === "danger" && "text-danger",
+              toast.tone === "success" && "border-success/40",
+              toast.tone === "danger" && "border-danger/40",
             )}
           >
             <p class="flex-1 text-foreground">{toast.text}</p>

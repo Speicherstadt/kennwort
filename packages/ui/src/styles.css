@@ -120,10 +120,30 @@
     outline: 2px solid var(--foreground);
     outline-offset: 2px;
   }
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  summary {
+    touch-action: manipulation;
+  }
   [popover] {
     margin: 0;
     inset: auto;
     color: inherit;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms;
+      animation-iteration-count: 1;
+      transition-duration: 0.01ms;
+    }
   }
 }
 

@@ -12,7 +12,7 @@ import { isSection, sections } from "./sections.ts";
 export const TabBar = (props: { nav: Navigation; bell?: (() => JSX.Element) | undefined }) => (
   <nav
     aria-label={m.nav_main()}
-    class="grid border-t border-border bg-background md:hidden"
+    class="grid border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
     style={{
       "grid-template-columns": `repeat(${sections.length + (props.bell ? 1 : 0)}, minmax(0, 1fr))`,
     }}
@@ -24,14 +24,14 @@ export const TabBar = (props: { nav: Navigation; bell?: (() => JSX.Element) | un
           href={section.href}
           current={isSection(props.nav.route(), section.page)}
           class={cn(
-            "flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px]",
+            "flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 text-[11px]",
             isSection(props.nav.route(), section.page)
               ? "text-foreground"
               : "text-muted-foreground",
           )}
         >
           <Icon icon={section.icon} size={22} />
-          {(section.short ?? section.label)()}
+          <span class="max-w-full truncate">{(section.short ?? section.label)()}</span>
         </Link>
       )}
     </For>
