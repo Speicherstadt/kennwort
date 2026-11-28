@@ -5,7 +5,7 @@
 import type { VaultRole } from "@kennwort/core";
 import { anchoredBelow, anchorName, cn, Icon, m } from "@kennwort/ui";
 import { Check, Clock, Ellipsis } from "@kennwort/ui/icons";
-import { createUniqueId, For } from "solid-js";
+import { createSignal, createUniqueId, For } from "solid-js";
 import { dateText } from "./day.ts";
 import { displayName, initialsOf } from "./vault-access.ts";
 import { roleIcon, roleShort } from "./vault-aside.tsx";
@@ -14,6 +14,36 @@ import { roleText } from "./vault-text.ts";
 
 /** Menu lists read → edit → manage, matching the prototype */
 const MENU_ROLES: readonly VaultRole[] = ["read", "edit", "manage"];
+
+const menuItems = (menu: HTMLDivElement | undefined) => [
+  ...(menu?.querySelectorAll<HTMLElement>(
+    '[role="menuitem"]:not([disabled]), [role="menuitemradio"]:not([disabled])',
+  ) ?? []),
+];
+
+const handleMenuKey = (
+  event: KeyboardEvent,
+  menu: HTMLDivElement | undefined,
+  close: () => void,
+) => {
+  if (event.key === "Tab") return close();
+  const list = menuItems(menu);
+  if (list.length === 0) return;
+  const index = list.indexOf(document.activeElement as HTMLElement);
+  const next =
+    event.key === "ArrowDown"
+      ? (index + 1) % list.length
+      : event.key === "ArrowUp"
+        ? (index - 1 + list.length) % list.length
+        : event.key === "Home"
+          ? 0
+          : event.key === "End"
+            ? list.length - 1
+            : undefined;
+  if (next === undefined) return;
+  event.preventDefault();
+  list[next]?.focus();
+};
 
 export const VaultMemberMenu = (props: {
   member: VaultMember;
@@ -24,6 +54,7 @@ export const VaultMemberMenu = (props: {
   onRemove: () => void;
 }) => {
   const id = createUniqueId();
+  const [open, setOpen] = createSignal(false);
   let menu: HTMLDivElement | undefined;
   let trigger: HTMLButtonElement | undefined;
   const name = () => displayName(props.member.name);
@@ -41,6 +72,7 @@ export const VaultMemberMenu = (props: {
         type="button"
         popovertarget={id}
         aria-haspopup="menu"
+        aria-expanded={open() ? "true" : "false"}
         aria-controls={id}
         aria-label={m.vault_access_member_menu({ name: name() })}
         disabled={props.busy}
@@ -58,6 +90,12 @@ export const VaultMemberMenu = (props: {
         role="menu"
         aria-label={name()}
         style={anchoredBelow(id)}
+        onToggle={(event) => {
+          const isOpen = (event as ToggleEvent).newState === "open";
+          setOpen(isOpen);
+          if (isOpen) menuItems(menu)[0]?.focus();
+        }}
+        onKeyDown={(event) => handleMenuKey(event, menu, close)}
         class={cn(
           "w-[272px] overscroll-contain rounded-xl border border-border bg-background p-1.5 text-foreground shadow-lg",
           "max-md:fixed! max-md:inset-x-0! max-md:top-auto! max-md:right-0! max-md:bottom-0! max-md:left-0! max-md:m-0! max-md:w-auto! max-md:rounded-t-[20px] max-md:rounded-b-none max-md:border-b-0 max-md:p-2 max-md:pb-[max(1.125rem,env(safe-area-inset-bottom))] max-md:[position-anchor:none]! max-md:backdrop:bg-black/50",

@@ -23,6 +23,7 @@ import { createMemo, createSignal, createUniqueId, For, Show } from "solid-js";
 import type { Navigation } from "../navigation.ts";
 import { applyTheme, readTheme, type Theme } from "../theme.ts";
 import { Link } from "./link.tsx";
+import { SectionTabs } from "./settings-tabs.tsx";
 
 export type SettingsProps = {
   onLock: () => void;
@@ -232,47 +233,6 @@ const groups = (props: SettingsProps) => ({
   ],
 });
 
-/** Tabs for the settings groups: horizontal scrollable strip on phones, vertical sidebar from md */
-const SectionTabs = (props: {
-  groups: (Group & { danger?: boolean })[];
-  active: string;
-  onSelect: (id: string) => void;
-}) => (
-  <div
-    role="tablist"
-    aria-label={m.settings_sections()}
-    class="flex gap-1 overflow-x-auto border-b border-border pb-2 md:sticky md:top-0 md:flex-col md:self-start md:overflow-visible md:border-b-0 md:pb-0"
-  >
-    <For each={props.groups}>
-      {(group) => {
-        const selected = () => props.active === group.id;
-        return (
-          <button
-            type="button"
-            role="tab"
-            id={`tab-${group.id}`}
-            aria-selected={selected() ? "true" : "false"}
-            aria-controls={group.id}
-            class={cn(
-              "shrink-0 rounded-lg px-3 py-2 text-left text-[13px] whitespace-nowrap transition-colors md:w-full md:py-1.5",
-              selected()
-                ? group.danger
-                  ? "bg-danger/10 font-medium text-danger"
-                  : "bg-accent font-medium text-foreground"
-                : group.danger
-                  ? "text-danger/80 hover:bg-danger/10 hover:text-danger"
-                  : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
-            )}
-            onClick={() => props.onSelect(group.id)}
-          >
-            {group.title}
-          </button>
-        );
-      }}
-    </For>
-  </div>
-);
-
 export const SettingsPage = (props: SettingsProps) => {
   const links = createMemo(() => groups(props));
   const shown = createMemo((): (Group & { danger?: boolean })[] => [
@@ -301,7 +261,12 @@ export const SettingsPage = (props: SettingsProps) => {
       <p class="mb-6 text-[13px] text-muted-foreground">{m.settings_intro()}</p>
       <div class="grid gap-6 md:grid-cols-[12rem_minmax(0,48rem)] md:gap-10">
         <SectionTabs groups={shown()} active={active()} onSelect={setSelected} />
-        <div role="tabpanel" aria-labelledby={`tab-${active()}`} class="grid min-w-0 gap-6">
+        <div
+          id="settings-panel"
+          role="tabpanel"
+          aria-labelledby={`tab-${active()}`}
+          class="grid min-w-0 gap-6"
+        >
           <Show when={active() === "settings-general"}>
             <General onLocale={props.onLocale} />
           </Show>
